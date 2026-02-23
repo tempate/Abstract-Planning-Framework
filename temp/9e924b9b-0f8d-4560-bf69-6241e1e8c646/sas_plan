@@ -1,0 +1,7 @@
+(pick-up-rack jig0001 factory_trailer_1 rack01 fside bside n25 n15 n40)
+(unload-beluga jig0002 dummy-jig beluga_trailer_1 beluga1)
+(put-down-rack jig0002 beluga_trailer_1 rack00 bside n18 n22 n04)
+(pick-up-rack jig0002 factory_trailer_2 rack00 fside bside n18 n04 n22)
+(deliver-to-hangar jig0002 dummy-jig factory_trailer_2 hangar1 pl0 n18 n09)
+(deliver-to-hangar jig0001 dummy-jig factory_trailer_1 hangar1 pl1 n25 n18)
+; cost = 6 (unit cost)
