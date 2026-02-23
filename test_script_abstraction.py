@@ -5,7 +5,7 @@ import argparse
 
 from fastdownward_service import run_fastdownward_service
 from plasp_utils import generate_lp_with_plasp
-from clingo_utils import run_clingo, write_occurs_abs_lp, create_map_lp
+from clingo_utils_api import run_clingo, write_occurs_abs_lp, create_map_lp
 
 def main():
     parser = argparse.ArgumentParser()
