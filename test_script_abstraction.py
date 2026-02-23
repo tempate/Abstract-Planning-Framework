@@ -5,7 +5,7 @@ import argparse
 
 from fastdownward_service import run_fastdownward_service
 from plasp_utils import generate_lp_with_plasp
-from clingo_utils_api import run_clingo, write_occurs_abs_lp, create_map_lp
+from clingo_utils_api import *
 
 def main():
     parser = argparse.ArgumentParser()
@@ -136,14 +136,43 @@ def compute_concrete_from_abstract(
     # ---- abstraction mapping ----
     t_map_start = time.perf_counter()
 
-    create_map_lp(
-        occurs_abs_path=occurs_abs_lp_path,
-        output_path=map_lp_path,
-        abstract_symbol=abstract_symbol,
-        concrete_objects=concrete_objects
+    # create_map_lp(
+    #     occurs_abs_path=occurs_abs_lp_path,
+    #     output_path=map_lp_path,
+    #     abstract_symbol=abstract_symbol,
+    #     concrete_objects=concrete_objects
+    # )
+
+
+    switch_map = create_map_lp_with_switch_atoms(
+        occurs_abs_lp_path,
+        map_lp_path,
+        abstract_symbol,
+        concrete_objects
     )
+
     t_map_end = time.perf_counter()
     print(f"Mapping LP generation: {t_map_end - t_map_start:.3f}s")
+
+    # -----------------------------
+    # Concrete incremental solving
+    # -----------------------------
+    ok, plans = solve_concrete_incremental(
+        [output_c_lp, occurs_abs_lp_path, map_lp_path],
+        horizon,
+        switch_map
+    )
+
+    print(f"[DONE] Total time: {time.perf_counter() - start_time:.3f}s")
+
+    return {
+        "horizon": horizon,
+        "numPlans": len(plans) if ok else 0,
+        "plans": plans if ok else [],
+        "success": ok
+    }
+
+
 
     # Solve concrete LP
     t_conc_solve_start = time.perf_counter()
