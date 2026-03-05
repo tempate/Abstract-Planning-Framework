@@ -146,41 +146,61 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
 
     ctl.ground([("base", [])])
 
+    # Collect all switch(ID) atoms from the grounded program
     switch_symbols = []
-    symbol_to_switch = {}
+    symbol_to_id = {}
 
     for atom in ctl.symbolic_atoms:
         if atom.symbol.name == "switch":
             switch_symbols.append(atom.symbol)
-            symbol_to_switch[atom.symbol] = atom.symbol.arguments[0].number
+            symbol_to_id[atom.symbol] = atom.symbol.arguments[0].number
+
+     # Ensure switches are processed in numeric order
+    switch_symbols.sort(key=lambda s: symbol_to_id[s])
 
     print(f"[DEBUG] Found {len(switch_symbols)} switches")
 
     active_switches = []
 
+    # Incrementally activate switches and test satisfiability
     for sym in switch_symbols:
+
         active_switches.append(sym)
 
         assumptions = []
 
-        # active = true
+        # Set currently active switches to true
         for s in active_switches:
             assumptions.append((s, True))
 
-        # inactive = false
+        # Set all remaining switches to false
         for s in switch_symbols:
             if s not in active_switches:
                 assumptions.append((s, False))
 
+        print("\n[DEBUG] Trying with active switches:",
+              [symbol_to_id[s] for s in active_switches])
+
         result = ctl.solve(assumptions=assumptions)
 
+        # Detect the first switch that causes unsatisfiability
         if result.unsatisfiable:
-            switch_id = symbol_to_switch[sym]
-            print("Conflict at switch:", switch_id)
-            print("Abstract action:", switch_map[switch_id])
-            return False, []
+            failing_id = symbol_to_id[sym]
 
-    # SAT → collect models
+            print("INCONSISTENT when enabling switch:", failing_id)
+            print("   Corresponding abstract action:")
+            print("   ", switch_map[failing_id])
+
+            failing_abstract_actions = [
+                switch_map[symbol_to_id[s]]
+                for s in active_switches
+            ]
+
+            return False, [], failing_abstract_actions
+
+     # If all switches are consistent, compute concrete plans
+    print("All switches consistent.")
+
     plans = []
 
     assumptions = [(s, True) for s in switch_symbols]
@@ -190,4 +210,27 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
             atoms = [str(a) for a in model.symbols(shown=True)]
             plans.append(atoms)
 
-    return True, plans
+    activated_abstract_actions = [
+        switch_map[symbol_to_id[s]]
+        for s in switch_symbols
+    ]
+
+    return True, plans, activated_abstract_actions
+
+def write_forbid_abstract_lp(abstract_atoms_to_forbid, output_path):
+    lines = []
+
+    print("\n[DEBUG] Forbidding the following abstract actions:")
+
+    for atom in abstract_atoms_to_forbid:
+        atom_str = str(atom)
+
+        # convert occurs_abstract(...) → occurs(...)
+        concrete_atom = atom_str.replace("occurs_abstract", "occurs")
+
+        print("   ", concrete_atom)
+
+        lines.append(f":- {concrete_atom}.")
+
+    with open(output_path, "w") as f:
+        f.write("\n".join(lines))

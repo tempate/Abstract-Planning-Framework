@@ -85,14 +85,16 @@ def compute_concrete_from_abstract(
         horizon = abstract_result["horizon"]
 
     base_dir = os.path.dirname(concrete_result["sasFile"])
+
     output_c_lp = os.path.join(base_dir, "output_c.lp")
     output_a_lp = os.path.join(base_dir, "abstract", "output_a.lp")
-
+    
     clingo_dir = os.path.join(base_dir, "clingo")
     os.makedirs(clingo_dir, exist_ok=True)
 
     occurs_abs_lp_path = os.path.join(clingo_dir, "occurs_abs.lp")
     map_lp_path = os.path.join(clingo_dir, "map.lp")
+    forbid_lp_path = os.path.join(clingo_dir, "forbid_abstract.lp")
 
     t2_1 = time.perf_counter()
 
@@ -121,81 +123,105 @@ def compute_concrete_from_abstract(
     print(f"Abstract LP generation: {t2 - t2_2:.3f}s")
     print(f"LP generation: {t2 - t2_1:.3f}s")
 
-    # Solve abstract LP
-    t_abs_solve_start = time.perf_counter()
-    abstract_models = run_clingo([output_a_lp], horizon)
-    abstract_atoms = abstract_models[0] if abstract_models else []
-    t_abs_solve_end = time.perf_counter()
-    print(f"Abstract solve: {t_abs_solve_end - t_abs_solve_start:.3f}s")
+    iteration = 0
+    forbid_atoms = []
 
-    t_occurs_start = time.perf_counter()
-    write_occurs_abs_lp(abstract_atoms, occurs_abs_lp_path)
-    t_occurs_end = time.perf_counter()
-    print(f"occurs_abs.lp generation: {t_occurs_end - t_occurs_start:.3f}s")
+    while True:
+        iteration += 1
+        print(f"\n=== ITERATION {iteration} ===")
 
-    # ---- abstraction mapping ----
-    t_map_start = time.perf_counter()
+        # Solve abstract plan
+        abs_start = time.perf_counter()
+        
+        abstract_lp_files = [output_a_lp]
 
-    # create_map_lp(
-    #     occurs_abs_path=occurs_abs_lp_path,
-    #     output_path=map_lp_path,
-    #     abstract_symbol=abstract_symbol,
-    #     concrete_objects=concrete_objects
-    # )
+        if forbid_atoms:
+            write_forbid_abstract_lp(forbid_atoms, forbid_lp_path)
+            abstract_lp_files.append(forbid_lp_path)
 
+        abstract_models = run_clingo(abstract_lp_files, horizon)
 
-    switch_map = create_map_lp_with_switch_atoms(
-        occurs_abs_lp_path,
-        map_lp_path,
-        abstract_symbol,
-        concrete_objects
-    )
+        abs_end = time.perf_counter()
+        print(f"Abstract solving time: {abs_end - abs_start:.3f}s")
 
-    t_map_end = time.perf_counter()
-    print(f"Mapping LP generation: {t_map_end - t_map_start:.3f}s")
+        if not abstract_models:
+            print("No abstract plan possible with current constraints")
+            print(f"Total runtime: {time.perf_counter() - start_time:.3f}s")
 
-    # -----------------------------
-    # Concrete incremental solving
-    # -----------------------------
-    ok, plans = solve_concrete_incremental(
-        [output_c_lp, occurs_abs_lp_path, map_lp_path],
-        horizon,
-        switch_map
-    )
+            return {
+                "horizon": horizon,
+                "numPlans": 0,
+                "plans": [],
+                "success": False,
+            }
 
-    print(f"[DONE] Total time: {time.perf_counter() - start_time:.3f}s")
+        abstract_atoms = abstract_models[0]
 
-    return {
-        "horizon": horizon,
-        "numPlans": len(plans) if ok else 0,
-        "plans": plans if ok else [],
-        "success": ok
-    }
+        # Generate occurs_abs.lp from abstract plan 
+        occurs_start = time.perf_counter()
 
+        write_occurs_abs_lp(abstract_atoms, occurs_abs_lp_path)
 
+        occurs_end = time.perf_counter()
+        print(f"occurs_abs generation time: {occurs_end - occurs_start:.3f}s")
 
-    # Solve concrete LP
-    t_conc_solve_start = time.perf_counter()
-    concrete_models = run_clingo(
-        [output_c_lp, occurs_abs_lp_path, map_lp_path],
-        horizon
-    )
-    t_conc_solve_end = time.perf_counter()
-    print(f"Concrete solve: {t_conc_solve_end - t_conc_solve_start:.3f}s")
+        # Create mapping LP with switches
+        map_start = time.perf_counter()
 
-    t3 = time.perf_counter()
-    print(f"Concrete solve: {t3 - t2:.3f}s")
+        switch_map = create_map_lp_with_switch_atoms(
+            occurs_abs_lp_path,
+            map_lp_path,
+            abstract_symbol,
+            concrete_objects,
+        )
 
-    plans = [[atom for atom in model] for model in concrete_models]
+        map_end = time.perf_counter()
+        print(f"Mapping generation time: {map_end - map_start:.3f}s")
 
-    print(f"[DONE] Total time: {time.perf_counter() - start_time:.3f}s")
+        # Concrete incremental solving
+        conc_start = time.perf_counter()
 
-    return {
-        "horizon": horizon,
-        "numPlans": len(plans),
-        "plans": plans,
-    }
+        ok, plans, bad_abstract_actions = solve_concrete_incremental(
+            [output_c_lp, occurs_abs_lp_path, map_lp_path],
+            horizon,
+            switch_map,
+        )
 
+        conc_end = time.perf_counter()
+        print(f"Concrete solving time: {conc_end - conc_start:.3f}s")
+
+        if ok:
+            print("Concrete plan found")
+            print(f"Total runtime: {time.perf_counter() - start_time:.3f}s")
+            
+            return {
+                "horizon": horizon,
+                "numPlans": len(plans),
+                "plans": plans,
+                "success": True
+            }
+
+        # Refine abstraction: only forbid actions with the abstract symbol
+        refine_start = time.perf_counter()
+        
+        bad_hangar_actions = [
+            atom for atom in bad_abstract_actions
+            if abstract_symbol in atom
+        ]
+
+        print("Refining abstraction by forbidding hangar actions:")
+        for atom in bad_hangar_actions:
+            print("   ", atom)
+
+        # Avoid duplicates
+        for atom in bad_hangar_actions:
+            if atom not in forbid_atoms:
+                forbid_atoms.append(atom)
+
+        refine_end = time.perf_counter()
+        print(f"Refinement time: {refine_end - refine_start:.3f}s")
+
+        # Loop continues for next iteration
 
 if __name__ == "__main__":
     main()
