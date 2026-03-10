@@ -130,7 +130,12 @@ def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbo
                 f"occurs_abstract({action_str},{time_str}), {switch_atom}."
             )
 
-        switch_map[switch_id] = f"occurs_abstract({action_str},{time_str})"
+         # store as dict
+        switch_map[switch_id] = {
+            "atom": f"occurs_abstract({action_str},{time_str})",
+            "is_abstract": abstract_symbol in action_str
+        }
+
         switch_id += 1
 
     with open(output_path, "w") as f:
@@ -163,42 +168,41 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
     active_switches = []
 
     # Incrementally activate switches and test satisfiability
-    for sym in switch_symbols:
+    for i, sym in enumerate(switch_symbols):
+        switch_id = symbol_to_id[sym]
+        action_info = switch_map[switch_id]
 
         active_switches.append(sym)
 
-        assumptions = []
+        # Look ahead: test if next action is abstract
+        next_is_abstract = False
+        if i + 1 < len(switch_symbols):
+            next_id = symbol_to_id[switch_symbols[i + 1]]
+            next_is_abstract = switch_map[next_id]["is_abstract"]
 
-        # Set currently active switches to true
-        for s in active_switches:
-            assumptions.append((s, True))
+        if next_is_abstract:
+            # Build assumptions: currently active = True, others = False
+            assumptions = [(s, True) for s in active_switches] + \
+                          [(s, False) for s in switch_symbols if s not in active_switches]
 
-        # Set all remaining switches to false
-        for s in switch_symbols:
-            if s not in active_switches:
-                assumptions.append((s, False))
+            print("\n[DEBUG] Testing before abstract action:", next_id)
+            print("   Active switches:", [symbol_to_id[s] for s in active_switches])
 
-        print("\n[DEBUG] Trying with active switches:",
-              [symbol_to_id[s] for s in active_switches])
+            result = ctl.solve(assumptions=assumptions)
 
-        result = ctl.solve(assumptions=assumptions)
+            if result.unsatisfiable:
+                failing_abstract_actions = [
+                    switch_map[symbol_to_id[s]]["atom"]
+                    for s in active_switches
+                    if switch_map[symbol_to_id[s]]["is_abstract"]
+                ]
+                print("INCONSISTENT before abstract action:", next_id)
+                print("   Failing abstract actions:")
+                for a in failing_abstract_actions:
+                    print("   ", a)
+                return False, [], failing_abstract_actions
 
-        # Detect the first switch that causes unsatisfiability
-        if result.unsatisfiable:
-            failing_id = symbol_to_id[sym]
-
-            print("INCONSISTENT when enabling switch:", failing_id)
-            print("   Corresponding abstract action:")
-            print("   ", switch_map[failing_id])
-
-            failing_abstract_actions = [
-                switch_map[symbol_to_id[s]]
-                for s in active_switches
-            ]
-
-            return False, [], failing_abstract_actions
-
-     # If all switches are consistent, compute concrete plans
+    # If all switches are consistent, compute concrete plans
     print("All switches consistent.")
 
     plans = []
@@ -211,11 +215,127 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
             plans.append(atoms)
 
     activated_abstract_actions = [
-        switch_map[symbol_to_id[s]]
+        switch_map[symbol_to_id[s]]["atom"]
         for s in switch_symbols
+        if switch_map[symbol_to_id[s]]["is_abstract"]
     ]
 
     return True, plans, activated_abstract_actions
+
+
+def solve_concrete_decremental(lp_files, horizon, switch_map):
+    ctl = clingo.Control(["-c", f"horizon={horizon}"])
+
+    for lp in lp_files:
+        ctl.load(lp)
+
+    ctl.ground([("base", [])])
+
+    switch_symbols = []
+    symbol_to_id = {}
+
+    for atom in ctl.symbolic_atoms:
+        if atom.symbol.name == "switch":
+            switch_symbols.append(atom.symbol)
+            symbol_to_id[atom.symbol] = atom.symbol.arguments[0].number
+
+    switch_symbols.sort(key=lambda s: symbol_to_id[s])
+
+    print(f"[DEBUG] Found {len(switch_symbols)} switches")
+
+    # Start with everything active
+    active_switches = set(switch_symbols)
+
+    def solve_with_active():
+        assumptions = [
+            (s, True) if s in active_switches else (s, False)
+            for s in switch_symbols
+        ]
+        return ctl.solve(assumptions=assumptions)
+
+    print("[DEBUG] Testing with all switches active")
+
+    result = solve_with_active()
+
+    # If SAT immediately -> return plans
+    if not result.unsatisfiable:
+        print("All switches consistent.")
+
+        plans = []
+
+        assumptions = [(s, True) for s in switch_symbols]
+
+        with ctl.solve(yield_=True, assumptions=assumptions) as handle:
+            for model in handle:
+                atoms = [str(a) for a in model.symbols(shown=True)]
+                plans.append(atoms)
+
+        activated_abstract_actions = [
+            switch_map[symbol_to_id[s]]["atom"]
+            for s in switch_symbols
+            if switch_map[symbol_to_id[s]]["is_abstract"]
+        ]
+
+        return True, plans, activated_abstract_actions
+
+    print("[DEBUG] Full plan UNSAT, starting reverse disabling")
+
+    # Disable abstract actions from the end
+    disabled_abstract = None
+
+    for sym in reversed(switch_symbols):
+
+        switch_id = symbol_to_id[sym]
+
+        if not switch_map[switch_id]["is_abstract"]:
+            continue
+
+        print("[DEBUG] Disabling abstract action:", switch_id)
+
+        active_switches.remove(sym)
+        disabled_abstract = sym
+
+        result = solve_with_active()
+
+        if not result.unsatisfiable:
+            print("SAT after disabling switch:", switch_id)
+
+            plans = []
+
+            assumptions = [
+                (s, True) if s in active_switches else (s, False)
+                for s in switch_symbols
+            ]
+
+            with ctl.solve(yield_=True, assumptions=assumptions) as handle:
+                for model in handle:
+                    atoms = [str(a) for a in model.symbols(shown=True)]
+                    plans.append(atoms)
+
+            activated_abstract_actions = [
+                switch_map[symbol_to_id[s]]["atom"]
+                for s in active_switches
+                if switch_map[symbol_to_id[s]]["is_abstract"]
+            ]
+
+            return True, plans, activated_abstract_actions
+
+    # If still UNSAT → forbid earliest active abstract action
+    print("[DEBUG] Still UNSAT → computing minimal refinement")
+
+    earliest_abstract = None
+
+    for s in switch_symbols:
+        sid = symbol_to_id[s]
+
+        if switch_map[sid]["is_abstract"]:
+            earliest_abstract = switch_map[sid]["atom"]
+            break
+
+    print("[DEBUG] Earliest failing abstract action:")
+    print("   ", earliest_abstract)
+
+    return False, [], [earliest_abstract]
 
 def write_forbid_abstract_lp(abstract_atoms_to_forbid, output_path):
     lines = []

@@ -181,10 +181,16 @@ def compute_concrete_from_abstract(
         # Concrete incremental solving
         conc_start = time.perf_counter()
 
-        ok, plans, bad_abstract_actions = solve_concrete_incremental(
+        # ok, plans, bad_abstract_actions = solve_concrete_incremental(
+        #     [output_c_lp, occurs_abs_lp_path, map_lp_path],
+        #     horizon,
+        #     switch_map,
+        # )
+
+        ok, plans, bad_abstract_actions = solve_concrete_decremental(
             [output_c_lp, occurs_abs_lp_path, map_lp_path],
             horizon,
-            switch_map,
+            switch_map
         )
 
         conc_end = time.perf_counter()
