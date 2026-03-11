@@ -27,6 +27,11 @@ def main():
         required=True,
         help="One or more concrete objects mapped to the abstract symbol"
     )
+    parser.add_argument(
+        "--mode",
+        choices=["inc", "dec"],
+        default="inc"
+    )
 
     args = parser.parse_args()
 
@@ -40,14 +45,20 @@ def main():
         time_step=args.time_step,
         abstract_symbol=args.abstract_symbol,
         concrete_objects=args.concrete_objects,
+        solving_mode=args.mode,
     )
 
     print("\n=== RESULT ===")
     print(f"Horizon: {result['horizon']}")
     print(f"Plans found: {result['numPlans']}")
+
     for i, plan in enumerate(result["plans"], 1):
         print(f"\nPlan {i}:")
-        for atom in plan:
+
+        # sort by timestep (last argument of occurs)
+        sorted_plan = sorted(plan, key=lambda a: int(str(a).split(",")[-1].rstrip(")")))
+
+        for atom in sorted_plan:
             print(" ", atom)
 
 
@@ -61,6 +72,7 @@ def compute_concrete_from_abstract(
     time_step=False,
     abstract_symbol=None,
     concrete_objects=None,
+    solving_mode="inc"
 ):
     start_time = time.perf_counter()
 
@@ -181,17 +193,18 @@ def compute_concrete_from_abstract(
         # Concrete incremental solving
         conc_start = time.perf_counter()
 
-        # ok, plans, bad_abstract_actions = solve_concrete_incremental(
-        #     [output_c_lp, occurs_abs_lp_path, map_lp_path],
-        #     horizon,
-        #     switch_map,
-        # )
-
-        ok, plans, bad_abstract_actions = solve_concrete_decremental(
-            [output_c_lp, occurs_abs_lp_path, map_lp_path],
-            horizon,
-            switch_map
-        )
+        if solving_mode == "inc":
+            ok, plans, bad_abstract_actions = solve_concrete_incremental(
+                [output_c_lp, occurs_abs_lp_path, map_lp_path],
+                horizon,
+                switch_map,
+            )
+        if solving_mode == "dec":
+            ok, plans, bad_abstract_actions = solve_concrete_decremental(
+                [output_c_lp, occurs_abs_lp_path, map_lp_path],
+                horizon,
+                switch_map
+            )
 
         conc_end = time.perf_counter()
         print(f"Concrete solving time: {conc_end - conc_start:.3f}s")

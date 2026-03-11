@@ -287,38 +287,40 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
 
         switch_id = symbol_to_id[sym]
 
-        if not switch_map[switch_id]["is_abstract"]:
-            continue
-
-        print("[DEBUG] Disabling abstract action:", switch_id)
+        print("[DEBUG] Disabling switch:", switch_id)
 
         active_switches.remove(sym)
-        disabled_abstract = sym
 
-        result = solve_with_active()
+        # Only solve if this was an abstract action
+        if switch_map[switch_id]["is_abstract"]:
 
-        if not result.unsatisfiable:
-            print("SAT after disabling switch:", switch_id)
+            print("[DEBUG] Testing after abstract action disable:", switch_id)
 
-            plans = []
+            result = solve_with_active()
 
-            assumptions = [
-                (s, True) if s in active_switches else (s, False)
-                for s in switch_symbols
-            ]
+            if not result.unsatisfiable:
 
-            with ctl.solve(yield_=True, assumptions=assumptions) as handle:
-                for model in handle:
-                    atoms = [str(a) for a in model.symbols(shown=True)]
-                    plans.append(atoms)
+                print("SAT after disabling switch:", switch_id)
 
-            activated_abstract_actions = [
-                switch_map[symbol_to_id[s]]["atom"]
-                for s in active_switches
-                if switch_map[symbol_to_id[s]]["is_abstract"]
-            ]
+                plans = []
 
-            return True, plans, activated_abstract_actions
+                assumptions = [
+                    (s, True) if s in active_switches else (s, False)
+                    for s in switch_symbols
+                ]
+
+                with ctl.solve(yield_=True, assumptions=assumptions) as handle:
+                    for model in handle:
+                        atoms = [str(a) for a in model.symbols(shown=True)]
+                        plans.append(atoms)
+
+                activated_abstract_actions = [
+                    switch_map[symbol_to_id[s]]["atom"]
+                    for s in active_switches
+                    if switch_map[symbol_to_id[s]]["is_abstract"]
+                ]
+
+                return True, plans, activated_abstract_actions
 
     # If still UNSAT → forbid earliest active abstract action
     print("[DEBUG] Still UNSAT → computing minimal refinement")
