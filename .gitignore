@@ -1,2 +1,6 @@
 ven/
 temp/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
