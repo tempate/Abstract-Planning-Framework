@@ -1,12 +1,13 @@
 import os
 import clingo
 
+THREADS = os.cpu_count()
 
 def run_clingo(lp_files, horizon):
     models = []
 
     # Equivalent to CLI: clingo files -c horizon=X
-    ctl = clingo.Control(["-c", f"horizon={horizon}"])
+    ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS)])
 
     # Load all input files
     for lp in lp_files:
@@ -144,7 +145,7 @@ def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbo
     return switch_map
 
 def solve_concrete_incremental(lp_files, horizon, switch_map):
-    ctl = clingo.Control(["-c", f"horizon={horizon}"])
+    ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS)])
 
     for lp in lp_files:
         ctl.load(lp)
@@ -224,7 +225,7 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
 
 
 def solve_concrete_decremental(lp_files, horizon, switch_map):
-    ctl = clingo.Control(["-c", f"horizon={horizon}"])
+    ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS)])
 
     for lp in lp_files:
         ctl.load(lp)
