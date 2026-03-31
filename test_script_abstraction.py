@@ -18,14 +18,16 @@ def main():
     parser.add_argument("--time-step", action="store_true")
     parser.add_argument(
         "--abstract-symbol",
-        required=True,
-        help="Abstract symbol used in abstraction mapping"
+        required=False,
+        default=None,
+        help="Abstract symbol used in abstraction mapping (optional)"
     )
     parser.add_argument(
         "--concrete-objects",
         nargs="+",
-        required=True,
-        help="One or more concrete objects mapped to the abstract symbol"
+        required=False,
+        default=None,
+        help="One or more concrete objects mapped to the abstract symbol (optional)"
     )
     parser.add_argument(
         "--mode",
@@ -225,10 +227,13 @@ def compute_concrete_from_abstract(
         # Refine abstraction: only forbid actions with the abstract symbol
         refine_start = time.perf_counter()
         
-        bad_hangar_actions = [
-            atom for atom in bad_abstract_actions
-            if abstract_symbol in atom
-        ]
+        bad_hangar_actions = []
+
+        for atom in bad_abstract_actions:
+            if abstract_symbol and abstract_symbol in atom:
+                bad_hangar_actions.append(atom)
+            elif '"drive"' in atom:
+                bad_hangar_actions.append(atom)
 
         print("Refining abstraction by forbidding hangar actions:")
         for atom in bad_hangar_actions:

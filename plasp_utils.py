@@ -75,13 +75,13 @@ def append_pddl_facts_to_lp(pddl_path, lp_output_path):
             if line.startswith("(fuelcost"):
                 parts = line.replace("(", "").replace(")", "").split()
                 _, level, x, y = parts
-                fuelcost_facts.append(f"fuelcost({level},{x},{y}).")
+                fuelcost_facts.append(f'fuelcost("{level}","{x}","{y}").')
 
             # sum
             elif line.startswith("(sum"):
                 parts = line.replace("(", "").replace(")", "").split()
                 _, a, b, c = parts
-                sum_facts.append(f"sum({a},{b},{c}).")
+                sum_facts.append(f'sum("{a}","{b}","{c}").')
 
     with open(lp_output_path, "a") as f:
         f.write("\n% --- ADDED FROM PDDL ---\n")
