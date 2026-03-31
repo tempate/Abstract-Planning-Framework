@@ -1,5 +1,6 @@
 import os
 import clingo
+import re
 
 THREADS = os.cpu_count()
 
@@ -115,7 +116,32 @@ def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbo
         # choice over switches
         lines_out.append(f"0 {{ {switch_atom} }} 1.")
 
-        if abstract_symbol in action_str:
+        if '"drive"' in action_str:
+
+            match = re.search(r'action\(\((.*)\)\)', action_str)
+            if not match:
+                raise ValueError(f"Cannot parse action: {action_str}")
+
+            args = [a.strip().strip('"') for a in match.group(1).split(",")]
+
+            if args[0] != "drive":
+                raise ValueError(f"Unexpected: {args}")
+
+            truck = args[1]
+            X = args[2]
+            Y = args[3]
+
+            lines_out.append(
+f"""1 {{
+    occurs(action(drive,{truck},{X},{Y},Post,Diff,Pre),{time_str}) :
+        fuelcost(Diff,{X},{Y}),
+        sum(Pre,Diff,Post)
+}} 1 :-
+    occurs_abstract({action_str},{time_str}), {switch_atom}."""
+            )
+
+            is_abstract = True
+        elif abstract_symbol and abstract_symbol in action_str:
             choices = []
             for obj in concrete_objects:
                 new_action = action_str.replace(abstract_symbol, obj)
@@ -125,16 +151,20 @@ def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbo
                 f"1 {{ {'; '.join(choices)} }} 1 :- "
                 f"occurs_abstract({action_str},{time_str}), {switch_atom}."
             )
+
+            is_abstract = True
         else:
             lines_out.append(
                 f"occurs({action_str},{time_str}) :- "
                 f"occurs_abstract({action_str},{time_str}), {switch_atom}."
             )
 
+            is_abstract = False
+
          # store as dict
         switch_map[switch_id] = {
             "atom": f"occurs_abstract({action_str},{time_str})",
-            "is_abstract": abstract_symbol in action_str
+            "is_abstract": is_abstract
         }
 
         switch_id += 1

@@ -3,9 +3,10 @@ import os
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 CLINGO_BIN = os.path.join(CURRENT_DIRECTORY, "lib", "clingo", "build", "bin", "clingo")
+THREADS = os.cpu_count()
 
 def run_clingo(lp_files, horizon):
-    cmd = [CLINGO_BIN] + lp_files + ["-c", f"horizon={horizon}"]
+    cmd = [CLINGO_BIN] + lp_files + ["-c", f"horizon={horizon}", "-t", str(THREADS)]
 
     result = subprocess.run(
         cmd,

@@ -4,7 +4,7 @@ import time
 import argparse
 
 from fastdownward_service import run_fastdownward_service
-from plasp_utils import generate_lp_with_plasp
+from plasp_utils import generate_lp_with_plasp, append_pddl_facts_to_lp
 from clingo_utils_api import *
 
 def main():
@@ -94,7 +94,7 @@ def compute_concrete_from_abstract(
 
     # If horizon was not provided, use Fast Downward's horizon
     if horizon is None:
-        horizon = abstract_result["horizon"]
+        horizon = concrete_result["horizon"]
 
     base_dir = os.path.dirname(concrete_result["sasFile"])
 
@@ -118,6 +118,8 @@ def compute_concrete_from_abstract(
         is_pddl_instance=False,
         abstract_time_steps=time_step
     )
+
+    append_pddl_facts_to_lp(concrete_problem_path, output_c_lp)
 
     t2_2 = time.perf_counter()
     print(f"Concrete LP generation: {t2_2 - t2_1:.3f}s")

@@ -62,3 +62,28 @@ def generate_lp_with_plasp(
 
     if result.returncode != 0:
         raise RuntimeError(f"plasp failed:\n{result.stderr}")
+
+def append_pddl_facts_to_lp(pddl_path, lp_output_path):
+    fuelcost_facts = []
+    sum_facts = []
+
+    with open(pddl_path, "r") as f:
+        for line in f:
+            line = line.strip()
+
+            # fuelcost
+            if line.startswith("(fuelcost"):
+                parts = line.replace("(", "").replace(")", "").split()
+                _, level, x, y = parts
+                fuelcost_facts.append(f"fuelcost({level},{x},{y}).")
+
+            # sum
+            elif line.startswith("(sum"):
+                parts = line.replace("(", "").replace(")", "").split()
+                _, a, b, c = parts
+                sum_facts.append(f"sum({a},{b},{c}).")
+
+    with open(lp_output_path, "a") as f:
+        f.write("\n% --- ADDED FROM PDDL ---\n")
+        for fact in fuelcost_facts + sum_facts:
+            f.write(fact + "\n")
