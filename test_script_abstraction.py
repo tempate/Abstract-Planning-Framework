@@ -4,7 +4,7 @@ import time
 import argparse
 
 from fastdownward_service import run_fastdownward_service
-from plasp_utils import generate_lp_with_plasp, append_pddl_facts_to_lp
+from plasp_utils import *
 from clingo_utils_api import *
 
 def main():
@@ -121,6 +121,7 @@ def compute_concrete_from_abstract(
         abstract_time_steps=time_step
     )
 
+    add_switch_to_lp_rule(output_c_lp)
     append_pddl_facts_to_lp(concrete_problem_path, output_c_lp)
 
     t2_2 = time.perf_counter()
