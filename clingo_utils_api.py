@@ -281,8 +281,7 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
 
     print("[DEBUG] Full plan UNSAT, starting reverse disabling")
 
-    # Disable abstract actions from the end
-    disabled_abstract = None
+    disabled_switches = []
 
     for sym in reversed(switch_symbols):
 
@@ -291,6 +290,7 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
         print("[DEBUG] Disabling switch:", switch_id)
 
         active_switches.remove(sym)
+        disabled_switches.append(sym)
 
         # Only solve if this was an abstract action
         if switch_map[switch_id]["is_abstract"]:
@@ -321,7 +321,16 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
                     if switch_map[symbol_to_id[s]]["is_abstract"]
                 ]
 
-                return True, plans, activated_abstract_actions
+                # Add the last disabled one (if abstract)
+                if switch_map[switch_id]["is_abstract"]:
+                    activated_abstract_actions.append(
+                        switch_map[switch_id]["atom"]
+                    )
+
+                # Remove duplicates
+                activated_abstract_actions = list(set(activated_abstract_actions))
+
+                return False, plans, activated_abstract_actions
 
     # If still UNSAT → forbid earliest active abstract action
     print("[DEBUG] Still UNSAT → computing minimal refinement")
