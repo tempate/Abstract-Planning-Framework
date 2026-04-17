@@ -6,6 +6,7 @@ import argparse
 from fastdownward_service import run_fastdownward_service
 from plasp_utils import *
 from clingo_utils_api import *
+from log_utils import *
 
 def main():
     parser = argparse.ArgumentParser()
@@ -35,6 +36,10 @@ def main():
 
     args = parser.parse_args()
 
+    print("Starting")
+
+    logger = get_logger()
+
     result = compute_concrete_from_abstract(
         abstract_domain_path=args.abstract_domain,
         abstract_problem_path=args.abstract_problem,
@@ -51,6 +56,9 @@ def main():
     print("\n=== RESULT ===")
     print(f"Horizon: {result['horizon']}")
     print(f"Plans found: {result['numPlans']}")
+
+    logger.info(f"Success: {result['success']}")
+    logger.info(f"Plans found: {result['numPlans']}")
 
     for i, plan in enumerate(result["plans"], 1):
         print(f"\nPlan {i}:")
@@ -74,7 +82,9 @@ def compute_concrete_from_abstract(
     concrete_objects=None,
     solving_mode="inc"
 ):
-    start_time = time.perf_counter()
+    total_start = time.perf_counter()
+
+    fd_start = time.perf_counter()
 
     # Open files as binary (Fast Downward expects bytes)
     with open(concrete_domain_path, "rb") as cd, \
@@ -89,14 +99,24 @@ def compute_concrete_from_abstract(
             abstract_problem_file=ap
         )
 
-    t1 = time.perf_counter()
-    print(f"Fast Downward: {t1 - start_time:.3f}s")
+    fd_time = time.perf_counter() - fd_start
+
+    base_dir = os.path.dirname(concrete_result["sasFile"])
 
     # If horizon was not provided, use Fast Downward's horizon
     if horizon is None:
         horizon = abstract_result["horizon"]
 
-    base_dir = os.path.dirname(concrete_result["sasFile"])
+    logger, debug_dir = setup_debug_logger(base_dir)
+
+    logger.info("=" * 70)
+    logger.info("NEW PLANNING RUN STARTED")
+    logger.info(f"Horizon: {horizon}")
+    logger.info(f"Encoding: {encoding}")
+    logger.info(f"Mode: {solving_mode}")
+    logger.info(f"Fast Downward time: {fd_time:.3f}s")
+
+    print("Directory: ", base_dir)
 
     output_c_lp = os.path.join(base_dir, "output_c.lp")
     output_a_lp = os.path.join(base_dir, "abstract", "output_a.lp")
@@ -108,7 +128,9 @@ def compute_concrete_from_abstract(
     map_lp_path = os.path.join(clingo_dir, "map.lp")
     forbid_lp_path = os.path.join(clingo_dir, "forbid_abstract.lp")
 
-    t2_1 = time.perf_counter()
+    lp_start = time.perf_counter()
+
+    concrete_lp_start = time.perf_counter()
 
     # Concrete LP
     generate_lp_with_plasp(
@@ -121,8 +143,10 @@ def compute_concrete_from_abstract(
 
     add_switch_to_lp_rule(output_c_lp)
 
-    t2_2 = time.perf_counter()
-    print(f"Concrete LP generation: {t2_2 - t2_1:.3f}s")
+    concrete_lp_time = time.perf_counter() - concrete_lp_start
+    logger.info(f"Concrete LP generation: {concrete_lp_time:.3f}s")
+
+    abstract_lp_start = time.perf_counter()
 
     # Abstract LP
     generate_lp_with_plasp(
@@ -133,16 +157,23 @@ def compute_concrete_from_abstract(
         abstract_time_steps=time_step
     )
 
-    t2 = time.perf_counter()
-    print(f"Abstract LP generation: {t2 - t2_2:.3f}s")
-    print(f"LP generation: {t2 - t2_1:.3f}s")
+    abstract_lp_time = time.perf_counter() - abstract_lp_start
+    logger.info(f"Abstract LP generation: {abstract_lp_time:.3f}s")
+
+    lp_total = time.perf_counter() - lp_start
+    logger.info(f"Total LP generation: {lp_total:.3f}s")
 
     iteration = 0
     forbid_atoms = []
 
     while True:
         iteration += 1
-        print(f"\n=== ITERATION {iteration} ===")
+        iter_start = time.perf_counter()
+
+        logger.info("")
+        logger.info("=" * 50)
+        logger.info(f"ITERATION {iteration}")
+        logger.info("=" * 50)
 
         # Solve abstract plan
         abs_start = time.perf_counter()
@@ -153,14 +184,23 @@ def compute_concrete_from_abstract(
             write_forbid_abstract_lp(forbid_atoms, forbid_lp_path)
             abstract_lp_files.append(forbid_lp_path)
 
+            save_iteration_file(
+                debug_dir,
+                iteration,
+                "forbidden.lp",
+                "\n".join(forbid_atoms)
+            )
+        
         abstract_models = run_clingo(abstract_lp_files, horizon)
 
-        abs_end = time.perf_counter()
-        print(f"Abstract solving time: {abs_end - abs_start:.3f}s")
+        abs_time = log_phase(logger, "Abstract solving time", abs_start)
 
         if not abstract_models:
-            print("No abstract plan possible with current constraints")
-            print(f"Total runtime: {time.perf_counter() - start_time:.3f}s")
+            logger.info("No abstract plan possible.")
+            logger.info("FAILED")
+
+            total_time = time.perf_counter() - total_start
+            logger.info(f"TOTAL TIME: {total_time:.3f}s")
 
             return {
                 "horizon": horizon,
@@ -171,13 +211,23 @@ def compute_concrete_from_abstract(
 
         abstract_atoms = abstract_models[0]
 
+        logger.info("Abstract plan:")
+        for atom in abstract_atoms:
+            logger.info(f"  {atom}")
+
+        save_iteration_file(
+            debug_dir,
+            iteration,
+            "abstract_plan.lp",
+            "\n".join(abstract_atoms)
+        )
+
         # Generate occurs_abs.lp from abstract plan 
-        occurs_start = time.perf_counter()
+        occ_start = time.perf_counter()
 
         write_occurs_abs_lp(abstract_atoms, occurs_abs_lp_path)
 
-        occurs_end = time.perf_counter()
-        print(f"occurs_abs generation time: {occurs_end - occurs_start:.3f}s")
+        occ_time = log_phase(logger, "occurs_abs generation time", occ_start)
 
         # Create mapping LP with switches
         map_start = time.perf_counter()
@@ -189,8 +239,12 @@ def compute_concrete_from_abstract(
             concrete_objects,
         )
 
-        map_end = time.perf_counter()
-        print(f"Mapping generation time: {map_end - map_start:.3f}s")
+        map_time = log_phase(logger, "Mapping generation time", map_start)
+
+        logger.info("Switch map:")
+        logger.info(pformat(switch_map))
+
+        save_json(debug_dir, iteration, "switch_map.json", switch_map)
 
         # Concrete incremental solving
         conc_start = time.perf_counter()
@@ -208,13 +262,29 @@ def compute_concrete_from_abstract(
                 switch_map
             )
 
-        conc_end = time.perf_counter()
-        print(f"Concrete solving time: {conc_end - conc_start:.3f}s")
+        conc_time = log_phase(logger, "Concrete solving time", conc_start)
 
         if ok:
-            print("Concrete plan found")
-            print(f"Total runtime: {time.perf_counter() - start_time:.3f}s")
-            
+            logger.info("SUCCESS: Concrete plan found.")
+            logger.info("Plans:")
+            logger.info(pformat(plans))
+
+            save_json(debug_dir, iteration, "concrete_plans.json", plans)
+
+            iter_time = time.perf_counter() - iter_start
+            total_time = time.perf_counter() - total_start
+
+            logger.info(
+                f"ITER {iteration} SUMMARY | "
+                f"abs={abs_time:.3f}s | "
+                f"occ={occ_time:.3f}s | "
+                f"map={map_time:.3f}s | "
+                f"conc={conc_time:.3f}s | "
+                f"iter={iter_time:.3f}s"
+            )
+
+            logger.info(f"TOTAL TIME: {total_time:.3f}s")
+
             return {
                 "horizon": horizon,
                 "numPlans": len(plans),
@@ -223,24 +293,54 @@ def compute_concrete_from_abstract(
             }
 
         # Refine abstraction: only forbid actions with the abstract symbol
-        refine_start = time.perf_counter()
+        ref_start = time.perf_counter()
+
+        logger.info("Concrete solve failed.")
+        logger.info("Bad abstract actions:")
+
+        for atom in bad_abstract_actions:
+            logger.info(f"  {atom}")
+
+        save_iteration_file(
+            debug_dir,
+            iteration,
+            "bad_actions.lp",
+            "\n".join(bad_abstract_actions)
+        )
+
+        new_forbidden = []
         
-        bad_hangar_actions = [
-            atom for atom in bad_abstract_actions
-            if abstract_symbol in atom
-        ]
-
-        print("Refining abstraction by forbidding hangar actions:")
-        for atom in bad_hangar_actions:
-            print("   ", atom)
-
-        # Avoid duplicates
-        for atom in bad_hangar_actions:
-            if atom not in forbid_atoms:
+        for atom in bad_abstract_actions:
+            if abstract_symbol in atom and atom not in forbid_atoms:
                 forbid_atoms.append(atom)
+                new_forbidden.append(atom)
 
-        refine_end = time.perf_counter()
-        print(f"Refinement time: {refine_end - refine_start:.3f}s")
+        logger.info("New forbidden atoms:")
+
+        for atom in new_forbidden:
+            logger.info(f"  {atom}")
+
+        save_iteration_file(
+            debug_dir,
+            iteration,
+            "new_forbidden.lp",
+            "\n".join(new_forbidden)
+        )
+
+        ref_time = log_phase(logger, "Refinement time", ref_start)
+
+        iter_time = time.perf_counter() - iter_start
+
+        logger.info(
+            f"ITER {iteration} SUMMARY | "
+            f"abs={abs_time:.3f}s | "
+            f"occ={occ_time:.3f}s | "
+            f"map={map_time:.3f}s | "
+            f"conc={conc_time:.3f}s | "
+            f"ref={ref_time:.3f}s | "
+            f"forbidden={len(forbid_atoms)} | "
+            f"iter={iter_time:.3f}s"
+        )
 
         # Loop continues for next iteration
 
