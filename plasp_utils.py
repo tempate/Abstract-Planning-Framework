@@ -62,3 +62,23 @@ def generate_lp_with_plasp(
 
     if result.returncode != 0:
         raise RuntimeError(f"plasp failed:\n{result.stderr}")
+
+def add_switch_to_lp_rule(lp_path):
+    """
+    Modifies the LP file at lp_path by adding 'not switch(T)' to the
+    action occurrence constraint rule.
+    """
+    rule_to_modify = "1 {occurs(Action, T) : action(Action)} 1 :- time(T), T > 0."
+    modified_rule = "1 {occurs(Action, T) : action(Action)} 1 :- time(T), not switch(T), T > 0."
+
+    # Read the LP file
+    with open(lp_path, "r") as f:
+        lines = f.readlines()
+
+    # Modify the rule if it exists
+    with open(lp_path, "w") as f:
+        for line in lines:
+            if line.strip() == rule_to_modify:
+                f.write(modified_rule + "\n")
+            else:
+                f.write(line)

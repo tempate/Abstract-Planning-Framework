@@ -94,7 +94,7 @@ def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbo
         lines_in = [line.strip() for line in f if line.strip()]
 
     lines_out = []
-    switch_id = 0
+    switch_id = 1
     switch_map = {}  # switch_id -> abstract action
 
     for line in lines_in:
