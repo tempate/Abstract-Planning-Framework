@@ -105,7 +105,10 @@ def compute_concrete_from_abstract(
 
     # If horizon was not provided, use Fast Downward's horizon
     if horizon is None:
-        horizon = abstract_result["horizon"]
+        horizon = max(
+            abstract_result.get("horizon", 0),
+            concrete_result.get("horizon", 0)
+        )
 
     logger, debug_dir = setup_debug_logger(base_dir)
 
