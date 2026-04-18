@@ -174,6 +174,9 @@ def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbo
     
     logger.info(f"[MAP] Switches created={len(switch_map)}")
     logger.info(f"[FILES] wrote {output_path}")
+    logger.info("[MAP] Grounded plan:")
+    for line in lines_out:
+        logger.info(f"  {line}")
     log_phase(logger, "[MAP] create_map_lp_with_switch_atoms", start)
 
     return switch_map
@@ -304,7 +307,7 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
     result = solve_with_active()
 
     # If SAT immediately -> return plans
-    if not result.unsatisfiable:
+    if result.satisfiable:
         logger.info("[DEC] Full model SAT")
 
         plans = []
@@ -333,7 +336,7 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
 
         switch_id = symbol_to_id[sym]
 
-        logger.info(f"[DEC] Disabled switch={sid}")
+        logger.info(f"[DEC] Disabled switch={switch_id}")
 
         active_switches.remove(sym)
         disabled_switches.append(sym)
@@ -342,8 +345,8 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
         if switch_map[switch_id]["is_abstract"]:
             result = solve_with_active()
 
-            if not result.unsatisfiable:
-                logger.info(f"[DEC] SAT after disabling switch={sid}")
+            if result.satisfiable:
+                logger.info(f"[DEC] SAT after disabling switch={switch_id}")
 
                 plans = []
 

@@ -2,6 +2,7 @@ import os
 import time
 import json
 import logging
+import shutil
 from pprint import pformat
 from datetime import datetime
 
@@ -28,7 +29,7 @@ def setup_debug_logger(base_dir):
     return logger, debug_dir
 
 def save_iteration_file(debug_dir, iteration, name, content):
-    """ folder = os.path.join(debug_dir, f"iter_{iteration:03d}")
+    folder = os.path.join(debug_dir, f"iter_{iteration:03d}")
     os.makedirs(folder, exist_ok=True)
 
     path = os.path.join(folder, name)
@@ -36,16 +37,26 @@ def save_iteration_file(debug_dir, iteration, name, content):
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
 
-    return path """
+    return path
 
+def copy_iteration_file(debug_dir, iteration, file_path):
+    folder = os.path.join(debug_dir, f"iter_{iteration:03d}")
+    os.makedirs(folder, exist_ok=True)
+
+    filename = os.path.basename(file_path)
+    dst_path = os.path.join(folder, filename)
+
+    shutil.copyfile(file_path, dst_path)
+
+    return dst_path
 
 def save_json(debug_dir, iteration, name, obj):
-    """ save_iteration_file(
+    save_iteration_file(
         debug_dir,
         iteration,
         name,
         json.dumps(obj, indent=2)
-    ) """
+    )
 
 def log_phase(logger, name, start_time):
     elapsed = time.perf_counter() - start_time

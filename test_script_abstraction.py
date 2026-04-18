@@ -218,19 +218,18 @@ def compute_concrete_from_abstract(
         for atom in abstract_atoms:
             logger.info(f"  {atom}")
 
-        save_iteration_file(
-            debug_dir,
-            iteration,
-            "abstract_plan.lp",
-            "\n".join(abstract_atoms)
-        )
-
         # Generate occurs_abs.lp from abstract plan 
         occ_start = time.perf_counter()
 
         write_occurs_abs_lp(abstract_atoms, occurs_abs_lp_path)
 
         occ_time = log_phase(logger, "occurs_abs generation time", occ_start)
+
+        copy_iteration_file(
+            debug_dir,
+            iteration,
+            occurs_abs_lp_path
+        )
 
         # Create mapping LP with switches
         map_start = time.perf_counter()
@@ -244,10 +243,11 @@ def compute_concrete_from_abstract(
 
         map_time = log_phase(logger, "Mapping generation time", map_start)
 
-        logger.info("Switch map:")
-        logger.info(pformat(switch_map))
-
-        save_json(debug_dir, iteration, "switch_map.json", switch_map)
+        copy_iteration_file(
+            debug_dir,
+            iteration,
+            map_lp_path
+        )
 
         # Concrete incremental solving
         conc_start = time.perf_counter()
