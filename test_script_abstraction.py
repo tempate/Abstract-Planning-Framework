@@ -187,12 +187,12 @@ def compute_concrete_from_abstract(
             write_forbid_abstract_lp(forbid_atoms, forbid_lp_path)
             abstract_lp_files.append(forbid_lp_path)
 
-            save_iteration_file(
+            """ save_iteration_file(
                 debug_dir,
                 iteration,
                 "forbidden.lp",
                 "\n".join(forbid_atoms)
-            )
+            ) """
         
         abstract_models = run_clingo(abstract_lp_files, horizon)
 
@@ -272,7 +272,7 @@ def compute_concrete_from_abstract(
             logger.info("Plans:")
             logger.info(pformat(plans))
 
-            save_json(debug_dir, iteration, "concrete_plans.json", plans)
+            #save_json(debug_dir, iteration, "concrete_plans.json", plans)
 
             iter_time = time.perf_counter() - iter_start
             total_time = time.perf_counter() - total_start
@@ -304,12 +304,12 @@ def compute_concrete_from_abstract(
         for atom in bad_abstract_actions:
             logger.info(f"  {atom}")
 
-        save_iteration_file(
+        """ save_iteration_file(
             debug_dir,
             iteration,
             "bad_actions.lp",
             "\n".join(bad_abstract_actions)
-        )
+        ) """
 
         new_forbidden = []
         
@@ -323,12 +323,12 @@ def compute_concrete_from_abstract(
         for atom in new_forbidden:
             logger.info(f"  {atom}")
 
-        save_iteration_file(
+        """ save_iteration_file(
             debug_dir,
             iteration,
             "new_forbidden.lp",
             "\n".join(new_forbidden)
-        )
+        ) """
 
         ref_time = log_phase(logger, "Refinement time", ref_start)
 
