@@ -16,7 +16,7 @@ def run_clingo(lp_files, horizon):
     logger.info(f"[CLINGO] Threads={THREADS}")
     logger.info(f"[CLINGO] Files={lp_files}")
 
-    cmd = [CLINGO_BIN] + lp_files + ["-c", f"horizon={horizon}", "--seed=1", "--rand-freq=0", "--warn=none"]
+    cmd = [CLINGO_BIN] + lp_files + ["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"]
 
     result = subprocess.run(
         cmd,
