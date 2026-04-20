@@ -1,5 +1,6 @@
 ven/
 temp/
+temp_2/
 __pycache__/
 *.pyc
 *.pyo
