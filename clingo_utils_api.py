@@ -1,14 +1,24 @@
 import os
 import clingo
 import re
+import time
+from log_utils import *
 
 THREADS = os.cpu_count()
 
 def run_clingo(lp_files, horizon):
+    logger = get_logger()
+    start = time.perf_counter()
+
+    logger.info("[CLINGO] Starting solve")
+    logger.info(f"[CLINGO] Horizon={horizon}")
+    logger.info(f"[CLINGO] Threads={THREADS}")
+    logger.info(f"[CLINGO] Files={lp_files}")
+
     models = []
 
     # Equivalent to CLI: clingo files -c horizon=X
-    ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS)])
+    ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"])
 
     # Load all input files
     for lp in lp_files:
@@ -22,11 +32,19 @@ def run_clingo(lp_files, horizon):
         for model in handle:
             atoms = [str(symbol) for symbol in model.symbols(shown=True)]
             models.append(atoms)
+    
+    elapsed = time.perf_counter() - start
+
+    log_phase(logger, "[CLINGO] Solve runtime", start)
+    logger.info(f"[CLINGO] Models found={len(models)}")
 
     return models
 
 
 def write_occurs_abs_lp(atoms, output_path):
+    logger = get_logger()
+    start = time.perf_counter()
+
     lines = []
 
     for atom in atoms:
@@ -42,10 +60,16 @@ def write_occurs_abs_lp(atoms, output_path):
 
     with open(output_path, "w") as f:
         f.write("\n".join(lines))
+    
+    logger.info(f"[FILES] wrote {output_path}")
+    log_phase(logger, "[FILES] occurs_abs generation", start)
 
 
 def create_map_lp(occurs_abs_path, output_path, abstract_symbol, concrete_objects):
     # Example: concrete_objects = ["hangar1", "hangar2"]
+
+    logger = get_logger()
+    start = time.perf_counter()
 
     with open(occurs_abs_path, "r") as f:
         lines_in = [line.strip() for line in f if line.strip()]
@@ -89,13 +113,19 @@ def create_map_lp(occurs_abs_path, output_path, abstract_symbol, concrete_object
     # Write map.lp
     with open(output_path, "w") as f:
         f.write("\n".join(lines_out))
+    
+    logger.info(f"[FILES] wrote {output_path}")
+    log_phase(logger, "[MAP] create_map_lp", start)
 
 def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbol, concrete_objects):
+    logger = get_logger()
+    start = time.perf_counter()
+
     with open(occurs_abs_path, "r") as f:
         lines_in = [line.strip() for line in f if line.strip()]
 
     lines_out = []
-    switch_id = 0
+    switch_id = 1
     switch_map = {}  # switch_id -> abstract action
 
     for line in lines_in:
@@ -171,11 +201,23 @@ f"""1 {{
 
     with open(output_path, "w") as f:
         f.write("\n".join(lines_out))
+    
+    logger.info(f"[MAP] Switches created={len(switch_map)}")
+    logger.info(f"[FILES] wrote {output_path}")
+    logger.info("[MAP] Grounded plan:")
+    for line in lines_out:
+        logger.info(f"  {line}")
+    log_phase(logger, "[MAP] create_map_lp_with_switch_atoms", start)
 
     return switch_map
 
 def solve_concrete_incremental(lp_files, horizon, switch_map):
-    ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS)])
+    logger = get_logger()
+    start = time.perf_counter()
+
+    logger.info("[INC] Starting incremental solve")
+    
+    ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"])
 
     for lp in lp_files:
         ctl.load(lp)
@@ -191,10 +233,11 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
             switch_symbols.append(atom.symbol)
             symbol_to_id[atom.symbol] = atom.symbol.arguments[0].number
 
-     # Ensure switches are processed in numeric order
+    # Ensure switches are processed in numeric order
     switch_symbols.sort(key=lambda s: symbol_to_id[s])
 
-    print(f"[DEBUG] Found {len(switch_symbols)} switches")
+    
+    logger.info(f"[INC] Found switches={len(switch_symbols)}")
 
     active_switches = []
 
@@ -216,8 +259,7 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
             assumptions = [(s, True) for s in active_switches] + \
                           [(s, False) for s in switch_symbols if s not in active_switches]
 
-            print("\n[DEBUG] Testing before abstract action:", next_id)
-            print("   Active switches:", [symbol_to_id[s] for s in active_switches])
+            logger.info(f"[INC] Testing before abstract switch={next_id}")
 
             result = ctl.solve(assumptions=assumptions)
 
@@ -227,14 +269,14 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
                     for s in active_switches
                     if switch_map[symbol_to_id[s]]["is_abstract"]
                 ]
-                print("INCONSISTENT before abstract action:", next_id)
-                print("   Failing abstract actions:")
-                for a in failing_abstract_actions:
-                    print("   ", a)
+                logger.info("[INC] UNSAT detected")
+                logger.info(f"[INC] Failing abstract actions={failing_abstract_actions}")
+
+                log_phase(logger, "[INC] Runtime", start)
                 return False, [], failing_abstract_actions
 
     # If all switches are consistent, compute concrete plans
-    print("All switches consistent.")
+    logger.info("[INC] All prefixes SAT. Solving full model.")
 
     plans = []
 
@@ -251,11 +293,19 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
         if switch_map[symbol_to_id[s]]["is_abstract"]
     ]
 
+    logger.info(f"[INC] Plans found={len(plans)}")
+    log_phase(logger, "[INC] Runtime", start)
+
     return True, plans, activated_abstract_actions
 
 
 def solve_concrete_decremental(lp_files, horizon, switch_map):
-    ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS)])
+    logger = get_logger()
+    start = time.perf_counter()
+
+    logger.info("[DEC] Starting decremental solve")
+    
+    ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"])
 
     for lp in lp_files:
         ctl.load(lp)
@@ -272,7 +322,7 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
 
     switch_symbols.sort(key=lambda s: symbol_to_id[s])
 
-    print(f"[DEBUG] Found {len(switch_symbols)} switches")
+    logger.info(f"[DEC] Found switches={len(switch_symbols)}")
 
     # Start with everything active
     active_switches = set(switch_symbols)
@@ -284,13 +334,11 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
         ]
         return ctl.solve(assumptions=assumptions)
 
-    print("[DEBUG] Testing with all switches active")
-
     result = solve_with_active()
 
     # If SAT immediately -> return plans
-    if not result.unsatisfiable:
-        print("All switches consistent.")
+    if result.satisfiable:
+        logger.info("[DEC] Full model SAT")
 
         plans = []
 
@@ -307,9 +355,10 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
             if switch_map[symbol_to_id[s]]["is_abstract"]
         ]
 
+        log_phase(logger, "[DEC] Runtime", start)
         return True, plans, activated_abstract_actions
 
-    print("[DEBUG] Full plan UNSAT, starting reverse disabling")
+    logger.info("[DEC] Full model UNSAT. Reverse disabling begins.")
 
     disabled_switches = []
 
@@ -317,21 +366,17 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
 
         switch_id = symbol_to_id[sym]
 
-        print("[DEBUG] Disabling switch:", switch_id)
+        logger.info(f"[DEC] Disabled switch={switch_id}")
 
         active_switches.remove(sym)
         disabled_switches.append(sym)
 
         # Only solve if this was an abstract action
         if switch_map[switch_id]["is_abstract"]:
-
-            print("[DEBUG] Testing after abstract action disable:", switch_id)
-
             result = solve_with_active()
 
-            if not result.unsatisfiable:
-
-                print("SAT after disabling switch:", switch_id)
+            if result.satisfiable:
+                logger.info(f"[DEC] SAT after disabling switch={switch_id}")
 
                 plans = []
 
@@ -360,11 +405,10 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
                 # Remove duplicates
                 activated_abstract_actions = list(set(activated_abstract_actions))
 
+                log_phase(logger, "[DEC] Runtime", start)
                 return False, plans, activated_abstract_actions
 
     # If still UNSAT → forbid earliest active abstract action
-    print("[DEBUG] Still UNSAT → computing minimal refinement")
-
     earliest_abstract = None
 
     for s in switch_symbols:
@@ -374,15 +418,18 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
             earliest_abstract = switch_map[sid]["atom"]
             break
 
-    print("[DEBUG] Earliest failing abstract action:")
-    print("   ", earliest_abstract)
+    logger.info(f"[DEC] Minimal failing action={earliest_abstract}")
+    log_phase(logger, "[DEC] Runtime", start)
 
     return False, [], [earliest_abstract]
 
 def write_forbid_abstract_lp(abstract_atoms_to_forbid, output_path):
+    logger = get_logger()
+    start = time.perf_counter()
+    
     lines = []
 
-    print("\n[DEBUG] Forbidding the following abstract actions:")
+    logger.info("[REFINE] Writing forbid rules")
 
     for atom in abstract_atoms_to_forbid:
         atom_str = str(atom)
@@ -390,9 +437,12 @@ def write_forbid_abstract_lp(abstract_atoms_to_forbid, output_path):
         # convert occurs_abstract(...) → occurs(...)
         concrete_atom = atom_str.replace("occurs_abstract", "occurs")
 
-        print("   ", concrete_atom)
+        logger.info(f"[REFINE] forbid {concrete_atom}")
 
         lines.append(f":- {concrete_atom}.")
 
     with open(output_path, "w") as f:
         f.write("\n".join(lines))
+    
+    logger.info(f"[FILES] wrote {output_path}")
+    log_phase(logger, "[REFINE] forbid file generation", start)

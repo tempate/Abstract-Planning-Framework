@@ -3,6 +3,7 @@ import subprocess
 import uuid
 import time
 
+from log_utils import *
 
 def run_fastdownward_service(
     domain_file,
@@ -10,6 +11,12 @@ def run_fastdownward_service(
     abstract_domain_file=None,
     abstract_problem_file=None,
 ):
+    logger = get_logger()
+    total_start = time.perf_counter()
+
+    logger.info("=" * 65)
+    logger.info("[FD] Fast Downward service started")
+
     # Read file contents
     domain_bytes = domain_file.read()
     problem_bytes = problem_file.read()
@@ -19,6 +26,9 @@ def run_fastdownward_service(
     run_id = str(uuid.uuid4())
     base_dir = os.path.join(current_directory, "temp", run_id)
     os.makedirs(base_dir, exist_ok=True)
+
+    logger.info(f"[FD] Run ID: {run_id}")
+    logger.info(f"[FD] Temp directory: {base_dir}")
 
     # File paths
     domain_file_path = os.path.join(base_dir, "domain.pddl")
@@ -53,15 +63,28 @@ def run_fastdownward_service(
         "astar(lmcut())",
     ]
 
-    t_concrete_start = time.perf_counter()
+    logger.info("[FD] Running concrete planner")
+
+    concrete_start = time.perf_counter()
+
     result = subprocess.run(command, capture_output=True, text=True)
-    t_concrete_end = time.perf_counter()
-    print("Fastdownward concrete: ",  t_concrete_end - t_concrete_start)
+    
+    concrete_time = log_phase(
+            logger,
+            "[FD] Concrete planner runtime",
+            concrete_start
+        )
+
     if result.returncode != 0:
-        print(result)
+        logger.error("[FD] Concrete planner FAILED")
+        logger.error(result.stderr)
         raise RuntimeError(f"Fast Downward failed:\n{result.stderr}")
 
+    logger.info("[FD] Concrete planner success")
+
     horizon = calculate_horizon(plan_file_path)
+
+    logger.info(f"[FD] Concrete horizon={horizon}")
 
     concrete_result = {
         "horizon": horizon,
@@ -72,6 +95,8 @@ def run_fastdownward_service(
     # Optional abstract run
     abstract_result = None
     if abstract_domain_file and abstract_problem_file:
+        logger.info("[FD] Running abstract planner")
+
         abstract_dir = os.path.join(base_dir, "abstract")
         os.makedirs(abstract_dir, exist_ok=True)
 
@@ -100,20 +125,43 @@ def run_fastdownward_service(
             "astar(lmcut())",
         ]
 
-        t_abstract_start = time.perf_counter()
+        abstract_start = time.perf_counter()
         result = subprocess.run(cmd, capture_output=True, text=True)
-        t_abstract_end = time.perf_counter()
-        print("Fastdownward abstract: ", t_abstract_end - t_abstract_start)
+
+        abstract_time = log_phase(
+            logger,
+            "[FD] Abstract planner runtime",
+            abstract_start
+        )
+
         if result.returncode != 0:
+            logger.error("[FD] Abstract planner FAILED")
+            logger.error(result.stderr)
             raise RuntimeError(f"Fast Downward (abstract) failed:\n{result.stderr}")
 
+        logger.info("[FD] Abstract planner success")
+
         abstract_horizon = calculate_horizon(abstract_plan_file)
+
+        logger.info(
+            f"[FD] Abstract horizon={abstract_horizon}"
+        )
 
         abstract_result = {
             "horizon": abstract_horizon,
             "sasFile": abstract_sas_file,
             "planFile": abstract_plan_file,
         }
+    
+    total_time = time.perf_counter() - total_start
+
+    logger.info(
+        f"[FD] SUMMARY | "
+        f"concrete={concrete_time:.3f}s | "
+        f"total={total_time:.3f}s"
+    )
+
+    logger.info("[FD] Fast Downward service finished")
 
     return concrete_result, abstract_result
 
