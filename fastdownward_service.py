@@ -92,6 +92,8 @@ def run_fastdownward_service(
         "planFile": plan_file_path,
     }
 
+    abstract_time = 0
+
     # Optional abstract run
     abstract_result = None
     if abstract_domain_file and abstract_problem_file:

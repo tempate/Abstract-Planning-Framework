@@ -89,16 +89,18 @@ def compute_concrete_plan(
 
     # Fast Downward expects binary files
     with open(domain_path, "rb") as d, open(problem_path, "rb") as p:
-        result, _ = run_fastdownward_service(
+        result = run_fastdownward_service(
             domain_file=d,
             problem_file=p
         )
+    
+    result = result["concrete"]
 
     fd_time = time.perf_counter() - fd_start
 
     # If horizon was not provided, use Fast Downward's horizon
     if horizon is None:
-        horizon = result["horizon"]
+        horizon = horizon = result["horizon"]
 
     base_dir = os.path.dirname(result["sasFile"])
     output_lp = os.path.join(base_dir, "output_c.lp")
