@@ -63,13 +63,42 @@ def generate_lp_with_plasp(
     if result.returncode != 0:
         raise RuntimeError(f"plasp failed:\n{result.stderr}")
 
-def add_switch_to_lp_rule(lp_path):
+def append_pddl_facts_to_lp(pddl_path, lp_output_path):
+    fuelcost_facts = []
+    sum_facts = []
+
+    with open(pddl_path, "r") as f:
+        for line in f:
+            line = line.strip()
+
+            # fuelcost
+            if line.startswith("(fuelcost"):
+                parts = line.replace("(", "").replace(")", "").split()
+                _, level, x, y = parts
+                fuelcost_facts.append(f'fuelcost("{level}","{x}","{y}").')
+
+            # sum
+            elif line.startswith("(sum"):
+                parts = line.replace("(", "").replace(")", "").split()
+                _, a, b, c = parts
+                sum_facts.append(f'sum("{a}","{b}","{c}").')
+
+    with open(lp_output_path, "a") as f:
+        f.write("\n% --- ADDED FROM PDDL ---\n")
+        for fact in fuelcost_facts + sum_facts:
+            f.write(fact + "\n")
+
+def add_switch_to_lp_rule(lp_path, encoding_type: str = "exact",):
     """
     Modifies the LP file at lp_path by adding 'not switch(T)' to the
     action occurrence constraint rule.
     """
-    rule_to_modify = "1 {occurs(Action, T) : action(Action)} 1 :- time(T), T > 0."
-    modified_rule = "1 {occurs(Action, T) : action(Action)} 1 :- time(T), not switch(T), T > 0."
+    if encoding_type == "exact":
+        rule_to_modify = "1 {occurs(Action, T) : action(Action)} 1 :- time(T), T > 0."
+        modified_rule = "1 {occurs(Action, T) : action(Action)} 1 :- time(T), not switch(T), T > 0."
+    elif encoding_type == "bounded":
+        rule_to_modify = "0 {occurs(Action, T) : action(Action)} 1 :- time(T), T > 0."
+        modified_rule = "0 {occurs(Action, T) : action(Action)} 1 :- time(T), not switch(T), T > 0."
 
     # Read the LP file
     with open(lp_path, "r") as f:
