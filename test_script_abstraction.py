@@ -147,7 +147,7 @@ def compute_concrete_from_abstract(
         abstract_time_steps=time_step
     )
 
-    add_switch_to_lp_rule(output_c_lp)
+    add_switch_to_lp_rule(output_c_lp, encoding)
     append_pddl_facts_to_lp(concrete_problem_path, output_c_lp)
 
     concrete_lp_time = time.perf_counter() - concrete_lp_start

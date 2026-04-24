@@ -88,13 +88,17 @@ def append_pddl_facts_to_lp(pddl_path, lp_output_path):
         for fact in fuelcost_facts + sum_facts:
             f.write(fact + "\n")
 
-def add_switch_to_lp_rule(lp_path):
+def add_switch_to_lp_rule(lp_path, encoding_type: str = "exact",):
     """
     Modifies the LP file at lp_path by adding 'not switch(T)' to the
     action occurrence constraint rule.
     """
-    rule_to_modify = "1 {occurs(Action, T) : action(Action)} 1 :- time(T), T > 0."
-    modified_rule = "1 {occurs(Action, T) : action(Action)} 1 :- time(T), not switch(T), T > 0."
+    if encoding_type == "exact":
+        rule_to_modify = "1 {occurs(Action, T) : action(Action)} 1 :- time(T), T > 0."
+        modified_rule = "1 {occurs(Action, T) : action(Action)} 1 :- time(T), not switch(T), T > 0."
+    elif encoding_type == "bounded":
+        rule_to_modify = "0 {occurs(Action, T) : action(Action)} 1 :- time(T), T > 0."
+        modified_rule = "0 {occurs(Action, T) : action(Action)} 1 :- time(T), not switch(T), T > 0."
 
     # Read the LP file
     with open(lp_path, "r") as f:
