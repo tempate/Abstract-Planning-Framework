@@ -11,11 +11,7 @@ def run_fastdownward_service(
     abstract_domain_file=None,
     abstract_problem_file=None,
 ):
-    logger = get_logger()
     total_start = time.perf_counter()
-
-    logger.info("=" * 65)
-    logger.info("[FD] Fast Downward service started")
 
     # Read file contents
     domain_bytes = domain_file.read()
@@ -27,6 +23,10 @@ def run_fastdownward_service(
     base_dir = os.path.join(current_directory, "temp", run_id)
     os.makedirs(base_dir, exist_ok=True)
 
+    logger, debug_dir = setup_debug_logger(base_dir)
+
+    logger.info("=" * 65)
+    logger.info("[FD] Fast Downward service started")
     logger.info(f"[FD] Run ID: {run_id}")
     logger.info(f"[FD] Temp directory: {base_dir}")
 
@@ -158,6 +158,7 @@ def run_fastdownward_service(
     logger.info(
         f"[FD] SUMMARY | "
         f"concrete={concrete_time:.3f}s | "
+        f"abstract={abstract_time:.3f}s | "
         f"total={total_time:.3f}s"
     )
 

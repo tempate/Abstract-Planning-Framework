@@ -113,7 +113,7 @@ def compute_concrete_from_abstract(
             concrete_result.get("horizon", 0)
         )
 
-    logger, debug_dir = setup_debug_logger(base_dir)
+    logger = get_logger()
 
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
@@ -172,6 +172,7 @@ def compute_concrete_from_abstract(
 
     iteration = 0
     forbid_atoms = []
+    iteration_times = []
 
     while True:
         iteration += 1
@@ -229,11 +230,11 @@ def compute_concrete_from_abstract(
 
         occ_time = log_phase(logger, "occurs_abs generation time", occ_start)
 
-        copy_iteration_file(
+        """ copy_iteration_file(
             debug_dir,
             iteration,
             occurs_abs_lp_path
-        )
+        ) """
 
         # Create mapping LP with switches
         map_start = time.perf_counter()
@@ -247,11 +248,11 @@ def compute_concrete_from_abstract(
 
         map_time = log_phase(logger, "Mapping generation time", map_start)
 
-        copy_iteration_file(
+        """ copy_iteration_file(
             debug_dir,
             iteration,
             map_lp_path
-        )
+        ) """
 
         # Concrete incremental solving
         conc_start = time.perf_counter()
@@ -281,13 +282,25 @@ def compute_concrete_from_abstract(
             iter_time = time.perf_counter() - iter_start
             total_time = time.perf_counter() - total_start
 
+            iteration_times.append({
+                "abs": abs_time,
+                "occ": occ_time,
+                "map": map_time,
+                "conc": conc_time,
+                "ref": 0.0,
+                "iter": iter_time
+            })
+
+            logger.info("=" * 70)
             logger.info(
-                f"ITER {iteration} SUMMARY | "
-                f"abs={abs_time:.3f}s | "
-                f"occ={occ_time:.3f}s | "
-                f"map={map_time:.3f}s | "
-                f"conc={conc_time:.3f}s | "
-                f"iter={iter_time:.3f}s"
+                f"ITERATIONS TOTAL SUMMARY | "
+                f"iters={len(iteration_times)} | "
+                f"abs={sum(t['abs'] for t in iteration_times):.3f}s | "
+                f"occ={sum(t['occ'] for t in iteration_times):.3f}s | "
+                f"map={sum(t['map'] for t in iteration_times):.3f}s | "
+                f"conc={sum(t['conc'] for t in iteration_times):.3f}s | "
+                f"ref={sum(t['ref'] for t in iteration_times):.3f}s | "
+                f"iter_total={sum(t['iter'] for t in iteration_times):.3f}s"
             )
 
             logger.info(f"TOTAL TIME: {total_time:.3f}s")
@@ -347,6 +360,15 @@ def compute_concrete_from_abstract(
         ref_time = log_phase(logger, "Refinement time", ref_start)
 
         iter_time = time.perf_counter() - iter_start
+
+        iteration_times.append({
+            "abs": abs_time,
+            "occ": occ_time,
+            "map": map_time,
+            "conc": conc_time,
+            "ref": ref_time,
+            "iter": iter_time
+        })
 
         logger.info(
             f"ITER {iteration} SUMMARY | "
