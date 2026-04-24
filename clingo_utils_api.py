@@ -165,7 +165,7 @@ def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbo
 f"""1 {{
     occurs(action(("drive","{truck}","{X}","{Y}",Post,Diff,Pre)),{time_str}) :
         fuelcost(Diff,"{X}","{Y}"),
-        sum(Pre,Diff,Post)
+        sum(Post,Diff,Pre)
 }} 1 :-
     occurs_abstract({action_str},{time_str}), {switch_atom}."""
             )
