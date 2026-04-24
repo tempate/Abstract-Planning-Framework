@@ -6,7 +6,7 @@ from fastdownward_service import run_fastdownward_service
 from plasp_utils import generate_lp_with_plasp
 from clingo_utils_api import run_clingo
 from log_utils import *
-
+from create_excel import *
 
 def main():
     parser = argparse.ArgumentParser()
@@ -46,6 +46,35 @@ def main():
 
         for atom in sorted_plan:
             print(" ", atom)
+    
+    timings = result["timings"]
+
+    row = {
+        "Problem": args.abstract_problem.split("/")[-1] if hasattr(args, "abstract_problem") else args.problem.split("/")[-1],
+        "Version": "concrete",
+        "Mode": getattr(args, "mode", "N/A"),
+
+        "horizon": result["horizon"],
+        "iterations": timings.get("iterations"),
+
+        "fd_conc": timings.get("fd_conc"),
+        "fd_abs": timings.get("fd_abs"),
+        "fd_total": timings.get("fd_total"),
+
+        "lp_concrete_time": timings.get("lp_concrete_time"),
+        "lp_abstract_time": timings.get("lp_abstract_time"),
+        "lp_total_time": timings.get("lp_total_time"),
+
+        "abstract_solve_time": timings.get("abstract_solve_time"),
+        "concrete_solve_time": timings.get("concrete_solve_time"),
+
+        "total": timings.get("total_time"),
+
+        "result": "SAT" if result["success"] else "UNSAT",
+        "id": timings.get("run_id")
+    }
+
+    append_to_excel(row)
 
 def compute_concrete_plan(
     domain_path,
@@ -95,14 +124,15 @@ def compute_concrete_plan(
         abstract_time_steps=time_step
     )
 
-    log_phase(logger, "LP generation time", lp_start)
+    lp_time = time.perf_counter() - lp_start
+    logger.info(f"LP generation time: {lp_time:.3f}s")
 
     # Solve with clingo
     solve_start = time.perf_counter()
 
     models = run_clingo([output_lp], horizon)
 
-    log_phase(logger, "Clingo solving time", solve_start)
+    solve_time = time.perf_counter() - solve_start
 
     plans = [[atom for atom in model] for model in models]
 
@@ -117,7 +147,28 @@ def compute_concrete_plan(
     return {
         "horizon": horizon,
         "numPlans": len(plans),
-        "plans": plans
+        "plans": plans,
+        "success": len(plans) > 0,
+        "timings": {
+            "iterations": None,
+
+            # Fast Downward (concrete only)
+            "fd_conc": fd_time,
+            "fd_abs": None,
+            "fd_total": fd_time,
+
+            # LP
+            "lp_concrete_time": lp_time,
+            "lp_abstract_time": None,
+            "lp_total_time": lp_time,
+
+            # Solve
+            "abstract_solve_time": None,
+            "concrete_solve_time": solve_time,
+
+            "total_time": total_time,
+            "run_id": base_dir
+        }
     }
 
 
