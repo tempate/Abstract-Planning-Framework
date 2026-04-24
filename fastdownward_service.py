@@ -164,7 +164,15 @@ def run_fastdownward_service(
 
     logger.info("[FD] Fast Downward service finished")
 
-    return concrete_result, abstract_result
+    return {
+        "concrete": concrete_result,
+        "abstract": abstract_result,
+        "timings": {
+            "fd_concrete_time": concrete_time,
+            "fd_abstract_time": abstract_time if abstract_result else None,
+            "fd_total_time": total_time
+        }
+    }
 
 
 def calculate_horizon(plan_file_path):

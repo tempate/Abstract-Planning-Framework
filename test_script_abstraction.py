@@ -8,6 +8,7 @@ from plasp_utils import *
 from plasp_utils import *
 from clingo_utils_api import *
 from log_utils import *
+from create_excel import *
 
 def main():
     parser = argparse.ArgumentParser()
@@ -72,6 +73,30 @@ def main():
         for atom in sorted_plan:
             print(" ", atom)
 
+    timings = result["timings"]
+
+    row = {
+        "Problem": args.abstract_problem.split("/")[-1],
+        "Version": "abstract",
+        "Mode": args.mode,
+        "horizon": result["horizon"],
+        "iterations": timings["iterations"],
+        "fd_conc": timings["fd_concrete_time"],
+        "fd_abs": timings["fd_abstract_time"],
+        "fd_total": timings["fd_total_time"],
+        "lp_concrete_time": timings["lp_concrete_time"],
+        "lp_abstract_time": timings["lp_abstract_time"],
+        "lp_total_time": timings["lp_total_time"],
+        "abstract_solve_time": timings["abstract_solve_time"],
+        "concrete_solve_time": timings["concrete_solve_time"],
+        "total": timings["total_time"],
+        "result": "SAT" if result["success"] else "UNSAT",
+        "id": timings["run_id"]
+    }
+
+    print("test")
+    append_to_excel(row)
+
 
 def compute_concrete_from_abstract(
     abstract_domain_path,
@@ -95,12 +120,16 @@ def compute_concrete_from_abstract(
          open(abstract_domain_path, "rb") as ad, \
          open(abstract_problem_path, "rb") as ap:
 
-        concrete_result, abstract_result = run_fastdownward_service(
+        fd_result = run_fastdownward_service(
             domain_file=cd,
             problem_file=cp,
             abstract_domain_file=ad,
             abstract_problem_file=ap
         )
+    
+    concrete_result = fd_result["concrete"]
+    abstract_result = fd_result["abstract"]
+    fd_timings = fd_result["timings"]
 
     fd_time = time.perf_counter() - fd_start
 
@@ -209,12 +238,25 @@ def compute_concrete_from_abstract(
 
             total_time = time.perf_counter() - total_start
             logger.info(f"TOTAL TIME: {total_time:.3f}s")
-
+        
             return {
                 "horizon": horizon,
                 "numPlans": 0,
                 "plans": [],
                 "success": False,
+                "timings": {
+                    "iterations": len(iteration_times),
+                    "fd_concrete_time": fd_timings["fd_concrete_time"],
+                    "fd_abstract_time": fd_timings["fd_abstract_time"],
+                    "fd_total_time": fd_timings["fd_total_time"],
+                    "lp_concrete_time": concrete_lp_time,
+                    "lp_abstract_time": abstract_lp_time,
+                    "lp_total_time": lp_total,
+                    "abstract_solve_time": abs_time,
+                    "concrete_solve_time": conc_time,
+                    "total_time": total_time,
+                    "run_id": base_dir
+                }
             }
 
         abstract_atoms = abstract_models[0]
@@ -309,7 +351,20 @@ def compute_concrete_from_abstract(
                 "horizon": horizon,
                 "numPlans": len(plans),
                 "plans": plans,
-                "success": True
+                "success": True,
+                "timings": {
+                    "iterations": len(iteration_times),
+                    "fd_concrete_time": fd_timings["fd_concrete_time"],
+                    "fd_abstract_time": fd_timings["fd_abstract_time"],
+                    "fd_total_time": fd_timings["fd_total_time"],
+                    "lp_concrete_time": concrete_lp_time,
+                    "lp_abstract_time": abstract_lp_time,
+                    "lp_total_time": lp_total,
+                    "abstract_solve_time": abs_time,
+                    "concrete_solve_time": conc_time,
+                    "total_time": total_time,
+                    "run_id": base_dir
+                }
             }
 
         # Refine abstraction: only forbid actions with the abstract symbol
