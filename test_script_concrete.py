@@ -15,8 +15,17 @@ def main():
     parser.add_argument("--horizon", type=int, default=None)
     parser.add_argument("--encoding", default="exact")
     parser.add_argument("--time-step", action="store_true")
+    parser.add_argument(
+        "--skip-fd",
+        action="store_true",
+        help="Skip Fast Downward and use PDDL directly"
+    )
 
     args = parser.parse_args()
+
+    if args.skip_fd and args.horizon is None:
+        parser.error("--skip-fd requires --horizon to be set")
+
 
     print("Starting")
 
@@ -28,9 +37,10 @@ def main():
         horizon=args.horizon,
         encoding=args.encoding,
         time_step=args.time_step,
+        skip_fd=args.skip_fd,
     )
 
-    print("result: ", result)
+    #print("result: ", result)
 
     print("\n=== RESULT ===")
     print(f"Horizon: {result['horizon']}")
@@ -82,47 +92,65 @@ def compute_concrete_plan(
     horizon=None,
     encoding="exact",
     time_step=False,
+    skip_fd=False
 ):
-    total_start = time.perf_counter()
-
-    fd_start = time.perf_counter()
-
-    # Fast Downward expects binary files
-    with open(domain_path, "rb") as d, open(problem_path, "rb") as p:
-        result = run_fastdownward_service(
-            domain_file=d,
-            problem_file=p
-        )
-    
-    result = result["concrete"]
-
-    fd_time = time.perf_counter() - fd_start
-
-    # If horizon was not provided, use Fast Downward's horizon
-    if horizon is None:
-        horizon = horizon = result["horizon"]
-
-    base_dir = os.path.dirname(result["sasFile"])
-    output_lp = os.path.join(base_dir, "output_c.lp")
+    base_dir, run_id = create_run_dir()
 
     logger, debug_dir = setup_debug_logger(base_dir)
 
     logger.info("=" * 70)
-    logger.info("NEW CONCRETE PLANNING RUN STARTED")
+    logger.info("NEW PLANNING RUN STARTED")
     logger.info(f"Horizon: {horizon}")
     logger.info(f"Encoding: {encoding}")
-    logger.info(f"Fast Downward time: {fd_time:.3f}s")
+    logger.info(f"Run ID: {run_id}")
+    logger.info(f"Base dir: {base_dir}")
 
     print("Directory:", base_dir)
+
+    total_start = time.perf_counter()
+
+    if not skip_fd:
+        fd_start = time.perf_counter()
+
+        # Fast Downward expects binary files
+        with open(domain_path, "rb") as d, open(problem_path, "rb") as p:
+            result = run_fastdownward_service(
+                base_dir=base_dir,
+                domain_file=d,
+                problem_file=p
+            )
+        
+        result = result["concrete"]
+
+        input = result["sasFile"]
+
+        fd_time = time.perf_counter() - fd_start
+
+        # If horizon was not provided, use Fast Downward's horizon
+        if horizon is None:
+            horizon = result["horizon"]
+        
+        is_pddl = False
+
+        logger.info(f"Fast Downward time: {fd_time:.3f}s")
+    else:
+        input = problem_path
+
+        is_pddl = True
+
+    output_lp = os.path.join(base_dir, "output_c.lp")
+
+    logger, debug_dir = setup_debug_logger(base_dir)
 
     # Generate LP with plasp
     lp_start = time.perf_counter()
 
     generate_lp_with_plasp(
-        sas_or_pddl_path=result["sasFile"],
+        sas_or_pddl_path=input,
         lp_output_path=output_lp,
         encoding_type=encoding,
-        is_pddl_instance=False,
+        is_pddl_instance=is_pddl,
+        domain_file=domain_path,
         abstract_time_steps=time_step
     )
 

@@ -34,8 +34,16 @@ def main():
         choices=["inc", "dec"],
         default="inc"
     )
+    parser.add_argument(
+        "--skip-fd",
+        action="store_true",
+        help="Skip Fast Downward and use PDDL directly"
+    )
 
     args = parser.parse_args()
+
+    if args.skip_fd and args.horizon is None:
+        parser.error("--skip-fd requires --horizon to be set")
 
     print("Starting")
 
@@ -52,6 +60,7 @@ def main():
         abstract_symbol=args.abstract_symbol,
         concrete_objects=args.concrete_objects,
         solving_mode=args.mode,
+        skip_fd=args.skip_fd,
     )
 
     print("\n=== RESULT ===")
@@ -105,50 +114,73 @@ def compute_concrete_from_abstract(
     time_step=False,
     abstract_symbol=None,
     concrete_objects=None,
-    solving_mode="inc"
+    solving_mode="inc",
+    skip_fd=False
 ):
-    total_start = time.perf_counter()
+    base_dir, run_id = create_run_dir()
 
-    fd_start = time.perf_counter()
-
-    # Open files as binary (Fast Downward expects bytes)
-    with open(concrete_domain_path, "rb") as cd, \
-         open(concrete_problem_path, "rb") as cp, \
-         open(abstract_domain_path, "rb") as ad, \
-         open(abstract_problem_path, "rb") as ap:
-
-        fd_result = run_fastdownward_service(
-            domain_file=cd,
-            problem_file=cp,
-            abstract_domain_file=ad,
-            abstract_problem_file=ap
-        )
-    
-    concrete_result = fd_result["concrete"]
-    abstract_result = fd_result["abstract"]
-    fd_timings = fd_result["timings"]
-
-    fd_time = time.perf_counter() - fd_start
-
-    base_dir = os.path.dirname(concrete_result["sasFile"])
-
-    # If horizon was not provided, use Fast Downward's horizon
-    if horizon is None:
-        horizon = max(
-            abstract_result.get("horizon", 0),
-            concrete_result.get("horizon", 0)
-        )
-
-    logger = get_logger()
+    logger, debug_dir = setup_debug_logger(base_dir)
 
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
     logger.info(f"Horizon: {horizon}")
     logger.info(f"Encoding: {encoding}")
     logger.info(f"Mode: {solving_mode}")
-    logger.info(f"Fast Downward time: {fd_time:.3f}s")
+    logger.info(f"Run ID: {run_id}")
+    logger.info(f"Base dir: {base_dir}")
 
-    print("Directory: ", base_dir)
+    print("Directory:", base_dir)
+
+    total_start = time.perf_counter()
+
+    if not skip_fd:
+
+        fd_start = time.perf_counter()
+
+        # Open files as binary (Fast Downward expects bytes)
+        with open(concrete_domain_path, "rb") as cd, \
+            open(concrete_problem_path, "rb") as cp, \
+            open(abstract_domain_path, "rb") as ad, \
+            open(abstract_problem_path, "rb") as ap:
+
+            fd_result = run_fastdownward_service(
+                base_dir=base_dir,
+                domain_file=cd,
+                problem_file=cp,
+                abstract_domain_file=ad,
+                abstract_problem_file=ap,
+            )
+        
+        concrete_result = fd_result["concrete"]
+        abstract_result = fd_result["abstract"]
+        fd_timings = fd_result["timings"]
+
+        fd_time = time.perf_counter() - fd_start
+
+        # If horizon was not provided, use Fast Downward's horizon
+        if horizon is None:
+            horizon = max(
+                abstract_result.get("horizon", 0),
+                concrete_result.get("horizon", 0)
+            )
+        
+        concrete_input = concrete_result["sasFile"]
+        abstract_input = abstract_result["sasFile"]
+
+        is_pddl = False
+        
+        logger.info(f"Fast Downward time: {fd_time:.3f}s")
+    else:
+        concrete_input = concrete_problem_path
+        abstract_input = abstract_problem_path
+
+        fd_timings = {
+            "fd_concrete_time": 0,
+            "fd_abstract_time": 0,
+            "fd_total_time": 0
+        }
+
+        is_pddl = True
 
     output_c_lp = os.path.join(base_dir, "output_c.lp")
     output_a_lp = os.path.join(base_dir, "abstract", "output_a.lp")
@@ -166,10 +198,11 @@ def compute_concrete_from_abstract(
 
     # Concrete LP
     generate_lp_with_plasp(
-        sas_or_pddl_path=concrete_result["sasFile"],
+        sas_or_pddl_path=concrete_input,
         lp_output_path=output_c_lp,
         encoding_type=encoding,
-        is_pddl_instance=False,
+        is_pddl_instance=is_pddl,
+        domain_file=concrete_domain_path,
         abstract_time_steps=time_step
     )
 
@@ -182,10 +215,11 @@ def compute_concrete_from_abstract(
 
     # Abstract LP
     generate_lp_with_plasp(
-        sas_or_pddl_path=abstract_result["sasFile"],
+        sas_or_pddl_path=abstract_input,
         lp_output_path=output_a_lp,
         encoding_type=encoding,
-        is_pddl_instance=False,
+        is_pddl_instance=is_pddl,
+        domain_file=abstract_domain_path,
         abstract_time_steps=time_step
     )
 
@@ -217,12 +251,12 @@ def compute_concrete_from_abstract(
             write_forbid_abstract_lp(forbid_atoms, forbid_lp_path)
             abstract_lp_files.append(forbid_lp_path)
 
-            """ save_iteration_file(
+            save_iteration_file(
                 debug_dir,
                 iteration,
                 "forbidden.lp",
                 "\n".join(forbid_atoms)
-            ) """
+            )
         
         abstract_models = run_clingo(abstract_lp_files, horizon)
 
@@ -268,11 +302,11 @@ def compute_concrete_from_abstract(
 
         occ_time = log_phase(logger, "occurs_abs generation time", occ_start)
 
-        """ copy_iteration_file(
+        copy_iteration_file(
             debug_dir,
             iteration,
             occurs_abs_lp_path
-        ) """
+        )
 
         # Create mapping LP with switches
         map_start = time.perf_counter()
@@ -286,11 +320,11 @@ def compute_concrete_from_abstract(
 
         map_time = log_phase(logger, "Mapping generation time", map_start)
 
-        """ copy_iteration_file(
+        copy_iteration_file(
             debug_dir,
             iteration,
             map_lp_path
-        ) """
+        )
 
         # Concrete incremental solving
         conc_start = time.perf_counter()
@@ -315,7 +349,7 @@ def compute_concrete_from_abstract(
             logger.info("Plans:")
             logger.info(pformat(plans))
 
-            #save_json(debug_dir, iteration, "concrete_plans.json", plans)
+            save_json(debug_dir, iteration, "concrete_plans.json", plans)
 
             iter_time = time.perf_counter() - iter_start
             total_time = time.perf_counter() - total_start
@@ -372,12 +406,12 @@ def compute_concrete_from_abstract(
         for atom in bad_abstract_actions:
             logger.info(f"  {atom}")
 
-        """ save_iteration_file(
+        save_iteration_file(
             debug_dir,
             iteration,
             "bad_actions.lp",
             "\n".join(bad_abstract_actions)
-        ) """
+        )
 
         new_forbidden = []
         
@@ -391,12 +425,12 @@ def compute_concrete_from_abstract(
         for atom in new_forbidden:
             logger.info(f"  {atom}")
 
-        """ save_iteration_file(
+        save_iteration_file(
             debug_dir,
             iteration,
             "new_forbidden.lp",
             "\n".join(new_forbidden)
-        ) """
+        )
 
         ref_time = log_phase(logger, "Refinement time", ref_start)
 

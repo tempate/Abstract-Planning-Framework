@@ -6,10 +6,11 @@ import time
 from log_utils import *
 
 def run_fastdownward_service(
+    base_dir,
     domain_file,
     problem_file,
     abstract_domain_file=None,
-    abstract_problem_file=None,
+    abstract_problem_file=None
 ):
     total_start = time.perf_counter()
 
@@ -17,18 +18,12 @@ def run_fastdownward_service(
     domain_bytes = domain_file.read()
     problem_bytes = problem_file.read()
 
-    # Create a unique temp directory per run
-    current_directory = os.path.dirname(os.path.abspath(__file__))
-    run_id = str(uuid.uuid4())
-    base_dir = os.path.join(current_directory, "temp", run_id)
-    os.makedirs(base_dir, exist_ok=True)
-
-    logger, debug_dir = setup_debug_logger(base_dir)
+    logger = get_logger()
 
     logger.info("=" * 65)
     logger.info("[FD] Fast Downward service started")
-    logger.info(f"[FD] Run ID: {run_id}")
-    logger.info(f"[FD] Temp directory: {base_dir}")
+
+    current_directory = os.path.dirname(os.path.abspath(__file__))
 
     # File paths
     domain_file_path = os.path.join(base_dir, "domain.pddl")

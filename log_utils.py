@@ -3,6 +3,7 @@ import time
 import json
 import logging
 import shutil
+import uuid
 from pprint import pformat
 from datetime import datetime
 
@@ -25,6 +26,8 @@ def setup_debug_logger(base_dir):
     )
     fh.setFormatter(formatter)
     logger.addHandler(fh)
+
+    logger.debug_dir = debug_dir
 
     return logger, debug_dir
 
@@ -65,3 +68,20 @@ def log_phase(logger, name, start_time):
 
 def get_logger():
     return logging.getLogger("planner_debug")
+
+def get_debug_dir():
+    logger = get_logger()
+
+    if not hasattr(logger, "debug_dir"):
+        raise RuntimeError(
+            "Debug directory not initialized. Call setup_debug_logger first."
+        )
+
+    return logger.debug_dir
+
+def create_run_dir():
+    current_directory = os.path.dirname(os.path.abspath(__file__))
+    run_id = str(uuid.uuid4())
+    base_dir = os.path.join(current_directory, "temp", run_id)
+    os.makedirs(base_dir, exist_ok=True)
+    return base_dir, run_id
