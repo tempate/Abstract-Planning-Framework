@@ -10,7 +10,8 @@ def run_fastdownward_service(
     domain_file,
     problem_file,
     abstract_domain_file=None,
-    abstract_problem_file=None
+    abstract_problem_file=None,
+    fd_task="plan",
 ):
     total_start = time.perf_counter()
 
@@ -44,19 +45,31 @@ def run_fastdownward_service(
     )
 
     # Run Fast Downward (concrete)
-    command = [
-        "python3",
-        fast_downward_script,
-        "--plan-file",
-        plan_file_path,
-        "--sas-file",
-        sas_file_path,
-        "--keep-sas-file",
-        domain_file_path,
-        problem_file_path,
-        "--search",
-        "astar(lmcut())",
-    ]
+    if fd_task == "plan":
+        command = [
+            "python3",
+            fast_downward_script,
+            "--plan-file",
+            plan_file_path,
+            "--sas-file",
+            sas_file_path,
+            "--keep-sas-file",
+            domain_file_path,
+            problem_file_path,
+            "--search",
+            "astar(lmcut())",
+        ]
+    else:
+        command = [
+            "python3",
+            fast_downward_script,
+            "--sas-file",
+            sas_file_path,
+            "--keep-sas-file",
+            "--translate",
+            domain_file_path,
+            problem_file_path,
+        ]
 
     logger.info("[FD] Running concrete planner")
 
@@ -77,9 +90,12 @@ def run_fastdownward_service(
 
     logger.info("[FD] Concrete planner success")
 
-    horizon = calculate_horizon(plan_file_path)
+    horizon = 0
 
-    logger.info(f"[FD] Concrete horizon={horizon}")
+    if fd_task == "plan":
+        horizon = calculate_horizon(plan_file_path)
+
+        logger.info(f"[FD] Concrete horizon={horizon}")
 
     concrete_result = {
         "horizon": horizon,
@@ -180,3 +196,41 @@ def calculate_horizon(plan_file_path):
     if lines and lines[-1].startswith(";"):
         return len(lines) - 1
     return len(lines)
+
+def fd_plan_to_occurs_abstract(plan_file_path, output_path):
+    occurs_atoms = []
+
+    with open(plan_file_path, "r") as f:
+        t = 1  # your format starts at 1
+
+        for line in f:
+            line = line.strip()
+
+            # skip empty lines and cost line
+            if not line or line.startswith(";"):
+                continue
+
+            # remove parentheses
+            line = line.strip("()")
+
+            parts = line.split()
+            action_name = parts[0]
+            args = parts[1:]
+
+            # build ("a","b","c") tuple
+            arg_string = ",".join(f'"{a}"' for a in args)
+
+            atom = (
+                f'occurs_abstract(action(("'
+                f'{action_name}",{arg_string}'
+                f')), {t}).'
+            )
+
+            occurs_atoms.append(atom)
+            t += 1
+
+    # write to file
+    with open(output_path, "w") as f:
+        f.write("\n".join(occurs_atoms))
+
+    return occurs_atoms

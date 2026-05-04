@@ -15,17 +15,8 @@ def main():
     parser.add_argument("--horizon", type=int, default=None)
     parser.add_argument("--encoding", default="exact")
     parser.add_argument("--time-step", action="store_true")
-    parser.add_argument(
-        "--skip-fd",
-        action="store_true",
-        help="Skip Fast Downward and use PDDL directly"
-    )
 
     args = parser.parse_args()
-
-    if args.skip_fd and args.horizon is None:
-        parser.error("--skip-fd requires --horizon to be set")
-
 
     print("Starting")
 
@@ -37,7 +28,6 @@ def main():
         horizon=args.horizon,
         encoding=args.encoding,
         time_step=args.time_step,
-        skip_fd=args.skip_fd,
     )
 
     #print("result: ", result)
@@ -91,8 +81,7 @@ def compute_concrete_plan(
     problem_path,
     horizon=None,
     encoding="exact",
-    time_step=False,
-    skip_fd=False
+    time_step=False
 ):
     base_dir, run_id = create_run_dir()
 
@@ -109,34 +98,29 @@ def compute_concrete_plan(
 
     total_start = time.perf_counter()
 
-    if not skip_fd:
-        fd_start = time.perf_counter()
+    fd_start = time.perf_counter()
 
-        # Fast Downward expects binary files
-        with open(domain_path, "rb") as d, open(problem_path, "rb") as p:
-            result = run_fastdownward_service(
-                base_dir=base_dir,
-                domain_file=d,
-                problem_file=p
-            )
-        
-        result = result["concrete"]
+    # Fast Downward expects binary files
+    with open(domain_path, "rb") as d, open(problem_path, "rb") as p:
+        result = run_fastdownward_service(
+            base_dir=base_dir,
+            domain_file=d,
+            problem_file=p
+        )
+    
+    result = result["concrete"]
 
-        input = result["sasFile"]
+    input = result["sasFile"]
 
-        fd_time = time.perf_counter() - fd_start
+    fd_time = time.perf_counter() - fd_start
 
-        # If horizon was not provided, use Fast Downward's horizon
-        if horizon is None:
-            horizon = result["horizon"]
-        
-        is_pddl = False
+    # If horizon was not provided, use Fast Downward's horizon
+    if horizon is None:
+        horizon = result["horizon"]
+    
+    is_pddl = False
 
-        logger.info(f"Fast Downward time: {fd_time:.3f}s")
-    else:
-        input = problem_path
-
-        is_pddl = True
+    logger.info(f"Fast Downward time: {fd_time:.3f}s")
 
     output_lp = os.path.join(base_dir, "output_c.lp")
 

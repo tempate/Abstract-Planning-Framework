@@ -3,7 +3,7 @@ import time
 
 import argparse
 
-from fastdownward_service import run_fastdownward_service
+from fastdownward_service import *
 from plasp_utils import *
 from clingo_utils_api import *
 from log_utils import *
@@ -35,15 +35,13 @@ def main():
         default="inc"
     )
     parser.add_argument(
-        "--skip-fd",
-        action="store_true",
-        help="Skip Fast Downward and use PDDL directly"
+        "--plan-source",
+        choices=["fd", "clingo"],
+        default="clingo",
+        help="Use Fast Downward plan directly or compute plan with clingo"
     )
 
     args = parser.parse_args()
-
-    if args.skip_fd and args.horizon is None:
-        parser.error("--skip-fd requires --horizon to be set")
 
     print("Starting")
 
@@ -60,7 +58,7 @@ def main():
         abstract_symbol=args.abstract_symbol,
         concrete_objects=args.concrete_objects,
         solving_mode=args.mode,
-        skip_fd=args.skip_fd,
+        plan_source=args.plan_source,
     )
 
     print("\n=== RESULT ===")
@@ -115,7 +113,7 @@ def compute_concrete_from_abstract(
     abstract_symbol=None,
     concrete_objects=None,
     solving_mode="inc",
-    skip_fd=False
+    plan_source="clingo",
 ):
     base_dir, run_id = create_run_dir()
 
@@ -133,54 +131,43 @@ def compute_concrete_from_abstract(
 
     total_start = time.perf_counter()
 
-    if not skip_fd:
+    fd_start = time.perf_counter()
 
-        fd_start = time.perf_counter()
+    # Open files as binary (Fast Downward expects bytes)
+    with open(concrete_domain_path, "rb") as cd, \
+        open(concrete_problem_path, "rb") as cp, \
+        open(abstract_domain_path, "rb") as ad, \
+        open(abstract_problem_path, "rb") as ap:
 
-        # Open files as binary (Fast Downward expects bytes)
-        with open(concrete_domain_path, "rb") as cd, \
-            open(concrete_problem_path, "rb") as cp, \
-            open(abstract_domain_path, "rb") as ad, \
-            open(abstract_problem_path, "rb") as ap:
+        fd_result = run_fastdownward_service(
+            base_dir=base_dir,
+            domain_file=cd,
+            problem_file=cp,
+            abstract_domain_file=ad,
+            abstract_problem_file=ap,
+            fd_task="translate",
+        )
+    
+    concrete_result = fd_result["concrete"]
+    abstract_result = fd_result["abstract"]
+    fd_timings = fd_result["timings"]
 
-            fd_result = run_fastdownward_service(
-                base_dir=base_dir,
-                domain_file=cd,
-                problem_file=cp,
-                abstract_domain_file=ad,
-                abstract_problem_file=ap,
-            )
-        
-        concrete_result = fd_result["concrete"]
-        abstract_result = fd_result["abstract"]
-        fd_timings = fd_result["timings"]
+    fd_time = time.perf_counter() - fd_start
 
-        fd_time = time.perf_counter() - fd_start
+    # If horizon was not provided, use Fast Downward's horizon
+    if horizon is None:
+        horizon = abstract_result.get("horizon", 0)
+        """ horizon = max(
+            abstract_result.get("horizon", 0),
+            concrete_result.get("horizon", 0)
+        ) """
+    
+    concrete_input = concrete_result["sasFile"]
+    abstract_input = abstract_result["sasFile"]
 
-        # If horizon was not provided, use Fast Downward's horizon
-        if horizon is None:
-            horizon = max(
-                abstract_result.get("horizon", 0),
-                concrete_result.get("horizon", 0)
-            )
-        
-        concrete_input = concrete_result["sasFile"]
-        abstract_input = abstract_result["sasFile"]
-
-        is_pddl = False
-        
-        logger.info(f"Fast Downward time: {fd_time:.3f}s")
-    else:
-        concrete_input = concrete_problem_path
-        abstract_input = abstract_problem_path
-
-        fd_timings = {
-            "fd_concrete_time": 0,
-            "fd_abstract_time": 0,
-            "fd_total_time": 0
-        }
-
-        is_pddl = True
+    is_pddl = False
+    
+    logger.info(f"Fast Downward time: {fd_time:.3f}s")
 
     output_c_lp = os.path.join(base_dir, "output_c.lp")
     output_a_lp = os.path.join(base_dir, "abstract", "output_a.lp")
@@ -214,20 +201,170 @@ def compute_concrete_from_abstract(
     abstract_lp_start = time.perf_counter()
 
     # Abstract LP
-    generate_lp_with_plasp(
-        sas_or_pddl_path=abstract_input,
-        lp_output_path=output_a_lp,
-        encoding_type=encoding,
-        is_pddl_instance=is_pddl,
-        domain_file=abstract_domain_path,
-        abstract_time_steps=time_step
-    )
+    if plan_source == "clingo":
+        generate_lp_with_plasp(
+            sas_or_pddl_path=abstract_input,
+            lp_output_path=output_a_lp,
+            encoding_type=encoding,
+            is_pddl_instance=is_pddl,
+            domain_file=abstract_domain_path,
+            abstract_time_steps=time_step
+        )
 
-    abstract_lp_time = time.perf_counter() - abstract_lp_start
-    logger.info(f"Abstract LP generation: {abstract_lp_time:.3f}s")
+        abstract_lp_time = time.perf_counter() - abstract_lp_start
+        logger.info(f"Abstract LP generation: {abstract_lp_time:.3f}s")
 
     lp_total = time.perf_counter() - lp_start
     logger.info(f"Total LP generation: {lp_total:.3f}s")
+
+
+    #######################################################################
+
+    if plan_source == "fd":
+        logger.info("Using Fast Downward plan")
+
+        # Generate occurs_abs.lp from fastdownward plan 
+        occ_start = time.perf_counter()
+
+        abstract_atoms = fd_plan_to_occurs_abstract(
+                abstract_result["planFile"],
+                occurs_abs_lp_path
+            )
+
+        occ_time = log_phase(logger, "occurs_abs from fd generation time", occ_start)
+
+        iter_start = time.perf_counter()
+        iteration_times = []
+        
+        # Create mapping LP with switches
+        map_start = time.perf_counter()
+
+        switch_map = create_map_lp_with_switch_atoms(
+            occurs_abs_lp_path,
+            map_lp_path,
+            abstract_symbol,
+            concrete_objects,
+        )
+
+        map_time = log_phase(logger, "Mapping generation time", map_start)
+
+         # Concrete incremental solving
+        conc_start = time.perf_counter()
+
+        if solving_mode == "inc":
+            ok, plans, bad_abstract_actions = solve_concrete_incremental(
+                [output_c_lp, occurs_abs_lp_path, map_lp_path],
+                horizon,
+                switch_map,
+            )
+        if solving_mode == "dec":
+            ok, plans, bad_abstract_actions = solve_concrete_decremental(
+                [output_c_lp, occurs_abs_lp_path, map_lp_path],
+                horizon,
+                switch_map
+            )
+
+        conc_time = log_phase(logger, "Concrete solving time", conc_start)
+
+        if ok:
+            logger.info("SUCCESS: Concrete plan found.")
+            logger.info("Plans:")
+            logger.info(pformat(plans))
+
+            iter_time = time.perf_counter() - iter_start
+            total_time = time.perf_counter() - total_start
+
+            iteration_times.append({
+                "abs": 0,
+                "occ": occ_time,
+                "map": map_time,
+                "conc": conc_time,
+                "ref": 0.0,
+                "iter": iter_time
+            })
+
+            logger.info("=" * 70)
+            logger.info(
+                f"ITERATIONS TOTAL SUMMARY | "
+                f"iters={len(iteration_times)} | "
+                f"abs={sum(t['abs'] for t in iteration_times):.3f}s | "
+                f"occ={sum(t['occ'] for t in iteration_times):.3f}s | "
+                f"map={sum(t['map'] for t in iteration_times):.3f}s | "
+                f"conc={sum(t['conc'] for t in iteration_times):.3f}s | "
+                f"ref={sum(t['ref'] for t in iteration_times):.3f}s | "
+                f"iter_total={sum(t['iter'] for t in iteration_times):.3f}s"
+            )
+
+            logger.info(f"TOTAL TIME: {total_time:.3f}s")
+
+            return {
+                "horizon": horizon,
+                "numPlans": len(plans),
+                "plans": plans,
+                "success": True,
+                "timings": {
+                    "iterations": len(iteration_times),
+                    "fd_concrete_time": fd_timings["fd_concrete_time"],
+                    "fd_abstract_time": fd_timings["fd_abstract_time"],
+                    "fd_total_time": fd_timings["fd_total_time"],
+                    "lp_concrete_time": concrete_lp_time,
+                    "lp_abstract_time": 0,
+                    "lp_total_time": lp_total,
+                    "abstract_solve_time": 0,
+                    "concrete_solve_time": conc_time,
+                    "total_time": total_time,
+                    "run_id": base_dir
+                }
+            }
+
+        # Refine abstraction: only forbid actions with the abstract symbol
+        ref_start = time.perf_counter()
+
+        logger.info("Concrete solve failed.")
+        logger.info("Bad abstract actions:")
+
+        for atom in bad_abstract_actions:
+            logger.info(f"  {atom}")
+        
+        logger.info("=" * 70)
+        logger.info(
+            f"ITERATIONS TOTAL SUMMARY | "
+            f"iters={len(iteration_times)} | "
+            f"abs={sum(t['abs'] for t in iteration_times):.3f}s | "
+            f"occ={sum(t['occ'] for t in iteration_times):.3f}s | "
+            f"map={sum(t['map'] for t in iteration_times):.3f}s | "
+            f"conc={sum(t['conc'] for t in iteration_times):.3f}s | "
+            f"ref={sum(t['ref'] for t in iteration_times):.3f}s | "
+            f"iter_total={sum(t['iter'] for t in iteration_times):.3f}s"
+        )
+
+        logger.info("No abstract plan possible.")
+        logger.info("FAILED")
+
+        total_time = time.perf_counter() - total_start
+        logger.info(f"TOTAL TIME: {total_time:.3f}s")
+    
+        return {
+            "horizon": horizon,
+            "numPlans": 0,
+            "plans": [],
+            "success": False,
+            "timings": {
+                "iterations": len(iteration_times),
+                "fd_concrete_time": fd_timings["fd_concrete_time"],
+                "fd_abstract_time": fd_timings["fd_abstract_time"],
+                "fd_total_time": fd_timings["fd_total_time"],
+                "lp_concrete_time": concrete_lp_time,
+                "lp_abstract_time": 0,
+                "lp_total_time": lp_total,
+                "abstract_solve_time": 0,
+                "concrete_solve_time": conc_time,
+                "total_time": total_time,
+                "run_id": base_dir
+            }
+        }
+
+    ################################################################################
 
     iteration = 0
     forbid_atoms = []
