@@ -8,6 +8,7 @@ from plasp_utils import *
 from clingo_utils_api import *
 from log_utils import *
 from create_excel import *
+from json_logger import *
 
 def main():
     parser = argparse.ArgumentParser()
@@ -97,8 +98,6 @@ def main():
         "result": "SAT" if result["success"] else "UNSAT",
         "id": timings["run_id"]
     }
-
-    print("test")
     append_to_excel(row)
 
 
@@ -128,6 +127,22 @@ def compute_concrete_from_abstract(
     logger.info(f"Base dir: {base_dir}")
 
     print("Directory:", base_dir)
+
+    # Create json log for abstract plans
+
+    json_log_path = get_json_path(
+        abstract_problem_path,
+        concrete_problem_path
+    )
+
+    problem_hash = hash_files(
+        abstract_problem_path,
+        concrete_problem_path
+    )
+
+    init_json_file(json_log_path, problem_hash)
+    start_new_run(json_log_path, solving_mode)
+
 
     total_start = time.perf_counter()
 
@@ -274,6 +289,13 @@ def compute_concrete_from_abstract(
             iter_time = time.perf_counter() - iter_start
             total_time = time.perf_counter() - total_start
 
+            append_step(
+                json_log_path,
+                abstract_atoms,
+                success=True,
+                bad_actions=[] 
+            )
+
             iteration_times.append({
                 "abs": 0,
                 "occ": occ_time,
@@ -343,6 +365,13 @@ def compute_concrete_from_abstract(
 
         total_time = time.perf_counter() - total_start
         logger.info(f"TOTAL TIME: {total_time:.3f}s")
+
+        append_step(
+            json_log_path,
+            abstract_atoms,
+            success=False,
+            bad_actions=bad_abstract_actions
+        )
     
         return {
             "horizon": horizon,
@@ -486,10 +515,17 @@ def compute_concrete_from_abstract(
             logger.info("Plans:")
             logger.info(pformat(plans))
 
-            save_json(debug_dir, iteration, "concrete_plans.json", plans)
+            save_json_iteration_file(debug_dir, iteration, "concrete_plans.json", plans)
 
             iter_time = time.perf_counter() - iter_start
             total_time = time.perf_counter() - total_start
+
+            append_step(
+                json_log_path,
+                abstract_atoms,
+                success=True,
+                bad_actions=[] # maybe add here from the other actions?
+            )
 
             iteration_times.append({
                 "abs": abs_time,
@@ -591,6 +627,13 @@ def compute_concrete_from_abstract(
             f"ref={ref_time:.3f}s | "
             f"forbidden={len(forbid_atoms)} | "
             f"iter={iter_time:.3f}s"
+        )
+
+        append_step(
+            json_log_path,
+            abstract_atoms,
+            success=False,
+            bad_actions=bad_abstract_actions
         )
 
         # Loop continues for next iteration

@@ -53,7 +53,7 @@ def copy_iteration_file(debug_dir, iteration, file_path):
 
     return dst_path
 
-def save_json(debug_dir, iteration, name, obj):
+def save_json_iteration_file(debug_dir, iteration, name, obj):
     save_iteration_file(
         debug_dir,
         iteration,
