@@ -129,19 +129,12 @@ def compute_concrete_from_abstract(
     print("Directory:", base_dir)
 
     # Create json log for abstract plans
-
-    json_log_path = get_json_path(
+    json_log_path, problem_hash = get_json_path(
         abstract_problem_path,
         concrete_problem_path
     )
 
-    problem_hash = hash_files(
-        abstract_problem_path,
-        concrete_problem_path
-    )
-
-    init_json_file(json_log_path, problem_hash)
-    start_new_run(json_log_path, solving_mode)
+    init_plan_file(json_log_path, problem_hash)
 
 
     total_start = time.perf_counter()
@@ -289,11 +282,12 @@ def compute_concrete_from_abstract(
             iter_time = time.perf_counter() - iter_start
             total_time = time.perf_counter() - total_start
 
-            append_step(
+            update_plan(
                 json_log_path,
                 abstract_atoms,
                 success=True,
-                bad_actions=[] 
+                bad_actions=[],
+                mode=solving_mode
             )
 
             iteration_times.append({
@@ -366,11 +360,12 @@ def compute_concrete_from_abstract(
         total_time = time.perf_counter() - total_start
         logger.info(f"TOTAL TIME: {total_time:.3f}s")
 
-        append_step(
+        update_plan(
             json_log_path,
             abstract_atoms,
             success=False,
-            bad_actions=bad_abstract_actions
+            bad_actions=bad_abstract_actions,
+            mode=solving_mode
         )
     
         return {
@@ -520,11 +515,12 @@ def compute_concrete_from_abstract(
             iter_time = time.perf_counter() - iter_start
             total_time = time.perf_counter() - total_start
 
-            append_step(
+            update_plan(
                 json_log_path,
                 abstract_atoms,
                 success=True,
-                bad_actions=[] # maybe add here from the other actions?
+                bad_actions=[], # maybe add here from the other actions?
+                mode=solving_mode
             )
 
             iteration_times.append({
@@ -629,11 +625,12 @@ def compute_concrete_from_abstract(
             f"iter={iter_time:.3f}s"
         )
 
-        append_step(
+        update_plan(
             json_log_path,
             abstract_atoms,
             success=False,
-            bad_actions=bad_abstract_actions
+            bad_actions=bad_abstract_actions,
+            mode=solving_mode
         )
 
         # Loop continues for next iteration
