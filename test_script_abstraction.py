@@ -134,8 +134,14 @@ def compute_concrete_from_abstract(
         concrete_problem_path
     )
 
-    init_plan_file(json_log_path, problem_hash)
-
+    init_plan_file(
+        json_log_path,
+        problem_hash,
+        abstract_problem_path,
+        concrete_problem_path,
+        abstract_symbol=abstract_symbol,
+        concrete_objects=concrete_objects
+    )
 
     total_start = time.perf_counter()
 

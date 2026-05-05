@@ -35,6 +35,20 @@ def get_json_path(abstract_problem_path, concrete_problem_path):
     problem_hash = hash_files(abstract_problem_path, concrete_problem_path)
     return os.path.join(BASE_JSON_DIR, f"{problem_hash}.json"), problem_hash
 
+def get_json_path_more(abstract_problem_path, concrete_problem_path, abstract_symbol, concrete_objects):
+    ensure_json_dir()
+
+    problem_hash = hashlib.sha256(
+        (
+            abstract_problem_path +
+            concrete_problem_path +
+            abstract_symbol +
+            ",".join(sorted(concrete_objects or []))
+        ).encode()
+    ).hexdigest()[:16]
+
+    return os.path.join(BASE_JSON_DIR, f"{problem_hash}.json"), problem_hash
+
 # --------------------------------------------------
 # FILE HANDLING
 # --------------------------------------------------
@@ -71,11 +85,20 @@ def save_json(path, data):
     with open(path, "w") as f:
         json.dump(data, f, indent=2)
 
-def init_plan_file(path, problem_hash):
+def init_plan_file(path, problem_hash, abstract_problem_path, concrete_problem_path,
+                   abstract_symbol=None, concrete_objects=None):
     if not os.path.exists(path):
         with open(path, "w") as f:
             json.dump({
                 "problem_hash": problem_hash,
+
+                # NEW METADATA
+                "abstract_problem_file": os.path.basename(abstract_problem_path),
+                "concrete_problem_file": os.path.basename(concrete_problem_path),
+
+                "abstract_symbol": abstract_symbol,
+                "concrete_objects": concrete_objects or [],
+
                 "plans": {}
             }, f, indent=2)
 
