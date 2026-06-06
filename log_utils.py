@@ -79,9 +79,10 @@ def get_debug_dir():
 
     return logger.debug_dir
 
-def create_run_dir():
+def create_run_dir(dir):
     current_directory = os.path.dirname(os.path.abspath(__file__))
     run_id = str(uuid.uuid4())
-    base_dir = os.path.join(current_directory, "temp", run_id)
+    base_dir = os.path.join(current_directory, "temp", dir, run_id)
+    print(base_dir)
     os.makedirs(base_dir, exist_ok=True)
     return base_dir, run_id

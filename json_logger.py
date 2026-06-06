@@ -30,10 +30,13 @@ def hash_plan(abstract_atoms):
     joined = "\n".join(normalized)
     return hashlib.sha256(joined.encode()).hexdigest()[:16]
 
-def get_json_path(abstract_problem_path, concrete_problem_path):
-    ensure_json_dir()
+def get_json_path(abstract_problem_path, concrete_problem_path, dir):
     problem_hash = hash_files(abstract_problem_path, concrete_problem_path)
-    return os.path.join(BASE_JSON_DIR, f"{problem_hash}.json"), problem_hash
+
+    target_dir = os.path.join(BASE_JSON_DIR, dir)
+    os.makedirs(target_dir, exist_ok=True)
+
+    return os.path.join(target_dir, f"{problem_hash}.json"), problem_hash
 
 def get_json_path_more(abstract_problem_path, concrete_problem_path, abstract_symbol, concrete_objects):
     ensure_json_dir()

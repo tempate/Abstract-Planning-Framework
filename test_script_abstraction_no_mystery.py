@@ -5,7 +5,7 @@ import argparse
 
 from fastdownward_service import *
 from plasp_utils import *
-from clingo_utils_api import *
+from clingo_utils_api_no_mystery import *
 from log_utils import *
 from create_excel import *
 from json_logger import *
@@ -21,14 +21,16 @@ def main():
     parser.add_argument("--time-step", action="store_true")
     parser.add_argument(
         "--abstract-symbol",
-        required=True,
-        help="Abstract symbol used in abstraction mapping"
+        required=False,
+        default=None,
+        help="Abstract symbol used in abstraction mapping (optional)"
     )
     parser.add_argument(
         "--concrete-objects",
         nargs="+",
-        required=True,
-        help="One or more concrete objects mapped to the abstract symbol"
+        required=False,
+        default=None,
+        help="One or more concrete objects mapped to the abstract symbol (optional)"
     )
     parser.add_argument(
         "--mode",
@@ -114,7 +116,7 @@ def compute_concrete_from_abstract(
     solving_mode="inc",
     plan_source="clingo",
 ):
-    dir_name = "beluga"
+    dir_name = "noMystery"
 
     base_dir, run_id = create_run_dir(dir_name)
 
@@ -211,6 +213,7 @@ def compute_concrete_from_abstract(
     )
 
     add_switch_to_lp_rule(output_c_lp, encoding)
+    append_pddl_facts_to_lp(concrete_problem_path, output_c_lp)
 
     concrete_lp_time = time.perf_counter() - concrete_lp_start
     logger.info(f"Concrete LP generation: {concrete_lp_time:.3f}s")
@@ -579,6 +582,15 @@ def compute_concrete_from_abstract(
         ref_start = time.perf_counter()
 
         logger.info("Concrete solve failed.")
+
+        bad_hangar_actions = []
+
+        for atom in bad_abstract_actions:
+            if abstract_symbol and abstract_symbol in atom:
+                bad_hangar_actions.append(atom)
+            elif '"drive"' in atom:
+                bad_hangar_actions.append(atom)
+
         logger.info("Bad abstract actions:")
 
         for atom in bad_abstract_actions:
@@ -592,9 +604,10 @@ def compute_concrete_from_abstract(
         )
 
         new_forbidden = []
-        
-        for atom in bad_abstract_actions:
-            if abstract_symbol in atom and atom not in forbid_atoms:
+
+        # Avoid duplicates
+        for atom in bad_hangar_actions:
+            if atom not in forbid_atoms:
                 forbid_atoms.append(atom)
                 new_forbidden.append(atom)
 
