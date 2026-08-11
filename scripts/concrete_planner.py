@@ -3,7 +3,7 @@ import time
 import argparse
 
 from .utils.fast_downward import run_fast_downward
-from .utils.results import append_result
+from .utils.reporting import print_planning_result, save_result_summary
 from .utils.run_artifacts import create_run_dir, get_logger, setup_debug_logger
 from core.plasp import generate_lp_with_plasp
 from core.solver import run_clingo
@@ -20,8 +20,6 @@ def main():
 
     print("Starting")
 
-    logger = get_logger()
-
     result = compute_concrete_plan(
         domain_path=args.domain,
         problem_path=args.problem,
@@ -30,51 +28,8 @@ def main():
         time_step=args.time_step,
     )
 
-    #print("result: ", result)
-
-    print("\n=== RESULT ===")
-    print(f"Horizon: {result['horizon']}")
-    print(f"Plans found: {result['numPlans']}")
-
-    logger.info(f"Plans found: {result['numPlans']}")
-
-    for i, plan in enumerate(result["plans"], 1):
-        print(f"\nPlan {i}:")
-
-        # sort by timestep (last argument of occurs)
-        sorted_plan = sorted(plan, key=lambda a: int(str(a).split(",")[-1].rstrip(")")))
-
-        for atom in sorted_plan:
-            print(" ", atom)
-
-    timings = result["timings"]
-
-    row = {
-        "Problem": args.abstract_problem.split("/")[-1] if hasattr(args, "abstract_problem") else args.problem.split("/")[-1],
-        "Version": "concrete",
-        "Mode": getattr(args, "mode", "N/A"),
-
-        "horizon": result["horizon"],
-        "iterations": timings.get("iterations"),
-
-        "fd_conc": timings.get("fd_conc"),
-        "fd_abs": timings.get("fd_abs"),
-        "fd_total": timings.get("fd_total"),
-
-        "lp_concrete_time": timings.get("lp_concrete_time"),
-        "lp_abstract_time": timings.get("lp_abstract_time"),
-        "lp_total_time": timings.get("lp_total_time"),
-
-        "abstract_solve_time": timings.get("abstract_solve_time"),
-        "concrete_solve_time": timings.get("concrete_solve_time"),
-
-        "total": timings.get("total_time"),
-
-        "result": "SAT" if result["success"] else "UNSAT",
-        "id": timings.get("run_id")
-    }
-
-    append_result(row)
+    print_planning_result(result, get_logger())
+    save_result_summary(args.problem, "concrete", "N/A", result)
 
 def compute_concrete_plan(
     domain_path,
@@ -85,7 +40,7 @@ def compute_concrete_plan(
 ):
     base_dir, run_id = create_run_dir()
 
-    logger, debug_dir = setup_debug_logger(base_dir)
+    logger, _ = setup_debug_logger(base_dir)
 
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
@@ -102,39 +57,31 @@ def compute_concrete_plan(
 
     # Fast Downward expects binary files
     with open(domain_path, "rb") as d, open(problem_path, "rb") as p:
-        result = run_fast_downward(
+        planner_result = run_fast_downward(
             base_dir=base_dir,
             domain_file=d,
             problem_file=p
         )
 
-    result = result["concrete"]
-
-    input = result["sasFile"]
+    concrete_result = planner_result["concrete"]
 
     fd_time = time.perf_counter() - fd_start
 
     # If horizon was not provided, use Fast Downward's horizon
     if horizon is None:
-        horizon = result["horizon"]
-
-    is_pddl = False
+        horizon = concrete_result["horizon"]
 
     logger.info(f"Fast Downward time: {fd_time:.3f}s")
 
     output_lp = os.path.join(base_dir, "output_c.lp")
 
-    logger, debug_dir = setup_debug_logger(base_dir)
-
     # Generate LP with plasp
     lp_start = time.perf_counter()
 
     generate_lp_with_plasp(
-        sas_or_pddl_path=input,
+        sas_or_pddl_path=concrete_result["sasFile"],
         lp_output_path=output_lp,
         encoding_type=encoding,
-        is_pddl_instance=is_pddl,
-        domain_file=domain_path,
         abstract_time_steps=time_step
     )
 
@@ -148,7 +95,7 @@ def compute_concrete_plan(
 
     solve_time = time.perf_counter() - solve_start
 
-    plans = [[atom for atom in model] for model in models]
+    plans = models
 
     total_time = time.perf_counter() - total_start
 

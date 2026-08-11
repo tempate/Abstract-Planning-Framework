@@ -3,7 +3,7 @@ import os
 import time
 from pprint import pformat
 
-from .utils.results import append_result
+from .utils.reporting import print_planning_result, save_result_summary
 from .utils.fast_downward import (
     fast_downward_plan_to_abstract_atoms,
     run_fast_downward,
@@ -31,6 +31,86 @@ from core.plasp import (
     append_pddl_facts_to_lp,
     generate_lp_with_plasp,
 )
+
+
+def _solve_concrete_plan(mode, lp_files, horizon, switch_map):
+    solvers = {
+        "inc": solve_concrete_incremental,
+        "dec": solve_concrete_decremental,
+    }
+    try:
+        return solvers[mode](lp_files, horizon, switch_map)
+    except KeyError as error:
+        raise ValueError(f"Unknown solving mode: {mode}") from error
+
+
+def _result(
+    horizon,
+    success,
+    plans,
+    iteration_times,
+    fd_timings,
+    concrete_lp_time,
+    abstract_lp_time,
+    lp_total_time,
+    abstract_solve_time,
+    concrete_solve_time,
+    total_time,
+    run_id,
+):
+    return {
+        "horizon": horizon,
+        "numPlans": len(plans) if success else 0,
+        "plans": plans if success else [],
+        "success": success,
+        "timings": {
+            "iterations": len(iteration_times),
+            "fd_concrete_time": fd_timings["fd_concrete_time"],
+            "fd_abstract_time": fd_timings["fd_abstract_time"],
+            "fd_total_time": fd_timings["fd_total_time"],
+            "lp_concrete_time": concrete_lp_time,
+            "lp_abstract_time": abstract_lp_time,
+            "lp_total_time": lp_total_time,
+            "abstract_solve_time": abstract_solve_time,
+            "concrete_solve_time": concrete_solve_time,
+            "total_time": total_time,
+            "run_id": run_id,
+        },
+    }
+
+
+def _log_iteration_totals(logger, iteration_times):
+    totals = {
+        phase: sum(timing[phase] for timing in iteration_times)
+        for phase in ("abs", "occ", "map", "conc", "ref", "iter")
+    }
+    logger.info("=" * 70)
+    logger.info(
+        "ITERATIONS TOTAL SUMMARY | "
+        f"iters={len(iteration_times)} | "
+        f"abs={totals['abs']:.3f}s | occ={totals['occ']:.3f}s | "
+        f"map={totals['map']:.3f}s | conc={totals['conc']:.3f}s | "
+        f"ref={totals['ref']:.3f}s | iter_total={totals['iter']:.3f}s"
+    )
+
+
+def _iteration_timing(abstract, occurs, mapping, concrete, refinement, total):
+    return {
+        "abs": abstract,
+        "occ": occurs,
+        "map": mapping,
+        "conc": concrete,
+        "ref": refinement,
+        "iter": total,
+    }
+
+
+def _build_mapping(map_builder, occurs_path, map_path, abstract_symbol, concrete_objects, logger):
+    start = time.perf_counter()
+    switch_map = map_builder(occurs_path, map_path, abstract_symbol, concrete_objects)
+    mapping_time = log_phase(logger, "Mapping generation time", start)
+    return switch_map, mapping_time
+
 
 def main(
     mapping_required=True,
@@ -77,8 +157,6 @@ def main(
 
     print("Starting")
 
-    logger = get_logger()
-
     result = compute_concrete_from_abstract(
         abstract_domain_path=args.abstract_domain,
         abstract_problem_path=args.abstract_problem,
@@ -103,43 +181,8 @@ def main(
         ),
     )
 
-    print("\n=== RESULT ===")
-    print(f"Horizon: {result['horizon']}")
-    print(f"Plans found: {result['numPlans']}")
-
-    logger.info(f"Success: {result['success']}")
-    logger.info(f"Plans found: {result['numPlans']}")
-
-    for i, plan in enumerate(result["plans"], 1):
-        print(f"\nPlan {i}:")
-
-        # sort by timestep (last argument of occurs)
-        sorted_plan = sorted(plan, key=lambda a: int(str(a).split(",")[-1].rstrip(")")))
-
-        for atom in sorted_plan:
-            print(" ", atom)
-
-    timings = result["timings"]
-
-    row = {
-        "Problem": args.abstract_problem.split("/")[-1],
-        "Version": "abstract",
-        "Mode": args.mode,
-        "horizon": result["horizon"],
-        "iterations": timings["iterations"],
-        "fd_conc": timings["fd_concrete_time"],
-        "fd_abs": timings["fd_abstract_time"],
-        "fd_total": timings["fd_total_time"],
-        "lp_concrete_time": timings["lp_concrete_time"],
-        "lp_abstract_time": timings["lp_abstract_time"],
-        "lp_total_time": timings["lp_total_time"],
-        "abstract_solve_time": timings["abstract_solve_time"],
-        "concrete_solve_time": timings["concrete_solve_time"],
-        "total": timings["total_time"],
-        "result": "SAT" if result["success"] else "UNSAT",
-        "id": timings["run_id"]
-    }
-    append_result(row)
+    print_planning_result(result, get_logger())
+    save_result_summary(args.abstract_problem, "abstract", args.mode, result)
 
 
 def compute_concrete_from_abstract(
@@ -226,11 +269,6 @@ def compute_concrete_from_abstract(
             concrete_result.get("horizon", 0)
         ) """
 
-    concrete_input = concrete_result["sasFile"]
-    abstract_input = abstract_result["sasFile"]
-
-    is_pddl = False
-
     logger.info(f"Fast Downward time: {fd_time:.3f}s")
 
     output_c_lp = os.path.join(base_dir, "output_c.lp")
@@ -249,11 +287,9 @@ def compute_concrete_from_abstract(
 
     # Concrete LP
     generate_lp_with_plasp(
-        sas_or_pddl_path=concrete_input,
+        sas_or_pddl_path=concrete_result["sasFile"],
         lp_output_path=output_c_lp,
         encoding_type=encoding,
-        is_pddl_instance=is_pddl,
-        domain_file=concrete_domain_path,
         abstract_time_steps=time_step
     )
 
@@ -269,11 +305,9 @@ def compute_concrete_from_abstract(
     # Abstract LP
     if plan_source == "clingo":
         generate_lp_with_plasp(
-            sas_or_pddl_path=abstract_input,
+            sas_or_pddl_path=abstract_result["sasFile"],
             lp_output_path=output_a_lp,
             encoding_type=encoding,
-            is_pddl_instance=is_pddl,
-            domain_file=abstract_domain_path,
             abstract_time_steps=time_step
         )
 
@@ -302,33 +336,24 @@ def compute_concrete_from_abstract(
         iter_start = time.perf_counter()
         iteration_times = []
 
-        # Create mapping LP with switches
-        map_start = time.perf_counter()
-
-        switch_map = map_builder(
+        switch_map, map_time = _build_mapping(
+            map_builder,
             occurs_abs_lp_path,
             map_lp_path,
             abstract_symbol,
             concrete_objects,
+            logger,
         )
-
-        map_time = log_phase(logger, "Mapping generation time", map_start)
 
          # Concrete incremental solving
         conc_start = time.perf_counter()
 
-        if solving_mode == "inc":
-            ok, plans, bad_abstract_actions = solve_concrete_incremental(
-                [output_c_lp, occurs_abs_lp_path, map_lp_path],
-                horizon,
-                switch_map,
-            )
-        if solving_mode == "dec":
-            ok, plans, bad_abstract_actions = solve_concrete_decremental(
-                [output_c_lp, occurs_abs_lp_path, map_lp_path],
-                horizon,
-                switch_map
-            )
+        ok, plans, bad_abstract_actions = _solve_concrete_plan(
+            solving_mode,
+            [output_c_lp, occurs_abs_lp_path, map_lp_path],
+            horizon,
+            switch_map,
+        )
 
         conc_time = log_phase(logger, "Concrete solving time", conc_start)
 
@@ -348,48 +373,18 @@ def compute_concrete_from_abstract(
                 mode=solving_mode
             )
 
-            iteration_times.append({
-                "abs": 0,
-                "occ": occ_time,
-                "map": map_time,
-                "conc": conc_time,
-                "ref": 0.0,
-                "iter": iter_time
-            })
-
-            logger.info("=" * 70)
-            logger.info(
-                f"ITERATIONS TOTAL SUMMARY | "
-                f"iters={len(iteration_times)} | "
-                f"abs={sum(t['abs'] for t in iteration_times):.3f}s | "
-                f"occ={sum(t['occ'] for t in iteration_times):.3f}s | "
-                f"map={sum(t['map'] for t in iteration_times):.3f}s | "
-                f"conc={sum(t['conc'] for t in iteration_times):.3f}s | "
-                f"ref={sum(t['ref'] for t in iteration_times):.3f}s | "
-                f"iter_total={sum(t['iter'] for t in iteration_times):.3f}s"
+            iteration_times.append(
+                _iteration_timing(0, occ_time, map_time, conc_time, 0.0, iter_time)
             )
+
+            _log_iteration_totals(logger, iteration_times)
 
             logger.info(f"TOTAL TIME: {total_time:.3f}s")
 
-            return {
-                "horizon": horizon,
-                "numPlans": len(plans),
-                "plans": plans,
-                "success": True,
-                "timings": {
-                    "iterations": len(iteration_times),
-                    "fd_concrete_time": fd_timings["fd_concrete_time"],
-                    "fd_abstract_time": fd_timings["fd_abstract_time"],
-                    "fd_total_time": fd_timings["fd_total_time"],
-                    "lp_concrete_time": concrete_lp_time,
-                    "lp_abstract_time": 0,
-                    "lp_total_time": lp_total,
-                    "abstract_solve_time": 0,
-                    "concrete_solve_time": conc_time,
-                    "total_time": total_time,
-                    "run_id": base_dir
-                }
-            }
+            return _result(
+                horizon, True, plans, iteration_times, fd_timings,
+                concrete_lp_time, 0, lp_total, 0, conc_time, total_time, base_dir,
+            )
 
         # Refine abstraction: only forbid actions with the abstract symbol
         ref_start = time.perf_counter()
@@ -400,17 +395,7 @@ def compute_concrete_from_abstract(
         for atom in bad_abstract_actions:
             logger.info(f"  {atom}")
 
-        logger.info("=" * 70)
-        logger.info(
-            f"ITERATIONS TOTAL SUMMARY | "
-            f"iters={len(iteration_times)} | "
-            f"abs={sum(t['abs'] for t in iteration_times):.3f}s | "
-            f"occ={sum(t['occ'] for t in iteration_times):.3f}s | "
-            f"map={sum(t['map'] for t in iteration_times):.3f}s | "
-            f"conc={sum(t['conc'] for t in iteration_times):.3f}s | "
-            f"ref={sum(t['ref'] for t in iteration_times):.3f}s | "
-            f"iter_total={sum(t['iter'] for t in iteration_times):.3f}s"
-        )
+        _log_iteration_totals(logger, iteration_times)
 
         logger.info("No abstract plan possible.")
         logger.info("FAILED")
@@ -426,25 +411,10 @@ def compute_concrete_from_abstract(
             mode=solving_mode
         )
 
-        return {
-            "horizon": horizon,
-            "numPlans": 0,
-            "plans": [],
-            "success": False,
-            "timings": {
-                "iterations": len(iteration_times),
-                "fd_concrete_time": fd_timings["fd_concrete_time"],
-                "fd_abstract_time": fd_timings["fd_abstract_time"],
-                "fd_total_time": fd_timings["fd_total_time"],
-                "lp_concrete_time": concrete_lp_time,
-                "lp_abstract_time": 0,
-                "lp_total_time": lp_total,
-                "abstract_solve_time": 0,
-                "concrete_solve_time": conc_time,
-                "total_time": total_time,
-                "run_id": base_dir
-            }
-        }
+        return _result(
+            horizon, False, [], iteration_times, fd_timings,
+            concrete_lp_time, 0, lp_total, 0, conc_time, total_time, base_dir,
+        )
 
     ################################################################################
 
@@ -488,25 +458,11 @@ def compute_concrete_from_abstract(
             total_time = time.perf_counter() - total_start
             logger.info(f"TOTAL TIME: {total_time:.3f}s")
 
-            return {
-                "horizon": horizon,
-                "numPlans": 0,
-                "plans": [],
-                "success": False,
-                "timings": {
-                    "iterations": len(iteration_times),
-                    "fd_concrete_time": fd_timings["fd_concrete_time"],
-                    "fd_abstract_time": fd_timings["fd_abstract_time"],
-                    "fd_total_time": fd_timings["fd_total_time"],
-                    "lp_concrete_time": concrete_lp_time,
-                    "lp_abstract_time": abstract_lp_time,
-                    "lp_total_time": lp_total,
-                    "abstract_solve_time": abs_time,
-                    "concrete_solve_time": conc_time,
-                    "total_time": total_time,
-                    "run_id": base_dir
-                }
-            }
+            return _result(
+                horizon, False, [], iteration_times, fd_timings,
+                concrete_lp_time, abstract_lp_time, lp_total, abs_time, 0,
+                total_time, base_dir,
+            )
 
         abstract_atoms = abstract_models[0]
 
@@ -527,17 +483,14 @@ def compute_concrete_from_abstract(
             occurs_abs_lp_path
         )
 
-        # Create mapping LP with switches
-        map_start = time.perf_counter()
-
-        switch_map = map_builder(
+        switch_map, map_time = _build_mapping(
+            map_builder,
             occurs_abs_lp_path,
             map_lp_path,
             abstract_symbol,
             concrete_objects,
+            logger,
         )
-
-        map_time = log_phase(logger, "Mapping generation time", map_start)
 
         copy_iteration_file(
             debug_dir,
@@ -548,18 +501,12 @@ def compute_concrete_from_abstract(
         # Concrete incremental solving
         conc_start = time.perf_counter()
 
-        if solving_mode == "inc":
-            ok, plans, bad_abstract_actions = solve_concrete_incremental(
-                [output_c_lp, occurs_abs_lp_path, map_lp_path],
-                horizon,
-                switch_map,
-            )
-        if solving_mode == "dec":
-            ok, plans, bad_abstract_actions = solve_concrete_decremental(
-                [output_c_lp, occurs_abs_lp_path, map_lp_path],
-                horizon,
-                switch_map
-            )
+        ok, plans, bad_abstract_actions = _solve_concrete_plan(
+            solving_mode,
+            [output_c_lp, occurs_abs_lp_path, map_lp_path],
+            horizon,
+            switch_map,
+        )
 
         conc_time = log_phase(logger, "Concrete solving time", conc_start)
 
@@ -581,48 +528,19 @@ def compute_concrete_from_abstract(
                 mode=solving_mode
             )
 
-            iteration_times.append({
-                "abs": abs_time,
-                "occ": occ_time,
-                "map": map_time,
-                "conc": conc_time,
-                "ref": 0.0,
-                "iter": iter_time
-            })
-
-            logger.info("=" * 70)
-            logger.info(
-                f"ITERATIONS TOTAL SUMMARY | "
-                f"iters={len(iteration_times)} | "
-                f"abs={sum(t['abs'] for t in iteration_times):.3f}s | "
-                f"occ={sum(t['occ'] for t in iteration_times):.3f}s | "
-                f"map={sum(t['map'] for t in iteration_times):.3f}s | "
-                f"conc={sum(t['conc'] for t in iteration_times):.3f}s | "
-                f"ref={sum(t['ref'] for t in iteration_times):.3f}s | "
-                f"iter_total={sum(t['iter'] for t in iteration_times):.3f}s"
+            iteration_times.append(
+                _iteration_timing(abs_time, occ_time, map_time, conc_time, 0.0, iter_time)
             )
+
+            _log_iteration_totals(logger, iteration_times)
 
             logger.info(f"TOTAL TIME: {total_time:.3f}s")
 
-            return {
-                "horizon": horizon,
-                "numPlans": len(plans),
-                "plans": plans,
-                "success": True,
-                "timings": {
-                    "iterations": len(iteration_times),
-                    "fd_concrete_time": fd_timings["fd_concrete_time"],
-                    "fd_abstract_time": fd_timings["fd_abstract_time"],
-                    "fd_total_time": fd_timings["fd_total_time"],
-                    "lp_concrete_time": concrete_lp_time,
-                    "lp_abstract_time": abstract_lp_time,
-                    "lp_total_time": lp_total,
-                    "abstract_solve_time": abs_time,
-                    "concrete_solve_time": conc_time,
-                    "total_time": total_time,
-                    "run_id": base_dir
-                }
-            }
+            return _result(
+                horizon, True, plans, iteration_times, fd_timings,
+                concrete_lp_time, abstract_lp_time, lp_total, abs_time, conc_time,
+                total_time, base_dir,
+            )
 
         # Refine abstraction: only forbid actions with the abstract symbol
         ref_start = time.perf_counter()
@@ -663,14 +581,9 @@ def compute_concrete_from_abstract(
 
         iter_time = time.perf_counter() - iter_start
 
-        iteration_times.append({
-            "abs": abs_time,
-            "occ": occ_time,
-            "map": map_time,
-            "conc": conc_time,
-            "ref": ref_time,
-            "iter": iter_time
-        })
+        iteration_times.append(
+            _iteration_timing(abs_time, occ_time, map_time, conc_time, ref_time, iter_time)
+        )
 
         logger.info(
             f"ITER {iteration} SUMMARY | "

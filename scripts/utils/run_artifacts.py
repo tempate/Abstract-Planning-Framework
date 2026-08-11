@@ -4,8 +4,7 @@ import json
 import logging
 import shutil
 import uuid
-from pprint import pformat
-from datetime import datetime
+
 from core.paths import TEMP_DIR
 
 def setup_debug_logger(base_dir):
@@ -33,10 +32,7 @@ def setup_debug_logger(base_dir):
     return logger, debug_dir
 
 def save_iteration_file(debug_dir, iteration, name, content):
-    folder = os.path.join(debug_dir, f"iter_{iteration:03d}")
-    os.makedirs(folder, exist_ok=True)
-
-    path = os.path.join(folder, name)
+    path = os.path.join(_iteration_dir(debug_dir, iteration), name)
 
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
@@ -44,11 +40,8 @@ def save_iteration_file(debug_dir, iteration, name, content):
     return path
 
 def copy_iteration_file(debug_dir, iteration, file_path):
-    folder = os.path.join(debug_dir, f"iter_{iteration:03d}")
-    os.makedirs(folder, exist_ok=True)
-
     filename = os.path.basename(file_path)
-    dst_path = os.path.join(folder, filename)
+    dst_path = os.path.join(_iteration_dir(debug_dir, iteration), filename)
 
     shutil.copyfile(file_path, dst_path)
 
@@ -81,10 +74,15 @@ def get_debug_dir():
     return logger.debug_dir
 
 def create_run_dir(dir_name="concrete"):
-    if not dir_name:
-        dir_name = "concrete"
+    dir_name = dir_name or "concrete"
     run_id = str(uuid.uuid4())
     base_dir = os.path.join(TEMP_DIR, dir_name, run_id)
     print(base_dir)
     os.makedirs(base_dir, exist_ok=True)
     return base_dir, run_id
+
+
+def _iteration_dir(debug_dir, iteration):
+    folder = os.path.join(debug_dir, f"iter_{iteration:03d}")
+    os.makedirs(folder, exist_ok=True)
+    return folder
