@@ -4,6 +4,7 @@ import re
 import time
 
 from scripts.utils.run_artifacts import get_logger, log_phase
+from core.mapping import read_abstract_actions, write_lp_lines
 
 
 def build_no_mystery_switch_mapping(
@@ -13,20 +14,9 @@ def build_no_mystery_switch_mapping(
     logger = get_logger()
     start = time.perf_counter()
 
-    with open(occurs_abs_path, "r") as source:
-        atoms = [line.strip() for line in source if line.strip()]
-
     lines = []
     switch_map = {}
-    switch_id = 1
-    for atom in atoms:
-        if not atom.startswith("occurs_abstract("):
-            continue
-
-        inner = atom[len("occurs_abstract("):].rstrip(").")
-        if "," not in inner:
-            continue
-        action, time_step = (part.strip() for part in inner.rsplit(",", 1))
+    for switch_id, (action, time_step) in enumerate(read_abstract_actions(occurs_abs_path), start=1):
         switch = f"switch({switch_id})"
         lines.append(f"0 {{ {switch} }} 1.")
 
@@ -68,10 +58,7 @@ def build_no_mystery_switch_mapping(
             "atom": f"occurs_abstract({action},{time_step})",
             "is_abstract": is_abstract,
         }
-        switch_id += 1
-
-    with open(output_path, "w") as target:
-        target.write("\n".join(lines))
+    write_lp_lines(output_path, lines)
 
     logger.info(f"[MAP] Switches created={len(switch_map)}")
     logger.info(f"[FILES] wrote {output_path}")
