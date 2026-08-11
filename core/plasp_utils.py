@@ -10,13 +10,13 @@ def generate_lp_with_plasp(
     domain_file: str | None = None,
     abstract_time_steps: bool = False,
 ):
-    current_directory = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     plasp_binary = os.path.join(
-        current_directory, "lib", "planpilot", "bin", "plasp"
+        repo_root, "lib", "planpilot", "bin", "plasp"
     )
 
     encoding_dir = os.path.join(
-        current_directory, "lib", "planpilot", "encodings"
+        repo_root, "lib", "planpilot", "encodings"
     )
 
     encoding_file = os.path.join(

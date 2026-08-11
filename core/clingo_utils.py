@@ -2,8 +2,8 @@ import subprocess
 import os, re
 from .log_utils import *
 
-CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
-CLINGO_BIN = os.path.join(CURRENT_DIRECTORY, "lib", "clingo", "build", "bin", "clingo")
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CLINGO_BIN = os.path.join(REPO_ROOT, "lib", "clingo", "build", "bin", "clingo")
 
 THREADS = os.cpu_count()
 

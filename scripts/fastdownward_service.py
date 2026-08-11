@@ -24,7 +24,7 @@ def run_fastdownward_service(
     logger.info("=" * 65)
     logger.info("[FD] Fast Downward service started")
 
-    current_directory = os.path.dirname(os.path.abspath(__file__))
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     # File paths
     domain_file_path = os.path.join(base_dir, "domain.pddl")
@@ -41,7 +41,7 @@ def run_fastdownward_service(
 
     # Fast Downward script path
     fast_downward_script = os.path.join(
-        current_directory, "lib", "downward", "fast-downward.py"
+        repo_root, "lib", "downward", "fast-downward.py"
     )
 
     # Run Fast Downward (concrete)
