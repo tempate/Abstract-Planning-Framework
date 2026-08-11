@@ -20,6 +20,7 @@ class AbstractSolver(ABC):
         self.switch_map = switch_map
         self.control = create_control(lp_files, horizon)
         self.switches, self.switch_ids = self._find_switches()
+        self.operation_count = 0
 
         self.logger.info(f"[{self.log_prefix}] Starting {self.mode} solve")
         self.logger.info(
@@ -27,7 +28,7 @@ class AbstractSolver(ABC):
         )
         result = self._solve()
         log_phase(self.logger, f"[{self.log_prefix}] Runtime", self.started_at)
-        return result
+        return (*result, self.operation_count)
 
     @abstractmethod
     def _solve(self):

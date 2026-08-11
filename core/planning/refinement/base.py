@@ -51,6 +51,7 @@ class RefinementStrategy(ABC):
 
     def __init__(self, context):
         self.context = context
+        self.solver_operations = 0
 
     @abstractmethod
     def refine(self):
@@ -78,11 +79,14 @@ class RefinementStrategy(ABC):
             context.paths.mapping,
         ]
         start = time.perf_counter()
-        success, plans, bad_actions = get_solver(context.solving_mode).solve(
+        success, plans, bad_actions, operation_count = get_solver(
+            context.solving_mode
+        ).solve(
             lp_files,
             context.horizon,
             switch_map,
         )
+        self.solver_operations += operation_count
         elapsed = log_phase(context.logger, "Concrete solving time", start)
         return success, plans, bad_actions, elapsed
 
@@ -106,6 +110,16 @@ class RefinementStrategy(ABC):
             "success": success,
             "timings": {
                 "iterations": len(iteration_times),
+                "increments": (
+                    self.solver_operations
+                    if context.solving_mode == "inc"
+                    else None
+                ),
+                "decrements": (
+                    self.solver_operations
+                    if context.solving_mode == "dec"
+                    else None
+                ),
                 "fd_concrete_time": context.fd_timings["fd_concrete_time"],
                 "fd_abstract_time": context.fd_timings["fd_abstract_time"],
                 "fd_total_time": context.fd_timings["fd_total_time"],

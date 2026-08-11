@@ -24,6 +24,7 @@ class DecrementalSolver(AbstractSolver):
             switch_id = self.switch_ids[switch]
             self.logger.info(f"[{self.log_prefix}] Disabled switch={switch_id}")
             active_switches.remove(switch)
+            self.operation_count += 1
             if not self.switch_map[switch_id]["is_abstract"]:
                 continue
             if self.is_satisfiable(active_switches):

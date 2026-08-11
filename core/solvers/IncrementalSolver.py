@@ -13,6 +13,7 @@ class IncrementalSolver(AbstractSolver):
         active_switches = []
         for index, switch in enumerate(self.switches):
             active_switches.append(switch)
+            self.operation_count += 1
             if index + 1 == len(self.switches):
                 continue
 
