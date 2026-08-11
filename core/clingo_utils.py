@@ -1,9 +1,7 @@
 import subprocess
 import os, re
 from scripts.utils.log_utils import *
-
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CLINGO_BIN = os.path.join(REPO_ROOT, "lib", "clingo", "build", "bin", "clingo")
+from core.repo import CLINGO_BIN
 
 THREADS = os.cpu_count()
 

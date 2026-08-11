@@ -6,6 +6,7 @@ import shutil
 import uuid
 from pprint import pformat
 from datetime import datetime
+from core.repo import TEMP_DIR
 
 def setup_debug_logger(base_dir):
     debug_dir = os.path.join(base_dir, "debug")
@@ -82,9 +83,8 @@ def get_debug_dir():
 def create_run_dir(dir_name="concrete"):
     if not dir_name:
         dir_name = "concrete"
-    current_directory = os.path.dirname(os.path.abspath(__file__))
     run_id = str(uuid.uuid4())
-    base_dir = os.path.join(current_directory, "temp", dir_name, run_id)
+    base_dir = os.path.join(TEMP_DIR, dir_name, run_id)
     print(base_dir)
     os.makedirs(base_dir, exist_ok=True)
     return base_dir, run_id

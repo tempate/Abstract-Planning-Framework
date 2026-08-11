@@ -1,5 +1,12 @@
 import os
 import subprocess
+from core.repo import (
+    ABSTRACT_TIME_STEPS_ENCODING,
+    ACTION_PER_TIME_STEP_ENCODING,
+    BOUNDED_HORIZON_ENCODING,
+    EXACT_HORIZON_ENCODING,
+    PLASP_BIN,
+)
 
 
 def generate_lp_with_plasp(
@@ -10,27 +17,16 @@ def generate_lp_with_plasp(
     domain_file: str | None = None,
     abstract_time_steps: bool = False,
 ):
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    plasp_binary = os.path.join(
-        repo_root, "lib", "planpilot", "bin", "plasp"
-    )
-
-    encoding_dir = os.path.join(
-        repo_root, "lib", "planpilot", "encodings"
-    )
-
-    encoding_file = os.path.join(
-        encoding_dir,
-        "exact-sequential-horizon.lp"
+    plasp_binary = PLASP_BIN
+    encoding_file = (
+        EXACT_HORIZON_ENCODING
         if encoding_type == "exact"
-        else "bounded-sequential-horizon.lp",
+        else BOUNDED_HORIZON_ENCODING
     )
-
-    time_file = os.path.join(
-        encoding_dir,
-        "abstract-time-steps.lp"
+    time_file = (
+        ABSTRACT_TIME_STEPS_ENCODING
         if abstract_time_steps
-        else "action-per-time-step.lp",
+        else ACTION_PER_TIME_STEP_ENCODING
     )
 
     if not os.path.exists(plasp_binary):

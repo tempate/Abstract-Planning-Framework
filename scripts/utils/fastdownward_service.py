@@ -1,7 +1,7 @@
 import os
 import subprocess
-import uuid
 import time
+from core.repo import FAST_DOWNWARD_SCRIPT
 
 from .log_utils import *
 
@@ -24,8 +24,6 @@ def run_fastdownward_service(
     logger.info("=" * 65)
     logger.info("[FD] Fast Downward service started")
 
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
     # File paths
     domain_file_path = os.path.join(base_dir, "domain.pddl")
     problem_file_path = os.path.join(base_dir, "problem.pddl")
@@ -40,9 +38,7 @@ def run_fastdownward_service(
         f.write(problem_bytes)
 
     # Fast Downward script path
-    fast_downward_script = os.path.join(
-        repo_root, "lib", "downward", "fast-downward.py"
-    )
+    fast_downward_script = FAST_DOWNWARD_SCRIPT
 
     # Run Fast Downward (concrete)
     if fd_task == "plan":

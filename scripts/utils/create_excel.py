@@ -1,7 +1,6 @@
 import pandas as pd
 import os
-
-EXCEL_FILE = os.path.join(os.path.dirname(__file__), "results_automatically.xlsx")
+from core.repo import EXCEL_FILE
 
 def append_to_excel(row):
     df = pd.DataFrame([row])

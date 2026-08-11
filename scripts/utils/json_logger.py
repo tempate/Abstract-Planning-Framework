@@ -1,9 +1,7 @@
 import os
 import json
 import hashlib
-
-current_directory = os.path.dirname(os.path.abspath(__file__))
-BASE_JSON_DIR = os.path.join(current_directory, "temp", "jsonFiles")
+from core.repo import BASE_JSON_DIR
 
 # --------------------------------------------------
 # SETUP
