@@ -1,0 +1,149 @@
+===================================
+Problem: problem_1_s43_j5_r2_oc51_f3 | Mode: inc
+Hangars: hangar1 hangar2 hangar3
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/e4ba0768-9c8e-45d0-92d8-b267359f47dc
+
+=== RESULT ===
+Horizon: 30
+Plans found: 1
+
+Plan 1:
+  occurs(action(("unload-beluga","jig0003","jig0004","beluga_trailer_2","beluga1")),1)
+  occurs(action(("pick-up-rack","jig0001","beluga_trailer_1","rack00","bside","fside","n18","n14","n32")),2)
+  occurs(action(("load-beluga","jig0001","typed","dummy-type","beluga1","beluga_trailer_1","slot0","dummy-slot")),3)
+  occurs(action(("unload-beluga","jig0004","dummy-jig","beluga_trailer_1","beluga1")),4)
+  occurs(action(("beluga-complete","beluga1","beluga2")),5)
+  occurs(action(("put-down-rack","jig0003","beluga_trailer_2","rack00","bside","n11","n32","n21")),6)
+  occurs(action(("unload-beluga","jig0005","dummy-jig","beluga_trailer_2","beluga2")),7)
+  occurs(action(("stack-rack","jig0005","jig0003","beluga_trailer_2","rack00","bside","fside","n11","n21","n10")),8)
+  occurs(action(("unstack-rack","jig0003","jig0005","factory_trailer_1","rack00","fside","bside","n11","n10","n21")),9)
+  occurs(action(("deliver-to-hangar","jig0003","jig0005","factory_trailer_1","hangar2","pl1","n11","n08")),10)
+  occurs(action(("pick-up-rack","jig0005","factory_trailer_1","rack00","fside","bside","n11","n21","n32")),11)
+  occurs(action(("deliver-to-hangar","jig0005","dummy-jig","factory_trailer_1","hangar1","pl1","n11","n08")),12)
+  occurs(action(("get-from-hangar","jig0005","hangar1","factory_trailer_1")),13)
+  occurs(action(("put-down-rack","jig0005","factory_trailer_1","rack00","fside","n08","n32","n24")),14)
+  occurs(action(("pick-up-rack","jig0005","beluga_trailer_2","rack00","bside","fside","n08","n24","n32")),15)
+  occurs(action(("beluga-complete","beluga2","beluga3")),16)
+  occurs(action(("load-beluga","jig0005","typeb","typeb","beluga3","beluga_trailer_2","slot0","slot1")),17)
+  occurs(action(("pick-up-rack","jig0002","factory_trailer_1","rack01","fside","bside","n11","n13","n24")),18)
+  occurs(action(("deliver-to-hangar","jig0002","dummy-jig","factory_trailer_1","hangar1","pl0","n11","n08")),19)
+  occurs(action(("get-from-hangar","jig0003","hangar2","factory_trailer_1")),20)
+  occurs(action(("put-down-rack","jig0003","factory_trailer_1","rack01","fside","n08","n24","n16")),21)
+  occurs(action(("get-from-hangar","jig0002","hangar1","factory_trailer_1")),22)
+  occurs(action(("pick-up-rack","jig0003","beluga_trailer_2","rack01","bside","fside","n08","n16","n24")),23)
+  occurs(action(("load-beluga","jig0003","typeb","typeb","beluga3","beluga_trailer_2","slot1","slot2")),24)
+  occurs(action(("put-down-rack","jig0002","factory_trailer_1","rack01","fside","n08","n24","n16")),25)
+  occurs(action(("pick-up-rack","jig0002","beluga_trailer_2","rack01","bside","fside","n08","n16","n24")),26)
+  occurs(action(("put-down-rack","jig0004","beluga_trailer_1","rack01","bside","n11","n24","n13")),27)
+  occurs(action(("pick-up-rack","jig0004","factory_trailer_1","rack01","fside","bside","n11","n13","n24")),28)
+  occurs(action(("load-beluga","jig0002","typeb","dummy-type","beluga3","beluga_trailer_2","slot2","dummy-slot")),29)
+  occurs(action(("deliver-to-hangar","jig0004","dummy-jig","factory_trailer_1","hangar2","pl2","n11","n08")),30)
+test
+
+===================================
+Problem: problem_1_s43_j5_r2_oc51_f3 | Mode: dec
+Hangars: hangar1 hangar2 hangar3
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/1771329c-2b92-4878-b01c-93e6c204d1bb
+
+=== RESULT ===
+Horizon: 30
+Plans found: 1
+
+Plan 1:
+  occurs(action(("unload-beluga","jig0003","jig0004","beluga_trailer_1","beluga1")),1)
+  occurs(action(("pick-up-rack","jig0001","beluga_trailer_2","rack00","bside","fside","n18","n14","n32")),2)
+  occurs(action(("put-down-rack","jig0003","beluga_trailer_1","rack00","bside","n11","n32","n21")),3)
+  occurs(action(("pick-up-rack","jig0003","factory_trailer_1","rack00","fside","bside","n11","n21","n32")),4)
+  occurs(action(("deliver-to-hangar","jig0003","jig0005","factory_trailer_1","hangar3","pl1","n11","n08")),5)
+  occurs(action(("pick-up-rack","jig0002","factory_trailer_1","rack01","fside","bside","n11","n13","n24")),6)
+  occurs(action(("unload-beluga","jig0004","dummy-jig","beluga_trailer_1","beluga1")),7)
+  occurs(action(("deliver-to-hangar","jig0002","dummy-jig","factory_trailer_1","hangar1","pl0","n11","n08")),8)
+  occurs(action(("put-down-rack","jig0004","beluga_trailer_1","rack00","bside","n11","n32","n21")),9)
+  occurs(action(("get-from-hangar","jig0003","hangar3","factory_trailer_1")),10)
+  occurs(action(("put-down-rack","jig0003","factory_trailer_1","rack01","fside","n08","n24","n16")),11)
+  occurs(action(("pick-up-rack","jig0003","beluga_trailer_1","rack01","bside","fside","n08","n16","n24")),12)
+  occurs(action(("load-beluga","jig0001","typed","dummy-type","beluga1","beluga_trailer_2","slot0","dummy-slot")),13)
+  occurs(action(("beluga-complete","beluga1","beluga2")),14)
+  occurs(action(("pick-up-rack","jig0004","factory_trailer_1","rack00","fside","bside","n11","n21","n32")),15)
+  occurs(action(("unload-beluga","jig0005","dummy-jig","beluga_trailer_2","beluga2")),16)
+  occurs(action(("deliver-to-hangar","jig0004","dummy-jig","factory_trailer_1","hangar2","pl2","n11","n08")),17)
+  occurs(action(("put-down-rack","jig0005","beluga_trailer_2","rack01","bside","n11","n24","n13")),18)
+  occurs(action(("beluga-complete","beluga2","beluga3")),19)
+  occurs(action(("pick-up-rack","jig0005","factory_trailer_1","rack01","fside","bside","n11","n13","n24")),20)
+  occurs(action(("deliver-to-hangar","jig0005","dummy-jig","factory_trailer_1","hangar3","pl1","n11","n08")),21)
+  occurs(action(("load-beluga","jig0003","typeb","typeb","beluga3","beluga_trailer_1","slot0","slot1")),22)
+  occurs(action(("get-from-hangar","jig0002","hangar1","factory_trailer_1")),23)
+  occurs(action(("put-down-rack","jig0002","factory_trailer_1","rack00","fside","n08","n32","n24")),24)
+  occurs(action(("pick-up-rack","jig0002","beluga_trailer_1","rack00","bside","fside","n08","n24","n32")),25)
+  occurs(action(("get-from-hangar","jig0005","hangar3","factory_trailer_1")),26)
+  occurs(action(("load-beluga","jig0002","typeb","typeb","beluga3","beluga_trailer_1","slot1","slot2")),27)
+  occurs(action(("put-down-rack","jig0005","factory_trailer_1","rack01","fside","n08","n24","n16")),28)
+  occurs(action(("pick-up-rack","jig0005","beluga_trailer_1","rack01","bside","fside","n08","n16","n24")),29)
+  occurs(action(("load-beluga","jig0005","typeb","dummy-type","beluga3","beluga_trailer_1","slot2","dummy-slot")),30)
+test
+
+===================================
+Problem: problem_3_s45_j3_r2_oc44_f3 | Mode: inc
+Hangars: hangar1 hangar2 hangar3
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/48082173-0885-48cb-8dca-00c313e116e7
+
+=== RESULT ===
+Horizon: 17
+Plans found: 1
+
+Plan 1:
+  occurs(action(("unload-beluga","jig0002","dummy-jig","beluga_trailer_2","beluga1")),1)
+  occurs(action(("pick-up-rack","jig0001","factory_trailer_2","rack01","fside","bside","n32","n04","n36")),2)
+  occurs(action(("put-down-rack","jig0002","beluga_trailer_2","rack00","bside","n25","n30","n05")),3)
+  occurs(action(("pick-up-rack","jig0002","factory_trailer_1","rack00","fside","bside","n25","n05","n30")),4)
+  occurs(action(("beluga-complete","beluga1","beluga2")),5)
+  occurs(action(("deliver-to-hangar","jig0001","dummy-jig","factory_trailer_2","hangar1","pl1","n32","n32")),6)
+  occurs(action(("get-from-hangar","jig0001","hangar1","factory_trailer_2")),7)
+  occurs(action(("put-down-rack","jig0001","factory_trailer_2","rack01","fside","n32","n36","n04")),8)
+  occurs(action(("deliver-to-hangar","jig0002","dummy-jig","factory_trailer_1","hangar1","pl2","n25","n18")),9)
+  occurs(action(("pick-up-rack","jig0001","beluga_trailer_2","rack01","bside","fside","n32","n04","n36")),10)
+  occurs(action(("load-beluga","jig0001","typee","dummy-type","beluga2","beluga_trailer_2","slot0","dummy-slot")),11)
+  occurs(action(("get-from-hangar","jig0002","hangar1","factory_trailer_1")),12)
+  occurs(action(("put-down-rack","jig0002","factory_trailer_1","rack00","fside","n18","n30","n12")),13)
+  occurs(action(("pick-up-rack","jig0002","beluga_trailer_2","rack00","bside","fside","n18","n12","n30")),14)
+  occurs(action(("beluga-complete","beluga2","beluga3")),15)
+  occurs(action(("unload-beluga","jig0003","dummy-jig","beluga_trailer_1","beluga3")),16)
+  occurs(action(("load-beluga","jig0002","typed","dummy-type","beluga3","beluga_trailer_2","slot0","dummy-slot")),17)
+test
+
+===================================
+Problem: problem_3_s45_j3_r2_oc44_f3 | Mode: dec
+Hangars: hangar1 hangar2 hangar3
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/845070f7-85e7-43ff-ae5c-6c143f92e3d1
+
+=== RESULT ===
+Horizon: 17
+Plans found: 1
+
+Plan 1:
+  occurs(action(("unload-beluga","jig0002","dummy-jig","beluga_trailer_2","beluga1")),1)
+  occurs(action(("pick-up-rack","jig0001","factory_trailer_2","rack01","fside","bside","n32","n04","n36")),2)
+  occurs(action(("deliver-to-hangar","jig0001","dummy-jig","factory_trailer_2","hangar3","pl1","n32","n32")),3)
+  occurs(action(("get-from-hangar","jig0001","hangar3","factory_trailer_1")),4)
+  occurs(action(("put-down-rack","jig0001","factory_trailer_1","rack01","fside","n32","n36","n04")),5)
+  occurs(action(("put-down-rack","jig0002","beluga_trailer_2","rack00","bside","n25","n30","n05")),6)
+  occurs(action(("pick-up-rack","jig0002","factory_trailer_2","rack00","fside","bside","n25","n05","n30")),7)
+  occurs(action(("beluga-complete","beluga1","beluga2")),8)
+  occurs(action(("pick-up-rack","jig0001","beluga_trailer_1","rack01","bside","fside","n32","n04","n36")),9)
+  occurs(action(("deliver-to-hangar","jig0002","dummy-jig","factory_trailer_2","hangar1","pl2","n25","n18")),10)
+  occurs(action(("load-beluga","jig0001","typee","dummy-type","beluga2","beluga_trailer_1","slot0","dummy-slot")),11)
+  occurs(action(("get-from-hangar","jig0002","hangar1","factory_trailer_2")),12)
+  occurs(action(("beluga-complete","beluga2","beluga3")),13)
+  occurs(action(("unload-beluga","jig0003","dummy-jig","beluga_trailer_1","beluga3")),14)
+  occurs(action(("put-down-rack","jig0002","factory_trailer_2","rack00","fside","n18","n30","n12")),15)
+  occurs(action(("pick-up-rack","jig0002","beluga_trailer_2","rack00","bside","fside","n18","n12","n30")),16)
+  occurs(action(("load-beluga","jig0002","typed","dummy-type","beluga3","beluga_trailer_2","slot0","dummy-slot")),17)
+test
+
+===================================
+Problem: problem_12_s54_j8_r2_oc86_f4 | Mode: inc
+Hangars: hangar1 hangar2 hangar3

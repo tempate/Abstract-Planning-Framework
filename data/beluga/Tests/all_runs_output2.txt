@@ -1,0 +1,95 @@
+===================================
+Running: problem_39_s82_j4_r2_oc23_f3.pddl
+===================================
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/90950d90-9190-4310-bb55-2c95918f92d6
+[DONE] Total time: 8.883s
+result:  {'horizon': 21, 'numPlans': 1, 'plans': [['occurs(action(("unload-beluga","jig0002","dummy-jig","beluga_trailer_1","beluga1")),1)', 'occurs(action(("put-down-rack","jig0002","beluga_trailer_1","rack00","bside","n25","n28","n03")),2)', 'occurs(action(("pick-up-rack","jig0002","factory_trailer_2","rack00","fside","bside","n25","n03","n28")),3)', 'occurs(action(("deliver-to-hangar","jig0002","dummy-jig","factory_trailer_2","hangar1","pl2","n25","n18")),4)', 'occurs(action(("pick-up-rack","jig0001","beluga_trailer_3","rack01","bside","fside","n18","n21","n39")),5)', 'occurs(action(("get-from-hangar","jig0002","hangar1","factory_trailer_3")),6)', 'occurs(action(("put-down-rack","jig0002","factory_trailer_3","rack01","fside","n18","n39","n21")),7)', 'occurs(action(("pick-up-rack","jig0002","beluga_trailer_2","rack01","bside","fside","n18","n21","n39")),8)', 'occurs(action(("load-beluga","jig0002","typed","dummy-type","beluga1","beluga_trailer_2","slot0","dummy-slot")),9)', 'occurs(action(("beluga-complete","beluga1","beluga2")),10)', 'occurs(action(("unload-beluga","jig0003","jig0004","beluga_trailer_1","beluga2")),11)', 'occurs(action(("unload-beluga","jig0004","dummy-jig","beluga_trailer_2","beluga2")),12)', 'occurs(action(("beluga-complete","beluga2","beluga3")),13)', 'occurs(action(("load-beluga","jig0001","typed","dummy-type","beluga3","beluga_trailer_3","slot0","dummy-slot")),14)', 'occurs(action(("put-down-rack","jig0004","beluga_trailer_2","rack01","bside","n18","n39","n21")),15)', 'occurs(action(("pick-up-rack","jig0004","factory_trailer_3","rack01","fside","bside","n18","n21","n39")),16)', 'occurs(action(("put-down-rack","jig0003","beluga_trailer_1","rack01","bside","n18","n39","n21")),17)', 'occurs(action(("pick-up-rack","jig0003","factory_trailer_2","rack01","fside","bside","n18","n21","n39")),18)', 'occurs(action(("deliver-to-hangar","jig0003","dummy-jig","factory_trailer_2","hangar1","pl0","n18","n09")),19)', 'occurs(action(("get-from-hangar","jig0003","hangar1","factory_trailer_2")),20)', 'occurs(action(("deliver-to-hangar","jig0004","dummy-jig","factory_trailer_3","hangar1","pl1","n18","n09")),21)']]}
+
+=== RESULT ===
+Horizon: 21
+Plans found: 1
+
+Plan 1:
+  occurs(action(("unload-beluga","jig0002","dummy-jig","beluga_trailer_1","beluga1")),1)
+  occurs(action(("put-down-rack","jig0002","beluga_trailer_1","rack00","bside","n25","n28","n03")),2)
+  occurs(action(("pick-up-rack","jig0002","factory_trailer_2","rack00","fside","bside","n25","n03","n28")),3)
+  occurs(action(("deliver-to-hangar","jig0002","dummy-jig","factory_trailer_2","hangar1","pl2","n25","n18")),4)
+  occurs(action(("pick-up-rack","jig0001","beluga_trailer_3","rack01","bside","fside","n18","n21","n39")),5)
+  occurs(action(("get-from-hangar","jig0002","hangar1","factory_trailer_3")),6)
+  occurs(action(("put-down-rack","jig0002","factory_trailer_3","rack01","fside","n18","n39","n21")),7)
+  occurs(action(("pick-up-rack","jig0002","beluga_trailer_2","rack01","bside","fside","n18","n21","n39")),8)
+  occurs(action(("load-beluga","jig0002","typed","dummy-type","beluga1","beluga_trailer_2","slot0","dummy-slot")),9)
+  occurs(action(("beluga-complete","beluga1","beluga2")),10)
+  occurs(action(("unload-beluga","jig0003","jig0004","beluga_trailer_1","beluga2")),11)
+  occurs(action(("unload-beluga","jig0004","dummy-jig","beluga_trailer_2","beluga2")),12)
+  occurs(action(("beluga-complete","beluga2","beluga3")),13)
+  occurs(action(("load-beluga","jig0001","typed","dummy-type","beluga3","beluga_trailer_3","slot0","dummy-slot")),14)
+  occurs(action(("put-down-rack","jig0004","beluga_trailer_2","rack01","bside","n18","n39","n21")),15)
+  occurs(action(("pick-up-rack","jig0004","factory_trailer_3","rack01","fside","bside","n18","n21","n39")),16)
+  occurs(action(("put-down-rack","jig0003","beluga_trailer_1","rack01","bside","n18","n39","n21")),17)
+  occurs(action(("pick-up-rack","jig0003","factory_trailer_2","rack01","fside","bside","n18","n21","n39")),18)
+  occurs(action(("deliver-to-hangar","jig0003","dummy-jig","factory_trailer_2","hangar1","pl0","n18","n09")),19)
+  occurs(action(("get-from-hangar","jig0003","hangar1","factory_trailer_2")),20)
+  occurs(action(("deliver-to-hangar","jig0004","dummy-jig","factory_trailer_3","hangar1","pl1","n18","n09")),21)
+
+===================================
+Running: problem_3_s45_j3_r2_oc44_f3.pddl
+===================================
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/a8c4eff0-83b0-48d6-bba7-51114182875c
+[DONE] Total time: 0.316s
+result:  {'horizon': 17, 'numPlans': 1, 'plans': [['occurs(action(("unload-beluga","jig0002","dummy-jig","beluga_trailer_2","beluga1")),1)', 'occurs(action(("pick-up-rack","jig0001","factory_trailer_1","rack01","fside","bside","n32","n04","n36")),2)', 'occurs(action(("deliver-to-hangar","jig0001","dummy-jig","factory_trailer_1","hangar2","pl1","n32","n32")),3)', 'occurs(action(("put-down-rack","jig0002","beluga_trailer_2","rack00","bside","n25","n30","n05")),4)', 'occurs(action(("get-from-hangar","jig0001","hangar2","factory_trailer_2")),5)', 'occurs(action(("beluga-complete","beluga1","beluga2")),6)', 'occurs(action(("put-down-rack","jig0001","factory_trailer_2","rack01","fside","n32","n36","n04")),7)', 'occurs(action(("pick-up-rack","jig0001","beluga_trailer_1","rack01","bside","fside","n32","n04","n36")),8)', 'occurs(action(("pick-up-rack","jig0002","factory_trailer_2","rack00","fside","bside","n25","n05","n30")),9)', 'occurs(action(("load-beluga","jig0001","typee","dummy-type","beluga2","beluga_trailer_1","slot0","dummy-slot")),10)', 'occurs(action(("deliver-to-hangar","jig0002","dummy-jig","factory_trailer_2","hangar1","pl2","n25","n18")),11)', 'occurs(action(("get-from-hangar","jig0002","hangar1","factory_trailer_1")),12)', 'occurs(action(("beluga-complete","beluga2","beluga3")),13)', 'occurs(action(("put-down-rack","jig0002","factory_trailer_1","rack00","fside","n18","n30","n12")),14)', 'occurs(action(("unload-beluga","jig0003","dummy-jig","beluga_trailer_1","beluga3")),15)', 'occurs(action(("pick-up-rack","jig0002","beluga_trailer_2","rack00","bside","fside","n18","n12","n30")),16)', 'occurs(action(("load-beluga","jig0002","typed","dummy-type","beluga3","beluga_trailer_2","slot0","dummy-slot")),17)']]}
+
+=== RESULT ===
+Horizon: 17
+Plans found: 1
+
+Plan 1:
+  occurs(action(("unload-beluga","jig0002","dummy-jig","beluga_trailer_2","beluga1")),1)
+  occurs(action(("pick-up-rack","jig0001","factory_trailer_1","rack01","fside","bside","n32","n04","n36")),2)
+  occurs(action(("deliver-to-hangar","jig0001","dummy-jig","factory_trailer_1","hangar2","pl1","n32","n32")),3)
+  occurs(action(("put-down-rack","jig0002","beluga_trailer_2","rack00","bside","n25","n30","n05")),4)
+  occurs(action(("get-from-hangar","jig0001","hangar2","factory_trailer_2")),5)
+  occurs(action(("beluga-complete","beluga1","beluga2")),6)
+  occurs(action(("put-down-rack","jig0001","factory_trailer_2","rack01","fside","n32","n36","n04")),7)
+  occurs(action(("pick-up-rack","jig0001","beluga_trailer_1","rack01","bside","fside","n32","n04","n36")),8)
+  occurs(action(("pick-up-rack","jig0002","factory_trailer_2","rack00","fside","bside","n25","n05","n30")),9)
+  occurs(action(("load-beluga","jig0001","typee","dummy-type","beluga2","beluga_trailer_1","slot0","dummy-slot")),10)
+  occurs(action(("deliver-to-hangar","jig0002","dummy-jig","factory_trailer_2","hangar1","pl2","n25","n18")),11)
+  occurs(action(("get-from-hangar","jig0002","hangar1","factory_trailer_1")),12)
+  occurs(action(("beluga-complete","beluga2","beluga3")),13)
+  occurs(action(("put-down-rack","jig0002","factory_trailer_1","rack00","fside","n18","n30","n12")),14)
+  occurs(action(("unload-beluga","jig0003","dummy-jig","beluga_trailer_1","beluga3")),15)
+  occurs(action(("pick-up-rack","jig0002","beluga_trailer_2","rack00","bside","fside","n18","n12","n30")),16)
+  occurs(action(("load-beluga","jig0002","typed","dummy-type","beluga3","beluga_trailer_2","slot0","dummy-slot")),17)
+
+===================================
+Running: problem_41_s84_j10_r2_oc64_f3.pddl
+===================================
+Starting
+Traceback (most recent call last):
+  File "/home/michelle/Documents/Arbeit/TestFilesBeluga/NewInstances/beluga-small/../../../TestScript/test_script_concrete.py", line 125, in <module>
+    main()
+  File "/home/michelle/Documents/Arbeit/TestFilesBeluga/NewInstances/beluga-small/../../../TestScript/test_script_concrete.py", line 25, in main
+    result = compute_concrete_plan(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/michelle/Documents/Arbeit/TestFilesBeluga/NewInstances/beluga-small/../../../TestScript/test_script_concrete.py", line 63, in compute_concrete_plan
+    result, _ = run_fastdownward_service(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/michelle/Documents/Arbeit/TestScript/fastdownward_service.py", line 70, in run_fastdownward_service
+    result = subprocess.run(command, capture_output=True, text=True)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 550, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 1209, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/subprocess.py", line 2115, in _communicate
+    ready = selector.select(timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/selectors.py", line 415, in select
+    fd_event_list = self._selector.poll(timeout)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

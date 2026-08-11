@@ -1,0 +1,14 @@
+===================================
+Problem: problem_12_s54_j8_r2_oc86_f4 | Mode: inc
+Hangars: hangar1 hangar2 hangar3
+Timeout: 20 minutes
+===================================
+>>> TIMED OUT after 20 minutes
+
+===================================
+Problem: problem_12_s54_j8_r2_oc86_f4 | Mode: dec
+Hangars: hangar1 hangar2 hangar3
+Timeout: 20 minutes
+===================================
+>>> TIMED OUT after 20 minutes
+

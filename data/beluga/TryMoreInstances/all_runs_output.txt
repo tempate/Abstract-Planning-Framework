@@ -1,0 +1,23 @@
+===================================
+Running: problem_0_s42_j10_r2_oc31_f4.pddl
+===================================
+TIMEOUT (10 min reached) for problem_0_s42_j10_r2_oc31_f4.pddl
+
+===================================
+Running: problem_10_s52_j6_r2_oc81_f4.pddl
+===================================
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/4f9a041b-43cd-4add-a243-2f7a8996a34e
+Traceback (most recent call last):
+  File "/home/michelle/Documents/Arbeit/TestFilesBeluga/NewInstances/beluga-small/TryMoreInstances/../../../../TestScript/test_script_concrete.py", line 190, in <module>
+    main()
+  File "/home/michelle/Documents/Arbeit/TestFilesBeluga/NewInstances/beluga-small/TryMoreInstances/../../../../TestScript/test_script_concrete.py", line 25, in main
+    result = compute_concrete_plan(
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/michelle/Documents/Arbeit/TestFilesBeluga/NewInstances/beluga-small/TryMoreInstances/../../../../TestScript/test_script_concrete.py", line 105, in compute_concrete_plan
+    result = run_fastdownward_service(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/michelle/Documents/Arbeit/TestScript/fastdownward_service.py", line 89, in run_fastdownward_service
+    raise RuntimeError(f"Fast Downward failed:\n{result.stderr}")
+RuntimeError: Fast Downward failed:
+

@@ -1,0 +1,168 @@
+=================================================================
+Problem 1
+
+Hangar: 3
+
+python ../../../../TestScript/test_script_concrete.py --domain domain.pddl --problem problem_1_s43_j5_r2_oc51_f3.pddl 
+Fastdownward concrete:  193.00081663699984
+Fast Downward: 193.010s
+LP generation: 0.345s
+-> took tooo long
+
+Abstract inc:
+Fastdownward concrete:  192.05828338900028
+Fastdownward abstract:  95.15996611399987
+Fast Downward: 287.227s
+Concrete LP generation: 0.346s
+Abstract LP generation: 0.340s
+LP generation: 0.686s
+Abstract solving time: 386.420s
+Concrete solving time: 7.720s
+Concrete plan found
+Total runtime: 682.055s
+
+Abstract dec:
+Fastdownward concrete:  196.66568647699933
+Fastdownward abstract:  97.27953788499963
+Fast Downward: 293.946s
+Concrete LP generation: 0.344s
+Abstract LP generation: 0.345s
+LP generation: 0.689s
+Abstract solving time: 640.607s
+Concrete solving time: 5.984s
+Concrete plan found
+Total runtime: 941.227s
+=================================================================
+Problem 3
+
+Hangar: 7
+
+Fastdownward concrete:  0.1453861289996894
+Fast Downward: 0.146s
+LP generation: 0.020s
+Clingo solve: 0.212s
+[DONE] Total time: 0.377s
+
+Abstract Inc:
+Fastdownward concrete:  0.14900880999994115
+Fastdownward abstract:  0.13756234699985725
+Fast Downward: 0.287s
+Concrete LP generation: 0.020s
+Abstract LP generation: 0.018s
+LP generation: 0.039s
+Abstract solving time: 0.142s
+Concrete solving time: 0.281s
+Concrete plan found
+Total runtime: 0.750s
+
+Abstract Dec:
+Fastdownward concrete:  0.1477129730001252
+Fastdownward abstract:  0.12962463699977889
+Fast Downward: 0.278s
+Concrete LP generation: 0.019s
+Abstract LP generation: 0.017s
+LP generation: 0.037s
+Abstract solving time: 0.151s
+Concrete solving time: 0.190s
+Concrete plan found
+Total runtime: 0.656s
+
+=================================================================
+Problem 12
+
+Hangar: 3
+
+
+=================================================================
+Problem 14
+
+Hangar: 5
+
+Fastdownward concrete:  2.3535166219999155
+Fast Downward: 2.362s
+LP generation: 0.318s
+Clingo solve: 4.868s
+[DONE] Total time: 7.548s
+
+Abstract Inc:
+Fastdownward concrete:  2.330568243000016
+Fastdownward abstract:  1.4398198310000225
+Fast Downward: 3.771s
+Concrete LP generation: 0.322s
+Abstract LP generation: 0.316s
+LP generation: 0.638s
+Abstract solving time: 4.540s
+Concrete solving time: 3.135s
+Concrete plan found
+Total runtime: 12.090s
+
+Abstract Dec:
+Fastdownward concrete:  2.345376107999982
+Fastdownward abstract:  1.3985479390003093
+Fast Downward: 3.744s
+Concrete LP generation: 0.321s
+Abstract LP generation: 0.321s
+LP generation: 0.642s
+Abstract solving time: 4.567s
+Concrete solving time: 3.244s
+Concrete plan found
+Total runtime: 12.199s
+=================================================================
+Problem 26
+
+Hangar: 4
+
+
+=================================================================
+Problem 33
+
+
+
+=================================================================
+Problem 36
+
+
+=================================================================
+Problem 39
+
+Hangar: 5
+
+Fastdownward concrete:  4.496842668999761
+Fast Downward: 4.497s
+LP generation: 0.216s
+Clingo solve: 3.472s
+[DONE] Total time: 8.185s
+
+Abstract inc:
+Fastdownward concrete:  4.4172582589999365
+Fastdownward abstract:  2.5441729540007145
+Fast Downward: 6.962s
+Concrete LP generation: 0.217s
+Abstract LP generation: 0.222s
+LP generation: 0.439s
+Abstract solving time: 5.847s
+Concrete solving time: 2.652s
+Concrete plan found
+Total runtime: 15.901s
+
+Abstract dec:
+Fastdownward concrete:  4.47800320100032
+Fastdownward abstract:  2.551904203000049
+Fast Downward: 7.039s
+Concrete LP generation: 0.217s
+Abstract LP generation: 0.214s
+LP generation: 0.431s
+Abstract solving time: 5.597s
+Concrete solving time: 2.555s
+Concrete plan found
+Total runtime: 15.623s
+=================================================================
+Problem 41
+
+
+
+
+=================================================================
+Problem 43
+
+

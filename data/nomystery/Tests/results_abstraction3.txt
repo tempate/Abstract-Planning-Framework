@@ -1,0 +1,147 @@
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/5e2f5b5b-6628-4433-a05a-18e1508b363f
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+--- MODE: dec ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/8aa79b51-9bf1-483d-8c0c-daf0ed8b33e4
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/c8ebb6e9-8e09-4443-9f55-7f567a47e862
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+--- MODE: dec ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/b139e66c-5a51-4eee-a928-7dc7ecc6a5c3
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/f0552620-3c17-45b1-a175-afd496a16d6d
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+--- MODE: dec ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/47eff225-1bb7-4d9e-9776-a26edf031155
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/8ce82562-6b18-44b4-844e-f660bcdffc74
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+--- MODE: dec ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/8f47f40c-4797-4360-9b24-e3bffe010eb8
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/9628016d-c7c2-4969-b4e7-b5ddca53eedb
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+--- MODE: dec ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/c2833d4f-7b26-4f55-8afb-4548fd3fd997
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/f4de17c6-06f2-4232-b9c0-73f9b8ad719b
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+--- MODE: dec ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/b84c0afb-f295-4db9-9ece-958b1e6272c0
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/c333229d-5b3b-4329-80ce-eafb1c0bf95c
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+
+--- MODE: dec ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/50a2271c-f5c8-4704-8ddb-7e6691e4825e
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+test
+

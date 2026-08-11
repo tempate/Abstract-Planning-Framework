@@ -1,0 +1,12 @@
+===================================
+Problem: problem_36_s79_j9_r2_oc62_f4 | Mode: inc
+Hangars: hangar1 hangar2 hangar3
+Timeout: 15 minutes
+===================================
+>>> TIMED OUT after 15 minutes
+
+===================================
+Problem: problem_36_s79_j9_r2_oc62_f4 | Mode: dec
+Hangars: hangar1 hangar2 hangar3
+Timeout: 15 minutes
+===================================

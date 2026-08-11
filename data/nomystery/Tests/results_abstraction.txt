@@ -1,0 +1,344 @@
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/c233c1a8-36f5-4e67-a968-c95e6b4320ce
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/c233c1a8-36f5-4e67-a968-c95e6b4320ce
+
+=== RESULT ===
+Horizon: 10
+Plans found: 0
+
+--- MODE: dec ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/f81f7d49-943c-4327-8d54-b7ea2b447508
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/f81f7d49-943c-4327-8d54-b7ea2b447508
+
+=== RESULT ===
+Horizon: 10
+Plans found: 0
+
+===================================
+Problem: p02
+===================================
+--- MODE: inc ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/af530676-c012-47fc-a815-3d5cea3e6949
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/af530676-c012-47fc-a815-3d5cea3e6949
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l2","level94","level11","level105")),2)
+  occurs(action(("drive","t0","l2","l1","level89","level5","level94")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("unload","p1","t0","l1")),5)
+  occurs(action(("drive","t0","l1","l2","level84","level5","level89")),6)
+  occurs(action(("unload","p2","t0","l2")),7)
+  occurs(action(("drive","t0","l2","l4","level61","level23","level84")),8)
+  occurs(action(("load","p3","t0","l4")),9)
+  occurs(action(("load","p0","t0","l4")),10)
+  occurs(action(("drive","t0","l4","l2","level38","level23","level61")),11)
+  occurs(action(("unload","p0","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level27","level11","level38")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+
+--- MODE: dec ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/a7fa345b-0b45-47f4-a994-cd109a552bdf
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/a7fa345b-0b45-47f4-a994-cd109a552bdf
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l0","level93","level12","level105")),2)
+  occurs(action(("drive","t0","l0","l4","level79","level14","level93")),3)
+  occurs(action(("load","p3","t0","l4")),4)
+  occurs(action(("load","p0","t0","l4")),5)
+  occurs(action(("drive","t0","l4","l2","level56","level23","level79")),6)
+  occurs(action(("unload","p0","t0","l2")),7)
+  occurs(action(("drive","t0","l2","l1","level51","level5","level56")),8)
+  occurs(action(("unload","p1","t0","l1")),9)
+  occurs(action(("load","p2","t0","l1")),10)
+  occurs(action(("drive","t0","l1","l2","level46","level5","level51")),11)
+  occurs(action(("unload","p2","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level35","level11","level46")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+
+===================================
+Problem: p03
+===================================
+--- MODE: inc ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/fc790d26-dead-4bc3-a6a3-0da4627beabd
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/fc790d26-dead-4bc3-a6a3-0da4627beabd
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p0","t0","l2")),1)
+  occurs(action(("load","p1","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("unload","p1","t0","l4")),6)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),7)
+  occurs(action(("load","p4","t0","l3")),8)
+  occurs(action(("unload","p0","t0","l3")),9)
+  occurs(action(("unload","p2","t0","l3")),10)
+  occurs(action(("load","p3","t0","l3")),11)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+
+--- MODE: dec ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/6e3eb0ba-f2a9-4536-a073-1258e9199069
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/6e3eb0ba-f2a9-4536-a073-1258e9199069
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l2")),1)
+  occurs(action(("load","p0","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),6)
+  occurs(action(("unload","p2","t0","l3")),7)
+  occurs(action(("unload","p0","t0","l3")),8)
+  occurs(action(("load","p4","t0","l3")),9)
+  occurs(action(("load","p3","t0","l3")),10)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),11)
+  occurs(action(("unload","p1","t0","l4")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+
+===================================
+Problem: p04
+===================================
+--- MODE: inc ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/f0f71eff-c879-42e7-95ee-83fbda9dc53f
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/f0f71eff-c879-42e7-95ee-83fbda9dc53f
+
+=== RESULT ===
+Horizon: 19
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l5","l4","level87","level12","level99")),1)
+  occurs(action(("load","p2","t0","l4")),2)
+  occurs(action(("drive","t0","l4","l3","level79","level8","level87")),3)
+  occurs(action(("load","p1","t0","l3")),4)
+  occurs(action(("load","p0","t0","l3")),5)
+  occurs(action(("drive","t0","l3","l1","level67","level12","level79")),6)
+  occurs(action(("drive","t0","l1","l2","level64","level3","level67")),7)
+  occurs(action(("unload","p1","t0","l2")),8)
+  occurs(action(("unload","p0","t0","l2")),9)
+  occurs(action(("load","p3","t0","l2")),10)
+  occurs(action(("drive","t0","l2","l5","level51","level13","level64")),11)
+  occurs(action(("load","p5","t0","l5")),12)
+  occurs(action(("drive","t0","l5","l0","level45","level6","level51")),13)
+  occurs(action(("unload","p2","t0","l0")),14)
+  occurs(action(("unload","p5","t0","l0")),15)
+  occurs(action(("unload","p3","t0","l0")),16)
+  occurs(action(("load","p4","t0","l0")),17)
+  occurs(action(("drive","t0","l0","l3","level27","level18","level45")),18)
+  occurs(action(("unload","p4","t0","l3")),19)
+
+--- MODE: dec ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/336f3a72-ba2d-4e9e-86db-a1cfd50a418d
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/336f3a72-ba2d-4e9e-86db-a1cfd50a418d
+
+=== RESULT ===
+Horizon: 19
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l5","l4","level87","level12","level99")),1)
+  occurs(action(("load","p2","t0","l4")),2)
+  occurs(action(("drive","t0","l4","l3","level79","level8","level87")),3)
+  occurs(action(("load","p0","t0","l3")),4)
+  occurs(action(("load","p1","t0","l3")),5)
+  occurs(action(("drive","t0","l3","l1","level67","level12","level79")),6)
+  occurs(action(("drive","t0","l1","l2","level64","level3","level67")),7)
+  occurs(action(("load","p3","t0","l2")),8)
+  occurs(action(("unload","p1","t0","l2")),9)
+  occurs(action(("unload","p0","t0","l2")),10)
+  occurs(action(("drive","t0","l2","l5","level51","level13","level64")),11)
+  occurs(action(("load","p5","t0","l5")),12)
+  occurs(action(("drive","t0","l5","l0","level45","level6","level51")),13)
+  occurs(action(("unload","p2","t0","l0")),14)
+  occurs(action(("unload","p3","t0","l0")),15)
+  occurs(action(("unload","p5","t0","l0")),16)
+  occurs(action(("load","p4","t0","l0")),17)
+  occurs(action(("drive","t0","l0","l3","level27","level18","level45")),18)
+  occurs(action(("unload","p4","t0","l3")),19)
+
+===================================
+Problem: p05
+===================================
+--- MODE: inc ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/66ae461d-b9c3-47a3-bd9f-ad6103b2201a
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/66ae461d-b9c3-47a3-bd9f-ad6103b2201a
+
+=== RESULT ===
+Horizon: 23
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l2","l3","level164","level16","level180")),1)
+  occurs(action(("drive","t0","l3","l0","level146","level18","level164")),2)
+  occurs(action(("load","p3","t0","l0")),3)
+  occurs(action(("drive","t0","l0","l1","level134","level12","level146")),4)
+  occurs(action(("load","p5","t0","l1")),5)
+  occurs(action(("load","p1","t0","l1")),6)
+  occurs(action(("drive","t0","l1","l4","level121","level13","level134")),7)
+  occurs(action(("load","p0","t0","l4")),8)
+  occurs(action(("load","p2","t0","l4")),9)
+  occurs(action(("unload","p5","t0","l4")),10)
+  occurs(action(("drive","t0","l4","l2","level109","level12","level121")),11)
+  occurs(action(("drive","t0","l2","l7","level91","level18","level109")),12)
+  occurs(action(("unload","p2","t0","l7")),13)
+  occurs(action(("load","p6","t0","l7")),14)
+  occurs(action(("drive","t0","l7","l5","level81","level10","level91")),15)
+  occurs(action(("unload","p1","t0","l5")),16)
+  occurs(action(("drive","t0","l5","l6","level63","level18","level81")),17)
+  occurs(action(("load","p4","t0","l6")),18)
+  occurs(action(("unload","p6","t0","l6")),19)
+  occurs(action(("drive","t0","l6","l1","level60","level3","level63")),20)
+  occurs(action(("unload","p0","t0","l1")),21)
+  occurs(action(("unload","p3","t0","l1")),22)
+  occurs(action(("unload","p4","t0","l1")),23)
+
+--- MODE: dec ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/1ec1e487-4010-4645-9807-3fc2d964db1e
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/1ec1e487-4010-4645-9807-3fc2d964db1e
+
+=== RESULT ===
+Horizon: 23
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l2","l3","level164","level16","level180")),1)
+  occurs(action(("drive","t0","l3","l0","level146","level18","level164")),2)
+  occurs(action(("load","p3","t0","l0")),3)
+  occurs(action(("drive","t0","l0","l1","level134","level12","level146")),4)
+  occurs(action(("load","p5","t0","l1")),5)
+  occurs(action(("load","p1","t0","l1")),6)
+  occurs(action(("drive","t0","l1","l4","level121","level13","level134")),7)
+  occurs(action(("load","p2","t0","l4")),8)
+  occurs(action(("load","p0","t0","l4")),9)
+  occurs(action(("unload","p5","t0","l4")),10)
+  occurs(action(("drive","t0","l4","l2","level109","level12","level121")),11)
+  occurs(action(("drive","t0","l2","l7","level91","level18","level109")),12)
+  occurs(action(("load","p6","t0","l7")),13)
+  occurs(action(("unload","p2","t0","l7")),14)
+  occurs(action(("drive","t0","l7","l5","level81","level10","level91")),15)
+  occurs(action(("unload","p1","t0","l5")),16)
+  occurs(action(("drive","t0","l5","l6","level63","level18","level81")),17)
+  occurs(action(("unload","p6","t0","l6")),18)
+  occurs(action(("load","p4","t0","l6")),19)
+  occurs(action(("drive","t0","l6","l1","level60","level3","level63")),20)
+  occurs(action(("unload","p0","t0","l1")),21)
+  occurs(action(("unload","p3","t0","l1")),22)
+  occurs(action(("unload","p4","t0","l1")),23)
+
+===================================
+Problem: p06
+===================================
+--- MODE: inc ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/e694c61c-b8c7-4039-869b-24d1c0255d71
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/e694c61c-b8c7-4039-869b-24d1c0255d71
+
+=== RESULT ===
+Horizon: 26
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l7","l5","level227","level14","level241")),1)
+  occurs(action(("load","p4","t0","l5")),2)
+  occurs(action(("load","p7","t0","l5")),3)
+  occurs(action(("drive","t0","l5","l0","level206","level21","level227")),4)
+  occurs(action(("load","p2","t0","l0")),5)
+  occurs(action(("drive","t0","l0","l6","level196","level10","level206")),6)
+  occurs(action(("load","p3","t0","l6")),7)
+  occurs(action(("load","p6","t0","l6")),8)
+  occurs(action(("unload","p4","t0","l6")),9)
+  occurs(action(("drive","t0","l6","l3","level172","level24","level196")),10)
+  occurs(action(("load","p0","t0","l3")),11)
+  occurs(action(("unload","p7","t0","l3")),12)
+  occurs(action(("drive","t0","l3","l2","level158","level14","level172")),13)
+  occurs(action(("load","p1","t0","l2")),14)
+  occurs(action(("unload","p3","t0","l2")),15)
+  occurs(action(("unload","p2","t0","l2")),16)
+  occurs(action(("drive","t0","l2","l0","level148","level10","level158")),17)
+  occurs(action(("unload","p1","t0","l0")),18)
+  occurs(action(("drive","t0","l0","l5","level127","level21","level148")),19)
+  occurs(action(("load","p5","t0","l5")),20)
+  occurs(action(("drive","t0","l5","l7","level113","level14","level127")),21)
+  occurs(action(("unload","p5","t0","l7")),22)
+  occurs(action(("drive","t0","l7","l8","level94","level19","level113")),23)
+  occurs(action(("unload","p6","t0","l8")),24)
+  occurs(action(("drive","t0","l8","l4","level76","level18","level94")),25)
+  occurs(action(("unload","p0","t0","l4")),26)
+
+--- MODE: dec ---
+Starting
+/home/michelle/Documents/Arbeit/TestScript/temp/noMystery/40b3db63-4894-4d44-a79f-7b7cee0ce600
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/noMystery/40b3db63-4894-4d44-a79f-7b7cee0ce600
+
+=== RESULT ===
+Horizon: 26
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l7","l5","level227","level14","level241")),1)
+  occurs(action(("load","p4","t0","l5")),2)
+  occurs(action(("load","p7","t0","l5")),3)
+  occurs(action(("drive","t0","l5","l0","level206","level21","level227")),4)
+  occurs(action(("load","p2","t0","l0")),5)
+  occurs(action(("drive","t0","l0","l6","level196","level10","level206")),6)
+  occurs(action(("load","p6","t0","l6")),7)
+  occurs(action(("load","p3","t0","l6")),8)
+  occurs(action(("unload","p4","t0","l6")),9)
+  occurs(action(("drive","t0","l6","l3","level172","level24","level196")),10)
+  occurs(action(("load","p0","t0","l3")),11)
+  occurs(action(("unload","p7","t0","l3")),12)
+  occurs(action(("drive","t0","l3","l2","level158","level14","level172")),13)
+  occurs(action(("load","p1","t0","l2")),14)
+  occurs(action(("unload","p3","t0","l2")),15)
+  occurs(action(("unload","p2","t0","l2")),16)
+  occurs(action(("drive","t0","l2","l0","level148","level10","level158")),17)
+  occurs(action(("unload","p1","t0","l0")),18)
+  occurs(action(("drive","t0","l0","l5","level127","level21","level148")),19)
+  occurs(action(("load","p5","t0","l5")),20)
+  occurs(action(("drive","t0","l5","l7","level113","level14","level127")),21)
+  occurs(action(("unload","p5","t0","l7")),22)
+  occurs(action(("drive","t0","l7","l8","level94","level19","level113")),23)
+  occurs(action(("unload","p6","t0","l8")),24)
+  occurs(action(("drive","t0","l8","l4","level76","level18","level94")),25)
+  occurs(action(("unload","p0","t0","l4")),26)
+
+===================================
+Problem: p07
+===================================
+--- MODE: inc ---

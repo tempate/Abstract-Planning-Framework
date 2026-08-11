@@ -1,0 +1,71 @@
+=================================================================
+Problem 1
+
+python ../../../TestScript/test_script_concrete.py --domain domain.pddl --problem problem_1_s43_j5_r2_oc51_f3.pddl
+
+Fastdownward concrete:  80.20096777399999
+Fast Downward: 80.201s
+LP generation: 0.333s
+Clingo solve: 2156.518s
+[DONE] Total time: 2237.052s
+=================================================================
+Problem 3
+
+Fastdownward concrete:  0.13843056700011402
+Fast Downward: 0.139s
+LP generation: 0.018s
+Clingo solve: 0.182s
+[DONE] Total time: 0.339s
+=================================================================
+Problem 12
+
+Fastdownward concrete:  144.3031554040001
+Fast Downward: 144.303s
+LP generation: 0.574s
+
+=================================================================
+Problem 14
+
+Fastdownward concrete:  1.9594243490000736
+Fast Downward: 1.960s
+LP generation: 0.327s
+Clingo solve: 5.586s
+[DONE] Total time: 7.872s
+=================================================================
+Problem 26
+
+Fastdownward concrete:  412.33450779100076
+Fast Downward: 412.335s
+LP generation: 0.979s
+Clingo solve: 154.122s
+[DONE] Total time: 567.436s
+=================================================================
+Problem 33
+
+
+
+=================================================================
+Problem 36
+
+
+=================================================================
+Problem 39
+
+Fastdownward concrete:  3.699059176999981
+Fast Downward: 3.699s
+LP generation: 0.224s
+Clingo solve: 2.647s
+[DONE] Total time: 6.571s
+=================================================================
+Problem 41
+
+
+
+
+=================================================================
+Problem 43
+
+Fastdownward concrete:  196.712435708
+Fast Downward: 196.713s
+LP generation: 0.589s
+
