@@ -86,14 +86,20 @@ project/
 │
 ├── core/paths.py
 ├── core/asp/
-│   ├── solver.py
-│   └── mapping.py
+│   ├── mapping.py
+│   └── plan_files.py
 ├── core/planners/
 │   ├── AbstractPlanner.py
 │   ├── BelugaPlanner.py
 │   ├── NoMysteryPlanner.py
 │   └── factory.py
+├── core/solvers/
+│   ├── AbstractSolver.py
+│   ├── IncrementalSolver.py
+│   ├── DecrementalSolver.py
+│   └── factory.py
 ├── core/integrations/
+│   ├── clingo.py
 │   ├── fast_downward.py
 │   └── plasp.py
 ├── core/runtime/

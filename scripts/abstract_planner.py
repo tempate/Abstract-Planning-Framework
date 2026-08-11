@@ -19,10 +19,8 @@ from core.runtime.run_artifacts import (
     save_json_iteration_file,
     setup_debug_logger,
 )
-from core.asp.solver import (
-    run_clingo,
-    solve_concrete_decremental,
-    solve_concrete_incremental,
+from core.integrations.clingo import run_clingo
+from core.asp.plan_files import (
     write_forbid_abstract_lp,
     write_occurs_abs_lp,
 )
@@ -31,17 +29,7 @@ from core.integrations.plasp import (
     append_pddl_facts_to_lp,
     generate_lp_with_plasp,
 )
-
-
-def _solve_concrete_plan(mode, lp_files, horizon, switch_map):
-    solvers = {
-        "inc": solve_concrete_incremental,
-        "dec": solve_concrete_decremental,
-    }
-    try:
-        return solvers[mode](lp_files, horizon, switch_map)
-    except KeyError as error:
-        raise ValueError(f"Unknown solving mode: {mode}") from error
+from core.solvers.factory import get_solver
 
 
 def _result(
@@ -354,8 +342,7 @@ def compute_concrete_from_abstract(
          # Concrete incremental solving
         conc_start = time.perf_counter()
 
-        ok, plans, bad_abstract_actions = _solve_concrete_plan(
-            solving_mode,
+        ok, plans, bad_abstract_actions = get_solver(solving_mode).solve(
             [output_c_lp, occurs_abs_lp_path, map_lp_path],
             horizon,
             switch_map,
@@ -502,8 +489,7 @@ def compute_concrete_from_abstract(
         # Concrete incremental solving
         conc_start = time.perf_counter()
 
-        ok, plans, bad_abstract_actions = _solve_concrete_plan(
-            solving_mode,
+        ok, plans, bad_abstract_actions = get_solver(solving_mode).solve(
             [output_c_lp, occurs_abs_lp_path, map_lp_path],
             horizon,
             switch_map,
