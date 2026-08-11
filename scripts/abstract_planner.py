@@ -112,6 +112,21 @@ def _build_mapping(map_builder, occurs_path, map_path, abstract_symbol, concrete
     return switch_map, mapping_time
 
 
+def _log_atoms(logger, heading, atoms):
+    logger.info(heading)
+    for atom in atoms:
+        logger.info(f"  {atom}")
+
+
+def _add_new_forbidden_actions(forbid_atoms, bad_actions, refinement_filter):
+    new_forbidden = []
+    for atom in bad_actions:
+        if refinement_filter(atom) and atom not in forbid_atoms:
+            forbid_atoms.append(atom)
+            new_forbidden.append(atom)
+    return new_forbidden
+
+
 def main(
     mapping_required=True,
     run_directory="beluga",
@@ -390,10 +405,7 @@ def compute_concrete_from_abstract(
         ref_start = time.perf_counter()
 
         logger.info("Concrete solve failed.")
-        logger.info("Bad abstract actions:")
-
-        for atom in bad_abstract_actions:
-            logger.info(f"  {atom}")
+        _log_atoms(logger, "Bad abstract actions:", bad_abstract_actions)
 
         _log_iteration_totals(logger, iteration_times)
 
@@ -466,9 +478,7 @@ def compute_concrete_from_abstract(
 
         abstract_atoms = abstract_models[0]
 
-        logger.info("Abstract plan:")
-        for atom in abstract_atoms:
-            logger.info(f"  {atom}")
+        _log_atoms(logger, "Abstract plan:", abstract_atoms)
 
         # Generate occurs_abs.lp from abstract plan
         occ_start = time.perf_counter()
@@ -546,10 +556,7 @@ def compute_concrete_from_abstract(
         ref_start = time.perf_counter()
 
         logger.info("Concrete solve failed.")
-        logger.info("Bad abstract actions:")
-
-        for atom in bad_abstract_actions:
-            logger.info(f"  {atom}")
+        _log_atoms(logger, "Bad abstract actions:", bad_abstract_actions)
 
         save_iteration_file(
             debug_dir,
@@ -558,17 +565,12 @@ def compute_concrete_from_abstract(
             "\n".join(bad_abstract_actions)
         )
 
-        new_forbidden = []
-
-        for atom in bad_abstract_actions:
-            if refinement_filter(atom) and atom not in forbid_atoms:
-                forbid_atoms.append(atom)
-                new_forbidden.append(atom)
-
-        logger.info("New forbidden atoms:")
-
-        for atom in new_forbidden:
-            logger.info(f"  {atom}")
+        new_forbidden = _add_new_forbidden_actions(
+            forbid_atoms,
+            bad_abstract_actions,
+            refinement_filter,
+        )
+        _log_atoms(logger, "New forbidden atoms:", new_forbidden)
 
         save_iteration_file(
             debug_dir,

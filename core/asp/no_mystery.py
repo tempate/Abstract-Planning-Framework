@@ -16,7 +16,8 @@ def build_no_mystery_switch_mapping(
 
     lines = []
     switch_map = {}
-    for switch_id, (action, time_step) in enumerate(read_abstract_actions(occurs_abs_path), start=1):
+    abstract_actions = read_abstract_actions(occurs_abs_path)
+    for switch_id, (action, time_step) in enumerate(abstract_actions, start=1):
         switch = f"switch({switch_id})"
         lines.append(f"0 {{ {switch} }} 1.")
 

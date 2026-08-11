@@ -20,7 +20,7 @@ def run_clingo(lp_files, horizon):
     logger.info(f"[CLINGO] Threads={THREADS}")
     logger.info(f"[CLINGO] Files={lp_files}")
 
-    models = _models(_control(lp_files, horizon))
+    models = _collect_models(_create_control(lp_files, horizon))
     log_phase(logger, "[CLINGO] Solve runtime", start)
     logger.info(f"[CLINGO] Models found={len(models)}")
     return models
@@ -90,8 +90,8 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
     start = time.perf_counter()
     logger.info("[INC] Starting incremental solve")
 
-    control = _control(lp_files, horizon)
-    switches, switch_ids = _switches(control)
+    control = _create_control(lp_files, horizon)
+    switches, switch_ids = _find_switches(control)
     logger.info(f"[INC] Found switches={len(switches)}")
 
     active_switches = []
@@ -105,16 +105,16 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
             continue
 
         logger.info(f"[INC] Testing before abstract switch={next_id}")
-        if control.solve(assumptions=_assumptions(switches, active_switches)).unsatisfiable:
-            failing_actions = _abstract_actions_for(switches, switch_ids, switch_map, active_switches)
+        if control.solve(assumptions=_switch_assumptions(switches, active_switches)).unsatisfiable:
+            failing_actions = _mapped_abstract_actions(switches, switch_ids, switch_map, active_switches)
             logger.info("[INC] UNSAT detected")
             logger.info(f"[INC] Failing abstract actions={failing_actions}")
             log_phase(logger, "[INC] Runtime", start)
             return False, [], failing_actions
 
     logger.info("[INC] All prefixes SAT. Solving full model.")
-    plans = _models(control, [(switch, True) for switch in switches])
-    abstract_actions = _abstract_actions_for(switches, switch_ids, switch_map, switches)
+    plans = _collect_models(control, [(switch, True) for switch in switches])
+    abstract_actions = _mapped_abstract_actions(switches, switch_ids, switch_map, switches)
     logger.info(f"[INC] Plans found={len(plans)}")
     log_phase(logger, "[INC] Runtime", start)
     return True, plans, abstract_actions
@@ -125,15 +125,15 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
     start = time.perf_counter()
     logger.info("[DEC] Starting decremental solve")
 
-    control = _control(lp_files, horizon)
-    switches, switch_ids = _switches(control)
+    control = _create_control(lp_files, horizon)
+    switches, switch_ids = _find_switches(control)
     logger.info(f"[DEC] Found switches={len(switches)}")
 
     active_switches = set(switches)
-    if control.solve(assumptions=_assumptions(switches, active_switches)).satisfiable:
+    if control.solve(assumptions=_switch_assumptions(switches, active_switches)).satisfiable:
         logger.info("[DEC] Full model SAT")
-        plans = _models(control, [(switch, True) for switch in switches])
-        abstract_actions = _abstract_actions_for(switches, switch_ids, switch_map, switches)
+        plans = _collect_models(control, [(switch, True) for switch in switches])
+        abstract_actions = _mapped_abstract_actions(switches, switch_ids, switch_map, switches)
         log_phase(logger, "[DEC] Runtime", start)
         return True, plans, abstract_actions
 
@@ -144,10 +144,10 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
         active_switches.remove(switch)
         if not switch_map[switch_id]["is_abstract"]:
             continue
-        if control.solve(assumptions=_assumptions(switches, active_switches)).satisfiable:
+        if control.solve(assumptions=_switch_assumptions(switches, active_switches)).satisfiable:
             logger.info(f"[DEC] SAT after disabling switch={switch_id}")
-            plans = _models(control, _assumptions(switches, active_switches))
-            abstract_actions = _abstract_actions_for(
+            plans = _collect_models(control, _switch_assumptions(switches, active_switches))
+            abstract_actions = _mapped_abstract_actions(
                 switches, switch_ids, switch_map, active_switches
             )
             abstract_actions.append(switch_map[switch_id]["atom"])
@@ -179,7 +179,7 @@ def write_forbid_abstract_lp(abstract_atoms_to_forbid, output_path):
     log_phase(logger, "[REFINE] forbid file generation", start)
 
 
-def _control(lp_files, horizon):
+def _create_control(lp_files, horizon):
     control = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"])
     for lp_file in lp_files:
         control.load(lp_file)
@@ -187,7 +187,7 @@ def _control(lp_files, horizon):
     return control
 
 
-def _models(control, assumptions=None):
+def _collect_models(control, assumptions=None):
     models = []
     with control.solve(yield_=True, assumptions=assumptions or []) as handle:
         for model in handle:
@@ -195,7 +195,7 @@ def _models(control, assumptions=None):
     return models
 
 
-def _switches(control):
+def _find_switches(control):
     switch_ids = {
         atom.symbol: atom.symbol.arguments[0].number
         for atom in control.symbolic_atoms
@@ -205,11 +205,11 @@ def _switches(control):
     return switches, switch_ids
 
 
-def _assumptions(switches, active_switches):
+def _switch_assumptions(switches, active_switches):
     return [(switch, switch in active_switches) for switch in switches]
 
 
-def _abstract_actions_for(switches, switch_ids, switch_map, selected_switches):
+def _mapped_abstract_actions(switches, switch_ids, switch_map, selected_switches):
     return [
         switch_map[switch_ids[switch]]["atom"]
         for switch in switches
