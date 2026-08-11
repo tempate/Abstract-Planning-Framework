@@ -12,6 +12,7 @@ def print_planning_result(result, logger):
     print("\n=== RESULT ===")
     print(f"Horizon: {result['horizon']}")
     print(f"Plans found: {result['numPlans']}")
+    print(f"Total time: {result['timings']['total_time']:.3f}s")
 
     logger.info(f"Success: {result['success']}")
     logger.info(f"Plans found: {result['numPlans']}")

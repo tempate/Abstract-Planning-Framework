@@ -12,8 +12,16 @@ fi
 EXAMPLE_DIR="${PROJECT_DIR}/data/examples/no_mystery"
 CASE="${1:-all}"
 
+print_case_header() {
+    local title="$1"
+    printf '\n%s\n%s\n%s\n' \
+        '========================================================================' \
+        "${title}" \
+        '========================================================================'
+}
+
 run_concrete() {
-    echo "== Concrete NoMystery example =="
+    print_case_header "CONCRETE NOMYSTERY"
     "${PYTHON_BIN}" -m scripts.concrete_planner \
         --domain "${EXAMPLE_DIR}/concrete/domain.pddl" \
         --problem "${EXAMPLE_DIR}/concrete/problem.pddl"
@@ -21,7 +29,13 @@ run_concrete() {
 
 run_abstract() {
     local mode="$1"
-    echo "== Abstract NoMystery example (${mode}) =="
+    local label
+    if [[ "${mode}" == "inc" ]]; then
+        label="INCREMENTAL ABSTRACTION"
+    else
+        label="DECREMENTAL ABSTRACTION"
+    fi
+    print_case_header "${label} — NOMYSTERY"
     "${PYTHON_BIN}" -m scripts.abstract_planner \
         --profile no_mystery \
         --abstract-domain "${EXAMPLE_DIR}/abstract/domain.pddl" \
