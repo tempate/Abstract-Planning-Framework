@@ -2,7 +2,7 @@
 
 from .abstract_planner import compute_concrete_from_abstract as _compute
 from .abstract_planner import main as _main
-from core.no_mystery_solver import build_no_mystery_switch_mapping
+from core.asp.no_mystery import build_no_mystery_switch_mapping
 
 
 def _no_mystery_options(abstract_symbol=None):

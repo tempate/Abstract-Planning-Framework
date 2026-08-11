@@ -2,11 +2,11 @@ import os
 import time
 import argparse
 
-from .utils.fast_downward import run_fast_downward
+from core.planners.fast_downward import run_fast_downward
 from .utils.reporting import print_planning_result, save_result_summary
-from .utils.run_artifacts import create_run_dir, get_logger, setup_debug_logger
-from core.plasp import generate_lp_with_plasp
-from core.solver import run_clingo
+from core.runtime.run_artifacts import create_run_dir, get_logger, setup_debug_logger
+from core.planners.plasp import generate_lp_with_plasp
+from core.asp.solver import run_clingo
 
 def main():
     parser = argparse.ArgumentParser()
@@ -56,11 +56,12 @@ def compute_concrete_plan(
     fd_start = time.perf_counter()
 
     # Fast Downward expects binary files
-    with open(domain_path, "rb") as d, open(problem_path, "rb") as p:
+    with open(domain_path, "rb") as domain, \
+            open(problem_path, "rb") as problem:
         planner_result = run_fast_downward(
             base_dir=base_dir,
-            domain_file=d,
-            problem_file=p
+            domain_file=domain,
+            problem_file=problem
         )
 
     concrete_result = planner_result["concrete"]

@@ -86,15 +86,20 @@ project/
 ├── scripts/no_mystery_planner.py
 │
 ├── core/paths.py
-├── core/solver.py
-├── core/no_mystery_solver.py
-├── core/plasp.py
+├── core/asp/
+│   ├── solver.py
+│   ├── mapping.py
+│   └── no_mystery.py
+├── core/planners/
+│   ├── fast_downward.py
+│   └── plasp.py
+├── core/runtime/
+│   ├── plan_history.py
+│   └── run_artifacts.py
+├── tools/symmetry_abstraction.py
 │
-├── scripts/utils/fast_downward.py
-├── scripts/utils/plan_history.py
 ├── scripts/utils/results.py
-├── scripts/utils/run_artifacts.py
-├── core/symmetry_abstraction.py
+├── scripts/utils/reporting.py
 │
 ├── requirements.txt
 ├── README.md

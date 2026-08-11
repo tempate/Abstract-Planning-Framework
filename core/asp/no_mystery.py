@@ -3,8 +3,8 @@
 import re
 import time
 
-from scripts.utils.run_artifacts import get_logger, log_phase
-from core.mapping import read_abstract_actions, write_lp_lines
+from core.asp.mapping import read_abstract_actions, write_lp_lines
+from core.runtime.run_artifacts import get_logger, log_phase
 
 
 def build_no_mystery_switch_mapping(

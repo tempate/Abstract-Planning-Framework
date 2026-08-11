@@ -4,12 +4,12 @@ import time
 from pprint import pformat
 
 from .utils.reporting import print_planning_result, save_result_summary
-from .utils.fast_downward import (
+from core.planners.fast_downward import (
     fast_downward_plan_to_abstract_atoms,
     run_fast_downward,
 )
-from .utils.plan_history import get_json_path, init_plan_file, update_plan
-from .utils.run_artifacts import (
+from core.runtime.plan_history import get_json_path, init_plan_file, update_plan
+from core.runtime.run_artifacts import (
     copy_iteration_file,
     create_run_dir,
     get_logger,
@@ -18,7 +18,7 @@ from .utils.run_artifacts import (
     save_json_iteration_file,
     setup_debug_logger,
 )
-from core.solver import (
+from core.asp.solver import (
     build_switch_mapping,
     run_clingo,
     solve_concrete_decremental,
@@ -26,7 +26,7 @@ from core.solver import (
     write_forbid_abstract_lp,
     write_occurs_abs_lp,
 )
-from core.plasp import (
+from core.planners.plasp import (
     add_switch_to_lp_rule,
     append_pddl_facts_to_lp,
     generate_lp_with_plasp,

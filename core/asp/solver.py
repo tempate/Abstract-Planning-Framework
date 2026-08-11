@@ -5,8 +5,8 @@ import time
 
 import clingo
 
-from core.mapping import read_abstract_actions, write_lp_lines
-from scripts.utils.run_artifacts import get_logger, log_phase
+from core.asp.mapping import read_abstract_actions, write_lp_lines
+from core.runtime.run_artifacts import get_logger, log_phase
 
 
 THREADS = os.cpu_count()
