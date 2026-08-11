@@ -2,7 +2,9 @@
 
 import os
 
-from .results import append_result
+import pandas as pd
+
+from core.paths import EXCEL_FILE
 
 
 def print_planning_result(result, logger):
@@ -23,7 +25,7 @@ def print_planning_result(result, logger):
 def save_result_summary(problem_path, version, mode, result):
     """Store a normalized result summary, regardless of planner variant."""
     timings = result["timings"]
-    append_result({
+    _append_result({
         "Problem": os.path.basename(problem_path),
         "Version": version,
         "Mode": mode,
@@ -49,3 +51,12 @@ def _time_step(atom):
 
 def _timing(timings, short_name, long_name):
     return timings.get(short_name, timings.get(long_name))
+
+
+def _append_result(row):
+    """Append one normalized result row to the experiment spreadsheet."""
+    data = pd.DataFrame([row])
+    if os.path.exists(EXCEL_FILE):
+        existing = pd.read_excel(EXCEL_FILE)
+        data = pd.concat([existing, data], ignore_index=True)
+    data.to_excel(EXCEL_FILE, index=False)

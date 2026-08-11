@@ -9,8 +9,12 @@ from core.integrations.fast_downward import (
     run_fast_downward,
 )
 from core.planners.factory import PLANNER_TYPES, get_planner
-from core.runtime.plan_history import get_json_path, init_plan_file, update_plan
-from core.runtime.run_artifacts import (
+from .utils.abstract_plan_log import (
+    get_plan_log_path,
+    initialize_plan_log,
+    record_plan_attempt,
+)
+from core.execution import (
     copy_iteration_file,
     create_run_dir,
     get_logger,
@@ -20,9 +24,9 @@ from core.runtime.run_artifacts import (
     setup_debug_logger,
 )
 from core.integrations.clingo import run_clingo
-from core.asp.plan_files import (
-    write_forbid_abstract_lp,
-    write_occurs_abs_lp,
+from core.asp import (
+    write_abstract_occurrences,
+    write_forbidden_actions,
 )
 from core.integrations.plasp import (
     add_switch_to_lp_rule,
@@ -215,13 +219,13 @@ def compute_concrete_from_abstract(
     print("Directory:", base_dir)
 
     # Create json log for abstract plans
-    json_log_path, problem_hash = get_json_path(
+    json_log_path, problem_hash = get_plan_log_path(
         abstract_problem_path,
         concrete_problem_path,
         dir_name
     )
 
-    init_plan_file(
+    initialize_plan_log(
         json_log_path,
         problem_hash,
         abstract_problem_path,
@@ -358,7 +362,7 @@ def compute_concrete_from_abstract(
             iter_time = time.perf_counter() - iter_start
             total_time = time.perf_counter() - total_start
 
-            update_plan(
+            record_plan_attempt(
                 json_log_path,
                 abstract_atoms,
                 success=True,
@@ -393,7 +397,7 @@ def compute_concrete_from_abstract(
         total_time = time.perf_counter() - total_start
         logger.info(f"TOTAL TIME: {total_time:.3f}s")
 
-        update_plan(
+        record_plan_attempt(
             json_log_path,
             abstract_atoms,
             success=False,
@@ -427,7 +431,7 @@ def compute_concrete_from_abstract(
         abstract_lp_files = [output_a_lp]
 
         if forbid_atoms:
-            write_forbid_abstract_lp(forbid_atoms, forbid_lp_path)
+            write_forbidden_actions(forbid_atoms, forbid_lp_path)
             abstract_lp_files.append(forbid_lp_path)
 
             save_iteration_file(
@@ -461,7 +465,7 @@ def compute_concrete_from_abstract(
         # Generate occurs_abs.lp from abstract plan
         occ_start = time.perf_counter()
 
-        write_occurs_abs_lp(abstract_atoms, occurs_abs_lp_path)
+        write_abstract_occurrences(abstract_atoms, occurs_abs_lp_path)
 
         occ_time = log_phase(logger, "occurs_abs generation time", occ_start)
 
@@ -507,7 +511,7 @@ def compute_concrete_from_abstract(
             iter_time = time.perf_counter() - iter_start
             total_time = time.perf_counter() - total_start
 
-            update_plan(
+            record_plan_attempt(
                 json_log_path,
                 abstract_atoms,
                 success=True,
@@ -575,7 +579,7 @@ def compute_concrete_from_abstract(
             f"iter={iter_time:.3f}s"
         )
 
-        update_plan(
+        record_plan_attempt(
             json_log_path,
             abstract_atoms,
             success=False,

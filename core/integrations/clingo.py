@@ -5,7 +5,7 @@ import time
 
 import clingo
 
-from core.runtime.run_artifacts import get_logger, log_phase
+from core.execution import get_logger, log_phase
 
 
 THREADS = os.cpu_count() or 1

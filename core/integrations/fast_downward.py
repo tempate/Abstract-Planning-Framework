@@ -6,7 +6,7 @@ import time
 
 from core.paths import FAST_DOWNWARD_SCRIPT
 
-from core.runtime.run_artifacts import get_logger, log_phase
+from core.execution import get_logger, log_phase
 
 
 def run_fast_downward(

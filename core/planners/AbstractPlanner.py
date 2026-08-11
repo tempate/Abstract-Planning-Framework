@@ -1,8 +1,8 @@
 """Domain-specific hooks for the shared abstraction-planning workflow."""
 from abc import ABC, abstractmethod
 
-from core.asp.mapping import write_lp_lines
-from core.runtime.run_artifacts import get_logger
+from core.asp import write_asp_program
+from core.execution import get_logger
 
 
 class AbstractPlanner(ABC):
@@ -34,7 +34,7 @@ class AbstractPlanner(ABC):
     @staticmethod
     def _write_mapping(map_path, lines, switch_map, mapping_name):
         logger = get_logger()
-        write_lp_lines(map_path, lines)
+        write_asp_program(map_path, lines)
         logger.info(f"[MAP] Switches created={len(switch_map)}")
         logger.info(f"[FILES] wrote {map_path}")
         logger.info("[MAP] Grounded plan:")

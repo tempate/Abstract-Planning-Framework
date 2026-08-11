@@ -4,7 +4,7 @@ import time
 from abc import ABC, abstractmethod
 
 from core.integrations.clingo import collect_models, create_control
-from core.runtime.run_artifacts import get_logger, log_phase
+from core.execution import get_logger, log_phase
 
 
 class AbstractSolver(ABC):

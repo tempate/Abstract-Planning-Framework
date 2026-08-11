@@ -85,9 +85,7 @@ project/
 ├── scripts/abstract_planner.py
 │
 ├── core/paths.py
-├── core/asp/
-│   ├── mapping.py
-│   └── plan_files.py
+├── core/asp.py
 ├── core/planners/
 │   ├── AbstractPlanner.py
 │   ├── BelugaPlanner.py
@@ -102,13 +100,11 @@ project/
 │   ├── clingo.py
 │   ├── fast_downward.py
 │   └── plasp.py
-├── core/runtime/
-│   ├── plan_history.py
-│   └── run_artifacts.py
+├── core/execution.py
 ├── tools/symmetry_abstraction.py
 │
-├── scripts/utils/results.py
 ├── scripts/utils/reporting.py
+├── scripts/utils/abstract_plan_log.py
 │
 ├── requirements.txt
 ├── README.md

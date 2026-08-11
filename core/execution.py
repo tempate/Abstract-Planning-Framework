@@ -1,4 +1,4 @@
-"""Create per-run artifacts and provide the shared planner logger."""
+"""Manage planning workspaces, diagnostic output, logging, and timing."""
 
 import json
 import logging

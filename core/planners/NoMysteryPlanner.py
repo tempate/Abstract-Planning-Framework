@@ -1,4 +1,4 @@
-from core.asp.mapping import read_abstract_actions
+from core.asp import read_abstract_actions
 from core.planners.AbstractPlanner import AbstractPlanner
 import re
 
