@@ -2,11 +2,11 @@ import os
 import time
 import argparse
 
-from .fastdownward_service import run_fastdownward_service
+from .utils.fastdownward_service import run_fastdownward_service
 from core.plasp_utils import generate_lp_with_plasp
 from core.clingo_utils_api import run_clingo
-from core.log_utils import *
-from .create_excel import *
+from scripts.utils.log_utils import *
+from .utils.create_excel import *
 
 def main():
     parser = argparse.ArgumentParser()

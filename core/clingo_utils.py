@@ -1,6 +1,6 @@
 import subprocess
 import os, re
-from .log_utils import *
+from scripts.utils.log_utils import *
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CLINGO_BIN = os.path.join(REPO_ROOT, "lib", "clingo", "build", "bin", "clingo")

@@ -2,7 +2,7 @@ import os
 import clingo
 import re
 import time
-from .log_utils import *
+from scripts.utils.log_utils import *
 
 THREADS = os.cpu_count()
 

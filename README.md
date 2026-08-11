@@ -89,12 +89,12 @@ project/
 ├── core/clingo_utils_api.py
 ├── core/clingo_utils_api_no_mystery.py
 │
-├── scripts/fastdownward_service.py
+├── scripts/utils/fastdownward_service.py
 ├── core/plasp_utils.py
 │
-├── scripts/create_excel.py
-├── core/json_logger.py
-├── core/log_utils.py
+├── scripts/utils/create_excel.py
+├── scripts/utils/json_logger.py
+├── scripts/utils/log_utils.py
 ├── core/symmetry_abstraction.py
 │
 ├── requirements.txt

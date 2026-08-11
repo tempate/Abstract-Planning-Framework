@@ -3,12 +3,12 @@ import time
 
 import argparse
 
-from .fastdownward_service import *
+from .utils.fastdownward_service import *
 from core.plasp_utils import *
 from core.clingo_utils_api_no_mystery import *
-from core.log_utils import *
-from .create_excel import *
-from core.json_logger import *
+from scripts.utils.log_utils import *
+from .utils.create_excel import *
+from scripts.utils.json_logger import *
 
 def main():
     parser = argparse.ArgumentParser()

@@ -3,7 +3,7 @@ import subprocess
 import uuid
 import time
 
-from core.log_utils import *
+from .log_utils import *
 
 def run_fastdownward_service(
     base_dir,
