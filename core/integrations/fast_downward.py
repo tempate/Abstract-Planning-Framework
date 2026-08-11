@@ -15,9 +15,9 @@ def run_fast_downward(
     problem_file,
     abstract_domain_file=None,
     abstract_problem_file=None,
-    fd_task="plan",
+    task="plan",
 ):
-    """Run Fast Downward for a concrete problem and, optionally, its abstraction."""
+    """Run concrete planning and, when provided, abstract planning."""
     logger = get_logger()
     total_start = time.perf_counter()
     logger.info("=" * 65)
@@ -28,7 +28,7 @@ def run_fast_downward(
         base_dir,
         domain_file.read(),
         problem_file.read(),
-        fd_task,
+        task,
         logger,
     )
 
@@ -92,23 +92,8 @@ def _run_task(label, directory, domain_bytes, problem_bytes, mode, logger):
     }, elapsed
 
 
-def _task_paths(directory):
-    return {
-        "domain": os.path.join(directory, "domain.pddl"),
-        "problem": os.path.join(directory, "problem.pddl"),
-        "sas": os.path.join(directory, "output.sas"),
-        "plan": os.path.join(directory, "sas_plan"),
-    }
-
-
-def _write_input_files(paths, domain_bytes, problem_bytes):
-    with open(paths["domain"], "wb") as file:
-        file.write(domain_bytes)
-    with open(paths["problem"], "wb") as file:
-        file.write(problem_bytes)
-
-
 def _command(paths, mode):
+    """Build the Fast Downward command for a task."""
     if mode == "plan":
         return [
             "python3",
@@ -132,6 +117,22 @@ def _command(paths, mode):
             paths["problem"],
         ]
     raise ValueError(f"Unsupported Fast Downward task: {mode}")
+
+
+def _task_paths(directory):
+    return {
+        "domain": os.path.join(directory, "domain.pddl"),
+        "problem": os.path.join(directory, "problem.pddl"),
+        "sas": os.path.join(directory, "output.sas"),
+        "plan": os.path.join(directory, "sas_plan"),
+    }
+
+
+def _write_input_files(paths, domain_bytes, problem_bytes):
+    with open(paths["domain"], "wb") as file:
+        file.write(domain_bytes)
+    with open(paths["problem"], "wb") as file:
+        file.write(problem_bytes)
 
 
 def calculate_horizon(plan_file_path):

@@ -8,7 +8,7 @@ import clingo
 from core.runtime.run_artifacts import get_logger, log_phase
 
 
-THREADS = os.cpu_count()
+THREADS = os.cpu_count() or 1
 
 
 def run_clingo(lp_files, horizon):
@@ -28,7 +28,13 @@ def run_clingo(lp_files, horizon):
 
 def create_control(lp_files, horizon):
     """Load and ground LP files in a configured Clingo control."""
-    arguments = ["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"]
+    arguments = [
+        "-c",
+        f"horizon={horizon}",
+        "-t",
+        str(THREADS),
+        "--warn=none",
+    ]
     control = clingo.Control(arguments)
     for lp_file in lp_files:
         control.load(lp_file)

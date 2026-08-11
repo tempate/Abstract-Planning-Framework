@@ -36,7 +36,7 @@ def compute_concrete_plan(
     problem_path,
     horizon=None,
     encoding="exact",
-    time_step=False
+    time_step=False,
 ):
     base_dir, run_id = create_run_dir()
 

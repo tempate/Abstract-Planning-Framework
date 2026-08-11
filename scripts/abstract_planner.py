@@ -246,7 +246,7 @@ def compute_concrete_from_abstract(
             problem_file=cp,
             abstract_domain_file=ad,
             abstract_problem_file=ap,
-            fd_task="translate",
+            task="translate",
         )
 
     concrete_result = fd_result["concrete"]

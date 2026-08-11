@@ -19,20 +19,6 @@ _HORIZON_ENCODINGS = {
 _SWITCH_RULE_BOUNDS = {"exact": "1", "bounded": "0"}
 
 
-def _encoding_files(encoding_type, abstract_time_steps):
-    """Return the horizon and time-step encodings for a translation."""
-    try:
-        horizon_file = _HORIZON_ENCODINGS[encoding_type]
-    except KeyError as error:
-        raise ValueError(f"Unsupported encoding type: {encoding_type}") from error
-    time_file = (
-        ABSTRACT_TIME_STEPS_ENCODING
-        if abstract_time_steps
-        else ACTION_PER_TIME_STEP_ENCODING
-    )
-    return horizon_file, time_file
-
-
 def generate_lp_with_plasp(
     sas_or_pddl_path: str,
     lp_output_path: str,
@@ -41,14 +27,15 @@ def generate_lp_with_plasp(
     domain_file: str | None = None,
     abstract_time_steps: bool = False,
 ):
-    """Translate a SAS or PDDL instance and prepend the selected encodings."""
-    encoding_file, time_file = _encoding_files(encoding_type, abstract_time_steps)
+    """Translate a SAS or PDDL instance and prepend its encodings."""
+    encoding_file, time_file = _encoding_files(
+        encoding_type, abstract_time_steps
+    )
 
     if not os.path.exists(PLASP_BIN):
         raise FileNotFoundError(f"plasp binary not found: {PLASP_BIN}")
 
     command = [PLASP_BIN, "translate"]
-
     if is_pddl_instance:
         if not domain_file:
             raise ValueError("Domain file is required for PDDL input.")
@@ -57,7 +44,6 @@ def generate_lp_with_plasp(
         command.append(sas_or_pddl_path)
 
     os.makedirs(os.path.dirname(lp_output_path), exist_ok=True)
-
     with open(lp_output_path, "w", encoding="utf-8") as lp_file:
         _write_encoding_files(lp_file, encoding_file, time_file)
         result = subprocess.run(
@@ -69,6 +55,20 @@ def generate_lp_with_plasp(
 
     if result.returncode != 0:
         raise RuntimeError(f"plasp failed:\n{result.stderr}")
+
+
+def _encoding_files(encoding_type, abstract_time_steps):
+    """Return the encoding files for a translation."""
+    try:
+        horizon_file = _HORIZON_ENCODINGS[encoding_type]
+    except KeyError as error:
+        raise ValueError(f"Unsupported encoding type: {encoding_type}") from error
+    time_file = (
+        ABSTRACT_TIME_STEPS_ENCODING
+        if abstract_time_steps
+        else ACTION_PER_TIME_STEP_ENCODING
+    )
+    return horizon_file, time_file
 
 
 def append_pddl_facts_to_lp(pddl_path, lp_output_path):
