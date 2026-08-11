@@ -1,0 +1,337 @@
+===== p01.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/9b3ed350-ecf9-445c-bee7-a9a1a5d5de0d
+[DONE] Total time: 0.203s
+result:  {'horizon': 11, 'numPlans': 1, 'plans': [['occurs(action(("drive","t0","l2","l0","level34","level2","level36")),1)', 'occurs(action(("load","p0","t0","l0")),2)', 'occurs(action(("drive","t0","l0","l2","level32","level2","level34")),3)', 'occurs(action(("drive","t0","l2","l1","level29","level3","level32")),4)', 'occurs(action(("load","p1","t0","l1")),5)', 'occurs(action(("unload","p0","t0","l1")),6)', 'occurs(action(("drive","t0","l1","l3","level18","level11","level29")),7)', 'occurs(action(("load","p2","t0","l3")),8)', 'occurs(action(("drive","t0","l3","l0","level0","level18","level18")),9)', 'occurs(action(("unload","p1","t0","l0")),10)', 'occurs(action(("unload","p2","t0","l0")),11)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 0.10244441299983009, 'fd_abs': None, 'fd_total': 0.10244441299983009, 'lp_concrete_time': 0.013338361000933219, 'lp_abstract_time': None, 'lp_total_time': 0.013338361000933219, 'abstract_solve_time': None, 'concrete_solve_time': 0.08745284699944023, 'total_time': 0.20341850599834288, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/9b3ed350-ecf9-445c-bee7-a9a1a5d5de0d'}}
+
+=== RESULT ===
+Horizon: 11
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l2","l0","level34","level2","level36")),1)
+  occurs(action(("load","p0","t0","l0")),2)
+  occurs(action(("drive","t0","l0","l2","level32","level2","level34")),3)
+  occurs(action(("drive","t0","l2","l1","level29","level3","level32")),4)
+  occurs(action(("load","p1","t0","l1")),5)
+  occurs(action(("unload","p0","t0","l1")),6)
+  occurs(action(("drive","t0","l1","l3","level18","level11","level29")),7)
+  occurs(action(("load","p2","t0","l3")),8)
+  occurs(action(("drive","t0","l3","l0","level0","level18","level18")),9)
+  occurs(action(("unload","p1","t0","l0")),10)
+  occurs(action(("unload","p2","t0","l0")),11)
+hallo
+
+===== p02.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/42ae776d-0235-4a7d-a3e2-805899e387c4
+[DONE] Total time: 0.994s
+result:  {'horizon': 14, 'numPlans': 1, 'plans': [['occurs(action(("load","p1","t0","l3")),1)', 'occurs(action(("drive","t0","l3","l0","level93","level12","level105")),2)', 'occurs(action(("drive","t0","l0","l1","level70","level23","level93")),3)', 'occurs(action(("load","p2","t0","l1")),4)', 'occurs(action(("unload","p1","t0","l1")),5)', 'occurs(action(("drive","t0","l1","l2","level65","level5","level70")),6)', 'occurs(action(("drive","t0","l2","l4","level42","level23","level65")),7)', 'occurs(action(("load","p3","t0","l4")),8)', 'occurs(action(("load","p0","t0","l4")),9)', 'occurs(action(("drive","t0","l4","l2","level19","level23","level42")),10)', 'occurs(action(("unload","p0","t0","l2")),11)', 'occurs(action(("unload","p2","t0","l2")),12)', 'occurs(action(("drive","t0","l2","l3","level8","level11","level19")),13)', 'occurs(action(("unload","p3","t0","l3")),14)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 0.1990673689997493, 'fd_abs': None, 'fd_total': 0.1990673689997493, 'lp_concrete_time': 0.031702230000519194, 'lp_abstract_time': None, 'lp_total_time': 0.031702230000519194, 'abstract_solve_time': None, 'concrete_solve_time': 0.7633842430004734, 'total_time': 0.9943936740000936, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/42ae776d-0235-4a7d-a3e2-805899e387c4'}}
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l0","level93","level12","level105")),2)
+  occurs(action(("drive","t0","l0","l1","level70","level23","level93")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("unload","p1","t0","l1")),5)
+  occurs(action(("drive","t0","l1","l2","level65","level5","level70")),6)
+  occurs(action(("drive","t0","l2","l4","level42","level23","level65")),7)
+  occurs(action(("load","p3","t0","l4")),8)
+  occurs(action(("load","p0","t0","l4")),9)
+  occurs(action(("drive","t0","l4","l2","level19","level23","level42")),10)
+  occurs(action(("unload","p0","t0","l2")),11)
+  occurs(action(("unload","p2","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level8","level11","level19")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+hallo
+
+===== p03.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/4440db7d-667b-41cc-8d66-1dc08c1b1a39
+[DONE] Total time: 2.608s
+result:  {'horizon': 15, 'numPlans': 1, 'plans': [['occurs(action(("load","p0","t0","l2")),1)', 'occurs(action(("load","p1","t0","l2")),2)', 'occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)', 'occurs(action(("load","p2","t0","l1")),4)', 'occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)', 'occurs(action(("drive","t0","l4","l3","level40","level5","level45")),6)', 'occurs(action(("unload","p0","t0","l3")),7)', 'occurs(action(("unload","p2","t0","l3")),8)', 'occurs(action(("load","p4","t0","l3")),9)', 'occurs(action(("load","p3","t0","l3")),10)', 'occurs(action(("drive","t0","l3","l4","level35","level5","level40")),11)', 'occurs(action(("unload","p1","t0","l4")),12)', 'occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)', 'occurs(action(("unload","p3","t0","l2")),14)', 'occurs(action(("unload","p4","t0","l2")),15)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 0.14264559200091753, 'fd_abs': None, 'fd_total': 0.14264559200091753, 'lp_concrete_time': 0.02184528100042371, 'lp_abstract_time': None, 'lp_total_time': 0.02184528100042371, 'abstract_solve_time': None, 'concrete_solve_time': 2.443455399999948, 'total_time': 2.608191695999267, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/4440db7d-667b-41cc-8d66-1dc08c1b1a39'}}
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p0","t0","l2")),1)
+  occurs(action(("load","p1","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),6)
+  occurs(action(("unload","p0","t0","l3")),7)
+  occurs(action(("unload","p2","t0","l3")),8)
+  occurs(action(("load","p4","t0","l3")),9)
+  occurs(action(("load","p3","t0","l3")),10)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),11)
+  occurs(action(("unload","p1","t0","l4")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+hallo
+
+===== p04.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/178e673e-4717-4dcc-a69d-abec6e9b17f1
+[DONE] Total time: 25.001s
+result:  {'horizon': 19, 'numPlans': 1, 'plans': [['occurs(action(("drive","t0","l5","l4","level87","level12","level99")),1)', 'occurs(action(("load","p2","t0","l4")),2)', 'occurs(action(("drive","t0","l4","l3","level79","level8","level87")),3)', 'occurs(action(("load","p1","t0","l3")),4)', 'occurs(action(("load","p0","t0","l3")),5)', 'occurs(action(("drive","t0","l3","l1","level67","level12","level79")),6)', 'occurs(action(("drive","t0","l1","l2","level64","level3","level67")),7)', 'occurs(action(("load","p3","t0","l2")),8)', 'occurs(action(("unload","p1","t0","l2")),9)', 'occurs(action(("unload","p0","t0","l2")),10)', 'occurs(action(("drive","t0","l2","l5","level51","level13","level64")),11)', 'occurs(action(("load","p5","t0","l5")),12)', 'occurs(action(("drive","t0","l5","l0","level45","level6","level51")),13)', 'occurs(action(("load","p4","t0","l0")),14)', 'occurs(action(("unload","p3","t0","l0")),15)', 'occurs(action(("unload","p2","t0","l0")),16)', 'occurs(action(("unload","p5","t0","l0")),17)', 'occurs(action(("drive","t0","l0","l3","level27","level18","level45")),18)', 'occurs(action(("unload","p4","t0","l3")),19)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 0.3506487760005257, 'fd_abs': None, 'fd_total': 0.3506487760005257, 'lp_concrete_time': 0.041140883000480244, 'lp_abstract_time': None, 'lp_total_time': 0.041140883000480244, 'abstract_solve_time': None, 'concrete_solve_time': 24.60857591400054, 'total_time': 25.000587983000514, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/178e673e-4717-4dcc-a69d-abec6e9b17f1'}}
+
+=== RESULT ===
+Horizon: 19
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l5","l4","level87","level12","level99")),1)
+  occurs(action(("load","p2","t0","l4")),2)
+  occurs(action(("drive","t0","l4","l3","level79","level8","level87")),3)
+  occurs(action(("load","p1","t0","l3")),4)
+  occurs(action(("load","p0","t0","l3")),5)
+  occurs(action(("drive","t0","l3","l1","level67","level12","level79")),6)
+  occurs(action(("drive","t0","l1","l2","level64","level3","level67")),7)
+  occurs(action(("load","p3","t0","l2")),8)
+  occurs(action(("unload","p1","t0","l2")),9)
+  occurs(action(("unload","p0","t0","l2")),10)
+  occurs(action(("drive","t0","l2","l5","level51","level13","level64")),11)
+  occurs(action(("load","p5","t0","l5")),12)
+  occurs(action(("drive","t0","l5","l0","level45","level6","level51")),13)
+  occurs(action(("load","p4","t0","l0")),14)
+  occurs(action(("unload","p3","t0","l0")),15)
+  occurs(action(("unload","p2","t0","l0")),16)
+  occurs(action(("unload","p5","t0","l0")),17)
+  occurs(action(("drive","t0","l0","l3","level27","level18","level45")),18)
+  occurs(action(("unload","p4","t0","l3")),19)
+hallo
+
+===== p05.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/ebb3a710-10fa-454d-bb9b-d9638d1c5676
+[DONE] Total time: 146.932s
+result:  {'horizon': 23, 'numPlans': 1, 'plans': [['occurs(action(("drive","t0","l2","l3","level164","level16","level180")),1)', 'occurs(action(("drive","t0","l3","l0","level146","level18","level164")),2)', 'occurs(action(("load","p3","t0","l0")),3)', 'occurs(action(("drive","t0","l0","l1","level134","level12","level146")),4)', 'occurs(action(("unload","p3","t0","l1")),5)', 'occurs(action(("load","p1","t0","l1")),6)', 'occurs(action(("load","p5","t0","l1")),7)', 'occurs(action(("drive","t0","l1","l4","level121","level13","level134")),8)', 'occurs(action(("load","p2","t0","l4")),9)', 'occurs(action(("unload","p5","t0","l4")),10)', 'occurs(action(("load","p0","t0","l4")),11)', 'occurs(action(("drive","t0","l4","l2","level109","level12","level121")),12)', 'occurs(action(("drive","t0","l2","l7","level91","level18","level109")),13)', 'occurs(action(("load","p6","t0","l7")),14)', 'occurs(action(("unload","p2","t0","l7")),15)', 'occurs(action(("drive","t0","l7","l5","level81","level10","level91")),16)', 'occurs(action(("unload","p1","t0","l5")),17)', 'occurs(action(("drive","t0","l5","l6","level63","level18","level81")),18)', 'occurs(action(("load","p4","t0","l6")),19)', 'occurs(action(("unload","p6","t0","l6")),20)', 'occurs(action(("drive","t0","l6","l1","level60","level3","level63")),21)', 'occurs(action(("unload","p0","t0","l1")),22)', 'occurs(action(("unload","p4","t0","l1")),23)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 2.7947715079990303, 'fd_abs': None, 'fd_total': 2.7947715079990303, 'lp_concrete_time': 0.09325724599875684, 'lp_abstract_time': None, 'lp_total_time': 0.09325724599875684, 'abstract_solve_time': None, 'concrete_solve_time': 144.04377868200027, 'total_time': 146.93201959500038, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/ebb3a710-10fa-454d-bb9b-d9638d1c5676'}}
+
+=== RESULT ===
+Horizon: 23
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l2","l3","level164","level16","level180")),1)
+  occurs(action(("drive","t0","l3","l0","level146","level18","level164")),2)
+  occurs(action(("load","p3","t0","l0")),3)
+  occurs(action(("drive","t0","l0","l1","level134","level12","level146")),4)
+  occurs(action(("unload","p3","t0","l1")),5)
+  occurs(action(("load","p1","t0","l1")),6)
+  occurs(action(("load","p5","t0","l1")),7)
+  occurs(action(("drive","t0","l1","l4","level121","level13","level134")),8)
+  occurs(action(("load","p2","t0","l4")),9)
+  occurs(action(("unload","p5","t0","l4")),10)
+  occurs(action(("load","p0","t0","l4")),11)
+  occurs(action(("drive","t0","l4","l2","level109","level12","level121")),12)
+  occurs(action(("drive","t0","l2","l7","level91","level18","level109")),13)
+  occurs(action(("load","p6","t0","l7")),14)
+  occurs(action(("unload","p2","t0","l7")),15)
+  occurs(action(("drive","t0","l7","l5","level81","level10","level91")),16)
+  occurs(action(("unload","p1","t0","l5")),17)
+  occurs(action(("drive","t0","l5","l6","level63","level18","level81")),18)
+  occurs(action(("load","p4","t0","l6")),19)
+  occurs(action(("unload","p6","t0","l6")),20)
+  occurs(action(("drive","t0","l6","l1","level60","level3","level63")),21)
+  occurs(action(("unload","p0","t0","l1")),22)
+  occurs(action(("unload","p4","t0","l1")),23)
+hallo
+
+===== p06.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/fdaa735b-aa3b-462f-a2dc-83deb63392f4
+[DONE] Total time: 501.047s
+result:  {'horizon': 26, 'numPlans': 1, 'plans': [['occurs(action(("drive","t0","l7","l5","level227","level14","level241")),1)', 'occurs(action(("load","p4","t0","l5")),2)', 'occurs(action(("load","p7","t0","l5")),3)', 'occurs(action(("drive","t0","l5","l0","level206","level21","level227")),4)', 'occurs(action(("load","p2","t0","l0")),5)', 'occurs(action(("drive","t0","l0","l6","level196","level10","level206")),6)', 'occurs(action(("load","p3","t0","l6")),7)', 'occurs(action(("load","p6","t0","l6")),8)', 'occurs(action(("unload","p4","t0","l6")),9)', 'occurs(action(("drive","t0","l6","l3","level172","level24","level196")),10)', 'occurs(action(("unload","p7","t0","l3")),11)', 'occurs(action(("load","p0","t0","l3")),12)', 'occurs(action(("drive","t0","l3","l2","level158","level14","level172")),13)', 'occurs(action(("unload","p3","t0","l2")),14)', 'occurs(action(("load","p1","t0","l2")),15)', 'occurs(action(("unload","p2","t0","l2")),16)', 'occurs(action(("drive","t0","l2","l0","level148","level10","level158")),17)', 'occurs(action(("unload","p1","t0","l0")),18)', 'occurs(action(("drive","t0","l0","l5","level127","level21","level148")),19)', 'occurs(action(("load","p5","t0","l5")),20)', 'occurs(action(("drive","t0","l5","l7","level113","level14","level127")),21)', 'occurs(action(("unload","p5","t0","l7")),22)', 'occurs(action(("drive","t0","l7","l8","level94","level19","level113")),23)', 'occurs(action(("unload","p6","t0","l8")),24)', 'occurs(action(("drive","t0","l8","l4","level76","level18","level94")),25)', 'occurs(action(("unload","p0","t0","l4")),26)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 3.150898057998347, 'fd_abs': None, 'fd_total': 3.150898057998347, 'lp_concrete_time': 0.1570548970012169, 'lp_abstract_time': None, 'lp_total_time': 0.1570548970012169, 'abstract_solve_time': None, 'concrete_solve_time': 497.73920967699996, 'total_time': 501.0474231420012, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/fdaa735b-aa3b-462f-a2dc-83deb63392f4'}}
+
+=== RESULT ===
+Horizon: 26
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l7","l5","level227","level14","level241")),1)
+  occurs(action(("load","p4","t0","l5")),2)
+  occurs(action(("load","p7","t0","l5")),3)
+  occurs(action(("drive","t0","l5","l0","level206","level21","level227")),4)
+  occurs(action(("load","p2","t0","l0")),5)
+  occurs(action(("drive","t0","l0","l6","level196","level10","level206")),6)
+  occurs(action(("load","p3","t0","l6")),7)
+  occurs(action(("load","p6","t0","l6")),8)
+  occurs(action(("unload","p4","t0","l6")),9)
+  occurs(action(("drive","t0","l6","l3","level172","level24","level196")),10)
+  occurs(action(("unload","p7","t0","l3")),11)
+  occurs(action(("load","p0","t0","l3")),12)
+  occurs(action(("drive","t0","l3","l2","level158","level14","level172")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("load","p1","t0","l2")),15)
+  occurs(action(("unload","p2","t0","l2")),16)
+  occurs(action(("drive","t0","l2","l0","level148","level10","level158")),17)
+  occurs(action(("unload","p1","t0","l0")),18)
+  occurs(action(("drive","t0","l0","l5","level127","level21","level148")),19)
+  occurs(action(("load","p5","t0","l5")),20)
+  occurs(action(("drive","t0","l5","l7","level113","level14","level127")),21)
+  occurs(action(("unload","p5","t0","l7")),22)
+  occurs(action(("drive","t0","l7","l8","level94","level19","level113")),23)
+  occurs(action(("unload","p6","t0","l8")),24)
+  occurs(action(("drive","t0","l8","l4","level76","level18","level94")),25)
+  occurs(action(("unload","p0","t0","l4")),26)
+hallo
+
+===== p11.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/7e176270-91be-4fe7-84bf-cffd6192f7ec
+[DONE] Total time: 0.313s
+result:  {'horizon': 12, 'numPlans': 1, 'plans': [['occurs(action(("drive","t0","l2","l0","level24","level2","level26")),1)', 'occurs(action(("load","p0","t0","l0")),2)', 'occurs(action(("drive","t0","l0","l2","level22","level2","level24")),3)', 'occurs(action(("drive","t0","l2","l1","level19","level3","level22")),4)', 'occurs(action(("unload","p0","t0","l1")),5)', 'occurs(action(("load","p1","t0","l1")),6)', 'occurs(action(("drive","t0","l1","l3","level8","level11","level19")),7)', 'occurs(action(("load","p2","t0","l3")),8)', 'occurs(action(("drive","t0","l3","l2","level2","level6","level8")),9)', 'occurs(action(("drive","t0","l2","l0","level0","level2","level2")),10)', 'occurs(action(("unload","p1","t0","l0")),11)', 'occurs(action(("unload","p2","t0","l0")),12)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 0.11563958300030208, 'fd_abs': None, 'fd_total': 0.11563958300030208, 'lp_concrete_time': 0.012053911999828415, 'lp_abstract_time': None, 'lp_total_time': 0.012053911999828415, 'abstract_solve_time': None, 'concrete_solve_time': 0.1847581080000964, 'total_time': 0.3126881340012915, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/7e176270-91be-4fe7-84bf-cffd6192f7ec'}}
+
+=== RESULT ===
+Horizon: 12
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l2","l0","level24","level2","level26")),1)
+  occurs(action(("load","p0","t0","l0")),2)
+  occurs(action(("drive","t0","l0","l2","level22","level2","level24")),3)
+  occurs(action(("drive","t0","l2","l1","level19","level3","level22")),4)
+  occurs(action(("unload","p0","t0","l1")),5)
+  occurs(action(("load","p1","t0","l1")),6)
+  occurs(action(("drive","t0","l1","l3","level8","level11","level19")),7)
+  occurs(action(("load","p2","t0","l3")),8)
+  occurs(action(("drive","t0","l3","l2","level2","level6","level8")),9)
+  occurs(action(("drive","t0","l2","l0","level0","level2","level2")),10)
+  occurs(action(("unload","p1","t0","l0")),11)
+  occurs(action(("unload","p2","t0","l0")),12)
+hallo
+
+===== p12.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/fd723d70-8e92-4572-a053-fbb8dcf7577d
+[DONE] Total time: 1.164s
+result:  {'horizon': 14, 'numPlans': 1, 'plans': [['occurs(action(("load","p1","t0","l3")),1)', 'occurs(action(("drive","t0","l3","l0","level65","level12","level77")),2)', 'occurs(action(("drive","t0","l0","l4","level51","level14","level65")),3)', 'occurs(action(("load","p0","t0","l4")),4)', 'occurs(action(("load","p3","t0","l4")),5)', 'occurs(action(("drive","t0","l4","l2","level28","level23","level51")),6)', 'occurs(action(("drive","t0","l2","l1","level23","level5","level28")),7)', 'occurs(action(("load","p2","t0","l1")),8)', 'occurs(action(("unload","p1","t0","l1")),9)', 'occurs(action(("drive","t0","l1","l2","level18","level5","level23")),10)', 'occurs(action(("unload","p0","t0","l2")),11)', 'occurs(action(("unload","p2","t0","l2")),12)', 'occurs(action(("drive","t0","l2","l3","level7","level11","level18")),13)', 'occurs(action(("unload","p3","t0","l3")),14)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 0.19770572100060235, 'fd_abs': None, 'fd_total': 0.19770572100060235, 'lp_concrete_time': 0.030109801000435255, 'lp_abstract_time': None, 'lp_total_time': 0.030109801000435255, 'abstract_solve_time': None, 'concrete_solve_time': 0.9356909369998903, 'total_time': 1.163752327000111, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/fd723d70-8e92-4572-a053-fbb8dcf7577d'}}
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l0","level65","level12","level77")),2)
+  occurs(action(("drive","t0","l0","l4","level51","level14","level65")),3)
+  occurs(action(("load","p0","t0","l4")),4)
+  occurs(action(("load","p3","t0","l4")),5)
+  occurs(action(("drive","t0","l4","l2","level28","level23","level51")),6)
+  occurs(action(("drive","t0","l2","l1","level23","level5","level28")),7)
+  occurs(action(("load","p2","t0","l1")),8)
+  occurs(action(("unload","p1","t0","l1")),9)
+  occurs(action(("drive","t0","l1","l2","level18","level5","level23")),10)
+  occurs(action(("unload","p0","t0","l2")),11)
+  occurs(action(("unload","p2","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level7","level11","level18")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+hallo
+
+===== p13.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/4d0a4a11-e9c4-4c74-9501-939ebc505acf
+[DONE] Total time: 0.537s
+result:  {'horizon': 15, 'numPlans': 1, 'plans': [['occurs(action(("load","p1","t0","l2")),1)', 'occurs(action(("load","p0","t0","l2")),2)', 'occurs(action(("drive","t0","l2","l1","level41","level3","level44")),3)', 'occurs(action(("load","p2","t0","l1")),4)', 'occurs(action(("drive","t0","l1","l4","level29","level12","level41")),5)', 'occurs(action(("drive","t0","l4","l3","level24","level5","level29")),6)', 'occurs(action(("load","p3","t0","l3")),7)', 'occurs(action(("load","p4","t0","l3")),8)', 'occurs(action(("unload","p2","t0","l3")),9)', 'occurs(action(("unload","p0","t0","l3")),10)', 'occurs(action(("drive","t0","l3","l4","level19","level5","level24")),11)', 'occurs(action(("unload","p1","t0","l4")),12)', 'occurs(action(("drive","t0","l4","l2","level3","level16","level19")),13)', 'occurs(action(("unload","p3","t0","l2")),14)', 'occurs(action(("unload","p4","t0","l2")),15)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 0.13162039599956188, 'fd_abs': None, 'fd_total': 0.13162039599956188, 'lp_concrete_time': 0.01651545200002147, 'lp_abstract_time': None, 'lp_total_time': 0.01651545200002147, 'abstract_solve_time': None, 'concrete_solve_time': 0.388248998000563, 'total_time': 0.5366064099998766, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/4d0a4a11-e9c4-4c74-9501-939ebc505acf'}}
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l2")),1)
+  occurs(action(("load","p0","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level41","level3","level44")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level29","level12","level41")),5)
+  occurs(action(("drive","t0","l4","l3","level24","level5","level29")),6)
+  occurs(action(("load","p3","t0","l3")),7)
+  occurs(action(("load","p4","t0","l3")),8)
+  occurs(action(("unload","p2","t0","l3")),9)
+  occurs(action(("unload","p0","t0","l3")),10)
+  occurs(action(("drive","t0","l3","l4","level19","level5","level24")),11)
+  occurs(action(("unload","p1","t0","l4")),12)
+  occurs(action(("drive","t0","l4","l2","level3","level16","level19")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+hallo
+
+===== p14.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/46b7d9a8-c072-45fc-a58c-1fb2fcc321fb
+[DONE] Total time: 38.452s
+result:  {'horizon': 19, 'numPlans': 1, 'plans': [['occurs(action(("load","p5","t0","l5")),1)', 'occurs(action(("drive","t0","l5","l4","level60","level12","level72")),2)', 'occurs(action(("load","p2","t0","l4")),3)', 'occurs(action(("drive","t0","l4","l3","level52","level8","level60")),4)', 'occurs(action(("load","p0","t0","l3")),5)', 'occurs(action(("load","p1","t0","l3")),6)', 'occurs(action(("drive","t0","l3","l1","level40","level12","level52")),7)', 'occurs(action(("drive","t0","l1","l2","level37","level3","level40")),8)', 'occurs(action(("unload","p1","t0","l2")),9)', 'occurs(action(("unload","p0","t0","l2")),10)', 'occurs(action(("load","p3","t0","l2")),11)', 'occurs(action(("drive","t0","l2","l5","level24","level13","level37")),12)', 'occurs(action(("drive","t0","l5","l0","level18","level6","level24")),13)', 'occurs(action(("unload","p2","t0","l0")),14)', 'occurs(action(("unload","p3","t0","l0")),15)', 'occurs(action(("load","p4","t0","l0")),16)', 'occurs(action(("unload","p5","t0","l0")),17)', 'occurs(action(("drive","t0","l0","l3","level0","level18","level18")),18)', 'occurs(action(("unload","p4","t0","l3")),19)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 0.2914324180001131, 'fd_abs': None, 'fd_total': 0.2914324180001131, 'lp_concrete_time': 0.03027162699982, 'lp_abstract_time': None, 'lp_total_time': 0.03027162699982, 'abstract_solve_time': None, 'concrete_solve_time': 38.12965089499994, 'total_time': 38.451579358001254, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/46b7d9a8-c072-45fc-a58c-1fb2fcc321fb'}}
+
+=== RESULT ===
+Horizon: 19
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p5","t0","l5")),1)
+  occurs(action(("drive","t0","l5","l4","level60","level12","level72")),2)
+  occurs(action(("load","p2","t0","l4")),3)
+  occurs(action(("drive","t0","l4","l3","level52","level8","level60")),4)
+  occurs(action(("load","p0","t0","l3")),5)
+  occurs(action(("load","p1","t0","l3")),6)
+  occurs(action(("drive","t0","l3","l1","level40","level12","level52")),7)
+  occurs(action(("drive","t0","l1","l2","level37","level3","level40")),8)
+  occurs(action(("unload","p1","t0","l2")),9)
+  occurs(action(("unload","p0","t0","l2")),10)
+  occurs(action(("load","p3","t0","l2")),11)
+  occurs(action(("drive","t0","l2","l5","level24","level13","level37")),12)
+  occurs(action(("drive","t0","l5","l0","level18","level6","level24")),13)
+  occurs(action(("unload","p2","t0","l0")),14)
+  occurs(action(("unload","p3","t0","l0")),15)
+  occurs(action(("load","p4","t0","l0")),16)
+  occurs(action(("unload","p5","t0","l0")),17)
+  occurs(action(("drive","t0","l0","l3","level0","level18","level18")),18)
+  occurs(action(("unload","p4","t0","l3")),19)
+hallo
+
+===== p15.pddl =====
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/9cdb2d46-89ac-426f-888a-384a6e91ebed
+[DONE] Total time: 45.227s
+result:  {'horizon': 23, 'numPlans': 1, 'plans': [['occurs(action(("drive","t0","l2","l3","level116","level16","level132")),1)', 'occurs(action(("drive","t0","l3","l0","level98","level18","level116")),2)', 'occurs(action(("load","p3","t0","l0")),3)', 'occurs(action(("drive","t0","l0","l1","level86","level12","level98")),4)', 'occurs(action(("load","p1","t0","l1")),5)', 'occurs(action(("load","p5","t0","l1")),6)', 'occurs(action(("drive","t0","l1","l4","level73","level13","level86")),7)', 'occurs(action(("load","p0","t0","l4")),8)', 'occurs(action(("unload","p5","t0","l4")),9)', 'occurs(action(("load","p2","t0","l4")),10)', 'occurs(action(("drive","t0","l4","l2","level61","level12","level73")),11)', 'occurs(action(("drive","t0","l2","l7","level43","level18","level61")),12)', 'occurs(action(("load","p6","t0","l7")),13)', 'occurs(action(("unload","p2","t0","l7")),14)', 'occurs(action(("drive","t0","l7","l5","level33","level10","level43")),15)', 'occurs(action(("unload","p1","t0","l5")),16)', 'occurs(action(("drive","t0","l5","l6","level15","level18","level33")),17)', 'occurs(action(("unload","p6","t0","l6")),18)', 'occurs(action(("load","p4","t0","l6")),19)', 'occurs(action(("drive","t0","l6","l1","level12","level3","level15")),20)', 'occurs(action(("unload","p3","t0","l1")),21)', 'occurs(action(("unload","p0","t0","l1")),22)', 'occurs(action(("unload","p4","t0","l1")),23)']], 'success': True, 'timings': {'iterations': None, 'fd_conc': 1.8516444280012365, 'fd_abs': None, 'fd_total': 1.8516444280012365, 'lp_concrete_time': 0.07016200800171646, 'lp_abstract_time': None, 'lp_total_time': 0.07016200800171646, 'abstract_solve_time': None, 'concrete_solve_time': 43.30491520200121, 'total_time': 45.226962515000196, 'run_id': '/home/michelle/Documents/Arbeit/TestScript/temp/9cdb2d46-89ac-426f-888a-384a6e91ebed'}}
+
+=== RESULT ===
+Horizon: 23
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l2","l3","level116","level16","level132")),1)
+  occurs(action(("drive","t0","l3","l0","level98","level18","level116")),2)
+  occurs(action(("load","p3","t0","l0")),3)
+  occurs(action(("drive","t0","l0","l1","level86","level12","level98")),4)
+  occurs(action(("load","p1","t0","l1")),5)
+  occurs(action(("load","p5","t0","l1")),6)
+  occurs(action(("drive","t0","l1","l4","level73","level13","level86")),7)
+  occurs(action(("load","p0","t0","l4")),8)
+  occurs(action(("unload","p5","t0","l4")),9)
+  occurs(action(("load","p2","t0","l4")),10)
+  occurs(action(("drive","t0","l4","l2","level61","level12","level73")),11)
+  occurs(action(("drive","t0","l2","l7","level43","level18","level61")),12)
+  occurs(action(("load","p6","t0","l7")),13)
+  occurs(action(("unload","p2","t0","l7")),14)
+  occurs(action(("drive","t0","l7","l5","level33","level10","level43")),15)
+  occurs(action(("unload","p1","t0","l5")),16)
+  occurs(action(("drive","t0","l5","l6","level15","level18","level33")),17)
+  occurs(action(("unload","p6","t0","l6")),18)
+  occurs(action(("load","p4","t0","l6")),19)
+  occurs(action(("drive","t0","l6","l1","level12","level3","level15")),20)
+  occurs(action(("unload","p3","t0","l1")),21)
+  occurs(action(("unload","p0","t0","l1")),22)
+  occurs(action(("unload","p4","t0","l1")),23)
+hallo
+
+===== p16.pddl =====
+TIMEOUT after 10 minutes
+

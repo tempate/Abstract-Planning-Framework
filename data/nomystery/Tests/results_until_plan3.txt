@@ -1,0 +1,27 @@
+===================================
+Problem: p01
+===================================
+--- Attempt 1 ---
+Starting
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/b12d1bd9-2d24-447e-9921-55d336425d92
+
+=== RESULT ===
+Horizon: 11
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l2","l3","level30","level6","level36")),1)
+  occurs(action(("load","p2","t0","l3")),2)
+  occurs(action(("drive","t0","l3","l1","level19","level11","level30")),3)
+  occurs(action(("load","p1","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l2","level16","level3","level19")),5)
+  occurs(action(("drive","t0","l2","l0","level14","level2","level16")),6)
+  occurs(action(("unload","p1","t0","l0")),7)
+  occurs(action(("unload","p2","t0","l0")),8)
+  occurs(action(("load","p0","t0","l0")),9)
+  occurs(action(("drive","t0","l0","l1","level1","level13","level14")),10)
+  occurs(action(("unload","p0","t0","l1")),11)
+test
+
+PLAN FOUND after 1 attempt(s)
+

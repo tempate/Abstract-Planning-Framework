@@ -1,0 +1,128 @@
+SCRIPT="createAbstractHangarAutomatically.py"
+
+for file in ../*.pddl; do
+    filename=$(basename "$file" .pddl)
+
+    python "$SCRIPT" \
+        "$file" \
+        "${filename}_abs.pddl"
+
+    echo "Processed $file"
+done
+[INFO] Found 0 hangars in ../domain.pddl
+Written output to: domain_abs.pddl
+Processed ../domain.pddl
+[INFO] Found 3 hangars in ../problem_0_s42_j10_r2_oc31_f4.pddl
+Written output to: problem_0_s42_j10_r2_oc31_f4_abs.pddl
+Processed ../problem_0_s42_j10_r2_oc31_f4.pddl
+[INFO] Found 2 hangars in ../problem_10_s52_j6_r2_oc81_f4.pddl
+Written output to: problem_10_s52_j6_r2_oc81_f4_abs.pddl
+Processed ../problem_10_s52_j6_r2_oc81_f4.pddl
+[INFO] Found 2 hangars in ../problem_11_s53_j6_r2_oc73_f4.pddl
+Written output to: problem_11_s53_j6_r2_oc73_f4_abs.pddl
+Processed ../problem_11_s53_j6_r2_oc73_f4.pddl
+[INFO] Found 1 hangars in ../problem_13_s55_j10_r2_oc54_f4.pddl
+Written output to: problem_13_s55_j10_r2_oc54_f4_abs.pddl
+Processed ../problem_13_s55_j10_r2_oc54_f4.pddl
+[INFO] Found 3 hangars in ../problem_15_s57_j11_r2_oc86_f3.pddl
+Written output to: problem_15_s57_j11_r2_oc86_f3_abs.pddl
+Processed ../problem_15_s57_j11_r2_oc86_f3.pddl
+[INFO] Found 1 hangars in ../problem_16_s58_j8_r2_oc24_f3.pddl
+Written output to: problem_16_s58_j8_r2_oc24_f3_abs.pddl
+Processed ../problem_16_s58_j8_r2_oc24_f3.pddl
+[INFO] Found 1 hangars in ../problem_17_s59_j18_r2_oc56_f4.pddl
+Written output to: problem_17_s59_j18_r2_oc56_f4_abs.pddl
+Processed ../problem_17_s59_j18_r2_oc56_f4.pddl
+[INFO] Found 1 hangars in ../problem_18_s60_j10_r2_oc80_f3.pddl
+Written output to: problem_18_s60_j10_r2_oc80_f3_abs.pddl
+Processed ../problem_18_s60_j10_r2_oc80_f3.pddl
+[INFO] Found 2 hangars in ../problem_19_s61_j9_r2_oc80_f5.pddl
+Written output to: problem_19_s61_j9_r2_oc80_f5_abs.pddl
+Processed ../problem_19_s61_j9_r2_oc80_f5.pddl
+[INFO] Found 3 hangars in ../problem_20_s62_j14_r2_oc32_f3.pddl
+Written output to: problem_20_s62_j14_r2_oc32_f3_abs.pddl
+Processed ../problem_20_s62_j14_r2_oc32_f3.pddl
+[INFO] Found 1 hangars in ../problem_21_s63_j13_r2_oc34_f3.pddl
+Written output to: problem_21_s63_j13_r2_oc34_f3_abs.pddl
+Processed ../problem_21_s63_j13_r2_oc34_f3.pddl
+[INFO] Found 1 hangars in ../problem_22_s64_j12_r2_oc88_f4.pddl
+Written output to: problem_22_s64_j12_r2_oc88_f4_abs.pddl
+Processed ../problem_22_s64_j12_r2_oc88_f4.pddl
+[INFO] Found 2 hangars in ../problem_23_s65_j6_r2_oc23_f3.pddl
+Written output to: problem_23_s65_j6_r2_oc23_f3_abs.pddl
+Processed ../problem_23_s65_j6_r2_oc23_f3.pddl
+[INFO] Found 1 hangars in ../problem_24_s66_j13_r2_oc50_f3.pddl
+Written output to: problem_24_s66_j13_r2_oc50_f3_abs.pddl
+Processed ../problem_24_s66_j13_r2_oc50_f3.pddl
+[INFO] Found 2 hangars in ../problem_25_s67_j6_r2_oc50_f4.pddl
+Written output to: problem_25_s67_j6_r2_oc50_f4_abs.pddl
+Processed ../problem_25_s67_j6_r2_oc50_f4.pddl
+[INFO] Found 3 hangars in ../problem_27_s69_j7_r2_oc66_f3.pddl
+Written output to: problem_27_s69_j7_r2_oc66_f3_abs.pddl
+Processed ../problem_27_s69_j7_r2_oc66_f3.pddl
+[INFO] Found 2 hangars in ../problem_28_s70_j6_r2_oc54_f4.pddl
+Written output to: problem_28_s70_j6_r2_oc54_f4_abs.pddl
+Processed ../problem_28_s70_j6_r2_oc54_f4.pddl
+[INFO] Found 1 hangars in ../problem_29_s72_j9_r2_oc86_f3.pddl
+Written output to: problem_29_s72_j9_r2_oc86_f3_abs.pddl
+Processed ../problem_29_s72_j9_r2_oc86_f3.pddl
+[INFO] Found 2 hangars in ../problem_2_s44_j7_r2_oc83_f3.pddl
+Written output to: problem_2_s44_j7_r2_oc83_f3_abs.pddl
+Processed ../problem_2_s44_j7_r2_oc83_f3.pddl
+[INFO] Found 2 hangars in ../problem_30_s73_j5_r2_oc80_f3.pddl
+Written output to: problem_30_s73_j5_r2_oc80_f3_abs.pddl
+Processed ../problem_30_s73_j5_r2_oc80_f3.pddl
+[INFO] Found 2 hangars in ../problem_31_s74_j6_r2_oc55_f4.pddl
+Written output to: problem_31_s74_j6_r2_oc55_f4_abs.pddl
+Processed ../problem_31_s74_j6_r2_oc55_f4.pddl
+[INFO] Found 2 hangars in ../problem_32_s75_j3_r2_oc25_f3.pddl
+Written output to: problem_32_s75_j3_r2_oc25_f3_abs.pddl
+Processed ../problem_32_s75_j3_r2_oc25_f3.pddl
+[INFO] Found 1 hangars in ../problem_34_s77_j6_r2_oc55_f5.pddl
+Written output to: problem_34_s77_j6_r2_oc55_f5_abs.pddl
+Processed ../problem_34_s77_j6_r2_oc55_f5.pddl
+[INFO] Found 2 hangars in ../problem_35_s78_j11_r2_oc34_f4.pddl
+Written output to: problem_35_s78_j11_r2_oc34_f4_abs.pddl
+Processed ../problem_35_s78_j11_r2_oc34_f4.pddl
+[INFO] Found 1 hangars in ../problem_37_s80_j4_r2_oc55_f3.pddl
+Written output to: problem_37_s80_j4_r2_oc55_f3_abs.pddl
+Processed ../problem_37_s80_j4_r2_oc55_f3.pddl
+[INFO] Found 3 hangars in ../problem_38_s81_j5_r2_oc31_f4.pddl
+Written output to: problem_38_s81_j5_r2_oc31_f4_abs.pddl
+Processed ../problem_38_s81_j5_r2_oc31_f4.pddl
+[INFO] Found 2 hangars in ../problem_40_s83_j10_r2_oc80_f4.pddl
+Written output to: problem_40_s83_j10_r2_oc80_f4_abs.pddl
+Processed ../problem_40_s83_j10_r2_oc80_f4.pddl
+[INFO] Found 2 hangars in ../problem_42_s85_j9_r2_oc22_f4.pddl
+Written output to: problem_42_s85_j9_r2_oc22_f4_abs.pddl
+Processed ../problem_42_s85_j9_r2_oc22_f4.pddl
+[INFO] Found 1 hangars in ../problem_44_s87_j15_r2_oc71_f5.pddl
+Written output to: problem_44_s87_j15_r2_oc71_f5_abs.pddl
+Processed ../problem_44_s87_j15_r2_oc71_f5.pddl
+[INFO] Found 2 hangars in ../problem_45_s88_j5_r2_oc58_f3.pddl
+Written output to: problem_45_s88_j5_r2_oc58_f3_abs.pddl
+Processed ../problem_45_s88_j5_r2_oc58_f3.pddl
+[INFO] Found 2 hangars in ../problem_46_s89_j3_r2_oc32_f3.pddl
+Written output to: problem_46_s89_j3_r2_oc32_f3_abs.pddl
+Processed ../problem_46_s89_j3_r2_oc32_f3.pddl
+[INFO] Found 2 hangars in ../problem_47_s90_j6_r2_oc59_f3.pddl
+Written output to: problem_47_s90_j6_r2_oc59_f3_abs.pddl
+Processed ../problem_47_s90_j6_r2_oc59_f3.pddl
+[INFO] Found 3 hangars in ../problem_48_s91_j6_r2_oc81_f5.pddl
+Written output to: problem_48_s91_j6_r2_oc81_f5_abs.pddl
+Processed ../problem_48_s91_j6_r2_oc81_f5.pddl
+[INFO] Found 2 hangars in ../problem_4_s46_j6_r2_oc73_f3.pddl
+Written output to: problem_4_s46_j6_r2_oc73_f3_abs.pddl
+Processed ../problem_4_s46_j6_r2_oc73_f3.pddl
+[INFO] Found 2 hangars in ../problem_6_s48_j8_r2_oc80_f3.pddl
+Written output to: problem_6_s48_j8_r2_oc80_f3_abs.pddl
+Processed ../problem_6_s48_j8_r2_oc80_f3.pddl
+[INFO] Found 2 hangars in ../problem_7_s49_j13_r2_oc80_f5.pddl
+Written output to: problem_7_s49_j13_r2_oc80_f5_abs.pddl
+Processed ../problem_7_s49_j13_r2_oc80_f5.pddl
+[INFO] Found 2 hangars in ../problem_8_s50_j4_r2_oc84_f4.pddl
+Written output to: problem_8_s50_j4_r2_oc84_f4_abs.pddl
+Processed ../problem_8_s50_j4_r2_oc84_f4.pddl
+[INFO] Found 2 hangars in ../problem_9_s51_j8_r2_oc90_f5.pddl
+Written output to: problem_9_s51_j8_r2_oc90_f5_abs.pddl
+Processed ../problem_9_s51_j8_r2_oc90_f5.pddl

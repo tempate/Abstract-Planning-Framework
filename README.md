@@ -81,27 +81,37 @@ lib/
 ```text
 project/
 │
-├── test_script_concrete.py
-├── test_script_abstraction.py
-├── test_script_abstraction_no_mystery.py
+├── scripts/concrete_planner.py
+├── scripts/abstract_planner.py
 │
-├── clingo_utils.py
-├── clingo_utils_api.py
-├── clingo_utils_api_no_mystery.py
+├── core/paths.py
+├── core/asp.py
+├── core/planners/
+│   ├── AbstractPlanner.py
+│   ├── BelugaPlanner.py
+│   ├── NoMysteryPlanner.py
+│   └── factory.py
+├── core/solvers/
+│   ├── AbstractSolver.py
+│   ├── IncrementalSolver.py
+│   ├── DecrementalSolver.py
+│   └── factory.py
+├── core/integrations/
+│   ├── clingo.py
+│   ├── fast_downward.py
+│   └── plasp.py
+├── core/execution.py
+├── tools/symmetry_abstraction.py
 │
-├── fastdownward_service.py
-├── plasp_utils.py
-│
-├── create_excel.py
-├── json_logger.py
-├── log_utils.py
+├── scripts/utils/reporting.py
+├── scripts/utils/abstract_plan_log.py
 │
 ├── requirements.txt
 ├── README.md
 │
-├── temp/     (auto-generated, NOT tracked in Git)
+├── scripts/utils/temp/     (auto-generated, NOT tracked in Git)
 │   ├── beluga/
-│   ├── noMystery/
+│   ├── noMystery/            (NoMystery profile output)
 │   └── jsonFiles/
 │
 └── lib/
@@ -117,7 +127,7 @@ project/
 ### Concrete Planning
 
 ```bash
-python3 test_script_concrete.py \
+python -m scripts.concrete_planner \
     --domain DOMAIN.pddl \
     --problem PROBLEM.pddl \
     --horizon H \
@@ -127,8 +137,13 @@ python3 test_script_concrete.py \
 
 ### Beluga Abstraction Planning
 
+`abstract_planner` is the shared entry point for both domains. Domain planners
+in `core/planners/abstraction.py` inherit common hooks and implement their own
+switch mapping and refinement behavior. Beluga is the default profile; it
+requires an abstract symbol and the concrete objects it represents.
+
 ```bash
-python3 test_script_abstraction.py \
+python -m scripts.abstract_planner \
     --abstract-domain ABSTRACT_DOMAIN.pddl \
     --abstract-problem ABSTRACT_PROBLEM.pddl \
     --concrete-domain CONCRETE_DOMAIN.pddl \
@@ -157,8 +172,12 @@ python3 test_script_abstraction.py \
 
 ### NoMystery Abstraction Planning
 
+The `no_mystery` profile selects NoMystery's fuel-aware mapping and drive-action
+refinement.  It does not require `--abstract-symbol` or `--concrete-objects`.
+
 ```bash
-python3 test_script_abstraction_no_mystery.py \
+python -m scripts.abstract_planner \
+    --profile no_mystery \
     --abstract-domain ABSTRACT_DOMAIN.pddl \
     --abstract-problem ABSTRACT_PROBLEM.pddl \
     --concrete-domain CONCRETE_DOMAIN.pddl \

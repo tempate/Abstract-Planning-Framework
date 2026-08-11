@@ -1,0 +1,828 @@
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.092s | abstract=0.072s | total=0.165s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/61be31a9-6c3d-4cf0-ae9d-dde266dd1394
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.101s | abstract=0.072s | total=0.173s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/d6395946-89bf-41ad-9750-694a462e9820
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.104s | abstract=0.078s | total=0.182s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/48de18dd-2b3e-45f5-831c-d2b4b973f9c4
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.096s | abstract=0.073s | total=0.170s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/7d10d9e9-3681-4aa8-84a4-1cc349a83892
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.098s | abstract=0.075s | total=0.174s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/8b87edc7-2cd4-4f96-8b13-1580303d56c4
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.097s | abstract=0.074s | total=0.172s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/432bff45-7f4b-4335-a04a-f35f84b49764
+ITERATIONS TOTAL SUMMARY | iters=2 | abs=0.019s | occ=0.000s | map=0.001s | conc=0.229s | ref=0.000s | iter_total=0.251s
+TOTAL TIME: 0.436s
+
+=== RESULT ===
+Horizon: 11
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l2","l3","level30","level6","level36")),1)
+  occurs(action(("load","p2","t0","l3")),2)
+  occurs(action(("drive","t0","l3","l1","level19","level11","level30")),3)
+  occurs(action(("load","p1","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l0","level6","level13","level19")),5)
+  occurs(action(("unload","p2","t0","l0")),6)
+  occurs(action(("unload","p1","t0","l0")),7)
+  occurs(action(("load","p0","t0","l0")),8)
+  occurs(action(("drive","t0","l0","l2","level4","level2","level6")),9)
+  occurs(action(("drive","t0","l2","l1","level1","level3","level4")),10)
+  occurs(action(("unload","p0","t0","l1")),11)
+
+===================================
+Problem: p01
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.099s | abstract=0.075s | total=0.174s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/ead8399c-f344-4a55-a764-4c1440a3bf91
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.103s | abstract=0.072s | total=0.175s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/426ed307-c40b-4fda-b915-a8fe5371f0de
+
+=== RESULT ===
+Horizon: 11
+Plans found: 0
+
+===================================
+Problem: p02
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.212s | abstract=0.075s | total=0.288s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/510cc217-2491-4f51-a92d-0f6dc5bbc903
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.020s | occ=0.000s | map=0.000s | conc=0.538s | ref=0.000s | iter_total=0.559s
+TOTAL TIME: 0.893s
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l2","level94","level11","level105")),2)
+  occurs(action(("drive","t0","l2","l1","level89","level5","level94")),3)
+  occurs(action(("unload","p1","t0","l1")),4)
+  occurs(action(("load","p2","t0","l1")),5)
+  occurs(action(("drive","t0","l1","l2","level84","level5","level89")),6)
+  occurs(action(("unload","p2","t0","l2")),7)
+  occurs(action(("drive","t0","l2","l4","level61","level23","level84")),8)
+  occurs(action(("load","p0","t0","l4")),9)
+  occurs(action(("load","p3","t0","l4")),10)
+  occurs(action(("drive","t0","l4","l2","level38","level23","level61")),11)
+  occurs(action(("unload","p0","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level27","level11","level38")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.229s | abstract=0.075s | total=0.304s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/14aba8cc-31ed-4cc1-895d-3d9815ec85ae
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.028s | occ=0.000s | map=0.001s | conc=0.362s | ref=0.000s | iter_total=0.392s
+TOTAL TIME: 0.734s
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l2","level94","level11","level105")),2)
+  occurs(action(("drive","t0","l2","l1","level89","level5","level94")),3)
+  occurs(action(("unload","p1","t0","l1")),4)
+  occurs(action(("load","p2","t0","l1")),5)
+  occurs(action(("drive","t0","l1","l2","level84","level5","level89")),6)
+  occurs(action(("unload","p2","t0","l2")),7)
+  occurs(action(("drive","t0","l2","l4","level61","level23","level84")),8)
+  occurs(action(("load","p3","t0","l4")),9)
+  occurs(action(("load","p0","t0","l4")),10)
+  occurs(action(("drive","t0","l4","l2","level38","level23","level61")),11)
+  occurs(action(("unload","p0","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level27","level11","level38")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+
+===================================
+Problem: p02
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.230s | abstract=0.074s | total=0.306s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/4c1aaa42-b670-4601-835b-eaa60249b0a1
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.022s | occ=0.000s | map=0.001s | conc=1.048s | ref=0.000s | iter_total=1.071s
+TOTAL TIME: 1.415s
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l2","level94","level11","level105")),2)
+  occurs(action(("drive","t0","l2","l1","level89","level5","level94")),3)
+  occurs(action(("unload","p1","t0","l1")),4)
+  occurs(action(("load","p2","t0","l1")),5)
+  occurs(action(("drive","t0","l1","l0","level66","level23","level89")),6)
+  occurs(action(("drive","t0","l0","l4","level52","level14","level66")),7)
+  occurs(action(("load","p0","t0","l4")),8)
+  occurs(action(("load","p3","t0","l4")),9)
+  occurs(action(("drive","t0","l4","l2","level29","level23","level52")),10)
+  occurs(action(("unload","p0","t0","l2")),11)
+  occurs(action(("unload","p2","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level18","level11","level29")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.213s | abstract=0.074s | total=0.289s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/b15f577b-724e-408e-ad87-6903ddb9a9c1
+ITERATIONS TOTAL SUMMARY | iters=2 | abs=0.037s | occ=0.000s | map=0.001s | conc=0.783s | ref=0.000s | iter_total=0.823s
+TOTAL TIME: 1.152s
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l2","level94","level11","level105")),2)
+  occurs(action(("drive","t0","l2","l4","level71","level23","level94")),3)
+  occurs(action(("load","p3","t0","l4")),4)
+  occurs(action(("load","p0","t0","l4")),5)
+  occurs(action(("drive","t0","l4","l2","level48","level23","level71")),6)
+  occurs(action(("unload","p0","t0","l2")),7)
+  occurs(action(("drive","t0","l2","l1","level43","level5","level48")),8)
+  occurs(action(("load","p2","t0","l1")),9)
+  occurs(action(("unload","p1","t0","l1")),10)
+  occurs(action(("drive","t0","l1","l2","level38","level5","level43")),11)
+  occurs(action(("unload","p2","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level27","level11","level38")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+
+===================================
+Problem: p02
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.221s | abstract=0.076s | total=0.297s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/6a5d8db9-5ab5-4a7a-ba3f-4161e3a5cf72
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.024s | occ=0.000s | map=0.000s | conc=0.754s | ref=0.000s | iter_total=0.780s
+TOTAL TIME: 1.119s
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l2","level94","level11","level105")),2)
+  occurs(action(("drive","t0","l2","l1","level89","level5","level94")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("unload","p1","t0","l1")),5)
+  occurs(action(("drive","t0","l1","l2","level84","level5","level89")),6)
+  occurs(action(("unload","p2","t0","l2")),7)
+  occurs(action(("drive","t0","l2","l4","level61","level23","level84")),8)
+  occurs(action(("load","p3","t0","l4")),9)
+  occurs(action(("load","p0","t0","l4")),10)
+  occurs(action(("drive","t0","l4","l2","level38","level23","level61")),11)
+  occurs(action(("unload","p0","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level27","level11","level38")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.217s | abstract=0.076s | total=0.295s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/a39d74ae-7ade-42ec-8d9d-d648336424d0
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.018s | occ=0.000s | map=0.000s | conc=0.352s | ref=0.000s | iter_total=0.371s
+TOTAL TIME: 0.704s
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l0","level93","level12","level105")),2)
+  occurs(action(("drive","t0","l0","l1","level70","level23","level93")),3)
+  occurs(action(("unload","p1","t0","l1")),4)
+  occurs(action(("load","p2","t0","l1")),5)
+  occurs(action(("drive","t0","l1","l2","level65","level5","level70")),6)
+  occurs(action(("drive","t0","l2","l4","level42","level23","level65")),7)
+  occurs(action(("load","p0","t0","l4")),8)
+  occurs(action(("load","p3","t0","l4")),9)
+  occurs(action(("drive","t0","l4","l2","level19","level23","level42")),10)
+  occurs(action(("unload","p0","t0","l2")),11)
+  occurs(action(("unload","p2","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level8","level11","level19")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+
+===================================
+Problem: p02
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.212s | abstract=0.078s | total=0.291s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/2956f4a1-7c3a-4d56-8463-31e8bd048f1c
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.021s | occ=0.000s | map=0.000s | conc=0.820s | ref=0.000s | iter_total=0.841s
+TOTAL TIME: 1.178s
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l2","level94","level11","level105")),2)
+  occurs(action(("drive","t0","l2","l4","level71","level23","level94")),3)
+  occurs(action(("load","p3","t0","l4")),4)
+  occurs(action(("load","p0","t0","l4")),5)
+  occurs(action(("drive","t0","l4","l2","level48","level23","level71")),6)
+  occurs(action(("unload","p0","t0","l2")),7)
+  occurs(action(("drive","t0","l2","l1","level43","level5","level48")),8)
+  occurs(action(("load","p2","t0","l1")),9)
+  occurs(action(("unload","p1","t0","l1")),10)
+  occurs(action(("drive","t0","l1","l2","level38","level5","level43")),11)
+  occurs(action(("unload","p2","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level27","level11","level38")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.234s | abstract=0.071s | total=0.306s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/1f33a72d-7df3-476f-9793-493c12a83fde
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.020s | occ=0.000s | map=0.000s | conc=0.350s | ref=0.000s | iter_total=0.371s
+TOTAL TIME: 0.724s
+
+=== RESULT ===
+Horizon: 14
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l3")),1)
+  occurs(action(("drive","t0","l3","l0","level93","level12","level105")),2)
+  occurs(action(("drive","t0","l0","l1","level70","level23","level93")),3)
+  occurs(action(("unload","p1","t0","l1")),4)
+  occurs(action(("load","p2","t0","l1")),5)
+  occurs(action(("drive","t0","l1","l2","level65","level5","level70")),6)
+  occurs(action(("unload","p2","t0","l2")),7)
+  occurs(action(("drive","t0","l2","l4","level42","level23","level65")),8)
+  occurs(action(("load","p0","t0","l4")),9)
+  occurs(action(("load","p3","t0","l4")),10)
+  occurs(action(("drive","t0","l4","l2","level19","level23","level42")),11)
+  occurs(action(("unload","p0","t0","l2")),12)
+  occurs(action(("drive","t0","l2","l3","level8","level11","level19")),13)
+  occurs(action(("unload","p3","t0","l3")),14)
+
+===================================
+Problem: p03
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.142s | abstract=0.078s | total=0.221s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/dbbed628-4ce4-414a-8248-4530fc9783a3
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.025s | occ=0.000s | map=0.000s | conc=0.570s | ref=0.000s | iter_total=0.596s
+TOTAL TIME: 0.845s
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p0","t0","l2")),1)
+  occurs(action(("load","p1","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("unload","p1","t0","l4")),6)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),7)
+  occurs(action(("load","p3","t0","l3")),8)
+  occurs(action(("load","p4","t0","l3")),9)
+  occurs(action(("unload","p0","t0","l3")),10)
+  occurs(action(("unload","p2","t0","l3")),11)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.165s | abstract=0.082s | total=0.248s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/43732951-aeef-4192-9c66-8baacadbb522
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.036s | occ=0.000s | map=0.000s | conc=0.260s | ref=0.000s | iter_total=0.297s
+TOTAL TIME: 0.574s
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l2")),1)
+  occurs(action(("load","p0","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("unload","p1","t0","l4")),6)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),7)
+  occurs(action(("unload","p2","t0","l3")),8)
+  occurs(action(("load","p4","t0","l3")),9)
+  occurs(action(("load","p3","t0","l3")),10)
+  occurs(action(("unload","p0","t0","l3")),11)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+
+===================================
+Problem: p03
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.148s | abstract=0.075s | total=0.225s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/b4eba5ef-85d4-40af-a86a-0e360615c94b
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.027s | occ=0.000s | map=0.001s | conc=1.065s | ref=0.000s | iter_total=1.093s
+TOTAL TIME: 1.346s
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l2")),1)
+  occurs(action(("load","p0","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("unload","p1","t0","l4")),6)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),7)
+  occurs(action(("unload","p2","t0","l3")),8)
+  occurs(action(("unload","p0","t0","l3")),9)
+  occurs(action(("load","p3","t0","l3")),10)
+  occurs(action(("load","p4","t0","l3")),11)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p4","t0","l2")),14)
+  occurs(action(("unload","p3","t0","l2")),15)
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.146s | abstract=0.076s | total=0.223s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/fd7d2f5d-a071-42de-97fa-1ff802fd9004
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.023s | occ=0.000s | map=0.000s | conc=0.258s | ref=0.000s | iter_total=0.282s
+TOTAL TIME: 0.532s
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p0","t0","l2")),1)
+  occurs(action(("load","p1","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),6)
+  occurs(action(("load","p4","t0","l3")),7)
+  occurs(action(("load","p3","t0","l3")),8)
+  occurs(action(("unload","p0","t0","l3")),9)
+  occurs(action(("unload","p2","t0","l3")),10)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),11)
+  occurs(action(("unload","p1","t0","l4")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+
+===================================
+Problem: p03
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.146s | abstract=0.079s | total=0.226s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/b4a055fc-2359-4d0c-b045-b52c9d226ff0
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.025s | occ=0.000s | map=0.000s | conc=0.403s | ref=0.000s | iter_total=0.429s
+TOTAL TIME: 0.685s
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p0","t0","l2")),1)
+  occurs(action(("load","p1","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("unload","p1","t0","l4")),6)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),7)
+  occurs(action(("load","p4","t0","l3")),8)
+  occurs(action(("unload","p0","t0","l3")),9)
+  occurs(action(("load","p3","t0","l3")),10)
+  occurs(action(("unload","p2","t0","l3")),11)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p4","t0","l2")),14)
+  occurs(action(("unload","p3","t0","l2")),15)
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.156s | abstract=0.074s | total=0.230s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/41919739-09f6-45fe-8a74-9bb6bf4c644b
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.027s | occ=0.000s | map=0.000s | conc=0.253s | ref=0.000s | iter_total=0.281s
+TOTAL TIME: 0.538s
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p1","t0","l2")),1)
+  occurs(action(("load","p0","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),6)
+  occurs(action(("unload","p0","t0","l3")),7)
+  occurs(action(("unload","p2","t0","l3")),8)
+  occurs(action(("load","p3","t0","l3")),9)
+  occurs(action(("load","p4","t0","l3")),10)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),11)
+  occurs(action(("unload","p1","t0","l4")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+
+===================================
+Problem: p03
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.146s | abstract=0.080s | total=0.227s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/816a1944-53d4-43c2-8da6-4a743641bc84
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.038s | occ=0.000s | map=0.000s | conc=0.536s | ref=0.000s | iter_total=0.576s
+TOTAL TIME: 0.833s
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p0","t0","l2")),1)
+  occurs(action(("load","p1","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("unload","p1","t0","l4")),6)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),7)
+  occurs(action(("unload","p0","t0","l3")),8)
+  occurs(action(("unload","p2","t0","l3")),9)
+  occurs(action(("load","p3","t0","l3")),10)
+  occurs(action(("load","p4","t0","l3")),11)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.150s | abstract=0.076s | total=0.235s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/ff9a930b-0a7a-400a-a3f6-4944d5e17ad6
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.029s | occ=0.000s | map=0.000s | conc=0.245s | ref=0.000s | iter_total=0.275s
+TOTAL TIME: 0.538s
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p0","t0","l2")),1)
+  occurs(action(("load","p1","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level57","level3","level60")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level45","level12","level57")),5)
+  occurs(action(("drive","t0","l4","l3","level40","level5","level45")),6)
+  occurs(action(("load","p4","t0","l3")),7)
+  occurs(action(("load","p3","t0","l3")),8)
+  occurs(action(("unload","p2","t0","l3")),9)
+  occurs(action(("unload","p0","t0","l3")),10)
+  occurs(action(("drive","t0","l3","l4","level35","level5","level40")),11)
+  occurs(action(("unload","p1","t0","l4")),12)
+  occurs(action(("drive","t0","l4","l2","level19","level16","level35")),13)
+  occurs(action(("unload","p4","t0","l2")),14)
+  occurs(action(("unload","p3","t0","l2")),15)
+
+===================================
+Problem: p04
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.350s | abstract=0.086s | total=0.437s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/de31586e-e643-47ed-af62-a226cb32d3ce
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.101s | occ=0.000s | map=0.001s | conc=15.723s | ref=0.000s | iter_total=15.826s
+TOTAL TIME: 16.318s
+
+=== RESULT ===
+Horizon: 19
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p5","t0","l5")),1)
+  occurs(action(("drive","t0","l5","l4","level87","level12","level99")),2)
+  occurs(action(("load","p2","t0","l4")),3)
+  occurs(action(("drive","t0","l4","l3","level79","level8","level87")),4)
+  occurs(action(("load","p0","t0","l3")),5)
+  occurs(action(("load","p1","t0","l3")),6)
+  occurs(action(("drive","t0","l3","l1","level67","level12","level79")),7)
+  occurs(action(("drive","t0","l1","l2","level64","level3","level67")),8)
+  occurs(action(("unload","p1","t0","l2")),9)
+  occurs(action(("unload","p0","t0","l2")),10)
+  occurs(action(("load","p3","t0","l2")),11)
+  occurs(action(("drive","t0","l2","l5","level51","level13","level64")),12)
+  occurs(action(("drive","t0","l5","l0","level45","level6","level51")),13)
+  occurs(action(("unload","p2","t0","l0")),14)
+  occurs(action(("unload","p3","t0","l0")),15)
+  occurs(action(("unload","p5","t0","l0")),16)
+  occurs(action(("load","p4","t0","l0")),17)
+  occurs(action(("drive","t0","l0","l3","level27","level18","level45")),18)
+  occurs(action(("unload","p4","t0","l3")),19)
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.369s | abstract=0.087s | total=0.457s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/1cdc4645-c0a9-4db8-843e-97332645b7d6
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.086s | occ=0.000s | map=0.001s | conc=0.593s | ref=0.000s | iter_total=0.681s
+TOTAL TIME: 1.198s
+
+=== RESULT ===
+Horizon: 19
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l5","l4","level87","level12","level99")),1)
+  occurs(action(("load","p2","t0","l4")),2)
+  occurs(action(("drive","t0","l4","l3","level79","level8","level87")),3)
+  occurs(action(("load","p1","t0","l3")),4)
+  occurs(action(("load","p0","t0","l3")),5)
+  occurs(action(("drive","t0","l3","l1","level67","level12","level79")),6)
+  occurs(action(("drive","t0","l1","l2","level64","level3","level67")),7)
+  occurs(action(("unload","p0","t0","l2")),8)
+  occurs(action(("unload","p1","t0","l2")),9)
+  occurs(action(("load","p3","t0","l2")),10)
+  occurs(action(("drive","t0","l2","l5","level51","level13","level64")),11)
+  occurs(action(("load","p5","t0","l5")),12)
+  occurs(action(("drive","t0","l5","l0","level45","level6","level51")),13)
+  occurs(action(("unload","p2","t0","l0")),14)
+  occurs(action(("load","p4","t0","l0")),15)
+  occurs(action(("unload","p5","t0","l0")),16)
+  occurs(action(("unload","p3","t0","l0")),17)
+  occurs(action(("drive","t0","l0","l3","level27","level18","level45")),18)
+  occurs(action(("unload","p4","t0","l3")),19)
+
+===================================
+Problem: p05
+===================================
+--- MODE: inc ---
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=2.882s | abstract=0.103s | total=2.986s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/b72b1326-ca0b-4730-8097-e801cb08bc71
+Concrete LP generation: 0.123sAbstract LP generation: 0.005sTotal LP generation: 0.128s
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.133s | occ=0.000s | map=0.001s | conc=1.755s | ref=0.000s | iter_total=1.890s
+TOTAL TIME: 5.005s
+
+=== RESULT ===
+Horizon: 23
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l2","l3","level164","level16","level180")),1)
+  occurs(action(("drive","t0","l3","l0","level146","level18","level164")),2)
+  occurs(action(("load","p3","t0","l0")),3)
+  occurs(action(("drive","t0","l0","l1","level134","level12","level146")),4)
+  occurs(action(("load","p1","t0","l1")),5)
+  occurs(action(("unload","p3","t0","l1")),6)
+  occurs(action(("load","p5","t0","l1")),7)
+  occurs(action(("drive","t0","l1","l4","level121","level13","level134")),8)
+  occurs(action(("load","p0","t0","l4")),9)
+  occurs(action(("load","p2","t0","l4")),10)
+  occurs(action(("unload","p5","t0","l4")),11)
+  occurs(action(("drive","t0","l4","l2","level109","level12","level121")),12)
+  occurs(action(("drive","t0","l2","l7","level91","level18","level109")),13)
+  occurs(action(("load","p6","t0","l7")),14)
+  occurs(action(("unload","p2","t0","l7")),15)
+  occurs(action(("drive","t0","l7","l5","level81","level10","level91")),16)
+  occurs(action(("unload","p1","t0","l5")),17)
+  occurs(action(("drive","t0","l5","l6","level63","level18","level81")),18)
+  occurs(action(("load","p4","t0","l6")),19)
+  occurs(action(("unload","p6","t0","l6")),20)
+  occurs(action(("drive","t0","l6","l1","level60","level3","level63")),21)
+  occurs(action(("unload","p0","t0","l1")),22)
+  occurs(action(("unload","p4","t0","l1")),23)
+
+===================================
+Problem: p06
+===================================
+--- MODE: inc ---
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=3.082s | abstract=0.090s | total=3.173s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/65a3d06a-e46b-4227-bef5-e50ac6cb94a5
+Concrete LP generation: 0.193sAbstract LP generation: 0.007sTotal LP generation: 0.199s
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=1.111s | occ=0.000s | map=0.001s | conc=3.035s | ref=0.000s | iter_total=4.148s
+TOTAL TIME: 7.521s
+
+=== RESULT ===
+Horizon: 26
+Plans found: 1
+
+Plan 1:
+  occurs(action(("drive","t0","l7","l5","level227","level14","level241")),1)
+  occurs(action(("load","p4","t0","l5")),2)
+  occurs(action(("load","p5","t0","l5")),3)
+  occurs(action(("load","p7","t0","l5")),4)
+  occurs(action(("drive","t0","l5","l0","level206","level21","level227")),5)
+  occurs(action(("load","p2","t0","l0")),6)
+  occurs(action(("drive","t0","l0","l6","level196","level10","level206")),7)
+  occurs(action(("load","p6","t0","l6")),8)
+  occurs(action(("load","p3","t0","l6")),9)
+  occurs(action(("unload","p4","t0","l6")),10)
+  occurs(action(("drive","t0","l6","l3","level172","level24","level196")),11)
+  occurs(action(("load","p0","t0","l3")),12)
+  occurs(action(("unload","p7","t0","l3")),13)
+  occurs(action(("drive","t0","l3","l2","level158","level14","level172")),14)
+  occurs(action(("load","p1","t0","l2")),15)
+  occurs(action(("unload","p3","t0","l2")),16)
+  occurs(action(("unload","p2","t0","l2")),17)
+  occurs(action(("drive","t0","l2","l0","level148","level10","level158")),18)
+  occurs(action(("unload","p1","t0","l0")),19)
+  occurs(action(("drive","t0","l0","l5","level127","level21","level148")),20)
+  occurs(action(("drive","t0","l5","l7","level113","level14","level127")),21)
+  occurs(action(("unload","p5","t0","l7")),22)
+  occurs(action(("drive","t0","l7","l8","level94","level19","level113")),23)
+  occurs(action(("unload","p6","t0","l8")),24)
+  occurs(action(("drive","t0","l8","l4","level76","level18","level94")),25)
+  occurs(action(("unload","p0","t0","l4")),26)
+
+===================================
+Problem: p11
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.096s | abstract=0.079s | total=0.176s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/d4470300-275e-4216-9363-492f77f544c7
+Concrete LP generation: 0.008sAbstract LP generation: 0.003sTotal LP generation: 0.011s
+
+=== RESULT ===
+Horizon: 12
+Plans found: 0
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.097s | abstract=0.085s | total=0.182s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/e1b551ba-8e37-45b8-8184-12cd1cf00178
+Concrete LP generation: 0.008sAbstract LP generation: 0.002sTotal LP generation: 0.010s
+
+=== RESULT ===
+Horizon: 12
+Plans found: 0
+
+===================================
+Problem: p12
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.168s | abstract=0.083s | total=0.253s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/78a02679-1fed-42fd-9627-209b73d17ed5
+Concrete LP generation: 0.037sAbstract LP generation: 0.004sTotal LP generation: 0.040s
+
+=== RESULT ===
+Horizon: 14
+Plans found: 0
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.182s | abstract=0.087s | total=0.270s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/da0a4320-947e-4ac5-9fb8-dfb1a094f2d2
+Concrete LP generation: 0.023sAbstract LP generation: 0.003sTotal LP generation: 0.027s
+
+=== RESULT ===
+Horizon: 14
+Plans found: 0
+
+===================================
+Problem: p13
+===================================
+--- MODE: inc ---
+Starting
+[FD] SUMMARY | concrete=0.151s | abstract=0.088s | total=0.241s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/f320ce2f-a115-4691-8826-068c523b7735
+Concrete LP generation: 0.017sAbstract LP generation: 0.004sTotal LP generation: 0.021s
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.032s | occ=0.000s | map=0.001s | conc=0.347s | ref=0.000s | iter_total=0.380s
+TOTAL TIME: 0.642s
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p0","t0","l2")),1)
+  occurs(action(("load","p1","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level41","level3","level44")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level29","level12","level41")),5)
+  occurs(action(("drive","t0","l4","l3","level24","level5","level29")),6)
+  occurs(action(("load","p4","t0","l3")),7)
+  occurs(action(("unload","p0","t0","l3")),8)
+  occurs(action(("unload","p2","t0","l3")),9)
+  occurs(action(("load","p3","t0","l3")),10)
+  occurs(action(("drive","t0","l3","l4","level19","level5","level24")),11)
+  occurs(action(("unload","p1","t0","l4")),12)
+  occurs(action(("drive","t0","l4","l2","level3","level16","level19")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+
+--- MODE: dec ---
+Starting
+[FD] SUMMARY | concrete=0.143s | abstract=0.085s | total=0.229s
+Directory:  /home/michelle/Documents/Arbeit/TestScript/temp/9042b64f-3753-486d-9559-9198b06c9529
+Concrete LP generation: 0.019sAbstract LP generation: 0.004sTotal LP generation: 0.022s
+ITERATIONS TOTAL SUMMARY | iters=1 | abs=0.043s | occ=0.000s | map=0.001s | conc=0.183s | ref=0.000s | iter_total=0.227s
+TOTAL TIME: 0.479s
+
+=== RESULT ===
+Horizon: 15
+Plans found: 1
+
+Plan 1:
+  occurs(action(("load","p0","t0","l2")),1)
+  occurs(action(("load","p1","t0","l2")),2)
+  occurs(action(("drive","t0","l2","l1","level41","level3","level44")),3)
+  occurs(action(("load","p2","t0","l1")),4)
+  occurs(action(("drive","t0","l1","l4","level29","level12","level41")),5)
+  occurs(action(("drive","t0","l4","l3","level24","level5","level29")),6)
+  occurs(action(("unload","p2","t0","l3")),7)
+  occurs(action(("unload","p0","t0","l3")),8)
+  occurs(action(("load","p4","t0","l3")),9)
+  occurs(action(("load","p3","t0","l3")),10)
+  occurs(action(("drive","t0","l3","l4","level19","level5","level24")),11)
+  occurs(action(("unload","p1","t0","l4")),12)
+  occurs(action(("drive","t0","l4","l2","level3","level16","level19")),13)
+  occurs(action(("unload","p3","t0","l2")),14)
+  occurs(action(("unload","p4","t0","l2")),15)
+
+===================================
+Problem: p14
+===================================
+--- MODE: inc ---

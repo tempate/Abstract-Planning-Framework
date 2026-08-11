@@ -1,0 +1,12 @@
+===================================
+Problem: problem_1_s43_j5_r2_oc51_f3 | Mode: inc
+Trailers: beluga_trailer_1 beluga_trailer_2
+Timeout: 10 minutes
+===================================
+>>> TIMED OUT after 10 minutes
+
+===================================
+Problem: problem_1_s43_j5_r2_oc51_f3 | Mode: dec
+Trailers: beluga_trailer_1 beluga_trailer_2
+Timeout: 10 minutes
+===================================

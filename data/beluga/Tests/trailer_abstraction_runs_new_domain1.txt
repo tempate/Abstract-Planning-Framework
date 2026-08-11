@@ -1,0 +1,87 @@
+===================================
+Problem: problem_1_s43_j5_r2_oc51_f3 | Mode: inc
+Trailers: beluga_trailer_1 beluga_trailer_2
+Timeout: 40 minutes
+===================================
+>>> TIMED OUT after 40 minutes
+
+===================================
+Problem: problem_1_s43_j5_r2_oc51_f3 | Mode: dec
+Trailers: beluga_trailer_1 beluga_trailer_2
+Timeout: 40 minutes
+===================================
+>>> TIMED OUT after 40 minutes
+
+===================================
+Problem: problem_3_s45_j3_r2_oc44_f3 | Mode: inc
+Trailers: beluga_trailer_1 beluga_trailer_2
+Timeout: 40 minutes
+===================================
+>>> TIMED OUT after 40 minutes
+
+===================================
+Problem: problem_3_s45_j3_r2_oc44_f3 | Mode: dec
+Trailers: beluga_trailer_1 beluga_trailer_2
+Timeout: 40 minutes
+===================================
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/af9de43c-1d62-482b-85c9-41c35f8a278b
+
+=== RESULT ===
+Horizon: 17
+Plans found: 0
+>>> FINISHED successfully
+
+===================================
+Problem: problem_14_s56_j6_r2_oc77_f3 | Mode: inc
+Trailers: beluga_trailer_1 beluga_trailer_2
+Timeout: 40 minutes
+===================================
+>>> TIMED OUT after 40 minutes
+
+===================================
+Problem: problem_14_s56_j6_r2_oc77_f3 | Mode: dec
+Trailers: beluga_trailer_1 beluga_trailer_2
+Timeout: 40 minutes
+===================================
+Starting
+Directory: /home/michelle/Documents/Arbeit/TestScript/temp/617ed47e-3eca-4781-aba9-995fc8246257
+
+=== RESULT ===
+Horizon: 13
+Plans found: 0
+>>> FINISHED successfully
+
+===================================
+Problem: problem_26_s68_j6_r2_oc87_f4 | Mode: inc
+Trailers: beluga_trailer_1 beluga_trailer_2
+Timeout: 40 minutes
+===================================
+>>> TIMED OUT after 40 minutes
+
+===================================
+Problem: problem_26_s68_j6_r2_oc87_f4 | Mode: dec
+Trailers: beluga_trailer_1 beluga_trailer_2
+Timeout: 40 minutes
+===================================
+>>> TIMED OUT after 40 minutes
+
+===================================
+Problem: problem_33_s76_j9_r2_oc85_f3 | Mode: inc
+Trailers: beluga_trailer_1 beluga_trailer_2 beluga_trailer_3
+Timeout: 40 minutes
+===================================
+>>> TIMED OUT after 40 minutes
+
+===================================
+Problem: problem_33_s76_j9_r2_oc85_f3 | Mode: dec
+Trailers: beluga_trailer_1 beluga_trailer_2 beluga_trailer_3
+Timeout: 40 minutes
+===================================
+>>> TIMED OUT after 40 minutes
+
+===================================
+Problem: problem_39_s82_j4_r2_oc23_f3 | Mode: inc
+Trailers: beluga_trailer_1 beluga_trailer_2 beluga_trailer_3
+Timeout: 40 minutes
+===================================
