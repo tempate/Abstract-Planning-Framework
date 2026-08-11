@@ -1,7 +1,7 @@
 import os
 import clingo
 import time
-from log_utils import *
+from .log_utils import *
 
 THREADS = os.cpu_count()
 
@@ -31,7 +31,7 @@ def run_clingo(lp_files, horizon):
         for model in handle:
             atoms = [str(symbol) for symbol in model.symbols(shown=True)]
             models.append(atoms)
-    
+
     elapsed = time.perf_counter() - start
 
     log_phase(logger, "[CLINGO] Solve runtime", start)
@@ -59,7 +59,7 @@ def write_occurs_abs_lp(atoms, output_path):
 
     with open(output_path, "w") as f:
         f.write("\n".join(lines))
-    
+
     logger.info(f"[FILES] wrote {output_path}")
     log_phase(logger, "[FILES] occurs_abs generation", start)
 
@@ -112,7 +112,7 @@ def create_map_lp(occurs_abs_path, output_path, abstract_symbol, concrete_object
     # Write map.lp
     with open(output_path, "w") as f:
         f.write("\n".join(lines_out))
-    
+
     logger.info(f"[FILES] wrote {output_path}")
     log_phase(logger, "[MAP] create_map_lp", start)
 
@@ -171,7 +171,7 @@ def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbo
 
     with open(output_path, "w") as f:
         f.write("\n".join(lines_out))
-    
+
     logger.info(f"[MAP] Switches created={len(switch_map)}")
     logger.info(f"[FILES] wrote {output_path}")
     logger.info("[MAP] Grounded plan:")
@@ -186,7 +186,7 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
     start = time.perf_counter()
 
     logger.info("[INC] Starting incremental solve")
-    
+
     ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"])
 
     for lp in lp_files:
@@ -206,7 +206,7 @@ def solve_concrete_incremental(lp_files, horizon, switch_map):
     # Ensure switches are processed in numeric order
     switch_symbols.sort(key=lambda s: symbol_to_id[s])
 
-    
+
     logger.info(f"[INC] Found switches={len(switch_symbols)}")
 
     active_switches = []
@@ -274,7 +274,7 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
     start = time.perf_counter()
 
     logger.info("[DEC] Starting decremental solve")
-    
+
     ctl = clingo.Control(["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"])
 
     for lp in lp_files:
@@ -396,7 +396,7 @@ def solve_concrete_decremental(lp_files, horizon, switch_map):
 def write_forbid_abstract_lp(abstract_atoms_to_forbid, output_path):
     logger = get_logger()
     start = time.perf_counter()
-    
+
     lines = []
 
     logger.info("[REFINE] Writing forbid rules")
@@ -413,6 +413,6 @@ def write_forbid_abstract_lp(abstract_atoms_to_forbid, output_path):
 
     with open(output_path, "w") as f:
         f.write("\n".join(lines))
-    
+
     logger.info(f"[FILES] wrote {output_path}")
     log_phase(logger, "[REFINE] forbid file generation", start)

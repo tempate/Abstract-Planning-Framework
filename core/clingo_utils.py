@@ -1,6 +1,6 @@
 import subprocess
 import os, re
-from log_utils import *
+from .log_utils import *
 
 CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
 CLINGO_BIN = os.path.join(CURRENT_DIRECTORY, "lib", "clingo", "build", "bin", "clingo")
@@ -71,7 +71,7 @@ def write_occurs_abs_lp(atoms, output_path):
 
     with open(output_path, "w") as f:
         f.write("\n".join(lines))
-    
+
     logger.info(f"[FILES] wrote {output_path}")
     log_phase(logger, "[FILES] occurs_abs generation", start)
 
@@ -105,7 +105,7 @@ def create_map_lp(occurs_abs_path, output_path, abstract_symbol, concrete_object
             for obj in concrete_objects:
                 new_action = action_str.replace(abstract_symbol, obj)
                 choices.append(f"occurs({new_action}, {time_str})")
-            
+
             lines_out.append(f"1 {{ {'; '.join(choices)} }} 1 :- occurs_abstract({action_str},{time_str}).")
         else:
             # case 2: no abstraction -> direct mapping
@@ -124,7 +124,7 @@ def solve_concrete_incremental(lp_files, switch_map_lp, horizon):
     start = time.perf_counter()
 
     logger.info("[INC] Starting incremental solve")
-    
+
     with open(switch_map_lp, "r") as f:
         raw_lines = [line.strip() for line in f if line.strip()]
 
@@ -173,13 +173,13 @@ def solve_concrete_incremental(lp_files, switch_map_lp, horizon):
         if next_is_abstract:
             with open(temp_active_lp, "w") as f:
                 f.write("\n".join(active_lines))
-                        
+
             with open(temp_active_lp, "r") as f:
                 content = f.read()
 
             logger.info("[MAP] tmp_active_map.lp content:")
             logger.info("\n" + content)
-            
+
             cmd = (
                 [CLINGO_BIN]
                 + lp_files

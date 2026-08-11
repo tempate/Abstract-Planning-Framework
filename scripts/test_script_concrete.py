@@ -2,11 +2,11 @@ import os
 import time
 import argparse
 
-from fastdownward_service import run_fastdownward_service
-from plasp_utils import generate_lp_with_plasp
-from clingo_utils_api import run_clingo
-from log_utils import *
-from create_excel import *
+from .fastdownward_service import run_fastdownward_service
+from core.plasp_utils import generate_lp_with_plasp
+from core.clingo_utils_api import run_clingo
+from core.log_utils import *
+from .create_excel import *
 
 def main():
     parser = argparse.ArgumentParser()
@@ -46,7 +46,7 @@ def main():
 
         for atom in sorted_plan:
             print(" ", atom)
-    
+
     timings = result["timings"]
 
     row = {
@@ -107,7 +107,7 @@ def compute_concrete_plan(
             domain_file=d,
             problem_file=p
         )
-    
+
     result = result["concrete"]
 
     input = result["sasFile"]
@@ -117,7 +117,7 @@ def compute_concrete_plan(
     # If horizon was not provided, use Fast Downward's horizon
     if horizon is None:
         horizon = result["horizon"]
-    
+
     is_pddl = False
 
     logger.info(f"Fast Downward time: {fd_time:.3f}s")
@@ -188,4 +188,3 @@ def compute_concrete_plan(
 
 if __name__ == "__main__":
     main()
-

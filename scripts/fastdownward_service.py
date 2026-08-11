@@ -3,7 +3,7 @@ import subprocess
 import uuid
 import time
 
-from log_utils import *
+from core.log_utils import *
 
 def run_fastdownward_service(
     base_dir,
@@ -76,7 +76,7 @@ def run_fastdownward_service(
     concrete_start = time.perf_counter()
 
     result = subprocess.run(command, capture_output=True, text=True)
-    
+
     concrete_time = log_phase(
             logger,
             "[FD] Concrete planner runtime",
@@ -165,7 +165,7 @@ def run_fastdownward_service(
             "sasFile": abstract_sas_file,
             "planFile": abstract_plan_file,
         }
-    
+
     total_time = time.perf_counter() - total_start
 
     logger.info(

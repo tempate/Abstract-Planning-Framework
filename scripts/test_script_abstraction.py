@@ -3,12 +3,12 @@ import time
 
 import argparse
 
-from fastdownward_service import *
-from plasp_utils import *
-from clingo_utils_api import *
-from log_utils import *
-from create_excel import *
-from json_logger import *
+from .fastdownward_service import *
+from core.plasp_utils import *
+from core.clingo_utils_api import *
+from core.log_utils import *
+from .create_excel import *
+from core.json_logger import *
 
 def main():
     parser = argparse.ArgumentParser()
@@ -164,7 +164,7 @@ def compute_concrete_from_abstract(
             abstract_problem_file=ap,
             fd_task="translate",
         )
-    
+
     concrete_result = fd_result["concrete"]
     abstract_result = fd_result["abstract"]
     fd_timings = fd_result["timings"]
@@ -178,17 +178,17 @@ def compute_concrete_from_abstract(
             abstract_result.get("horizon", 0),
             concrete_result.get("horizon", 0)
         ) """
-    
+
     concrete_input = concrete_result["sasFile"]
     abstract_input = abstract_result["sasFile"]
 
     is_pddl = False
-    
+
     logger.info(f"Fast Downward time: {fd_time:.3f}s")
 
     output_c_lp = os.path.join(base_dir, "output_c.lp")
     output_a_lp = os.path.join(base_dir, "abstract", "output_a.lp")
-    
+
     clingo_dir = os.path.join(base_dir, "clingo")
     os.makedirs(clingo_dir, exist_ok=True)
 
@@ -240,7 +240,7 @@ def compute_concrete_from_abstract(
     if plan_source == "fd":
         logger.info("Using Fast Downward plan")
 
-        # Generate occurs_abs.lp from fastdownward plan 
+        # Generate occurs_abs.lp from fastdownward plan
         occ_start = time.perf_counter()
 
         abstract_atoms = fd_plan_to_occurs_abstract(
@@ -252,7 +252,7 @@ def compute_concrete_from_abstract(
 
         iter_start = time.perf_counter()
         iteration_times = []
-        
+
         # Create mapping LP with switches
         map_start = time.perf_counter()
 
@@ -350,7 +350,7 @@ def compute_concrete_from_abstract(
 
         for atom in bad_abstract_actions:
             logger.info(f"  {atom}")
-        
+
         logger.info("=" * 70)
         logger.info(
             f"ITERATIONS TOTAL SUMMARY | "
@@ -376,7 +376,7 @@ def compute_concrete_from_abstract(
             bad_actions=bad_abstract_actions,
             mode=solving_mode
         )
-    
+
         return {
             "horizon": horizon,
             "numPlans": 0,
@@ -414,7 +414,7 @@ def compute_concrete_from_abstract(
 
         # Solve abstract plan
         abs_start = time.perf_counter()
-        
+
         abstract_lp_files = [output_a_lp]
 
         if forbid_atoms:
@@ -427,7 +427,7 @@ def compute_concrete_from_abstract(
                 "forbidden.lp",
                 "\n".join(forbid_atoms)
             )
-        
+
         abstract_models = run_clingo(abstract_lp_files, horizon)
 
         abs_time = log_phase(logger, "Abstract solving time", abs_start)
@@ -438,7 +438,7 @@ def compute_concrete_from_abstract(
 
             total_time = time.perf_counter() - total_start
             logger.info(f"TOTAL TIME: {total_time:.3f}s")
-        
+
             return {
                 "horizon": horizon,
                 "numPlans": 0,
@@ -465,7 +465,7 @@ def compute_concrete_from_abstract(
         for atom in abstract_atoms:
             logger.info(f"  {atom}")
 
-        # Generate occurs_abs.lp from abstract plan 
+        # Generate occurs_abs.lp from abstract plan
         occ_start = time.perf_counter()
 
         write_occurs_abs_lp(abstract_atoms, occurs_abs_lp_path)
@@ -592,7 +592,7 @@ def compute_concrete_from_abstract(
         )
 
         new_forbidden = []
-        
+
         for atom in bad_abstract_actions:
             if abstract_symbol in atom and atom not in forbid_atoms:
                 forbid_atoms.append(atom)
@@ -646,4 +646,3 @@ def compute_concrete_from_abstract(
 
 if __name__ == "__main__":
     main()
-

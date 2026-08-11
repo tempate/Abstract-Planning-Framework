@@ -81,20 +81,21 @@ lib/
 ```text
 project/
 │
-├── test_script_concrete.py
-├── test_script_abstraction.py
-├── test_script_abstraction_no_mystery.py
+├── scripts/test_script_concrete.py
+├── scripts/test_script_abstraction.py
+├── scripts/test_script_abstraction_no_mystery.py
 │
-├── clingo_utils.py
-├── clingo_utils_api.py
-├── clingo_utils_api_no_mystery.py
+├── core/clingo_utils.py
+├── core/clingo_utils_api.py
+├── core/clingo_utils_api_no_mystery.py
 │
-├── fastdownward_service.py
-├── plasp_utils.py
+├── scripts/fastdownward_service.py
+├── core/plasp_utils.py
 │
-├── create_excel.py
-├── json_logger.py
-├── log_utils.py
+├── scripts/create_excel.py
+├── core/json_logger.py
+├── core/log_utils.py
+├── core/symmetry_abstraction.py
 │
 ├── requirements.txt
 ├── README.md
@@ -117,7 +118,7 @@ project/
 ### Concrete Planning
 
 ```bash
-python3 test_script_concrete.py \
+python -m scripts.test_script_concrete \
     --domain DOMAIN.pddl \
     --problem PROBLEM.pddl \
     --horizon H \
@@ -128,7 +129,7 @@ python3 test_script_concrete.py \
 ### Beluga Abstraction Planning
 
 ```bash
-python3 test_script_abstraction.py \
+python -m scripts.test_script_abstraction \
     --abstract-domain ABSTRACT_DOMAIN.pddl \
     --abstract-problem ABSTRACT_PROBLEM.pddl \
     --concrete-domain CONCRETE_DOMAIN.pddl \
@@ -158,7 +159,7 @@ python3 test_script_abstraction.py \
 ### NoMystery Abstraction Planning
 
 ```bash
-python3 test_script_abstraction_no_mystery.py \
+python -m scripts.test_script_abstraction_no_mystery \
     --abstract-domain ABSTRACT_DOMAIN.pddl \
     --abstract-problem ABSTRACT_PROBLEM.pddl \
     --concrete-domain CONCRETE_DOMAIN.pddl \
