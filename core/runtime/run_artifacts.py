@@ -71,17 +71,6 @@ def get_logger():
     """Return the logger shared by the planning pipeline."""
     return logging.getLogger("planner_debug")
 
-def get_debug_dir():
-    """Return the current run's debug directory after logger setup."""
-    logger = get_logger()
-
-    if not hasattr(logger, "debug_dir"):
-        raise RuntimeError(
-            "Debug directory not initialized. Call setup_debug_logger first."
-        )
-
-    return logger.debug_dir
-
 def create_run_dir(dir_name="concrete"):
     """Create and return an isolated directory for a planner run."""
     directory_name = dir_name or "concrete"

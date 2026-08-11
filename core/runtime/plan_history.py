@@ -10,11 +10,6 @@ from core.paths import BASE_JSON_DIR
 _HASH_LENGTH = 16
 
 
-def ensure_json_dir():
-    """Create the root directory used for persisted plan histories."""
-    os.makedirs(BASE_JSON_DIR, exist_ok=True)
-
-
 def hash_files(*paths):
     """Return a stable short hash of the contents of all supplied files."""
     digest = hashlib.sha256()
@@ -37,32 +32,6 @@ def get_json_path(abstract_problem_path, concrete_problem_path, directory):
     target_directory = os.path.join(BASE_JSON_DIR, directory)
     os.makedirs(target_directory, exist_ok=True)
     return os.path.join(target_directory, f"{problem_hash}.json"), problem_hash
-
-
-def get_json_path_more(
-    abstract_problem_path,
-    concrete_problem_path,
-    abstract_symbol,
-    concrete_objects,
-):
-    """Return a history path that also accounts for an abstraction mapping."""
-    ensure_json_dir()
-    hash_input = "".join(
-        (
-            abstract_problem_path,
-            concrete_problem_path,
-            abstract_symbol,
-            ",".join(sorted(concrete_objects or [])),
-        )
-    )
-    problem_hash = hashlib.sha256(hash_input.encode()).hexdigest()[:_HASH_LENGTH]
-    return os.path.join(BASE_JSON_DIR, f"{problem_hash}.json"), problem_hash
-
-
-def init_json_file(path, problem_hash):
-    """Create a run-history file when it does not already exist."""
-    if not os.path.exists(path):
-        save_json(path, {"problem_hash": problem_hash, "runs": []})
 
 
 def load_json(path):
@@ -108,29 +77,6 @@ def init_plan_file(
             "plans": {},
         },
     )
-
-
-def start_new_run(path, mode):
-    """Append an empty run record for a refinement mode."""
-    data = load_json(path)
-    data["runs"].append({"mode": mode, "steps": []})
-    save_json(path, data)
-
-
-def append_step(path, abstract_atoms, success, bad_actions=None):
-    """Append one abstract-plan validation result to the current run."""
-    data = load_json(path)
-    if not data["runs"]:
-        raise RuntimeError("No run initialized. Call start_new_run() first.")
-
-    data["runs"][-1]["steps"].append(
-        {
-            "abstract_plan": [str(atom) for atom in abstract_atoms],
-            "success": success,
-            "bad_actions": [str(atom) for atom in bad_actions] if bad_actions else [],
-        }
-    )
-    save_json(path, data)
 
 
 def update_plan(path, abstract_atoms, success, bad_actions, mode):
