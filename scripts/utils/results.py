@@ -1,8 +1,8 @@
 import pandas as pd
 import os
-from core.repo import EXCEL_FILE
+from core.paths import EXCEL_FILE
 
-def append_to_excel(row):
+def append_result(row):
     df = pd.DataFrame([row])
 
     if os.path.exists(EXCEL_FILE):

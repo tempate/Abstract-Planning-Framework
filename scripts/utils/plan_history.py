@@ -1,7 +1,7 @@
 import os
 import json
 import hashlib
-from core.repo import BASE_JSON_DIR
+from core.paths import BASE_JSON_DIR
 
 # --------------------------------------------------
 # SETUP

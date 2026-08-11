@@ -1,11 +1,11 @@
 import os
 import subprocess
 import time
-from core.repo import FAST_DOWNWARD_SCRIPT
+from core.paths import FAST_DOWNWARD_SCRIPT
 
-from .log_utils import *
+from .run_artifacts import get_logger, log_phase
 
-def run_fastdownward_service(
+def run_fast_downward(
     base_dir,
     domain_file,
     problem_file,
@@ -193,7 +193,7 @@ def calculate_horizon(plan_file_path):
         return len(lines) - 1
     return len(lines)
 
-def fd_plan_to_occurs_abstract(plan_file_path, output_path):
+def fast_downward_plan_to_abstract_atoms(plan_file_path, output_path):
     occurs_atoms = []
 
     with open(plan_file_path, "r") as f:

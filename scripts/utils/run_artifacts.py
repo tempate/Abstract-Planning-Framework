@@ -6,7 +6,7 @@ import shutil
 import uuid
 from pprint import pformat
 from datetime import datetime
-from core.repo import TEMP_DIR
+from core.paths import TEMP_DIR
 
 def setup_debug_logger(base_dir):
     debug_dir = os.path.join(base_dir, "debug")

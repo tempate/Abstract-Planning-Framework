@@ -1,16 +1,45 @@
+import argparse
 import os
 import time
+from pprint import pformat
 
-import argparse
+from .utils.results import append_result
+from .utils.fast_downward import (
+    fast_downward_plan_to_abstract_atoms,
+    run_fast_downward,
+)
+from .utils.plan_history import get_json_path, init_plan_file, update_plan
+from .utils.run_artifacts import (
+    copy_iteration_file,
+    create_run_dir,
+    get_logger,
+    log_phase,
+    save_iteration_file,
+    save_json_iteration_file,
+    setup_debug_logger,
+)
+from core.solver import (
+    build_switch_mapping,
+    run_clingo,
+    solve_concrete_decremental,
+    solve_concrete_incremental,
+    write_forbid_abstract_lp,
+    write_occurs_abs_lp,
+)
+from core.plasp import (
+    add_switch_to_lp_rule,
+    append_pddl_facts_to_lp,
+    generate_lp_with_plasp,
+)
 
-from .utils.fastdownward_service import *
-from core.plasp_utils import *
-from core.clingo_utils_api import *
-from scripts.utils.log_utils import *
-from .utils.create_excel import *
-from scripts.utils.json_logger import *
-
-def main():
+def main(
+    mapping_required=True,
+    run_directory="beluga",
+    append_concrete_pddl_facts=False,
+    map_builder=build_switch_mapping,
+    refinement_filter=None,
+    include_drive_refinements=False,
+):
     parser = argparse.ArgumentParser()
     parser.add_argument("--abstract-domain", required=True)
     parser.add_argument("--abstract-problem", required=True)
@@ -21,13 +50,15 @@ def main():
     parser.add_argument("--time-step", action="store_true")
     parser.add_argument(
         "--abstract-symbol",
-        required=True,
+        required=mapping_required,
+        default=None,
         help="Abstract symbol used in abstraction mapping"
     )
     parser.add_argument(
         "--concrete-objects",
         nargs="+",
-        required=True,
+        required=mapping_required,
+        default=None,
         help="One or more concrete objects mapped to the abstract symbol"
     )
     parser.add_argument(
@@ -60,6 +91,16 @@ def main():
         concrete_objects=args.concrete_objects,
         solving_mode=args.mode,
         plan_source=args.plan_source,
+        run_directory=run_directory,
+        append_concrete_pddl_facts=append_concrete_pddl_facts,
+        map_builder=map_builder,
+        refinement_filter=(
+            refinement_filter
+            or (
+                lambda atom: bool(args.abstract_symbol and args.abstract_symbol in atom)
+                or (include_drive_refinements and '"drive"' in atom)
+            )
+        ),
     )
 
     print("\n=== RESULT ===")
@@ -98,7 +139,7 @@ def main():
         "result": "SAT" if result["success"] else "UNSAT",
         "id": timings["run_id"]
     }
-    append_to_excel(row)
+    append_result(row)
 
 
 def compute_concrete_from_abstract(
@@ -113,8 +154,14 @@ def compute_concrete_from_abstract(
     concrete_objects=None,
     solving_mode="inc",
     plan_source="clingo",
+    run_directory="beluga",
+    append_concrete_pddl_facts=False,
+    map_builder=build_switch_mapping,
+    refinement_filter=None,
 ):
-    dir_name = "beluga"
+    dir_name = run_directory
+    if refinement_filter is None:
+        refinement_filter = lambda atom: bool(abstract_symbol) and abstract_symbol in atom
 
     base_dir, run_id = create_run_dir(dir_name)
 
@@ -156,7 +203,7 @@ def compute_concrete_from_abstract(
         open(abstract_domain_path, "rb") as ad, \
         open(abstract_problem_path, "rb") as ap:
 
-        fd_result = run_fastdownward_service(
+        fd_result = run_fast_downward(
             base_dir=base_dir,
             domain_file=cd,
             problem_file=cp,
@@ -211,6 +258,8 @@ def compute_concrete_from_abstract(
     )
 
     add_switch_to_lp_rule(output_c_lp, encoding)
+    if append_concrete_pddl_facts:
+        append_pddl_facts_to_lp(concrete_problem_path, output_c_lp)
 
     concrete_lp_time = time.perf_counter() - concrete_lp_start
     logger.info(f"Concrete LP generation: {concrete_lp_time:.3f}s")
@@ -243,7 +292,7 @@ def compute_concrete_from_abstract(
         # Generate occurs_abs.lp from fastdownward plan
         occ_start = time.perf_counter()
 
-        abstract_atoms = fd_plan_to_occurs_abstract(
+        abstract_atoms = fast_downward_plan_to_abstract_atoms(
                 abstract_result["planFile"],
                 occurs_abs_lp_path
             )
@@ -256,7 +305,7 @@ def compute_concrete_from_abstract(
         # Create mapping LP with switches
         map_start = time.perf_counter()
 
-        switch_map = create_map_lp_with_switch_atoms(
+        switch_map = map_builder(
             occurs_abs_lp_path,
             map_lp_path,
             abstract_symbol,
@@ -481,7 +530,7 @@ def compute_concrete_from_abstract(
         # Create mapping LP with switches
         map_start = time.perf_counter()
 
-        switch_map = create_map_lp_with_switch_atoms(
+        switch_map = map_builder(
             occurs_abs_lp_path,
             map_lp_path,
             abstract_symbol,
@@ -594,7 +643,7 @@ def compute_concrete_from_abstract(
         new_forbidden = []
 
         for atom in bad_abstract_actions:
-            if abstract_symbol in atom and atom not in forbid_atoms:
+            if refinement_filter(atom) and atom not in forbid_atoms:
                 forbid_atoms.append(atom)
                 new_forbidden.append(atom)
 

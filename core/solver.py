@@ -1,7 +1,7 @@
 import os
 import clingo
 import time
-from scripts.utils.log_utils import *
+from scripts.utils.run_artifacts import get_logger, log_phase
 
 THREADS = os.cpu_count()
 
@@ -116,7 +116,7 @@ def create_map_lp(occurs_abs_path, output_path, abstract_symbol, concrete_object
     logger.info(f"[FILES] wrote {output_path}")
     log_phase(logger, "[MAP] create_map_lp", start)
 
-def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbol, concrete_objects):
+def build_switch_mapping(occurs_abs_path, output_path, abstract_symbol, concrete_objects):
     logger = get_logger()
     start = time.perf_counter()
 
@@ -177,7 +177,7 @@ def create_map_lp_with_switch_atoms(occurs_abs_path, output_path, abstract_symbo
     logger.info("[MAP] Grounded plan:")
     for line in lines_out:
         logger.info(f"  {line}")
-    log_phase(logger, "[MAP] create_map_lp_with_switch_atoms", start)
+    log_phase(logger, "[MAP] build_switch_mapping", start)
 
     return switch_map
 

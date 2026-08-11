@@ -2,11 +2,11 @@ import os
 import time
 import argparse
 
-from .utils.fastdownward_service import run_fastdownward_service
-from core.plasp_utils import generate_lp_with_plasp
-from core.clingo_utils_api import run_clingo
-from scripts.utils.log_utils import *
-from .utils.create_excel import *
+from .utils.fast_downward import run_fast_downward
+from .utils.results import append_result
+from .utils.run_artifacts import create_run_dir, get_logger, setup_debug_logger
+from core.plasp import generate_lp_with_plasp
+from core.solver import run_clingo
 
 def main():
     parser = argparse.ArgumentParser()
@@ -74,7 +74,7 @@ def main():
         "id": timings.get("run_id")
     }
 
-    append_to_excel(row)
+    append_result(row)
 
 def compute_concrete_plan(
     domain_path,
@@ -102,7 +102,7 @@ def compute_concrete_plan(
 
     # Fast Downward expects binary files
     with open(domain_path, "rb") as d, open(problem_path, "rb") as p:
-        result = run_fastdownward_service(
+        result = run_fast_downward(
             base_dir=base_dir,
             domain_file=d,
             problem_file=p
