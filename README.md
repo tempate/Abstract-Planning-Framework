@@ -124,6 +124,20 @@ project/
 
 ## Running the System
 
+### Quick start with verified examples
+
+Run one concrete plan followed by incremental and decremental abstract-plan
+refinement:
+
+```bash
+./scripts/run_examples.sh
+```
+
+Each case uses the small NoMystery example in `data/examples/` and should find
+a plan in a few seconds. Use `./scripts/run_examples.sh concrete`, `inc`, or
+`dec` to run one case. See [`data/README.md`](data/README.md) for the data
+layout; the larger PDDL collections are under `data/benchmarks/`.
+
 ### Concrete Planning
 
 ```bash
