@@ -2,7 +2,6 @@ from core.planners.BelugaPlanner import BelugaPlanner
 from core.planners.NoMysteryPlanner import NoMysteryPlanner
 
 
-
 PLANNER_TYPES = {
     planner.profile_name: planner
     for planner in (BelugaPlanner, NoMysteryPlanner)

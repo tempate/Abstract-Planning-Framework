@@ -9,6 +9,10 @@ import uuid
 
 from core.paths import TEMP_DIR
 
+
+LOGGER_NAME = "planner_debug"
+
+
 def setup_debug_logger(base_dir):
     """Configure the file logger for a single planning run."""
     debug_dir = os.path.join(base_dir, "debug")
@@ -16,7 +20,7 @@ def setup_debug_logger(base_dir):
 
     log_file = os.path.join(debug_dir, "planner_debug.log")
 
-    logger = logging.getLogger("planner_debug")
+    logger = logging.getLogger(LOGGER_NAME)
     logger.setLevel(logging.INFO)
 
     if logger.handlers:
@@ -25,7 +29,7 @@ def setup_debug_logger(base_dir):
     file_handler = logging.FileHandler(log_file, mode="a")
     formatter = logging.Formatter(
         "%(asctime)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
@@ -33,6 +37,7 @@ def setup_debug_logger(base_dir):
     logger.debug_dir = debug_dir
 
     return logger, debug_dir
+
 
 def save_iteration_file(debug_dir, iteration, name, content):
     """Save text content under an iteration-specific debug directory."""
@@ -43,6 +48,7 @@ def save_iteration_file(debug_dir, iteration, name, content):
 
     return path
 
+
 def copy_iteration_file(debug_dir, iteration, file_path):
     """Copy an existing file into an iteration-specific debug directory."""
     filename = os.path.basename(file_path)
@@ -52,14 +58,16 @@ def copy_iteration_file(debug_dir, iteration, file_path):
 
     return destination_path
 
-def save_json_iteration_file(debug_dir, iteration, name, obj):
+
+def save_json_iteration_file(debug_dir, iteration, name, data):
     """Serialize an object as a formatted JSON iteration artifact."""
     save_iteration_file(
         debug_dir,
         iteration,
         name,
-        json.dumps(obj, indent=2)
+        json.dumps(data, indent=2),
     )
+
 
 def log_phase(logger, name, start_time):
     """Log and return the elapsed time since ``start_time``."""
@@ -67,9 +75,11 @@ def log_phase(logger, name, start_time):
     logger.info(f"{name}: {elapsed:.3f}s")
     return elapsed
 
+
 def get_logger():
     """Return the logger shared by the planning pipeline."""
-    return logging.getLogger("planner_debug")
+    return logging.getLogger(LOGGER_NAME)
+
 
 def create_run_dir(dir_name="concrete"):
     """Create and return an isolated directory for a planner run."""

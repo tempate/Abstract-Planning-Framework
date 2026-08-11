@@ -1,6 +1,7 @@
+import re
+
 from core.asp import read_abstract_actions
 from core.planners.AbstractPlanner import AbstractPlanner
-import re
 
 
 class NoMysteryPlanner(AbstractPlanner):
