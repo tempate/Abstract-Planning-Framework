@@ -5,7 +5,7 @@ import time
 
 import clingo
 
-from core.asp.mapping import read_abstract_actions, write_lp_lines
+from core.asp.mapping import write_lp_lines
 from core.runtime.run_artifacts import get_logger, log_phase
 
 
@@ -41,48 +41,6 @@ def write_occurs_abs_lp(atoms, output_path):
     write_lp_lines(output_path, lines)
     logger.info(f"[FILES] wrote {output_path}")
     log_phase(logger, "[FILES] occurs_abs generation", start)
-
-
-def build_switch_mapping(occurs_abs_path, output_path, abstract_symbol, concrete_objects):
-    """Build switch-gated concrete mappings for an abstract plan."""
-    logger = get_logger()
-    start = time.perf_counter()
-    lines = []
-    switch_map = {}
-
-    for switch_id, (action, time_step) in enumerate(read_abstract_actions(occurs_abs_path), start=1):
-        switch = f"switch({switch_id})"
-        lines.append(f"0 {{ {switch} }} 1.")
-        is_abstract = bool(abstract_symbol and abstract_symbol in action)
-
-        if is_abstract:
-            choices = [
-                f"occurs({action.replace(abstract_symbol, obj)}, {time_step})"
-                for obj in concrete_objects or []
-            ]
-            lines.append(
-                f"1 {{ {'; '.join(choices)} }} 1 :- "
-                f"occurs_abstract({action},{time_step}), {switch}."
-            )
-        else:
-            lines.append(
-                f"occurs({action},{time_step}) :- "
-                f"occurs_abstract({action},{time_step}), {switch}."
-            )
-
-        switch_map[switch_id] = {
-            "atom": f"occurs_abstract({action},{time_step})",
-            "is_abstract": is_abstract,
-        }
-
-    write_lp_lines(output_path, lines)
-    logger.info(f"[MAP] Switches created={len(switch_map)}")
-    logger.info(f"[FILES] wrote {output_path}")
-    logger.info("[MAP] Grounded plan:")
-    for line in lines:
-        logger.info(f"  {line}")
-    log_phase(logger, "[MAP] build_switch_mapping", start)
-    return switch_map
 
 
 def solve_concrete_incremental(lp_files, horizon, switch_map):

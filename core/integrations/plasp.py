@@ -1,4 +1,4 @@
-"""Translate planning instances to ASP programs with PlanPilot."""
+"""PlanPilot integration for translating planning instances to ASP."""
 
 import os
 import subprocess

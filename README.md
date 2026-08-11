@@ -83,14 +83,17 @@ project/
 │
 ├── scripts/concrete_planner.py
 ├── scripts/abstract_planner.py
-├── scripts/no_mystery_planner.py
 │
 ├── core/paths.py
 ├── core/asp/
 │   ├── solver.py
-│   ├── mapping.py
-│   └── no_mystery.py
+│   └── mapping.py
 ├── core/planners/
+│   ├── AbstractPlanner.py
+│   ├── BelugaPlanner.py
+│   ├── NoMysteryPlanner.py
+│   └── factory.py
+├── core/integrations/
 │   ├── fast_downward.py
 │   └── plasp.py
 ├── core/runtime/
@@ -106,7 +109,7 @@ project/
 │
 ├── scripts/utils/temp/     (auto-generated, NOT tracked in Git)
 │   ├── beluga/
-│   ├── noMystery/
+│   ├── noMystery/            (NoMystery profile output)
 │   └── jsonFiles/
 │
 └── lib/
@@ -131,6 +134,11 @@ python -m scripts.concrete_planner \
 ```
 
 ### Beluga Abstraction Planning
+
+`abstract_planner` is the shared entry point for both domains. Domain planners
+in `core/planners/abstraction.py` inherit common hooks and implement their own
+switch mapping and refinement behavior. Beluga is the default profile; it
+requires an abstract symbol and the concrete objects it represents.
 
 ```bash
 python -m scripts.abstract_planner \
@@ -162,8 +170,12 @@ python -m scripts.abstract_planner \
 
 ### NoMystery Abstraction Planning
 
+The `no_mystery` profile selects NoMystery's fuel-aware mapping and drive-action
+refinement.  It does not require `--abstract-symbol` or `--concrete-objects`.
+
 ```bash
-python -m scripts.no_mystery_planner \
+python -m scripts.abstract_planner \
+    --profile no_mystery \
     --abstract-domain ABSTRACT_DOMAIN.pddl \
     --abstract-problem ABSTRACT_PROBLEM.pddl \
     --concrete-domain CONCRETE_DOMAIN.pddl \

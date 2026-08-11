@@ -4,10 +4,11 @@ import time
 from pprint import pformat
 
 from .utils.reporting import print_planning_result, save_result_summary
-from core.planners.fast_downward import (
+from core.integrations.fast_downward import (
     fast_downward_plan_to_abstract_atoms,
     run_fast_downward,
 )
+from core.planners.factory import PLANNER_TYPES, get_planner
 from core.runtime.plan_history import get_json_path, init_plan_file, update_plan
 from core.runtime.run_artifacts import (
     copy_iteration_file,
@@ -19,14 +20,13 @@ from core.runtime.run_artifacts import (
     setup_debug_logger,
 )
 from core.asp.solver import (
-    build_switch_mapping,
     run_clingo,
     solve_concrete_decremental,
     solve_concrete_incremental,
     write_forbid_abstract_lp,
     write_occurs_abs_lp,
 )
-from core.planners.plasp import (
+from core.integrations.plasp import (
     add_switch_to_lp_rule,
     append_pddl_facts_to_lp,
     generate_lp_with_plasp,
@@ -105,13 +105,6 @@ def _iteration_timing(abstract, occurs, mapping, concrete, refinement, total):
     }
 
 
-def _build_mapping(map_builder, occurs_path, map_path, abstract_symbol, concrete_objects, logger):
-    start = time.perf_counter()
-    switch_map = map_builder(occurs_path, map_path, abstract_symbol, concrete_objects)
-    mapping_time = log_phase(logger, "Mapping generation time", start)
-    return switch_map, mapping_time
-
-
 def _log_atoms(logger, heading, atoms):
     logger.info(heading)
     for atom in atoms:
@@ -127,15 +120,14 @@ def _add_new_forbidden_actions(forbid_atoms, bad_actions, refinement_filter):
     return new_forbidden
 
 
-def main(
-    mapping_required=True,
-    run_directory="beluga",
-    append_concrete_pddl_facts=False,
-    map_builder=build_switch_mapping,
-    refinement_filter=None,
-    include_drive_refinements=False,
-):
+def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--profile",
+        choices=sorted(PLANNER_TYPES),
+        default="beluga",
+        help="Domain-specific mapping and refinement configuration",
+    )
     parser.add_argument("--abstract-domain", required=True)
     parser.add_argument("--abstract-problem", required=True)
     parser.add_argument("--concrete-domain", required=True)
@@ -145,16 +137,17 @@ def main(
     parser.add_argument("--time-step", action="store_true")
     parser.add_argument(
         "--abstract-symbol",
-        required=mapping_required,
         default=None,
         help="Abstract symbol used in abstraction mapping"
     )
     parser.add_argument(
         "--concrete-objects",
         nargs="+",
-        required=mapping_required,
         default=None,
-        help="One or more concrete objects mapped to the abstract symbol"
+        help=(
+            "One or more concrete objects mapped to the abstract symbol "
+            "(required by the beluga profile)"
+        ),
     )
     parser.add_argument(
         "--mode",
@@ -169,6 +162,11 @@ def main(
     )
 
     args = parser.parse_args()
+    planner = get_planner(args.profile)
+    try:
+        planner.validate_configuration(args.abstract_symbol, args.concrete_objects)
+    except ValueError as error:
+        parser.error(str(error))
 
     print("Starting")
 
@@ -184,16 +182,7 @@ def main(
         concrete_objects=args.concrete_objects,
         solving_mode=args.mode,
         plan_source=args.plan_source,
-        run_directory=run_directory,
-        append_concrete_pddl_facts=append_concrete_pddl_facts,
-        map_builder=map_builder,
-        refinement_filter=(
-            refinement_filter
-            or (
-                lambda atom: bool(args.abstract_symbol and args.abstract_symbol in atom)
-                or (include_drive_refinements and '"drive"' in atom)
-            )
-        ),
+        profile_name=args.profile,
     )
 
     print_planning_result(result, get_logger())
@@ -212,14 +201,15 @@ def compute_concrete_from_abstract(
     concrete_objects=None,
     solving_mode="inc",
     plan_source="clingo",
-    run_directory="beluga",
-    append_concrete_pddl_facts=False,
-    map_builder=build_switch_mapping,
+    profile_name="beluga",
     refinement_filter=None,
 ):
-    dir_name = run_directory
+    planner = get_planner(profile_name)
+    planner.validate_configuration(abstract_symbol, concrete_objects)
+    dir_name = planner.run_directory
+    append_concrete_pddl_facts = planner.append_concrete_pddl_facts
     if refinement_filter is None:
-        refinement_filter = lambda atom: bool(abstract_symbol) and abstract_symbol in atom
+        refinement_filter = lambda atom: planner.should_refine(atom, abstract_symbol)
 
     base_dir, run_id = create_run_dir(dir_name)
 
@@ -230,6 +220,7 @@ def compute_concrete_from_abstract(
     logger.info(f"Horizon: {horizon}")
     logger.info(f"Encoding: {encoding}")
     logger.info(f"Mode: {solving_mode}")
+    logger.info(f"Profile: {planner.profile_name}")
     logger.info(f"Run ID: {run_id}")
     logger.info(f"Base dir: {base_dir}")
 
@@ -351,14 +342,14 @@ def compute_concrete_from_abstract(
         iter_start = time.perf_counter()
         iteration_times = []
 
-        switch_map, map_time = _build_mapping(
-            map_builder,
+        map_start = time.perf_counter()
+        switch_map = planner.build_mapping(
             occurs_abs_lp_path,
             map_lp_path,
             abstract_symbol,
             concrete_objects,
-            logger,
         )
+        map_time = log_phase(logger, "Mapping generation time", map_start)
 
          # Concrete incremental solving
         conc_start = time.perf_counter()
@@ -493,14 +484,14 @@ def compute_concrete_from_abstract(
             occurs_abs_lp_path
         )
 
-        switch_map, map_time = _build_mapping(
-            map_builder,
+        map_start = time.perf_counter()
+        switch_map = planner.build_mapping(
             occurs_abs_lp_path,
             map_lp_path,
             abstract_symbol,
             concrete_objects,
-            logger,
         )
+        map_time = log_phase(logger, "Mapping generation time", map_start)
 
         copy_iteration_file(
             debug_dir,

@@ -2,10 +2,10 @@ import os
 import time
 import argparse
 
-from core.planners.fast_downward import run_fast_downward
+from core.integrations.fast_downward import run_fast_downward
 from .utils.reporting import print_planning_result, save_result_summary
 from core.runtime.run_artifacts import create_run_dir, get_logger, setup_debug_logger
-from core.planners.plasp import generate_lp_with_plasp
+from core.integrations.plasp import generate_lp_with_plasp
 from core.asp.solver import run_clingo
 
 def main():

@@ -1,1 +1,1 @@
-"""Adapters for external planning tools."""
+"""Domain-specific abstraction planners."""

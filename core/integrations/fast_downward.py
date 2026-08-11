@@ -1,4 +1,4 @@
-"""Fast Downward execution and plan conversion helpers."""
+"""Fast Downward integration and plan conversion helpers."""
 
 import os
 import subprocess
