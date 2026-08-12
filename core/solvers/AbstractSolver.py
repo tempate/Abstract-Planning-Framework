@@ -1,10 +1,9 @@
 """Shared state and operations for concrete solving strategies."""
 
-import time
 from abc import ABC, abstractmethod
 
 from core.integrations.clingo import collect_models, create_control
-from core.execution import get_logger, log_phase
+from core.execution import get_logger, timed_phase
 
 
 class AbstractSolver(ABC):
@@ -13,21 +12,20 @@ class AbstractSolver(ABC):
     mode = ""
     log_prefix = "SOLVER"
 
-    def solve(self, lp_files, horizon, switch_map):
+    def solve(self, asp_files, horizon, switch_map):
         """Prepare the Clingo state and execute the concrete solving strategy."""
         self.logger = get_logger()
-        self.started_at = time.perf_counter()
-        self.switch_map = switch_map
-        self.control = create_control(lp_files, horizon)
-        self.switches, self.switch_ids = self._find_switches()
-        self.operation_count = 0
+        with timed_phase(self.logger, f"[{self.log_prefix}] Runtime"):
+            self.switch_map = switch_map
+            self.control = create_control(asp_files, horizon)
+            self.switches, self.switch_ids = self._find_switches()
+            self.operation_count = 0
 
-        self.logger.info(f"[{self.log_prefix}] Starting {self.mode} solve")
-        self.logger.info(
-            f"[{self.log_prefix}] Found switches={len(self.switches)}"
-        )
-        result = self._solve()
-        log_phase(self.logger, f"[{self.log_prefix}] Runtime", self.started_at)
+            self.logger.info(f"[{self.log_prefix}] Starting {self.mode} solve")
+            self.logger.info(
+                f"[{self.log_prefix}] Found switches={len(self.switches)}"
+            )
+            result = self._solve()
         return (*result, self.operation_count)
 
     @abstractmethod

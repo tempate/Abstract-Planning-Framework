@@ -1,13 +1,12 @@
 """Shared state and behavior for abstract-plan refinement strategies."""
 
 import logging
-import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from pprint import pformat
 
-from core.execution import log_phase
+from core.execution import PhaseTiming, timed_phase
 from core.planners.AbstractPlanner import AbstractPlanner
 from core.solvers.factory import get_solver
 
@@ -16,8 +15,8 @@ from core.solvers.factory import get_solver
 class PlanningPaths:
     """ASP files shared by the abstract planning and refinement phases."""
 
-    concrete_lp: str
-    abstract_lp: str
+    concrete_asp: str
+    abstract_asp: str
     occurrences: str
     mapping: str
     forbidden_actions: str
@@ -36,17 +35,17 @@ class RefinementContext:
     solving_mode: str
     refinement_filter: Callable[[str], bool]
     fd_timings: dict
-    concrete_lp_time: float
-    abstract_lp_time: float
-    lp_total_time: float
-    total_start: float
+    concrete_asp_time: float
+    abstract_asp_time: float
+    asp_total_time: float
+    total_timing: PhaseTiming
     base_dir: str
     debug_dir: str
     logger: logging.Logger
     attempt_recorder: Callable[..., None] | None = None
 
 
-class RefinementStrategy(ABC):
+class BaseRefinement(ABC):
     """Base class for strategies that realize abstract plans concretely."""
 
     def __init__(self, context):
@@ -60,35 +59,33 @@ class RefinementStrategy(ABC):
     def build_mapping(self):
         """Build and time the domain-specific abstract-to-concrete mapping."""
         context = self.context
-        start = time.perf_counter()
-        switch_map = context.planner.build_mapping(
-            context.paths.occurrences,
-            context.paths.mapping,
-            context.abstract_symbol,
-            context.concrete_objects,
-        )
-        elapsed = log_phase(context.logger, "Mapping generation time", start)
-        return switch_map, elapsed
+        with timed_phase(context.logger, "Mapping generation time") as timing:
+            switch_map = context.planner.build_mapping(
+                context.paths.occurrences,
+                context.paths.mapping,
+                context.abstract_symbol,
+                context.concrete_objects,
+            )
+        return switch_map, timing.elapsed
 
     def solve_concrete(self, switch_map):
         """Run and time the selected concrete solver."""
         context = self.context
-        lp_files = [
-            context.paths.concrete_lp,
+        asp_files = [
+            context.paths.concrete_asp,
             context.paths.occurrences,
             context.paths.mapping,
         ]
-        start = time.perf_counter()
-        success, plans, bad_actions, operation_count = get_solver(
-            context.solving_mode
-        ).solve(
-            lp_files,
-            context.horizon,
-            switch_map,
-        )
+        with timed_phase(context.logger, "Concrete solving time") as timing:
+            success, plans, bad_actions, operation_count = get_solver(
+                context.solving_mode
+            ).solve(
+                asp_files,
+                context.horizon,
+                switch_map,
+            )
         self.solver_operations += operation_count
-        elapsed = log_phase(context.logger, "Concrete solving time", start)
-        return success, plans, bad_actions, elapsed
+        return success, plans, bad_actions, timing.elapsed
 
     def build_result(
         self,
@@ -101,7 +98,7 @@ class RefinementStrategy(ABC):
     ):
         """Build the shared result representation and record total runtime."""
         context = self.context
-        total_time = time.perf_counter() - context.total_start
+        total_time = context.total_timing.elapsed
         context.logger.info(f"TOTAL TIME: {total_time:.3f}s")
         return {
             "horizon": context.horizon,
@@ -123,9 +120,9 @@ class RefinementStrategy(ABC):
                 "fd_concrete_time": context.fd_timings["fd_concrete_time"],
                 "fd_abstract_time": context.fd_timings["fd_abstract_time"],
                 "fd_total_time": context.fd_timings["fd_total_time"],
-                "lp_concrete_time": context.concrete_lp_time,
-                "lp_abstract_time": context.abstract_lp_time,
-                "lp_total_time": context.lp_total_time,
+                "asp_concrete_time": context.concrete_asp_time,
+                "asp_abstract_time": context.abstract_asp_time,
+                "asp_total_time": context.asp_total_time,
                 "abstract_solve_time": abstract_solve_time,
                 "concrete_solve_time": concrete_solve_time,
                 "total_time": total_time,

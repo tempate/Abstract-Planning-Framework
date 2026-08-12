@@ -1,33 +1,31 @@
 """Clingo integration for creating controls and collecting answer-set models."""
 
 import os
-import time
 
 import clingo
 
-from core.execution import get_logger, log_phase
+from core.execution import get_logger, timed_phase
 
 
 THREADS = os.cpu_count() or 1
 
 
-def run_clingo(lp_files, horizon):
-    """Solve a collection of LP files and return their shown atoms."""
+def run_clingo(asp_files, horizon):
+    """Solve a collection of ASP files and return their shown atoms."""
     logger = get_logger()
-    start = time.perf_counter()
     logger.info("[CLINGO] Starting solve")
     logger.info(f"[CLINGO] Horizon={horizon}")
     logger.info(f"[CLINGO] Threads={THREADS}")
-    logger.info(f"[CLINGO] Files={lp_files}")
+    logger.info(f"[CLINGO] Files={asp_files}")
 
-    models = collect_models(create_control(lp_files, horizon))
-    log_phase(logger, "[CLINGO] Solve runtime", start)
+    with timed_phase(logger, "[CLINGO] Solve runtime"):
+        models = collect_models(create_control(asp_files, horizon))
     logger.info(f"[CLINGO] Models found={len(models)}")
     return models
 
 
-def create_control(lp_files, horizon):
-    """Load and ground LP files in a configured Clingo control."""
+def create_control(asp_files, horizon):
+    """Load and ground ASP files in a configured Clingo control."""
     arguments = [
         "-c",
         f"horizon={horizon}",
@@ -36,8 +34,8 @@ def create_control(lp_files, horizon):
         "--warn=none",
     ]
     control = clingo.Control(arguments)
-    for lp_file in lp_files:
-        control.load(lp_file)
+    for asp_file in asp_files:
+        control.load(asp_file)
     control.ground([("base", [])])
     return control
 
