@@ -36,16 +36,15 @@ def compute_concrete_plan(
         open(problem_path, "rb") as problem_file,
     ):
         downward_result = run_fast_downward(
-            base_dir=base_dir,
-            domain_file=domain_file,
-            problem_file=problem_file,
+            base_dir, domain_file, problem_file, "concrete", "plan"
         )
 
-    concrete_task = downward_result["concrete"]
     downward_time = time.perf_counter() - downward_start
+    logger.info(f"Fast Downward time: {downward_time:.3f}s")
+
+    concrete_task = downward_result["concrete"]
     if horizon is None:
         horizon = concrete_task["horizon"]
-    logger.info(f"Fast Downward time: {downward_time:.3f}s")
 
     concrete_lp_path = os.path.join(base_dir, "output_c.lp")
     lp_start = time.perf_counter()

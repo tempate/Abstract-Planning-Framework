@@ -1,76 +1,64 @@
 """Fast Downward integration and plan conversion helpers."""
 
 import os
+from statistics import mode
 import subprocess
 import time
 
-from core.paths import FAST_DOWNWARD_SCRIPT
-
 from core.execution import get_logger, log_phase
+from core.paths import FAST_DOWNWARD_SCRIPT
 
 
 def run_fast_downward(
     base_dir,
     domain_file,
     problem_file,
-    abstract_domain_file=None,
-    abstract_problem_file=None,
-    task="plan",
+    label,
+    task,
 ):
     """Run concrete planning and, when provided, abstract planning."""
     logger = get_logger()
-    total_start = time.perf_counter()
     logger.info("=" * 65)
     logger.info("[FD] Fast Downward started")
 
-    concrete_result, concrete_time = _run_task(
-        "concrete",
+    result, time = _run_task(
+        label,
         base_dir,
         domain_file.read(),
         problem_file.read(),
         task,
-        logger,
+        logger
     )
 
-    abstract_result = None
-    abstract_time = None
-    if abstract_domain_file and abstract_problem_file:
-        abstract_result, abstract_time = _run_task(
-            "abstract",
-            os.path.join(base_dir, "abstract"),
-            abstract_domain_file.read(),
-            abstract_problem_file.read(),
-            "plan",
-            logger,
-        )
-
-    total_time = time.perf_counter() - total_start
-    logger.info(
-        f"[FD] SUMMARY | concrete={concrete_time:.3f}s | "
-        f"abstract={(abstract_time or 0):.3f}s | total={total_time:.3f}s"
-    )
+    logger.info(f"[FD] SUMMARY | {time:.3f}s")
     logger.info("[FD] Fast Downward finished")
 
-    return {
-        "concrete": concrete_result,
-        "abstract": abstract_result,
-        "timings": {
-            "fd_concrete_time": concrete_time,
-            "fd_abstract_time": abstract_time,
-            "fd_total_time": total_time,
-        },
+    return result, time
+
+
+def _run_task(label, dir, domain, problem, task, logger):
+    # Create the directory for the task
+    os.makedirs(dir, exist_ok=True)
+
+    # Define the paths for the input and output files
+    paths = {
+        "domain": os.path.join(dir, "domain.pddl"),
+        "problem": os.path.join(dir, "problem.pddl"),
+        "sas": os.path.join(dir, "output.sas"),
+        "plan": os.path.join(dir, "sas_plan"),
     }
 
+    # Write input files to the temporary directory
+    with open(paths["domain"], "wb") as file:
+        file.write(domain)
+    with open(paths["problem"], "wb") as file:
+        file.write(problem)
 
-def _run_task(label, directory, domain_bytes, problem_bytes, mode, logger):
-    os.makedirs(directory, exist_ok=True)
-    paths = _task_paths(directory)
-    _write_input_files(paths, domain_bytes, problem_bytes)
-
+    # Run Fast Downward for the task
     logger.info(f"[FD] Running {label} planner")
     start = time.perf_counter()
     result = subprocess.run(
-        _command(paths, mode),
+        _get_command(paths, task),
         capture_output=True,
         text=True,
     )
@@ -81,10 +69,14 @@ def _run_task(label, directory, domain_bytes, problem_bytes, mode, logger):
         logger.error(result.stderr)
         raise RuntimeError(f"Fast Downward ({label}) failed:\n{result.stderr}")
 
-    horizon = calculate_horizon(paths["plan"]) if mode == "plan" else 0
     logger.info(f"[FD] {label.title()} planner success")
-    if mode == "plan":
+
+    # Only calculate the horizon for planning tasks
+    horizon = 0
+    if task == "plan":
+        horizon = calc_horizon(paths["plan"])
         logger.info(f"[FD] {label.title()} horizon={horizon}")
+
     return {
         "horizon": horizon,
         "sasFile": paths["sas"],
@@ -92,10 +84,10 @@ def _run_task(label, directory, domain_bytes, problem_bytes, mode, logger):
     }, elapsed
 
 
-def _command(paths, mode):
-    """Build the Fast Downward command for a task."""
-    if mode == "plan":
-        return [
+def _get_command(paths, task):
+    """Get the Fast Downward command for a task."""
+    commands = {
+        "plan": [
             "python3",
             FAST_DOWNWARD_SCRIPT,
             "--plan-file", paths["plan"],
@@ -105,9 +97,8 @@ def _command(paths, mode):
             paths["problem"],
             "--search",
             "astar(lmcut())",
-        ]
-    if mode == "translate":
-        return [
+        ],
+        "translate": [
             "python3",
             FAST_DOWNWARD_SCRIPT,
             "--sas-file", paths["sas"],
@@ -116,47 +107,15 @@ def _command(paths, mode):
             paths["domain"],
             paths["problem"],
         ]
-    raise ValueError(f"Unsupported Fast Downward task: {mode}")
-
-
-def _task_paths(directory):
-    return {
-        "domain": os.path.join(directory, "domain.pddl"),
-        "problem": os.path.join(directory, "problem.pddl"),
-        "sas": os.path.join(directory, "output.sas"),
-        "plan": os.path.join(directory, "sas_plan"),
     }
+    return commands[task]
 
 
-def _write_input_files(paths, domain_bytes, problem_bytes):
-    with open(paths["domain"], "wb") as file:
-        file.write(domain_bytes)
-    with open(paths["problem"], "wb") as file:
-        file.write(problem_bytes)
-
-
-def calculate_horizon(plan_file_path):
-    with open(plan_file_path, "r") as file:
-        lines = [line.strip() for line in file if line.strip()]
-    return len(lines) - 1 if lines and lines[-1].startswith(";") else len(lines)
-
-
-def fast_downward_plan_to_abstract_atoms(plan_file_path, output_path):
-    """Convert a Fast Downward plan into ``occurs_abstract`` facts."""
-    abstract_atoms = []
-    with open(plan_file_path, "r") as plan_file:
-        time_step = 1
-        for line in plan_file:
-            line = line.strip()
-            if not line or line.startswith(";"):
-                continue
-            action_name, *arguments = line.strip("()").split()
-            quoted_arguments = ",".join(f'"{argument}"' for argument in arguments)
-            abstract_atoms.append(
-                f'occurs_abstract(action(("{action_name}",{quoted_arguments})), {time_step}).'
-            )
-            time_step += 1
-
-    with open(output_path, "w") as output_file:
-        output_file.write("\n".join(abstract_atoms))
-    return abstract_atoms
+def calc_horizon(plan_file_path):
+    with open(plan_file_path, encoding="utf-8") as plan_file:
+        # Only count non-empty lines that aren't comments
+        return sum(
+            1
+            for line in plan_file
+            if line.strip() and not line.lstrip().startswith(";")
+        )

@@ -83,10 +83,8 @@ def get_logger():
 
 def create_run_dir(dir_name="concrete"):
     """Create and return an isolated directory for a planner run."""
-    directory_name = dir_name or "concrete"
     run_id = str(uuid.uuid4())
-    base_dir = os.path.join(TEMP_DIR, directory_name, run_id)
-    print(base_dir)
+    base_dir = os.path.join(TEMP_DIR, dir_name, run_id)
     os.makedirs(base_dir, exist_ok=True)
     return base_dir, run_id
 

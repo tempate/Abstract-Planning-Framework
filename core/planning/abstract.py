@@ -42,27 +42,39 @@ def refine_abstract_plan(
 
     base_dir, run_id = create_run_dir(planner.run_directory)
     logger, debug_dir = setup_debug_logger(base_dir)
-    _log_run_start(
-        logger,
-        horizon=horizon,
-        encoding=encoding,
-        solving_mode=solving_mode,
-        profile_name=planner.profile_name,
-        run_id=run_id,
-        base_dir=base_dir,
-    )
+
+    logger.info("=" * 70)
+    logger.info("NEW PLANNING RUN STARTED")
+    logger.info(f"Horizon: {horizon}")
+    logger.info(f"Encoding: {encoding}")
+    logger.info(f"Mode: {solving_mode}")
+    logger.info(f"Profile: {profile_name}")
+    logger.info(f"Run ID: {run_id}")
+    logger.info(f"Base dir: {base_dir}")
 
     print("Directory:", base_dir)
     total_start = time.perf_counter()
 
-    concrete_task, abstract_task, fd_timings = _translate_tasks(
-        base_dir,
-        concrete_domain_path,
-        concrete_problem_path,
-        abstract_domain_path,
-        abstract_problem_path,
-        logger,
-    )
+    # Translate the concrete problem into SAS
+    with (open(concrete_domain_path, "rb") as concrete_domain,
+          open(concrete_problem_path, "rb") as concrete_problem):
+        concrete_task, concrete_time = run_fast_downward(
+            base_dir, concrete_domain, concrete_problem, "concrete", "translate")
+
+    # Plan the abstract problem
+    with (open(abstract_domain_path, "rb") as abstract_domain,
+          open(abstract_problem_path, "rb") as abstract_problem,):
+        abstract_task, abstract_time = run_fast_downward(
+            base_dir, abstract_domain, abstract_problem, "abstract", "plan")
+
+    # Store how long it took to run Fast Downward
+    total_time = time.perf_counter() - total_start
+    logger.info(f"Fast Downward time: {total_time:.3f}s")
+    fd_timings = {
+        "fd_concrete_time": concrete_time,
+        "fd_abstract_time": abstract_time,
+        "fd_total_time": total_time,}
+
     if horizon is None:
         horizon = abstract_task.get("horizon", 0)
 
@@ -99,34 +111,6 @@ def refine_abstract_plan(
         attempt_recorder=attempt_recorder,
     )
     return get_refinement_strategy(plan_source, context).refine()
-
-
-def _translate_tasks(
-    base_dir,
-    concrete_domain_path,
-    concrete_problem_path,
-    abstract_domain_path,
-    abstract_problem_path,
-    logger,
-):
-    start = time.perf_counter()
-    with (
-        open(concrete_domain_path, "rb") as concrete_domain,
-        open(concrete_problem_path, "rb") as concrete_problem,
-        open(abstract_domain_path, "rb") as abstract_domain,
-        open(abstract_problem_path, "rb") as abstract_problem,
-    ):
-        result = run_fast_downward(
-            base_dir=base_dir,
-            domain_file=concrete_domain,
-            problem_file=concrete_problem,
-            abstract_domain_file=abstract_domain,
-            abstract_problem_file=abstract_problem,
-            task="translate",
-        )
-
-    logger.info(f"Fast Downward time: {time.perf_counter() - start:.3f}s")
-    return result["concrete"], result["abstract"], result["timings"]
 
 
 def _planning_paths(base_dir):
@@ -183,23 +167,3 @@ def _generate_lp_programs(
     total_time = time.perf_counter() - total_start
     logger.info(f"Total LP generation: {total_time:.3f}s")
     return concrete_time, abstract_time, total_time
-
-
-def _log_run_start(
-    logger,
-    *,
-    horizon,
-    encoding,
-    solving_mode,
-    profile_name,
-    run_id,
-    base_dir,
-):
-    logger.info("=" * 70)
-    logger.info("NEW PLANNING RUN STARTED")
-    logger.info(f"Horizon: {horizon}")
-    logger.info(f"Encoding: {encoding}")
-    logger.info(f"Mode: {solving_mode}")
-    logger.info(f"Profile: {profile_name}")
-    logger.info(f"Run ID: {run_id}")
-    logger.info(f"Base dir: {base_dir}")

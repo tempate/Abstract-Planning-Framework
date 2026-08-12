@@ -3,7 +3,6 @@
 import time
 
 from core.execution import log_phase
-from core.integrations.fast_downward import fast_downward_plan_to_abstract_atoms
 from core.planning.refinement.base import RefinementStrategy
 
 
@@ -15,7 +14,7 @@ class FastDownwardRefinement(RefinementStrategy):
         context.logger.info("Using Fast Downward plan")
 
         occurrence_start = time.perf_counter()
-        abstract_atoms = fast_downward_plan_to_abstract_atoms(
+        abstract_atoms = self.plan_to_abstract_atoms(
             context.abstract_task["planFile"],
             context.paths.occurrences,
         )
@@ -64,3 +63,23 @@ class FastDownwardRefinement(RefinementStrategy):
             abstract_solve_time=0.0,
             concrete_solve_time=concrete_solve_time,
         )
+
+    def plan_to_abstract_atoms(self, plan_file_path, output_path):
+        """Convert a Fast Downward plan into ``occurs_abstract`` facts."""
+        abstract_atoms = []
+        with open(plan_file_path, "r") as plan_file:
+            time_step = 1
+            for line in plan_file:
+                line = line.strip()
+                if not line or line.startswith(";"):
+                    continue
+                action_name, *arguments = line.strip("()").split()
+                quoted_arguments = ",".join(f'"{argument}"' for argument in arguments)
+                abstract_atoms.append(
+                    f'occurs_abstract(action(("{action_name}",{quoted_arguments})), {time_step}).'
+                )
+                time_step += 1
+
+        with open(output_path, "w") as output_file:
+            output_file.write("\n".join(abstract_atoms))
+        return abstract_atoms
