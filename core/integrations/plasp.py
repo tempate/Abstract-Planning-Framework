@@ -95,11 +95,13 @@ def add_switch_to_asp_rule(asp_path, encoding_type="exact"):
         "time(T), not switch(T), T > 0."
     )
 
-    # Read the ASP file and modify the specific rule
+    # Read the ASP file, modify the rule, and write it back
     with open(asp_path, "r", encoding="utf-8") as source_file:
-        for line in source_file.readlines():
-            with open(asp_path, "w", encoding="utf-8") as output_file:
-                if line.strip() == rule_to_modify:
-                    output_file.write(modified_rule + "\n")
-                else:
-                    output_file.write(line)
+        lines = source_file.readlines()
+
+    with open(asp_path, "w", encoding="utf-8") as output_file:
+        for line in lines:
+            if line.strip() == rule_to_modify:
+                output_file.write(modified_rule + "\n")
+            else:
+                output_file.write(line)
