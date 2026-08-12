@@ -12,12 +12,12 @@ class AbstractSolver(ABC):
     mode = ""
     log_prefix = "SOLVER"
 
-    def solve(self, lp_files, horizon, switch_map):
+    def solve(self, asp_files, horizon, switch_map):
         """Prepare the Clingo state and execute the concrete solving strategy."""
         self.logger = get_logger()
         with timed_phase(self.logger, f"[{self.log_prefix}] Runtime"):
             self.switch_map = switch_map
-            self.control = create_control(lp_files, horizon)
+            self.control = create_control(asp_files, horizon)
             self.switches, self.switch_ids = self._find_switches()
             self.operation_count = 0
 

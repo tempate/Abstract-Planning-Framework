@@ -70,7 +70,7 @@ class ClingoRefinement(RefinementStrategy):
 
     def _solve_abstract(self, iteration):
         context = self.context
-        lp_files = [context.paths.abstract_lp]
+        asp_files = [context.paths.abstract_asp]
 
         with timed_phase(context.logger, "Abstract solving time") as timing:
             if self.forbidden_actions:
@@ -78,7 +78,7 @@ class ClingoRefinement(RefinementStrategy):
                     self.forbidden_actions,
                     context.paths.forbidden_actions,
                 )
-                lp_files.append(context.paths.forbidden_actions)
+                asp_files.append(context.paths.forbidden_actions)
                 save_iteration_file(
                     context.debug_dir,
                     iteration,
@@ -86,7 +86,7 @@ class ClingoRefinement(RefinementStrategy):
                     "\n".join(self.forbidden_actions),
                 )
 
-            models = run_clingo(lp_files, context.horizon)
+            models = run_clingo(asp_files, context.horizon)
         return (models[0] if models else None), timing.elapsed
 
     def _prepare_plan(self, iteration, abstract_atoms):

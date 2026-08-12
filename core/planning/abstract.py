@@ -5,9 +5,9 @@ import os
 from core.execution import create_run_dir, setup_debug_logger, timed_phase
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import (
-    add_switch_to_lp_rule,
-    append_pddl_facts_to_lp,
-    generate_lp_with_plasp,
+    add_switch_to_asp_rule,
+    append_pddl_facts_to_asp,
+    plan_to_asp,
 )
 from core.planning.refinement import (
     PlanningPaths,
@@ -89,7 +89,7 @@ def refine_abstract_plan(
             horizon = abstract_task.get("horizon", 0)
 
         paths = _planning_paths(base_dir)
-        concrete_lp_time, abstract_lp_time, lp_total_time = _generate_lp_programs(
+        concrete_asp_time, abstract_asp_time, asp_total_time = _generate_asp_programs(
             concrete_task=concrete_task,
             abstract_task=abstract_task,
             concrete_problem_path=concrete_problem_path,
@@ -111,9 +111,9 @@ def refine_abstract_plan(
             solving_mode=solving_mode,
             refinement_filter=refinement_filter,
             fd_timings=fd_timings,
-            concrete_lp_time=concrete_lp_time,
-            abstract_lp_time=abstract_lp_time,
-            lp_total_time=lp_total_time,
+            concrete_asp_time=concrete_asp_time,
+            abstract_asp_time=abstract_asp_time,
+            asp_total_time=asp_total_time,
             total_timing=total_timing,
             base_dir=base_dir,
             debug_dir=debug_dir,
@@ -127,15 +127,15 @@ def _planning_paths(base_dir):
     clingo_dir = os.path.join(base_dir, "clingo")
     os.makedirs(clingo_dir, exist_ok=True)
     return PlanningPaths(
-        concrete_lp=os.path.join(base_dir, "output_c.lp"),
-        abstract_lp=os.path.join(base_dir, "abstract", "output_a.lp"),
+        concrete_asp=os.path.join(base_dir, "output_c.lp"),
+        abstract_asp=os.path.join(base_dir, "abstract", "output_a.lp"),
         occurrences=os.path.join(clingo_dir, "occurs_abs.lp"),
         mapping=os.path.join(clingo_dir, "map.lp"),
         forbidden_actions=os.path.join(clingo_dir, "forbid_abstract.lp"),
     )
 
 
-def _generate_lp_programs(
+def _generate_asp_programs(
     *,
     concrete_task,
     abstract_task,
@@ -147,28 +147,22 @@ def _generate_lp_programs(
     append_concrete_pddl_facts,
     logger,
 ):
-    with timed_phase(logger, "Total LP generation") as total_timing:
-        with timed_phase(logger, "Concrete LP generation") as concrete_timing:
-            generate_lp_with_plasp(
-                sas_or_pddl_path=concrete_task["sasFile"],
-                lp_output_path=paths.concrete_lp,
-                encoding_type=encoding,
-                abstract_time_steps=time_step,
+    with timed_phase(logger, "Total ASP generation") as total_timing:
+        with timed_phase(logger, "Concrete ASP generation") as concrete_timing:
+            plan_to_asp(
+                concrete_task["sasFile"], paths.concrete_asp, encoding, time_step
             )
-            add_switch_to_lp_rule(paths.concrete_lp, encoding)
+            add_switch_to_asp_rule(paths.concrete_asp, encoding)
             if append_concrete_pddl_facts:
-                append_pddl_facts_to_lp(concrete_problem_path, paths.concrete_lp)
+                append_pddl_facts_to_asp(concrete_problem_path, paths.concrete_asp)
 
         abstract_time = 0.0
         if plan_source == "clingo":
             with timed_phase(
-                logger, "Abstract LP generation"
+                logger, "Abstract ASP generation"
             ) as abstract_timing:
-                generate_lp_with_plasp(
-                    sas_or_pddl_path=abstract_task["sasFile"],
-                    lp_output_path=paths.abstract_lp,
-                    encoding_type=encoding,
-                    abstract_time_steps=time_step,
+                plan_to_asp(
+                    abstract_task["sasFile"], paths.abstract_asp, encoding, time_step
                 )
             abstract_time = abstract_timing.elapsed
 

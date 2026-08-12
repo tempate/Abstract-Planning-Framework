@@ -5,7 +5,7 @@ import os
 from core.execution import create_run_dir, setup_debug_logger, timed_phase
 from core.integrations.clingo import run_clingo
 from core.integrations.fast_downward import run_fast_downward
-from core.integrations.plasp import generate_lp_with_plasp
+from core.integrations.plasp import plan_to_asp
 
 
 def compute_concrete_plan(
@@ -40,20 +40,17 @@ def compute_concrete_plan(
         if horizon is None:
             horizon = concrete_task["horizon"]
 
-        concrete_lp_path = os.path.join(base_dir, "output_c.lp")
-        with timed_phase(logger, "LP generation time") as lp_timing:
-            generate_lp_with_plasp(
-                sas_or_pddl_path=concrete_task["sasFile"],
-                lp_output_path=concrete_lp_path,
-                encoding_type=encoding,
-                abstract_time_steps=time_step,
+        concrete_asp_path = os.path.join(base_dir, "output_c.lp")
+        with timed_phase(logger, "ASP generation time") as asp_timing:
+            plan_to_asp(
+                concrete_task["sasFile"], concrete_asp_path, encoding, time_step
             )
 
         with timed_phase(logger, "Concrete solving time") as solve_timing:
-            plans = run_clingo([concrete_lp_path], horizon)
+            plans = run_clingo([concrete_asp_path], horizon)
 
     downward_time = downward_timing.elapsed
-    lp_time = lp_timing.elapsed
+    asp_time = asp_timing.elapsed
     solve_time = solve_timing.elapsed
     total_time = total_timing.elapsed
 
@@ -71,9 +68,9 @@ def compute_concrete_plan(
             "fd_conc": downward_time,
             "fd_abs": None,
             "fd_total": downward_time,
-            "lp_concrete_time": lp_time,
-            "lp_abstract_time": None,
-            "lp_total_time": lp_time,
+            "asp_concrete_time": asp_time,
+            "asp_abstract_time": None,
+            "asp_total_time": asp_time,
             "abstract_solve_time": None,
             "concrete_solve_time": solve_time,
             "total_time": total_time,

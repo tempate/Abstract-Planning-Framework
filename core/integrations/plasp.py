@@ -19,36 +19,40 @@ _HORIZON_ENCODINGS = {
 _SWITCH_RULE_BOUNDS = {"exact": "1", "bounded": "0"}
 
 
-def generate_lp_with_plasp(
-    sas_or_pddl_path: str,
-    lp_output_path: str,
-    encoding_type: str = "exact",
-    is_pddl_instance: bool = False,
-    domain_file: str | None = None,
-    abstract_time_steps: bool = False,
+def plan_to_asp(
+    sas_path,
+    asp_path,
+    encoding_type = "exact",
+    abstract_time_steps = False,
 ):
-    """Translate a SAS or PDDL instance and prepend its encodings."""
-    encoding_file, time_file = _encoding_files(
-        encoding_type, abstract_time_steps
-    )
+    """Translate a SAS instance to ASP and prepend its encodings."""
+    # Encoding files for translation
+    encoding_file = _HORIZON_ENCODINGS[encoding_type]
+
+    if abstract_time_steps:
+        time_file = ABSTRACT_TIME_STEPS_ENCODING
+    else:
+        time_file = ACTION_PER_TIME_STEP_ENCODING
 
     if not os.path.exists(PLASP_BIN):
         raise FileNotFoundError(f"plasp binary not found: {PLASP_BIN}")
 
-    command = [PLASP_BIN, "translate"]
-    if is_pddl_instance:
-        if not domain_file:
-            raise ValueError("Domain file is required for PDDL input.")
-        command.extend([domain_file, sas_or_pddl_path])
-    else:
-        command.append(sas_or_pddl_path)
+    # Create the output directory if it doesn't exist
+    dir = os.path.dirname(asp_path)
+    os.makedirs(dir, exist_ok=True)
 
-    os.makedirs(os.path.dirname(lp_output_path), exist_ok=True)
-    with open(lp_output_path, "w", encoding="utf-8") as lp_file:
-        _write_encoding_files(lp_file, encoding_file, time_file)
+    with open(asp_path, "w", encoding="utf-8") as asp_file:
+        # Write encodings
+        with open(encoding_file, "r", encoding="utf-8") as file:
+            asp_file.write(file.read())
+        with open(time_file, "r", encoding="utf-8") as file:
+            asp_file.write(file.read())
+
+        # Run plasp translation
+        command = [PLASP_BIN, "translate", sas_path]
         result = subprocess.run(
             command,
-            stdout=lp_file,
+            stdout=asp_file,
             stderr=subprocess.PIPE,
             text=True,
         )
@@ -57,74 +61,45 @@ def generate_lp_with_plasp(
         raise RuntimeError(f"plasp failed:\n{result.stderr}")
 
 
-def _encoding_files(encoding_type, abstract_time_steps):
-    """Return the encoding files for a translation."""
-    try:
-        horizon_file = _HORIZON_ENCODINGS[encoding_type]
-    except KeyError as error:
-        raise ValueError(f"Unsupported encoding type: {encoding_type}") from error
-    time_file = (
-        ABSTRACT_TIME_STEPS_ENCODING
-        if abstract_time_steps
-        else ACTION_PER_TIME_STEP_ENCODING
-    )
-    return horizon_file, time_file
-
-
-def append_pddl_facts_to_lp(pddl_path, lp_output_path):
+def append_pddl_facts_to_asp(pddl_path, asp_path):
     """Append No-Mystery fuel and arithmetic facts from a PDDL problem."""
-    facts = _extract_supported_pddl_facts(pddl_path)
 
-    with open(lp_output_path, "a", encoding="utf-8") as lp_file:
-        lp_file.write("\n% --- ADDED FROM PDDL ---\n")
-        lp_file.writelines(f"{fact}\n" for fact in facts)
+    # Extract supported facts from the PDDL
+    facts = []
+    with open(pddl_path, "r", encoding="utf-8") as pddl_file:
+        for line in pddl_file.readlines():
+            # Convert a supported one-line PDDL fact to its ASP representation.
+            if line.startswith("(fuelcost"):
+                _, level, origin, destination = line.strip().replace("(", "").replace(")", "").split()
+                fact = f'fuelcost("{level}","{origin}","{destination}").'
+                facts.append(fact)
+
+            if line.startswith("(sum"):
+                _, left, right, total = line.strip().replace("(", "").replace(")", "").split()
+                fact = f'sum("{left}","{right}","{total}").'
+                facts.append(fact)
+
+    with open(asp_path, "a", encoding="utf-8") as asp_file:
+        asp_file.write("\n% --- ADDED FROM PDDL ---\n")
+        asp_file.writelines(f"{fact}\n" for fact in facts)
 
 
-def add_switch_to_lp_rule(lp_path, encoding_type="exact"):
+def add_switch_to_asp_rule(asp_path, encoding_type="exact"):
     """Add a switch guard to the action-occurrence constraint."""
-    try:
-        bound = _SWITCH_RULE_BOUNDS[encoding_type]
-    except KeyError as error:
-        raise ValueError(f"Unsupported encoding type: {encoding_type}") from error
+
+    # Define the original rule and the modified rule based on the encoding type
+    bound = _SWITCH_RULE_BOUNDS[encoding_type]
     rule_to_modify = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), T > 0."
     modified_rule = (
         f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- "
         "time(T), not switch(T), T > 0."
     )
 
-    with open(lp_path, "r", encoding="utf-8") as source_file:
-        lines = source_file.readlines()
-
-    with open(lp_path, "w", encoding="utf-8") as output_file:
-        for line in lines:
-            if line.strip() == rule_to_modify:
-                output_file.write(modified_rule + "\n")
-            else:
-                output_file.write(line)
-
-
-def _write_encoding_files(destination, *source_paths):
-    for source_path in source_paths:
-        with open(source_path, "r", encoding="utf-8") as source_file:
-            destination.write(source_file.read())
-
-
-def _extract_supported_pddl_facts(pddl_path):
-    facts = []
-    with open(pddl_path, "r", encoding="utf-8") as pddl_file:
-        for line in pddl_file:
-            fact = _pddl_line_to_lp_fact(line.strip())
-            if fact:
-                facts.append(fact)
-    return facts
-
-
-def _pddl_line_to_lp_fact(line):
-    """Convert a supported one-line PDDL fact to its ASP representation."""
-    if line.startswith("(fuelcost"):
-        _, level, origin, destination = line.replace("(", "").replace(")", "").split()
-        return f'fuelcost("{level}","{origin}","{destination}").'
-    if line.startswith("(sum"):
-        _, left, right, total = line.replace("(", "").replace(")", "").split()
-        return f'sum("{left}","{right}","{total}").'
-    return None
+    # Read the ASP file and modify the specific rule
+    with open(asp_path, "r", encoding="utf-8") as source_file:
+        for line in source_file.readlines():
+            with open(asp_path, "w", encoding="utf-8") as output_file:
+                if line.strip() == rule_to_modify:
+                    output_file.write(modified_rule + "\n")
+                else:
+                    output_file.write(line)

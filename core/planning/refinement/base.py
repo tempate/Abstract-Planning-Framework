@@ -15,8 +15,8 @@ from core.solvers.factory import get_solver
 class PlanningPaths:
     """ASP files shared by the abstract planning and refinement phases."""
 
-    concrete_lp: str
-    abstract_lp: str
+    concrete_asp: str
+    abstract_asp: str
     occurrences: str
     mapping: str
     forbidden_actions: str
@@ -35,9 +35,9 @@ class RefinementContext:
     solving_mode: str
     refinement_filter: Callable[[str], bool]
     fd_timings: dict
-    concrete_lp_time: float
-    abstract_lp_time: float
-    lp_total_time: float
+    concrete_asp_time: float
+    abstract_asp_time: float
+    asp_total_time: float
     total_timing: PhaseTiming
     base_dir: str
     debug_dir: str
@@ -71,8 +71,8 @@ class RefinementStrategy(ABC):
     def solve_concrete(self, switch_map):
         """Run and time the selected concrete solver."""
         context = self.context
-        lp_files = [
-            context.paths.concrete_lp,
+        asp_files = [
+            context.paths.concrete_asp,
             context.paths.occurrences,
             context.paths.mapping,
         ]
@@ -80,7 +80,7 @@ class RefinementStrategy(ABC):
             success, plans, bad_actions, operation_count = get_solver(
                 context.solving_mode
             ).solve(
-                lp_files,
+                asp_files,
                 context.horizon,
                 switch_map,
             )
@@ -120,9 +120,9 @@ class RefinementStrategy(ABC):
                 "fd_concrete_time": context.fd_timings["fd_concrete_time"],
                 "fd_abstract_time": context.fd_timings["fd_abstract_time"],
                 "fd_total_time": context.fd_timings["fd_total_time"],
-                "lp_concrete_time": context.concrete_lp_time,
-                "lp_abstract_time": context.abstract_lp_time,
-                "lp_total_time": context.lp_total_time,
+                "asp_concrete_time": context.concrete_asp_time,
+                "asp_abstract_time": context.abstract_asp_time,
+                "asp_total_time": context.asp_total_time,
                 "abstract_solve_time": abstract_solve_time,
                 "concrete_solve_time": concrete_solve_time,
                 "total_time": total_time,
