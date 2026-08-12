@@ -27,15 +27,13 @@ def compute_abstract_plan(
     solving_mode="inc",
     plan_source="clingo",
     profile_name="beluga",
-    refinement_filter=None,
     attempt_recorder=None,
 ):
     """Prepare an abstract planning run and dispatch its refinement strategy."""
     planner = get_planner(profile_name)
     planner.validate_configuration(abstract_symbol, concrete_objects)
 
-    if refinement_filter is None:
-        refinement_filter = lambda atom: planner.should_refine(atom, abstract_symbol)
+    refinement_filter = lambda atom: planner.should_refine(atom, abstract_symbol)
 
     base_dir, run_id = create_run_dir(planner.run_directory)
     logger, debug_dir = setup_debug_logger(base_dir)

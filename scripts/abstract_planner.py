@@ -50,7 +50,6 @@ def main():
         solving_mode=args.mode,
         plan_source=args.plan_source,
         profile_name=args.profile,
-        refinement_filter=args.refinement_filter,
         attempt_recorder=partial(record_plan_attempt, plan_log_path),
     )
 
