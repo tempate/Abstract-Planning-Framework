@@ -8,25 +8,14 @@ from core.execution import get_logger, timed_phase
 from core.paths import FAST_DOWNWARD_SCRIPT
 
 
-def run_fast_downward(
-    base_dir,
-    domain_file,
-    problem_file,
-    label,
-    task,
-):
+def run_fast_downward(base_dir, domain, problem, label, task):
     """Run concrete planning and, when provided, abstract planning."""
     logger = get_logger()
     logger.info("=" * 65)
     logger.info("[FD] Fast Downward started")
 
     result, time = _run_task(
-        label,
-        base_dir,
-        domain_file.read(),
-        problem_file.read(),
-        task,
-        logger
+        label, base_dir, domain, problem, task, logger
     )
 
     logger.info(f"[FD] SUMMARY | {time:.3f}s")

@@ -28,26 +28,24 @@ def compute_concrete_plan(
 
     print("Directory:", base_dir)
     with timed_phase() as total_timing:
+        # Translate the concrete problem into SAS.
         with timed_phase(logger, "Fast Downward time") as downward_timing:
             with (
-                open(domain_path, "rb") as domain_file,
-                open(problem_path, "rb") as problem_file,
+                open(domain_path, "rb") as domain,
+                open(problem_path, "rb") as problem,
             ):
-                concrete_task, _ = run_fast_downward(
-                    base_dir, domain_file, problem_file, "concrete", "plan"
+                task, _ = run_fast_downward(
+                    base_dir, domain.read(), problem.read(), "concrete", "plan"
                 )
 
-        if horizon is None:
-            horizon = concrete_task["horizon"]
-
-        concrete_asp_path = os.path.join(base_dir, "output_c.lp")
+        # Generate the ASP representation of the concrete problem.
+        asp_path = os.path.join(base_dir, "output_c.lp")
         with timed_phase(logger, "ASP generation time") as asp_timing:
-            plan_to_asp(
-                concrete_task["sasFile"], concrete_asp_path, encoding, time_step
-            )
+            plan_to_asp(task["sasFile"], asp_path, encoding, time_step)
 
+        # Solve the concrete problem using Clingo.
         with timed_phase(logger, "Concrete solving time") as solve_timing:
-            plans = run_clingo([concrete_asp_path], horizon)
+            plans = run_clingo([asp_path], horizon or task["horizon"])
 
     downward_time = downward_timing.elapsed
     asp_time = asp_timing.elapsed

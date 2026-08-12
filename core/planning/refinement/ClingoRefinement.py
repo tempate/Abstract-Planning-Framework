@@ -10,10 +10,10 @@ from core.execution import (
     timed_phase,
 )
 from core.integrations.clingo import run_clingo
-from core.planning.refinement.base import RefinementStrategy
+from core.planning.refinement.BaseRefinement import BaseRefinement
 
 
-class ClingoRefinement(RefinementStrategy):
+class ClingoRefinement(BaseRefinement):
     """Generate and reject abstract plans until one can be realized."""
 
     def __init__(self, context):

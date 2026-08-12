@@ -45,7 +45,7 @@ class RefinementContext:
     attempt_recorder: Callable[..., None] | None = None
 
 
-class RefinementStrategy(ABC):
+class BaseRefinement(ABC):
     """Base class for strategies that realize abstract plans concretely."""
 
     def __init__(self, context):

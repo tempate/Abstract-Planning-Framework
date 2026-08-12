@@ -1,10 +1,10 @@
 """Fast Downward abstract-plan refinement strategy."""
 
 from core.execution import timed_phase
-from core.planning.refinement.base import RefinementStrategy
+from core.planning.refinement.BaseRefinement import BaseRefinement
 
 
-class FastDownwardRefinement(RefinementStrategy):
+class FastDownwardRefinement(BaseRefinement):
     """Try to realize the single abstract plan produced by Fast Downward."""
 
     def refine(self):
