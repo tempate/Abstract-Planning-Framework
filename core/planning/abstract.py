@@ -1,9 +1,8 @@
 """Prepare and dispatch abstraction-based planning workflows."""
 
 import os
-import time
 
-from core.execution import create_run_dir, setup_debug_logger
+from core.execution import create_run_dir, setup_debug_logger, timed_phase
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import (
     add_switch_to_lp_rule,
@@ -53,64 +52,75 @@ def refine_abstract_plan(
     logger.info(f"Base dir: {base_dir}")
 
     print("Directory:", base_dir)
-    total_start = time.perf_counter()
+    with timed_phase() as total_timing:
+        # Translate the concrete problem into SAS and plan the abstract problem.
+        with timed_phase(logger, "Fast Downward time") as fd_total:
+            with (
+                open(concrete_domain_path, "rb") as concrete_domain,
+                open(concrete_problem_path, "rb") as concrete_problem,
+            ):
+                concrete_task, concrete_time = run_fast_downward(
+                    base_dir,
+                    concrete_domain,
+                    concrete_problem,
+                    "concrete",
+                    "translate",
+                )
 
-    # Translate the concrete problem into SAS
-    with (open(concrete_domain_path, "rb") as concrete_domain,
-          open(concrete_problem_path, "rb") as concrete_problem):
-        concrete_task, concrete_time = run_fast_downward(
-            base_dir, concrete_domain, concrete_problem, "concrete", "translate")
+            with (
+                open(abstract_domain_path, "rb") as abstract_domain,
+                open(abstract_problem_path, "rb") as abstract_problem,
+            ):
+                abstract_task, abstract_time = run_fast_downward(
+                    base_dir,
+                    abstract_domain,
+                    abstract_problem,
+                    "abstract",
+                    "plan",
+                )
 
-    # Plan the abstract problem
-    with (open(abstract_domain_path, "rb") as abstract_domain,
-          open(abstract_problem_path, "rb") as abstract_problem,):
-        abstract_task, abstract_time = run_fast_downward(
-            base_dir, abstract_domain, abstract_problem, "abstract", "plan")
+        fd_timings = {
+            "fd_concrete_time": concrete_time,
+            "fd_abstract_time": abstract_time,
+            "fd_total_time": fd_total.elapsed,
+        }
 
-    # Store how long it took to run Fast Downward
-    total_time = time.perf_counter() - total_start
-    logger.info(f"Fast Downward time: {total_time:.3f}s")
-    fd_timings = {
-        "fd_concrete_time": concrete_time,
-        "fd_abstract_time": abstract_time,
-        "fd_total_time": total_time,}
+        if horizon is None:
+            horizon = abstract_task.get("horizon", 0)
 
-    if horizon is None:
-        horizon = abstract_task.get("horizon", 0)
+        paths = _planning_paths(base_dir)
+        concrete_lp_time, abstract_lp_time, lp_total_time = _generate_lp_programs(
+            concrete_task=concrete_task,
+            abstract_task=abstract_task,
+            concrete_problem_path=concrete_problem_path,
+            paths=paths,
+            encoding=encoding,
+            time_step=time_step,
+            plan_source=plan_source,
+            append_concrete_pddl_facts=planner.append_concrete_pddl_facts,
+            logger=logger,
+        )
 
-    paths = _planning_paths(base_dir)
-    concrete_lp_time, abstract_lp_time, lp_total_time = _generate_lp_programs(
-        concrete_task=concrete_task,
-        abstract_task=abstract_task,
-        concrete_problem_path=concrete_problem_path,
-        paths=paths,
-        encoding=encoding,
-        time_step=time_step,
-        plan_source=plan_source,
-        append_concrete_pddl_facts=planner.append_concrete_pddl_facts,
-        logger=logger,
-    )
-
-    context = RefinementContext(
-        planner=planner,
-        paths=paths,
-        abstract_task=abstract_task,
-        horizon=horizon,
-        abstract_symbol=abstract_symbol,
-        concrete_objects=concrete_objects,
-        solving_mode=solving_mode,
-        refinement_filter=refinement_filter,
-        fd_timings=fd_timings,
-        concrete_lp_time=concrete_lp_time,
-        abstract_lp_time=abstract_lp_time,
-        lp_total_time=lp_total_time,
-        total_start=total_start,
-        base_dir=base_dir,
-        debug_dir=debug_dir,
-        logger=logger,
-        attempt_recorder=attempt_recorder,
-    )
-    return get_refinement_strategy(plan_source, context).refine()
+        context = RefinementContext(
+            planner=planner,
+            paths=paths,
+            abstract_task=abstract_task,
+            horizon=horizon,
+            abstract_symbol=abstract_symbol,
+            concrete_objects=concrete_objects,
+            solving_mode=solving_mode,
+            refinement_filter=refinement_filter,
+            fd_timings=fd_timings,
+            concrete_lp_time=concrete_lp_time,
+            abstract_lp_time=abstract_lp_time,
+            lp_total_time=lp_total_time,
+            total_timing=total_timing,
+            base_dir=base_dir,
+            debug_dir=debug_dir,
+            logger=logger,
+            attempt_recorder=attempt_recorder,
+        )
+        return get_refinement_strategy(plan_source, context).refine()
 
 
 def _planning_paths(base_dir):
@@ -137,33 +147,29 @@ def _generate_lp_programs(
     append_concrete_pddl_facts,
     logger,
 ):
-    total_start = time.perf_counter()
+    with timed_phase(logger, "Total LP generation") as total_timing:
+        with timed_phase(logger, "Concrete LP generation") as concrete_timing:
+            generate_lp_with_plasp(
+                sas_or_pddl_path=concrete_task["sasFile"],
+                lp_output_path=paths.concrete_lp,
+                encoding_type=encoding,
+                abstract_time_steps=time_step,
+            )
+            add_switch_to_lp_rule(paths.concrete_lp, encoding)
+            if append_concrete_pddl_facts:
+                append_pddl_facts_to_lp(concrete_problem_path, paths.concrete_lp)
 
-    concrete_start = time.perf_counter()
-    generate_lp_with_plasp(
-        sas_or_pddl_path=concrete_task["sasFile"],
-        lp_output_path=paths.concrete_lp,
-        encoding_type=encoding,
-        abstract_time_steps=time_step,
-    )
-    add_switch_to_lp_rule(paths.concrete_lp, encoding)
-    if append_concrete_pddl_facts:
-        append_pddl_facts_to_lp(concrete_problem_path, paths.concrete_lp)
-    concrete_time = time.perf_counter() - concrete_start
-    logger.info(f"Concrete LP generation: {concrete_time:.3f}s")
+        abstract_time = 0.0
+        if plan_source == "clingo":
+            with timed_phase(
+                logger, "Abstract LP generation"
+            ) as abstract_timing:
+                generate_lp_with_plasp(
+                    sas_or_pddl_path=abstract_task["sasFile"],
+                    lp_output_path=paths.abstract_lp,
+                    encoding_type=encoding,
+                    abstract_time_steps=time_step,
+                )
+            abstract_time = abstract_timing.elapsed
 
-    abstract_time = 0.0
-    if plan_source == "clingo":
-        abstract_start = time.perf_counter()
-        generate_lp_with_plasp(
-            sas_or_pddl_path=abstract_task["sasFile"],
-            lp_output_path=paths.abstract_lp,
-            encoding_type=encoding,
-            abstract_time_steps=time_step,
-        )
-        abstract_time = time.perf_counter() - abstract_start
-        logger.info(f"Abstract LP generation: {abstract_time:.3f}s")
-
-    total_time = time.perf_counter() - total_start
-    logger.info(f"Total LP generation: {total_time:.3f}s")
-    return concrete_time, abstract_time, total_time
+    return concrete_timing.elapsed, abstract_time, total_timing.elapsed

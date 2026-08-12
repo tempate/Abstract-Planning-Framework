@@ -3,9 +3,8 @@
 import os
 from statistics import mode
 import subprocess
-import time
 
-from core.execution import get_logger, log_phase
+from core.execution import get_logger, timed_phase
 from core.paths import FAST_DOWNWARD_SCRIPT
 
 
@@ -56,13 +55,14 @@ def _run_task(label, dir, domain, problem, task, logger):
 
     # Run Fast Downward for the task
     logger.info(f"[FD] Running {label} planner")
-    start = time.perf_counter()
-    result = subprocess.run(
-        _get_command(paths, task),
-        capture_output=True,
-        text=True,
-    )
-    elapsed = log_phase(logger, f"[FD] {label.title()} planner runtime", start)
+    with timed_phase(
+        logger, f"[FD] {label.title()} planner runtime"
+    ) as runtime:
+        result = subprocess.run(
+            _get_command(paths, task),
+            capture_output=True,
+            text=True,
+        )
 
     if result.returncode != 0:
         logger.error(f"[FD] {label.title()} planner FAILED")
@@ -81,7 +81,7 @@ def _run_task(label, dir, domain, problem, task, logger):
         "horizon": horizon,
         "sasFile": paths["sas"],
         "planFile": paths["plan"],
-    }, elapsed
+    }, runtime.elapsed
 
 
 def _get_command(paths, task):

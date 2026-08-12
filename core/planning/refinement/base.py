@@ -1,13 +1,12 @@
 """Shared state and behavior for abstract-plan refinement strategies."""
 
 import logging
-import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from pprint import pformat
 
-from core.execution import log_phase
+from core.execution import PhaseTiming, timed_phase
 from core.planners.AbstractPlanner import AbstractPlanner
 from core.solvers.factory import get_solver
 
@@ -39,7 +38,7 @@ class RefinementContext:
     concrete_lp_time: float
     abstract_lp_time: float
     lp_total_time: float
-    total_start: float
+    total_timing: PhaseTiming
     base_dir: str
     debug_dir: str
     logger: logging.Logger
@@ -60,15 +59,14 @@ class RefinementStrategy(ABC):
     def build_mapping(self):
         """Build and time the domain-specific abstract-to-concrete mapping."""
         context = self.context
-        start = time.perf_counter()
-        switch_map = context.planner.build_mapping(
-            context.paths.occurrences,
-            context.paths.mapping,
-            context.abstract_symbol,
-            context.concrete_objects,
-        )
-        elapsed = log_phase(context.logger, "Mapping generation time", start)
-        return switch_map, elapsed
+        with timed_phase(context.logger, "Mapping generation time") as timing:
+            switch_map = context.planner.build_mapping(
+                context.paths.occurrences,
+                context.paths.mapping,
+                context.abstract_symbol,
+                context.concrete_objects,
+            )
+        return switch_map, timing.elapsed
 
     def solve_concrete(self, switch_map):
         """Run and time the selected concrete solver."""
@@ -78,17 +76,16 @@ class RefinementStrategy(ABC):
             context.paths.occurrences,
             context.paths.mapping,
         ]
-        start = time.perf_counter()
-        success, plans, bad_actions, operation_count = get_solver(
-            context.solving_mode
-        ).solve(
-            lp_files,
-            context.horizon,
-            switch_map,
-        )
+        with timed_phase(context.logger, "Concrete solving time") as timing:
+            success, plans, bad_actions, operation_count = get_solver(
+                context.solving_mode
+            ).solve(
+                lp_files,
+                context.horizon,
+                switch_map,
+            )
         self.solver_operations += operation_count
-        elapsed = log_phase(context.logger, "Concrete solving time", start)
-        return success, plans, bad_actions, elapsed
+        return success, plans, bad_actions, timing.elapsed
 
     def build_result(
         self,
@@ -101,7 +98,7 @@ class RefinementStrategy(ABC):
     ):
         """Build the shared result representation and record total runtime."""
         context = self.context
-        total_time = time.perf_counter() - context.total_start
+        total_time = context.total_timing.elapsed
         context.logger.info(f"TOTAL TIME: {total_time:.3f}s")
         return {
             "horizon": context.horizon,

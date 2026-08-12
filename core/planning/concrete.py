@@ -1,9 +1,8 @@
 """Orchestrate concrete planning from PDDL translation through ASP solving."""
 
 import os
-import time
 
-from core.execution import create_run_dir, setup_debug_logger
+from core.execution import create_run_dir, setup_debug_logger, timed_phase
 from core.integrations.clingo import run_clingo
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import generate_lp_with_plasp
@@ -28,39 +27,35 @@ def compute_concrete_plan(
     logger.info(f"Base dir: {base_dir}")
 
     print("Directory:", base_dir)
-    total_start = time.perf_counter()
+    with timed_phase() as total_timing:
+        with timed_phase(logger, "Fast Downward time") as downward_timing:
+            with (
+                open(domain_path, "rb") as domain_file,
+                open(problem_path, "rb") as problem_file,
+            ):
+                concrete_task, _ = run_fast_downward(
+                    base_dir, domain_file, problem_file, "concrete", "plan"
+                )
 
-    downward_start = time.perf_counter()
-    with (
-        open(domain_path, "rb") as domain_file,
-        open(problem_path, "rb") as problem_file,
-    ):
-        downward_result = run_fast_downward(
-            base_dir, domain_file, problem_file, "concrete", "plan"
-        )
+        if horizon is None:
+            horizon = concrete_task["horizon"]
 
-    downward_time = time.perf_counter() - downward_start
-    logger.info(f"Fast Downward time: {downward_time:.3f}s")
+        concrete_lp_path = os.path.join(base_dir, "output_c.lp")
+        with timed_phase(logger, "LP generation time") as lp_timing:
+            generate_lp_with_plasp(
+                sas_or_pddl_path=concrete_task["sasFile"],
+                lp_output_path=concrete_lp_path,
+                encoding_type=encoding,
+                abstract_time_steps=time_step,
+            )
 
-    concrete_task = downward_result["concrete"]
-    if horizon is None:
-        horizon = concrete_task["horizon"]
+        with timed_phase(logger, "Concrete solving time") as solve_timing:
+            plans = run_clingo([concrete_lp_path], horizon)
 
-    concrete_lp_path = os.path.join(base_dir, "output_c.lp")
-    lp_start = time.perf_counter()
-    generate_lp_with_plasp(
-        sas_or_pddl_path=concrete_task["sasFile"],
-        lp_output_path=concrete_lp_path,
-        encoding_type=encoding,
-        abstract_time_steps=time_step,
-    )
-    lp_time = time.perf_counter() - lp_start
-    logger.info(f"LP generation time: {lp_time:.3f}s")
-
-    solve_start = time.perf_counter()
-    plans = run_clingo([concrete_lp_path], horizon)
-    solve_time = time.perf_counter() - solve_start
-    total_time = time.perf_counter() - total_start
+    downward_time = downward_timing.elapsed
+    lp_time = lp_timing.elapsed
+    solve_time = solve_timing.elapsed
+    total_time = total_timing.elapsed
 
     logger.info(f"Plans found: {len(plans)}")
     logger.info(f"Total runtime: {total_time:.3f}s")

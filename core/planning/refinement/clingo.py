@@ -1,14 +1,13 @@
 """Iterative Clingo abstract-plan refinement strategy."""
 
-import time
 from itertools import count
 
 from core.asp import write_abstract_occurrences, write_forbidden_actions
 from core.execution import (
     copy_iteration_file,
-    log_phase,
     save_iteration_file,
     save_json_iteration_file,
+    timed_phase,
 )
 from core.integrations.clingo import run_clingo
 from core.planning.refinement.base import RefinementStrategy
@@ -24,84 +23,81 @@ class ClingoRefinement(RefinementStrategy):
 
     def refine(self):
         for iteration in count(1):
-            iteration_start = time.perf_counter()
-            self._log_iteration_start(iteration)
+            with timed_phase() as iteration_timing:
+                self._log_iteration_start(iteration)
 
-            abstract_atoms, abstract_solve_time = self._solve_abstract(iteration)
-            if abstract_atoms is None:
-                self.context.logger.info("No abstract plan possible.")
-                self.context.logger.info("FAILED")
-                return self.build_result(
-                    success=False,
-                    plans=[],
-                    iteration_times=self.iteration_times,
-                    abstract_solve_time=abstract_solve_time,
-                    concrete_solve_time=0.0,
+                abstract_atoms, abstract_solve_time = self._solve_abstract(iteration)
+                if abstract_atoms is None:
+                    self.context.logger.info("No abstract plan possible.")
+                    self.context.logger.info("FAILED")
+                    return self.build_result(
+                        success=False,
+                        plans=[],
+                        iteration_times=self.iteration_times,
+                        abstract_solve_time=abstract_solve_time,
+                        concrete_solve_time=0.0,
+                    )
+
+                occurrence_time, mapping_time, switch_map = self._prepare_plan(
+                    iteration,
+                    abstract_atoms,
                 )
+                success, plans, bad_actions, concrete_solve_time = self.solve_concrete(
+                    switch_map
+                )
+                if success:
+                    return self._finish_success(
+                        iteration=iteration,
+                        abstract_atoms=abstract_atoms,
+                        plans=plans,
+                        abstract_solve_time=abstract_solve_time,
+                        occurrence_time=occurrence_time,
+                        mapping_time=mapping_time,
+                        concrete_solve_time=concrete_solve_time,
+                        iteration_timing=iteration_timing,
+                    )
 
-            occurrence_time, mapping_time, switch_map = self._prepare_plan(
-                iteration,
-                abstract_atoms,
-            )
-            success, plans, bad_actions, concrete_solve_time = self.solve_concrete(
-                switch_map
-            )
-            if success:
-                return self._finish_success(
+                self._refine_failed_plan(
                     iteration=iteration,
                     abstract_atoms=abstract_atoms,
-                    plans=plans,
+                    bad_actions=bad_actions,
                     abstract_solve_time=abstract_solve_time,
                     occurrence_time=occurrence_time,
                     mapping_time=mapping_time,
                     concrete_solve_time=concrete_solve_time,
-                    iteration_start=iteration_start,
+                    iteration_timing=iteration_timing,
                 )
-
-            self._refine_failed_plan(
-                iteration=iteration,
-                abstract_atoms=abstract_atoms,
-                bad_actions=bad_actions,
-                abstract_solve_time=abstract_solve_time,
-                occurrence_time=occurrence_time,
-                mapping_time=mapping_time,
-                concrete_solve_time=concrete_solve_time,
-                iteration_start=iteration_start,
-            )
 
     def _solve_abstract(self, iteration):
         context = self.context
-        start = time.perf_counter()
         lp_files = [context.paths.abstract_lp]
 
-        if self.forbidden_actions:
-            write_forbidden_actions(
-                self.forbidden_actions,
-                context.paths.forbidden_actions,
-            )
-            lp_files.append(context.paths.forbidden_actions)
-            save_iteration_file(
-                context.debug_dir,
-                iteration,
-                "forbidden.lp",
-                "\n".join(self.forbidden_actions),
-            )
+        with timed_phase(context.logger, "Abstract solving time") as timing:
+            if self.forbidden_actions:
+                write_forbidden_actions(
+                    self.forbidden_actions,
+                    context.paths.forbidden_actions,
+                )
+                lp_files.append(context.paths.forbidden_actions)
+                save_iteration_file(
+                    context.debug_dir,
+                    iteration,
+                    "forbidden.lp",
+                    "\n".join(self.forbidden_actions),
+                )
 
-        models = run_clingo(lp_files, context.horizon)
-        elapsed = log_phase(context.logger, "Abstract solving time", start)
-        return (models[0] if models else None), elapsed
+            models = run_clingo(lp_files, context.horizon)
+        return (models[0] if models else None), timing.elapsed
 
     def _prepare_plan(self, iteration, abstract_atoms):
         context = self.context
         self.log_atoms("Abstract plan:", abstract_atoms)
 
-        occurrence_start = time.perf_counter()
-        write_abstract_occurrences(abstract_atoms, context.paths.occurrences)
-        occurrence_time = log_phase(
+        with timed_phase(
             context.logger,
             "Abstract occurrence generation time",
-            occurrence_start,
-        )
+        ) as occurrence_timing:
+            write_abstract_occurrences(abstract_atoms, context.paths.occurrences)
         copy_iteration_file(
             context.debug_dir,
             iteration,
@@ -114,7 +110,7 @@ class ClingoRefinement(RefinementStrategy):
             iteration,
             context.paths.mapping,
         )
-        return occurrence_time, mapping_time, switch_map
+        return occurrence_timing.elapsed, mapping_time, switch_map
 
     def _finish_success(
         self,
@@ -126,7 +122,7 @@ class ClingoRefinement(RefinementStrategy):
         occurrence_time,
         mapping_time,
         concrete_solve_time,
-        iteration_start,
+        iteration_timing,
     ):
         context = self.context
         self.log_success(plans)
@@ -144,7 +140,7 @@ class ClingoRefinement(RefinementStrategy):
                 mapping_time,
                 concrete_solve_time,
                 0.0,
-                time.perf_counter() - iteration_start,
+                iteration_timing.elapsed,
             )
         )
         self.record_attempt(abstract_atoms, success=True, bad_actions=[])
@@ -167,40 +163,35 @@ class ClingoRefinement(RefinementStrategy):
         occurrence_time,
         mapping_time,
         concrete_solve_time,
-        iteration_start,
+        iteration_timing,
     ):
         context = self.context
-        refinement_start = time.perf_counter()
-        context.logger.info("Concrete solve failed.")
-        self.log_atoms("Bad abstract actions:", bad_actions)
-        save_iteration_file(
-            context.debug_dir,
-            iteration,
-            "bad_actions.lp",
-            "\n".join(bad_actions),
-        )
+        with timed_phase(context.logger, "Refinement time") as refinement_timing:
+            context.logger.info("Concrete solve failed.")
+            self.log_atoms("Bad abstract actions:", bad_actions)
+            save_iteration_file(
+                context.debug_dir,
+                iteration,
+                "bad_actions.lp",
+                "\n".join(bad_actions),
+            )
 
-        new_forbidden = self._add_forbidden_actions(bad_actions)
-        self.log_atoms("New forbidden atoms:", new_forbidden)
-        save_iteration_file(
-            context.debug_dir,
-            iteration,
-            "new_forbidden.lp",
-            "\n".join(new_forbidden),
-        )
+            new_forbidden = self._add_forbidden_actions(bad_actions)
+            self.log_atoms("New forbidden atoms:", new_forbidden)
+            save_iteration_file(
+                context.debug_dir,
+                iteration,
+                "new_forbidden.lp",
+                "\n".join(new_forbidden),
+            )
 
-        refinement_time = log_phase(
-            context.logger,
-            "Refinement time",
-            refinement_start,
-        )
         timing = self.iteration_timing(
             abstract_solve_time,
             occurrence_time,
             mapping_time,
             concrete_solve_time,
-            refinement_time,
-            time.perf_counter() - iteration_start,
+            refinement_timing.elapsed,
+            iteration_timing.elapsed,
         )
         self.iteration_times.append(timing)
         self._log_iteration_summary(iteration, timing)
