@@ -12,6 +12,14 @@ def print_planning_result(result, logger):
     print("\n=== RESULT ===")
     print(f"Horizon: {result['horizon']}")
     print(f"Plans found: {result['numPlans']}")
+    timings = result["timings"]
+    if timings.get("iterations") is not None:
+        print(f"Refinement iterations: {timings['iterations']}")
+    if timings.get("increments") is not None:
+        print(f"Increments: {timings['increments']}")
+    if timings.get("decrements") is not None:
+        print(f"Decrements: {timings['decrements']}")
+    print(f"Total time: {result['timings']['total_time']:.3f}s")
 
     logger.info(f"Success: {result['success']}")
     logger.info(f"Plans found: {result['numPlans']}")
@@ -31,6 +39,8 @@ def save_result_summary(problem_path, version, mode, result):
         "Mode": mode,
         "horizon": result["horizon"],
         "iterations": timings.get("iterations"),
+        "increments": timings.get("increments"),
+        "decrements": timings.get("decrements"),
         "fd_conc": _timing(timings, "fd_conc", "fd_concrete_time"),
         "fd_abs": _timing(timings, "fd_abs", "fd_abstract_time"),
         "fd_total": _timing(timings, "fd_total", "fd_total_time"),

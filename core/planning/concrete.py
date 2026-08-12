@@ -66,7 +66,6 @@ def compute_concrete_plan(
     logger.info(f"Plans found: {len(plans)}")
     logger.info(f"Total runtime: {total_time:.3f}s")
     logger.info("=" * 70)
-    print(f"[DONE] Total time: {total_time:.3f}s")
 
     return {
         "horizon": horizon,
