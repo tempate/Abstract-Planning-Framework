@@ -55,14 +55,16 @@ def compute_abstract_plan(
             with (open(concrete_domain_path, "rb") as domain,
                   open(concrete_problem_path, "rb") as problem):
                 concrete_task, concrete_time = run_fast_downward(
-                    base_dir, domain.read(), problem.read(), "concrete", "translate"
+                    os.path.join(base_dir, "concrete"),
+                    domain.read(), problem.read(), "concrete", "translate"
                 )
 
             # Plan the abstract problem.
             with (open(abstract_domain_path, "rb") as domain,
                   open(abstract_problem_path, "rb") as problem):
                 abstract_task, abstract_time = run_fast_downward(
-                    base_dir, domain.read(), problem.read(), "abstract", "plan"
+                    os.path.join(base_dir, "abstract"),
+                    domain.read(), problem.read(), "abstract", "plan",
                 )
 
         fd_timings = {
