@@ -13,19 +13,21 @@ the bundled planner executables.
 Run the fast suite from the repository root:
 
 ```bash
-./scripts/run_tests.sh
+python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 Run only the real planner workflows:
 
 ```bash
-./scripts/run_tests.sh integration
+RUN_PLANNER_INTEGRATION=1 \
+    python -m unittest tests.test_planning_integration -v
 ```
 
 Run every test, including the workflow layer:
 
 ```bash
-./scripts/run_tests.sh all
+RUN_PLANNER_INTEGRATION=1 \
+    python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 The tests use Python's standard `unittest` runner, so no development-only

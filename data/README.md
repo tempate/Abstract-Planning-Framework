@@ -21,12 +21,12 @@ the example remains stable if the benchmark archive is reorganized.
 From the repository root, run:
 
 ```bash
-./scripts/run_examples.sh
+python -m examples.no_mystery
 ```
 
-The script runs the concrete case followed by abstract-plan refinement. Both
-cases should find a plan. Generated plans, ASP files, and debug logs are written below
-`scripts/utils/temp/`; they do not belong in `data/`.
+The example runs the concrete case followed by abstract-plan refinement. Both
+cases should find a plan. Generated plans, ASP files, and debug logs are
+written below `scripts/utils/temp/`; they do not belong in `data/`.
 
 `benchmarks/` contains the larger Beluga and NoMystery PDDL collections. It is
 intended for experiments after the quick-start example; historical outputs,

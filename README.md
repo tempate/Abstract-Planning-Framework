@@ -126,30 +126,31 @@ project/
 Run one concrete plan followed by abstract-plan refinement:
 
 ```bash
-./scripts/run_examples.sh
+python -m examples.no_mystery
 ```
 
 Each case uses the small NoMystery example in `data/examples/` and should find
-a plan in a few seconds. The script always runs both the concrete and abstract
-NoMystery workflows. See [`data/README.md`](data/README.md) for the data layout;
-the larger PDDL collections are under `data/benchmarks/`.
+a plan in a few seconds. The example runs both the concrete and abstract
+workflows. See [`data/README.md`](data/README.md) for the data layout; the larger
+PDDL collections are under `data/benchmarks/`.
 
-Python API examples, including a self-contained demonstration of decremental
-switch relaxation, are documented in [`examples/README.md`](examples/README.md).
+The Python API options are documented in
+[`examples/README.md`](examples/README.md).
 
 ### Tests
 
 Run the fast unit, component, and solver suite:
 
 ```bash
-./scripts/run_tests.sh
+python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
 The real NoMystery workflow is kept as an opt-in integration layer because it
 invokes Fast Downward and PlanPilot:
 
 ```bash
-./scripts/run_tests.sh integration
+RUN_PLANNER_INTEGRATION=1 \
+    python -m unittest tests.test_planning_integration -v
 ```
 
 See [`tests/README.md`](tests/README.md) for the test layers and the command
