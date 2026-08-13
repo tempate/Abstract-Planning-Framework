@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pprint import pformat
 
 from core.execution import PhaseTiming, timed_phase
+from core.paths import OCCURRENCE_VALIDATION_ENCODING
 from core.planners.AbstractPlanner import AbstractPlanner
 from core.solvers.factory import get_solver
 
@@ -77,6 +78,7 @@ class BaseRefinement(ABC):
             context.paths.concrete_asp,
             context.paths.occurrences,
             context.paths.mapping,
+            OCCURRENCE_VALIDATION_ENCODING,
         ]
         with timed_phase(context.logger, "Concrete solving time") as timing:
             success, plans, bad_actions, operation_count = get_solver(
