@@ -21,12 +21,23 @@ the example remains stable if the benchmark archive is reorganized.
 From the repository root, run:
 
 ```bash
-./scripts/run_examples.sh
+python -m examples.no_mystery
 ```
 
-Pass `concrete` or `abstract` to run only one case. Both cases should find a
-plan. Generated plans, ASP files, and debug logs are written below
-`scripts/utils/temp/`; they do not belong in `data/`.
+The default `quick` command runs concrete and fully realizable abstract cases
+for `p02`, followed by a matched comparison that solves benchmark `p01`
+concretely and through refinement. Every case should find a plan. Generated
+plans, ASP files, and debug logs are written below `scripts/utils/temp/`; they
+do not belong in `data/`.
+
+`python -m examples.no_mystery refinement` uses benchmark `p01` at horizon 11
+to demonstrate actual decremental relaxation and prints its concrete result
+alongside it. The quick-start `p02` plan is fully realizable without any
+decrements.
+
+`python -m examples.no_mystery performance` uses the matched concrete and
+abstract `p04` inputs at horizon 19. It is intentionally slow on the concrete
+side and is not part of the default command.
 
 `benchmarks/` contains the larger Beluga and NoMystery PDDL collections. It is
 intended for experiments after the quick-start example; historical outputs,
