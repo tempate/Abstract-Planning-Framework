@@ -69,9 +69,15 @@ class FastDownwardRefinement(BaseRefinement):
                 if not line or line.startswith(";"):
                     continue
                 action_name, *arguments = line.strip("()").split()
-                quoted_arguments = ",".join(f'"{argument}"' for argument in arguments)
+                if arguments:
+                    quoted_arguments = ",".join(
+                        f'"{argument}"' for argument in arguments
+                    )
+                    action = f'action(("{action_name}",{quoted_arguments}))'
+                else:
+                    action = f'action("{action_name}")'
                 abstract_atoms.append(
-                    f'occurs_abstract(action(("{action_name}",{quoted_arguments})), {time_step}).'
+                    f"occurs_abstract({action}, {time_step})."
                 )
                 time_step += 1
 
