@@ -8,6 +8,11 @@ from core.planning.abstract import compute_abstract_plan
 from core.planning.concrete import compute_concrete_plan
 from examples.beluga import run_abstract as run_beluga_abstract
 from examples.beluga import run_concrete as run_beluga_concrete
+from examples.beluga import run_refinement as run_beluga_refinement
+from examples.no_mystery import run_refinement as run_no_mystery_refinement
+from examples.no_mystery import (
+    run_refinement_concrete as run_no_mystery_refinement_concrete,
+)
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -39,7 +44,7 @@ class NoMysteryWorkflowTests(unittest.TestCase):
         self.assertGreater(result["horizon"], 0)
         self.assertTrue(any(atom.startswith("occurs(") for atom in result["plan"]))
 
-    def test_abstract_example_refines_to_a_concrete_plan(self):
+    def test_abstract_baseline_is_fully_realizable(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch("core.execution.TEMP_DIR", directory):
                 result = compute_abstract_plan(
@@ -54,7 +59,25 @@ class NoMysteryWorkflowTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertIsNotNone(result["plan"])
         self.assertEqual(result["timings"]["iterations"], 1)
-        self.assertGreaterEqual(result["timings"]["decrements"], 0)
+        self.assertEqual(result["timings"]["decrements"], 0)
+
+    def test_refinement_example_relaxes_the_abstract_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("core.execution.TEMP_DIR", directory):
+                result = run_no_mystery_refinement()
+
+        self.assertTrue(result["success"])
+        self.assertIsNotNone(result["plan"])
+        self.assertGreater(result["timings"]["decrements"], 0)
+
+    def test_refinement_example_has_a_matching_concrete_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("core.execution.TEMP_DIR", directory):
+                result = run_no_mystery_refinement_concrete()
+
+        self.assertTrue(result["success"])
+        self.assertIsNotNone(result["plan"])
+        self.assertEqual(result["horizon"], 11)
 
 
 @unittest.skipUnless(
@@ -71,7 +94,7 @@ class BelugaWorkflowTests(unittest.TestCase):
         self.assertIsNotNone(result["plan"])
         self.assertGreater(result["horizon"], 0)
 
-    def test_hangar_abstraction_refines_to_a_concrete_plan(self):
+    def test_hangar_abstraction_baseline_is_fully_realizable(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch("core.execution.TEMP_DIR", directory):
                 result = run_beluga_abstract()
@@ -79,7 +102,16 @@ class BelugaWorkflowTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertIsNotNone(result["plan"])
         self.assertEqual(result["timings"]["iterations"], 1)
-        self.assertGreaterEqual(result["timings"]["decrements"], 0)
+        self.assertEqual(result["timings"]["decrements"], 0)
+
+    def test_trailer_refinement_relaxes_the_abstract_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("core.execution.TEMP_DIR", directory):
+                result = run_beluga_refinement()
+
+        self.assertTrue(result["success"])
+        self.assertIsNotNone(result["plan"])
+        self.assertGreater(result["timings"]["decrements"], 0)
 
 
 if __name__ == "__main__":

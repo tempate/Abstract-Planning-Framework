@@ -123,20 +123,31 @@ project/
 
 ### Quick start with verified examples
 
-Run one concrete plan followed by abstract-plan refinement:
+Run the quick concrete, fully realizable abstract, and matched refinement
+examples:
 
 ```bash
 python -m examples.no_mystery
 ```
 
-Each case uses the small NoMystery example in `data/examples/` and should find
-a plan in a few seconds. The example runs both the concrete and abstract
-workflows. See [`data/README.md`](data/README.md) for the data layout; the larger
-PDDL collections are under `data/benchmarks/`.
+The concrete and abstract baselines use the small NoMystery problem in
+`data/examples/`. The refinement mode solves benchmark `p01` both concretely
+and through the abstraction, then prints their timings side by side. See
+[`data/README.md`](data/README.md) for the data layout.
 
 The Python API options are documented in
 [`examples/README.md`](examples/README.md).
-The examples include both NoMystery and a Beluga hangar abstraction.
+The NoMystery and Beluga examples each include a matched `refinement` mode and
+an opt-in `performance` mode. The latter compares a deliberately slow concrete
+search with the abstract workflow on exactly the same problem:
+
+```bash
+python -m examples.no_mystery performance
+python -m examples.beluga performance
+```
+
+These runs can take a minute or longer. Their final tables report the measured
+end-to-end ratio rather than assuming that abstraction is faster.
 
 ### Tests
 
@@ -146,8 +157,8 @@ Run the fast unit, component, and solver suite:
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-The real NoMystery workflow is kept as an opt-in integration layer because it
-invokes Fast Downward and PlanPilot:
+The real planning workflows are kept as an opt-in integration layer because
+they invoke Fast Downward and PlanPilot:
 
 ```bash
 RUN_PLANNER_INTEGRATION=1 \

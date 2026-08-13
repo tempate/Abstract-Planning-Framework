@@ -8,7 +8,7 @@ the bundled planner executables.
 | Unit/component | ASP I/O, abstraction transforms, mappings, logs, helpers | yes |
 | Solver | Clingo control setup and decremental switch relaxation | yes |
 | Orchestration | Planner calls replaced by deterministic test doubles | yes |
-| Workflow | Real Fast Downward, PlanPilot, and Clingo on NoMystery | opt-in |
+| Workflow | Real Fast Downward, PlanPilot, and Clingo on both domains | opt-in |
 
 Run the fast suite from the repository root:
 
@@ -37,3 +37,7 @@ and do not update the experiment spreadsheet or JSON plan history.
 GitHub Actions runs the complete suite, including the real planner workflows,
 on every push and pull request. Its clean Linux runner builds Fast Downward
 before executing the tests.
+
+The deliberately long `performance` example modes are demonstrations, not
+test cases. CI covers their argument wiring without running the minute-scale
+concrete searches; the smaller real workflows cover the external toolchain.
