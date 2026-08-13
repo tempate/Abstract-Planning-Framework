@@ -1,10 +1,10 @@
 import re
 
 from core.asp import read_abstract_actions
-from core.planners.AbstractPlanner import AbstractPlanner
+from core.planners.BasePlanner import BasePlanner
 
 
-class NoMysteryPlanner(AbstractPlanner):
+class NoMysteryPlanner(BasePlanner):
     """NoMystery's fuel-aware mapping and drive-action refinement."""
 
     profile_name = "no_mystery"
@@ -62,6 +62,3 @@ class NoMysteryPlanner(AbstractPlanner):
                 "is_abstract": is_abstract,
             }
         return self._write_mapping(map_path, lines, switch_map, "no_mystery")
-
-    def should_refine(self, atom, abstract_symbol):
-        return super().should_refine(atom, abstract_symbol) or '"drive"' in atom

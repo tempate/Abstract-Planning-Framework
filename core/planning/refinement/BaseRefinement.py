@@ -8,8 +8,8 @@ from pprint import pformat
 
 from core.execution import PhaseTiming, timed_phase
 from core.paths import OCCURRENCE_VALIDATION_ENCODING
-from core.planners.AbstractPlanner import AbstractPlanner
-from core.solvers.factory import get_solver
+from core.planners.BasePlanner import BasePlanner
+from core.solvers.DecrementalSolver import DecrementalSolver
 
 
 @dataclass(frozen=True)
@@ -20,21 +20,18 @@ class PlanningPaths:
     abstract_asp: str
     occurrences: str
     mapping: str
-    forbidden_actions: str
 
 
 @dataclass(frozen=True)
 class RefinementContext:
     """Configuration and run state shared by refinement strategies."""
 
-    planner: AbstractPlanner
+    planner: BasePlanner
     paths: PlanningPaths
     abstract_task: dict
     horizon: int
     abstract_symbol: str | None
     concrete_objects: list[str] | None
-    solving_mode: str
-    refinement_filter: Callable[[str], bool]
     fd_timings: dict
     concrete_asp_time: float
     abstract_asp_time: float
@@ -47,7 +44,7 @@ class RefinementContext:
 
 
 class BaseRefinement(ABC):
-    """Base class for strategies that realize abstract plans concretely."""
+    """Base class for strategies that use abstract plans to guide search."""
 
     def __init__(self, context):
         self.context = context
@@ -63,15 +60,15 @@ class BaseRefinement(ABC):
         """Build and time the domain-specific abstract-to-concrete mapping."""
         context = self.context
         with timed_phase(context.logger, "Mapping generation time") as timing:
-            switch_map = context.planner.build_mapping(
+            context.planner.build_mapping(
                 context.paths.occurrences,
                 context.paths.mapping,
                 context.abstract_symbol,
                 context.concrete_objects,
             )
-        return switch_map, timing.elapsed
+        return timing.elapsed
 
-    def solve_concrete(self, switch_map):
+    def solve_concrete(self):
         """Run and time the selected concrete solver."""
         context = self.context
         asp_files = [
@@ -81,16 +78,13 @@ class BaseRefinement(ABC):
             OCCURRENCE_VALIDATION_ENCODING,
         ]
         with timed_phase(context.logger, "Concrete solving time") as timing:
-            success, plan, bad_actions, operation_count = get_solver(
-                context.solving_mode
-            ).solve(
+            success, plan, operation_count = DecrementalSolver().solve(
                 asp_files,
                 context.horizon,
-                switch_map,
             )
         self.concrete_solve_time += timing.elapsed
         self.solver_operations += operation_count
-        return success, plan, bad_actions, timing.elapsed
+        return success, plan, timing.elapsed
 
     def build_result(self, *, success, plan, iteration_times):
         """Build the shared result representation and record total runtime."""
@@ -103,16 +97,7 @@ class BaseRefinement(ABC):
             "success": success,
             "timings": {
                 "iterations": len(iteration_times),
-                "increments": (
-                    self.solver_operations
-                    if context.solving_mode == "inc"
-                    else None
-                ),
-                "decrements": (
-                    self.solver_operations
-                    if context.solving_mode == "dec"
-                    else None
-                ),
+                "decrements": self.solver_operations,
                 "fd_concrete_time": context.fd_timings["fd_concrete_time"],
                 "fd_abstract_time": context.fd_timings["fd_abstract_time"],
                 "fd_total_time": context.fd_timings["fd_total_time"],
@@ -134,7 +119,6 @@ class BaseRefinement(ABC):
                 abstract_atoms,
                 success=success,
                 bad_actions=bad_actions,
-                mode=self.context.solving_mode,
             )
 
     @staticmethod

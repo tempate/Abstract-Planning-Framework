@@ -15,8 +15,6 @@ def print_planning_result(result, logger):
     timings = result["timings"]
     if timings.get("iterations") is not None:
         print(f"Refinement iterations: {timings['iterations']}")
-    if timings.get("increments") is not None:
-        print(f"Increments: {timings['increments']}")
     if timings.get("decrements") is not None:
         print(f"Decrements: {timings['decrements']}")
     print(f"Total time: {result['timings']['total_time']:.3f}s")
@@ -33,16 +31,14 @@ def print_planning_result(result, logger):
             print(" ", atom)
 
 
-def save_result_summary(problem_path, version, mode, result):
+def save_result_summary(problem_path, version, result):
     """Store a normalized result summary, regardless of planner variant."""
     timings = result["timings"]
     _append_result({
         "Problem": os.path.basename(problem_path),
         "Version": version,
-        "Mode": mode,
         "horizon": result["horizon"],
         "iterations": timings.get("iterations"),
-        "increments": timings.get("increments"),
         "decrements": timings.get("decrements"),
         "fd_conc": _timing(timings, "fd_conc", "fd_concrete_time"),
         "fd_abs": _timing(timings, "fd_abs", "fd_abstract_time"),

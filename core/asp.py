@@ -42,18 +42,3 @@ def write_abstract_occurrences(atoms, output_path):
 
         write_asp_program(output_path, statements)
         logger.info(f"[FILES] wrote {output_path}")
-
-
-def write_forbidden_actions(abstract_atoms, output_path):
-    """Write constraints that forbid the supplied abstract occurrence atoms."""
-    logger = get_logger()
-    with timed_phase(logger, "[REFINE] forbidden action generation"):
-        logger.info("[REFINE] Writing forbidden actions")
-        statements = []
-        for atom in abstract_atoms:
-            concrete_atom = str(atom).replace("occurs_abstract", "occurs")
-            logger.info(f"[REFINE] forbid {concrete_atom}")
-            statements.append(f":- {concrete_atom}.")
-
-        write_asp_program(output_path, statements)
-        logger.info(f"[FILES] wrote {output_path}")

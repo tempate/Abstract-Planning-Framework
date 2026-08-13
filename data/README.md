@@ -24,8 +24,8 @@ From the repository root, run:
 ./scripts/run_examples.sh
 ```
 
-Pass `concrete`, `inc`, or `dec` to run only one case. All three cases should
-find a plan. Generated plans, ASP files, and debug logs are written below
+Pass `concrete` or `abstract` to run only one case. Both cases should find a
+plan. Generated plans, ASP files, and debug logs are written below
 `scripts/utils/temp/`; they do not belong in `data/`.
 
 `benchmarks/` contains the larger Beluga and NoMystery PDDL collections. It is

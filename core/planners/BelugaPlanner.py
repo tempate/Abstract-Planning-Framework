@@ -1,8 +1,8 @@
 from core.asp import read_abstract_actions
-from core.planners.AbstractPlanner import AbstractPlanner
+from core.planners.BasePlanner import BasePlanner
 
 
-class BelugaPlanner(AbstractPlanner):
+class BelugaPlanner(BasePlanner):
     """Beluga's object-substitution abstraction mapping."""
 
     profile_name = "beluga"

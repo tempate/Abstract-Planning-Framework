@@ -16,7 +16,7 @@ It supports:
 The system compares:
 
 - Classical (concrete) planning
-- Abstract planning with refinement (incremental / decremental)
+- Abstract planning with decremental refinement
 
 It uses:
 
@@ -43,10 +43,9 @@ It uses:
 - Maps it back to the concrete level
 - If the plan is invalid, refinement is applied
 
-Two refinement strategies are used:
-
-- **Incremental (inc)** -> gradually builds constraints
-- **Decremental (dec)** -> removes invalid abstract actions step-by-step
+The decremental solver starts with the abstract-plan constraints and relaxes
+them in reverse order. It stops at the first concrete plan it finds. The
+concrete plan does not have to ground the complete abstract plan.
 
 ---
 
@@ -87,15 +86,13 @@ project/
 ├── core/paths.py
 ├── core/asp.py
 ├── core/planners/
-│   ├── AbstractPlanner.py
+│   ├── BasePlanner.py
 │   ├── BelugaPlanner.py
 │   ├── NoMysteryPlanner.py
 │   └── factory.py
 ├── core/solvers/
-│   ├── AbstractSolver.py
-│   ├── IncrementalSolver.py
+│   ├── BaseSolver.py
 │   ├── DecrementalSolver.py
-│   └── factory.py
 ├── core/integrations/
 │   ├── clingo.py
 │   ├── fast_downward.py
@@ -126,16 +123,15 @@ project/
 
 ### Quick start with verified examples
 
-Run one concrete plan followed by incremental and decremental abstract-plan
-refinement:
+Run one concrete plan followed by abstract-plan refinement:
 
 ```bash
 ./scripts/run_examples.sh
 ```
 
 Each case uses the small NoMystery example in `data/examples/` and should find
-a plan in a few seconds. Use `./scripts/run_examples.sh concrete`, `inc`, or
-`dec` to run one case. See [`data/README.md`](data/README.md) for the data
+a plan in a few seconds. Use `./scripts/run_examples.sh concrete` or
+`abstract` to run one case. See [`data/README.md`](data/README.md) for the data
 layout; the larger PDDL collections are under `data/benchmarks/`.
 
 ### Concrete Planning
@@ -164,7 +160,6 @@ python -m scripts.abstract_planner \
     --concrete-problem CONCRETE_PROBLEM.pddl \
     --abstract-symbol SYMBOL \
     --concrete-objects OBJ1 OBJ2 ... \
-    --mode inc \
     --plan-source clingo
 ```
 
@@ -178,7 +173,6 @@ python -m scripts.abstract_planner \
 | `--concrete-problem` | Concrete problem file |
 | `--abstract-symbol` | Abstract object symbol (e.g. `hangarabs`, `beluga_abs_trailer`) |
 | `--concrete-objects` | Concrete objects mapped to abstraction |
-| `--mode` | `inc` (incremental) or `dec` (decremental) |
 | `--plan-source` | `clingo` or `fd` — chooses whether to compute the abstract plan using Clingo or use a Fast Downward-generated plan |
 | `--horizon` | Optional planning horizon |
 | `--encoding` | ASP encoding type |
@@ -199,7 +193,6 @@ python -m scripts.abstract_planner \
     --horizon H \
     --encoding exact \
     --time-step \
-    --mode inc|dec \
     --plan-source clingo|fd
 ```
 
@@ -213,7 +206,6 @@ python -m scripts.abstract_planner \
 | `--concrete-problem` | Concrete problem file |
 | `--abstract-symbol` | Abstract object symbol |
 | `--concrete-objects` | Concrete objects represented by the abstraction |
-| `--mode` | `inc` or `dec` |
 | `--plan-source` | `clingo` or `fd` — chooses whether to compute the abstract plan using Clingo or use a Fast Downward-generated plan |
 | `--horizon` | Optional planning horizon |
 | `--encoding` | ASP encoding type |

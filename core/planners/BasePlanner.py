@@ -5,7 +5,7 @@ from core.asp import write_asp_program
 from core.execution import get_logger
 
 
-class AbstractPlanner(ABC):
+class BasePlanner(ABC):
     """Base class for domain-specific abstraction mapping and refinement."""
 
     profile_name = ""
@@ -26,10 +26,6 @@ class AbstractPlanner(ABC):
     @abstractmethod
     def build_mapping(self, occurs_path, map_path, abstract_symbol, concrete_objects):
         """Write the concrete mapping for an abstract occurrence sequence."""
-
-    def should_refine(self, atom, abstract_symbol):
-        """Return whether an invalid abstract action should be forbidden."""
-        return bool(abstract_symbol and abstract_symbol in atom)
 
     @staticmethod
     def _write_mapping(map_path, lines, switch_map, mapping_name):

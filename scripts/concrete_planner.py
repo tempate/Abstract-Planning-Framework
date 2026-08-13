@@ -22,7 +22,7 @@ def main():
     )
 
     print_planning_result(result, get_logger())
-    save_result_summary(args.problem, "concrete", "N/A", result)
+    save_result_summary(args.problem, "concrete", result)
 
 
 def _argument_parser():
