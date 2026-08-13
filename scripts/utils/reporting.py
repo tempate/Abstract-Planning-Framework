@@ -26,7 +26,8 @@ def print_planning_result(result, logger):
 
     for index, plan in enumerate(result["plans"], start=1):
         print(f"\nPlan {index}:")
-        for atom in sorted(plan, key=_time_step):
+        occurrences = [atom for atom in plan if atom.startswith("occurs(")]
+        for atom in sorted(occurrences, key=_time_step):
             print(" ", atom)
 
 
