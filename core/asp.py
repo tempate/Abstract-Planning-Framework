@@ -6,8 +6,9 @@ from pathlib import Path
 from core.execution import get_logger, timed_phase
 
 
-def read_abstract_actions(path: str | Path) -> Iterator[tuple[str, str]]:
-    """Yield ``(action, time_step)`` pairs from abstract occurrence facts."""
+def read_abstract_actions(path: str | Path) -> Iterator[tuple[str, int]]:
+    """Yield abstract actions in chronological order."""
+    actions = []
     with open(path, "r", encoding="utf-8") as source:
         for line in source:
             line = line.strip()
@@ -15,8 +16,10 @@ def read_abstract_actions(path: str | Path) -> Iterator[tuple[str, str]]:
                 continue
             inner = line[len("occurs_abstract("):].rstrip(").")
             if "," in inner:
-                action, time_step = inner.rsplit(",", 1)
-                yield action.strip(), time_step.strip()
+                action, raw_time_step = inner.rsplit(",", 1)
+                actions.append((action.strip(), int(raw_time_step.strip())))
+
+    return sorted(actions, key=lambda item: item[1])
 
 
 def write_asp_program(path: str | Path, statements: Iterable[str]) -> None:
