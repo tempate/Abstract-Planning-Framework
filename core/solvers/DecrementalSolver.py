@@ -4,18 +4,17 @@ from core.solvers.AbstractSolver import AbstractSolver
 
 
 class DecrementalSolver(AbstractSolver):
-    """Disable switches in reverse until the remaining plan becomes consistent."""
+    """Relax plan constraints in reverse until a concrete plan is found."""
 
     mode = "decremental"
     log_prefix = "DEC"
 
     def _solve(self):
         active_switches = set(self.switches)
-        if self.is_satisfiable(active_switches):
+        plan = self.collect_plan(active_switches)
+        if plan is not None:
             self.logger.info(f"[{self.log_prefix}] Full plan SAT")
-            plan = self.collect_plan(active_switches)
-            abstract_actions = self.mapped_abstract_actions(active_switches)
-            return plan is not None, plan, abstract_actions
+            return True, plan
 
         self.logger.info(
             f"[{self.log_prefix}] Full plan UNSAT. Reverse disabling begins."
@@ -25,26 +24,12 @@ class DecrementalSolver(AbstractSolver):
             self.logger.info(f"[{self.log_prefix}] Disabled switch={switch_id}")
             active_switches.remove(switch)
             self.operation_count += 1
-            if not self.switch_map[switch_id]["is_abstract"]:
-                continue
-            if self.is_satisfiable(active_switches):
+            plan = self.collect_plan(active_switches)
+            if plan is not None:
                 self.logger.info(
                     f"[{self.log_prefix}] SAT after disabling switch={switch_id}"
                 )
-                plan = self.collect_plan(active_switches)
-                failing_actions = self.mapped_abstract_actions(active_switches)
-                failing_actions.append(self.switch_map[switch_id]["atom"])
-                return False, plan, list(dict.fromkeys(failing_actions))
+                return True, plan
 
-        earliest_abstract = next(
-            (
-                self.switch_map[self.switch_ids[switch]]["atom"]
-                for switch in self.switches
-                if self.switch_map[self.switch_ids[switch]]["is_abstract"]
-            ),
-            None,
-        )
-        self.logger.info(
-            f"[{self.log_prefix}] Minimal failing action={earliest_abstract}"
-        )
-        return False, None, [earliest_abstract]
+        self.logger.info(f"[{self.log_prefix}] No concrete plan found")
+        return False, None

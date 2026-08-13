@@ -62,6 +62,3 @@ class NoMysteryPlanner(AbstractPlanner):
                 "is_abstract": is_abstract,
             }
         return self._write_mapping(map_path, lines, switch_map, "no_mystery")
-
-    def should_refine(self, atom, abstract_symbol):
-        return super().should_refine(atom, abstract_symbol) or '"drive"' in atom

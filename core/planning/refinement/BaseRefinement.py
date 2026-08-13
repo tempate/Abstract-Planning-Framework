@@ -20,7 +20,6 @@ class PlanningPaths:
     abstract_asp: str
     occurrences: str
     mapping: str
-    forbidden_actions: str
 
 
 @dataclass(frozen=True)
@@ -33,7 +32,6 @@ class RefinementContext:
     horizon: int
     abstract_symbol: str | None
     concrete_objects: list[str] | None
-    refinement_filter: Callable[[str], bool]
     fd_timings: dict
     concrete_asp_time: float
     abstract_asp_time: float
@@ -46,7 +44,7 @@ class RefinementContext:
 
 
 class BaseRefinement(ABC):
-    """Base class for strategies that realize abstract plans concretely."""
+    """Base class for strategies that use abstract plans to guide search."""
 
     def __init__(self, context):
         self.context = context
@@ -62,15 +60,15 @@ class BaseRefinement(ABC):
         """Build and time the domain-specific abstract-to-concrete mapping."""
         context = self.context
         with timed_phase(context.logger, "Mapping generation time") as timing:
-            switch_map = context.planner.build_mapping(
+            context.planner.build_mapping(
                 context.paths.occurrences,
                 context.paths.mapping,
                 context.abstract_symbol,
                 context.concrete_objects,
             )
-        return switch_map, timing.elapsed
+        return timing.elapsed
 
-    def solve_concrete(self, switch_map):
+    def solve_concrete(self):
         """Run and time the selected concrete solver."""
         context = self.context
         asp_files = [
@@ -80,14 +78,13 @@ class BaseRefinement(ABC):
             OCCURRENCE_VALIDATION_ENCODING,
         ]
         with timed_phase(context.logger, "Concrete solving time") as timing:
-            success, plan, bad_actions, operation_count = DecrementalSolver().solve(
+            success, plan, operation_count = DecrementalSolver().solve(
                 asp_files,
                 context.horizon,
-                switch_map,
             )
         self.concrete_solve_time += timing.elapsed
         self.solver_operations += operation_count
-        return success, plan, bad_actions, timing.elapsed
+        return success, plan, timing.elapsed
 
     def build_result(self, *, success, plan, iteration_times):
         """Build the shared result representation and record total runtime."""

@@ -22,18 +22,15 @@ class FastDownwardRefinement(BaseRefinement):
                     context.paths.occurrences,
                 )
 
-            switch_map, mapping_time = self.build_mapping()
-            success, plan, bad_actions, concrete_solve_time = self.solve_concrete(
-                switch_map
-            )
+            mapping_time = self.build_mapping()
+            success, plan, concrete_solve_time = self.solve_concrete()
 
             if success:
                 self.log_success(plan)
-                bad_actions = []
             else:
-                context.logger.info("Concrete solve failed.")
-                self.log_atoms("Bad abstract actions:", bad_actions)
-                context.logger.info("No abstract plan possible.")
+                context.logger.info(
+                    "No concrete plan found at the selected horizon."
+                )
                 context.logger.info("FAILED")
 
             iteration_times.append(
@@ -50,7 +47,7 @@ class FastDownwardRefinement(BaseRefinement):
         self.record_attempt(
             abstract_atoms,
             success=success,
-            bad_actions=bad_actions,
+            bad_actions=[],
         )
         self.log_iteration_totals(iteration_times)
         return self.build_result(

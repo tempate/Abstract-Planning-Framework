@@ -32,8 +32,6 @@ def compute_abstract_plan(
     planner = get_planner(profile_name)
     planner.validate_configuration(abstract_symbol, concrete_objects)
 
-    refinement_filter = lambda atom: planner.should_refine(atom, abstract_symbol)
-
     base_dir, run_id = create_run_dir(planner.run_directory)
     logger, debug_dir = setup_debug_logger(base_dir)
 
@@ -108,7 +106,6 @@ def compute_abstract_plan(
             horizon=horizon,
             abstract_symbol=abstract_symbol,
             concrete_objects=concrete_objects,
-            refinement_filter=refinement_filter,
             fd_timings=fd_timings,
             concrete_asp_time=concrete_timing.elapsed,
             abstract_asp_time=abstract_time,
@@ -134,7 +131,6 @@ def _get_planning_paths(base_dir):
         abstract_asp=os.path.join(base_dir, "abstract", "output_a.lp"),
         occurrences=os.path.join(dir, "occurs_abs.lp"),
         mapping=os.path.join(dir, "map.lp"),
-        forbidden_actions=os.path.join(dir, "forbid_abstract.lp"),
     )
 
 

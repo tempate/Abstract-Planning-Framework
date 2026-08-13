@@ -12,11 +12,10 @@ class AbstractSolver(ABC):
     mode = ""
     log_prefix = "SOLVER"
 
-    def solve(self, asp_files, horizon, switch_map):
+    def solve(self, asp_files, horizon):
         """Prepare the Clingo state and execute the concrete solving strategy."""
         self.logger = get_logger()
         with timed_phase(self.logger, f"[{self.log_prefix}] Runtime"):
-            self.switch_map = switch_map
             self.control = create_control(asp_files, horizon)
             self.switches, self.switch_ids = self._find_switches()
             self.operation_count = 0
@@ -38,26 +37,8 @@ class AbstractSolver(ABC):
             for switch in self.switches
         ]
 
-    def is_satisfiable(self, active_switches):
-        result = self.control.solve(assumptions=self.assumptions(active_switches))
-        return result.satisfiable
-
-    def is_unsatisfiable(self, active_switches):
-        result = self.control.solve(assumptions=self.assumptions(active_switches))
-        return result.unsatisfiable
-
     def collect_plan(self, active_switches):
         return collect_plan(self.control, self.assumptions(active_switches))
-
-    def mapped_abstract_actions(self, selected_switches):
-        return [
-            self.switch_map[self.switch_ids[switch]]["atom"]
-            for switch in self.switches
-            if (
-                switch in selected_switches
-                and self.switch_map[self.switch_ids[switch]]["is_abstract"]
-            )
-        ]
 
     def _find_switches(self):
         switch_ids = {

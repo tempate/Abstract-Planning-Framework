@@ -43,8 +43,9 @@ It uses:
 - Maps it back to the concrete level
 - If the plan is invalid, refinement is applied
 
-Refinement removes invalid abstract actions step-by-step using the decremental
-solver.
+The decremental solver starts with the abstract-plan constraints and relaxes
+them in reverse order. It stops at the first concrete plan it finds. The
+concrete plan does not have to ground the complete abstract plan.
 
 ---
 

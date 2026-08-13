@@ -27,10 +27,6 @@ class AbstractPlanner(ABC):
     def build_mapping(self, occurs_path, map_path, abstract_symbol, concrete_objects):
         """Write the concrete mapping for an abstract occurrence sequence."""
 
-    def should_refine(self, atom, abstract_symbol):
-        """Return whether an invalid abstract action should be forbidden."""
-        return bool(abstract_symbol and abstract_symbol in atom)
-
     @staticmethod
     def _write_mapping(map_path, lines, switch_map, mapping_name):
         logger = get_logger()
