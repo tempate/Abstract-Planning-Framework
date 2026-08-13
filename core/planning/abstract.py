@@ -40,7 +40,7 @@ def compute_abstract_plan(
 
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
-    logger.info(f"Horizon: {horizon}")
+    logger.info(f"Requested horizon: {horizon if horizon is not None else 'auto'}")
     logger.info(f"Encoding: {encoding}")
     logger.info(f"Mode: {solving_mode}")
     logger.info(f"Profile: {profile_name}")
@@ -75,6 +75,7 @@ def compute_abstract_plan(
 
         if horizon is None:
             horizon = abstract_task.get("horizon", 0)
+        logger.info(f"Effective horizon: {horizon}")
 
         paths = _get_planning_paths(base_dir)
 

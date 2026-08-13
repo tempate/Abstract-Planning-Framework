@@ -21,7 +21,7 @@ def compute_concrete_plan(
 
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
-    logger.info(f"Horizon: {horizon}")
+    logger.info(f"Requested horizon: {horizon if horizon is not None else 'auto'}")
     logger.info(f"Encoding: {encoding}")
     logger.info(f"Run ID: {run_id}")
     logger.info(f"Base dir: {base_dir}")
@@ -38,6 +38,9 @@ def compute_concrete_plan(
                     base_dir, domain.read(), problem.read(), "concrete", "plan"
                 )
 
+        effective_horizon = task["horizon"] if horizon is None else horizon
+        logger.info(f"Effective horizon: {effective_horizon}")
+
         # Generate the ASP representation of the concrete problem.
         asp_path = os.path.join(base_dir, "output_c.lp")
         with timed_phase(logger, "ASP generation time") as asp_timing:
@@ -45,7 +48,7 @@ def compute_concrete_plan(
 
         # Solve the concrete problem using Clingo.
         with timed_phase(logger, "Concrete solving time") as solve_timing:
-            plans = run_clingo([asp_path], horizon or task["horizon"])
+            plans = run_clingo([asp_path], effective_horizon)
 
     downward_time = downward_timing.elapsed
     asp_time = asp_timing.elapsed
@@ -57,7 +60,7 @@ def compute_concrete_plan(
     logger.info("=" * 70)
 
     return {
-        "horizon": horizon,
+        "horizon": effective_horizon,
         "numPlans": len(plans),
         "plans": plans,
         "success": bool(plans),
