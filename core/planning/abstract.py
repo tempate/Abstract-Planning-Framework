@@ -49,7 +49,7 @@ def compute_abstract_plan(
 
     print("Directory:", base_dir)
 
-    with timed_phase() as total_timing:
+    with timed_phase() as run_timing:
         with timed_phase(logger, "Fast Downward time") as fd_total:
             # Translate the concrete problem into SAS.
             with (open(concrete_domain_path, "rb") as domain,
@@ -78,7 +78,7 @@ def compute_abstract_plan(
 
         paths = _get_planning_paths(base_dir)
 
-        with timed_phase(logger, "Total ASP generation") as total_timing:
+        with timed_phase(logger, "Total ASP generation") as asp_total_timing:
 
             # Generate the ASP representation of the concrete problem.
             with timed_phase(logger, "Concrete ASP generation") as concrete_timing:
@@ -111,8 +111,8 @@ def compute_abstract_plan(
             fd_timings=fd_timings,
             concrete_asp_time=concrete_timing.elapsed,
             abstract_asp_time=abstract_time,
-            asp_total_time=total_timing.elapsed,
-            total_timing=total_timing,
+            asp_total_time=asp_total_timing.elapsed,
+            total_timing=run_timing,
             base_dir=base_dir,
             debug_dir=debug_dir,
             logger=logger,

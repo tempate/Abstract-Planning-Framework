@@ -51,6 +51,8 @@ class BaseRefinement(ABC):
     def __init__(self, context):
         self.context = context
         self.solver_operations = 0
+        self.abstract_solve_time = 0.0
+        self.concrete_solve_time = 0.0
 
     @abstractmethod
     def refine(self):
@@ -84,18 +86,11 @@ class BaseRefinement(ABC):
                 context.horizon,
                 switch_map,
             )
+        self.concrete_solve_time += timing.elapsed
         self.solver_operations += operation_count
         return success, plans, bad_actions, timing.elapsed
 
-    def build_result(
-        self,
-        *,
-        success,
-        plans,
-        iteration_times,
-        abstract_solve_time,
-        concrete_solve_time,
-    ):
+    def build_result(self, *, success, plans, iteration_times):
         """Build the shared result representation and record total runtime."""
         context = self.context
         total_time = context.total_timing.elapsed
@@ -123,8 +118,8 @@ class BaseRefinement(ABC):
                 "asp_concrete_time": context.concrete_asp_time,
                 "asp_abstract_time": context.abstract_asp_time,
                 "asp_total_time": context.asp_total_time,
-                "abstract_solve_time": abstract_solve_time,
-                "concrete_solve_time": concrete_solve_time,
+                "abstract_solve_time": self.abstract_solve_time,
+                "concrete_solve_time": self.concrete_solve_time,
                 "total_time": total_time,
                 "run_id": context.base_dir,
             },
