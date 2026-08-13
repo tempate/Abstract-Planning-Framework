@@ -7,6 +7,7 @@ from core.execution import get_logger
 from core.planning.abstract import compute_abstract_plan
 from core.planners.factory import PLANNER_TYPES, get_planner
 
+from .utils.arguments import nonnegative_int
 from .utils.abstract_plan_log import (
     get_plan_log_path,
     initialize_plan_log,
@@ -69,7 +70,7 @@ def _argument_parser():
     parser.add_argument("--abstract-problem", required=True)
     parser.add_argument("--concrete-domain", required=True)
     parser.add_argument("--concrete-problem", required=True)
-    parser.add_argument("--horizon", type=int, default=None)
+    parser.add_argument("--horizon", type=nonnegative_int, default=None)
     parser.add_argument("--encoding", default="exact")
     parser.add_argument("--time-step", action="store_true")
     parser.add_argument(

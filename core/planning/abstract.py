@@ -73,8 +73,11 @@ def compute_abstract_plan(
             "fd_total_time": fd_total.elapsed,
         }
 
-        if horizon is None:
-            horizon = abstract_task.get("horizon", 0)
+        horizon = _select_abstract_horizon(
+            horizon,
+            abstract_task.get("horizon", 0),
+            plan_source,
+        )
         logger.info(f"Effective horizon: {horizon}")
 
         paths = _get_planning_paths(base_dir)
@@ -136,3 +139,15 @@ def _get_planning_paths(base_dir):
         mapping=os.path.join(dir, "map.lp"),
         forbidden_actions=os.path.join(dir, "forbid_abstract.lp"),
     )
+
+
+def _select_abstract_horizon(requested_horizon, plan_horizon, plan_source):
+    """Select a horizon that can contain a Fast Downward-sourced plan."""
+    if requested_horizon is None:
+        return plan_horizon
+    if plan_source == "fd" and requested_horizon < plan_horizon:
+        raise ValueError(
+            f"Fast Downward plan length {plan_horizon} exceeds "
+            f"the explicit horizon {requested_horizon}"
+        )
+    return requested_horizon
