@@ -49,6 +49,7 @@ def plan_to_asp(
             asp_file.write(file.read())
 
         # Run plasp translation
+        asp_file.flush()
         command = [PLASP_BIN, "translate", sas_path]
         result = subprocess.run(
             command,
