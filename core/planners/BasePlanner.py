@@ -5,7 +5,7 @@ from core.asp import write_asp_program
 from core.execution import get_logger
 
 
-class AbstractPlanner(ABC):
+class BasePlanner(ABC):
     """Base class for domain-specific abstraction mapping and refinement."""
 
     profile_name = ""

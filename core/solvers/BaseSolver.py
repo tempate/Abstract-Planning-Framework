@@ -6,7 +6,7 @@ from core.integrations.clingo import collect_plan, create_control
 from core.execution import get_logger, timed_phase
 
 
-class AbstractSolver(ABC):
+class BaseSolver(ABC):
     """Base class for switch-based concrete solvers."""
 
     mode = ""

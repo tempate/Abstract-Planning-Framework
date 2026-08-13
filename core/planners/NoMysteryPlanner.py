@@ -1,10 +1,10 @@
 import re
 
 from core.asp import read_abstract_actions
-from core.planners.AbstractPlanner import AbstractPlanner
+from core.planners.BasePlanner import BasePlanner
 
 
-class NoMysteryPlanner(AbstractPlanner):
+class NoMysteryPlanner(BasePlanner):
     """NoMystery's fuel-aware mapping and drive-action refinement."""
 
     profile_name = "no_mystery"

@@ -1,9 +1,9 @@
 """Decremental concrete solving strategy."""
 
-from core.solvers.AbstractSolver import AbstractSolver
+from core.solvers.BaseSolver import BaseSolver
 
 
-class DecrementalSolver(AbstractSolver):
+class DecrementalSolver(BaseSolver):
     """Relax plan constraints in reverse until a concrete plan is found."""
 
     mode = "decremental"

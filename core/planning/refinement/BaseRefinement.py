@@ -8,7 +8,7 @@ from pprint import pformat
 
 from core.execution import PhaseTiming, timed_phase
 from core.paths import OCCURRENCE_VALIDATION_ENCODING
-from core.planners.AbstractPlanner import AbstractPlanner
+from core.planners.BasePlanner import BasePlanner
 from core.solvers.DecrementalSolver import DecrementalSolver
 
 
@@ -26,7 +26,7 @@ class PlanningPaths:
 class RefinementContext:
     """Configuration and run state shared by refinement strategies."""
 
-    planner: AbstractPlanner
+    planner: BasePlanner
     paths: PlanningPaths
     abstract_task: dict
     horizon: int

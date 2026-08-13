@@ -86,12 +86,12 @@ project/
 ├── core/paths.py
 ├── core/asp.py
 ├── core/planners/
-│   ├── AbstractPlanner.py
+│   ├── BasePlanner.py
 │   ├── BelugaPlanner.py
 │   ├── NoMysteryPlanner.py
 │   └── factory.py
 ├── core/solvers/
-│   ├── AbstractSolver.py
+│   ├── BaseSolver.py
 │   ├── DecrementalSolver.py
 ├── core/integrations/
 │   ├── clingo.py
