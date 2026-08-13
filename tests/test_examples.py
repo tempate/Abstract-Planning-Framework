@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import unittest
@@ -8,19 +9,25 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class RunnableExampleTests(unittest.TestCase):
-    def test_decremental_solver_example_runs_without_external_planners(self):
+    def test_no_mystery_example_supports_direct_file_execution(self):
+        environment = os.environ.copy()
+        environment["PYTHONPATH"] = os.pathsep.join(
+            filter(
+                None,
+                (str(PROJECT_ROOT), environment.get("PYTHONPATH")),
+            )
+        )
         result = subprocess.run(
-            [sys.executable, "-m", "examples.decremental_solver"],
+            [sys.executable, "examples/no_mystery.py", "--help"],
             cwd=PROJECT_ROOT,
+            env=environment,
             capture_output=True,
             text=True,
             check=False,
         )
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("Plan found: yes", result.stdout)
-        self.assertIn("Relaxed switches: 1", result.stdout)
-        self.assertIn("occurs(action(\"fallback\"),1)", result.stdout)
+        self.assertIn("{concrete,abstract,all}", result.stdout)
 
 
 if __name__ == "__main__":

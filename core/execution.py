@@ -26,8 +26,9 @@ def setup_debug_logger(base_dir):
     logger = logging.getLogger(LOGGER_NAME)
     logger.setLevel(logging.INFO)
 
-    if logger.handlers:
-        logger.handlers.clear()
+    for handler in logger.handlers[:]:
+        handler.close()
+        logger.removeHandler(handler)
 
     file_handler = logging.FileHandler(log_file, mode="a")
     formatter = logging.Formatter(
