@@ -33,3 +33,7 @@ RUN_PLANNER_INTEGRATION=1 \
 The tests use Python's standard `unittest` runner, so no development-only
 package is required. Workflow tests create isolated temporary run directories
 and do not update the experiment spreadsheet or JSON plan history.
+
+GitHub Actions runs the complete suite, including the real planner workflows,
+on every push and pull request. Its clean Linux runner builds Fast Downward
+before executing the tests.
