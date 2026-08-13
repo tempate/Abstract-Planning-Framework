@@ -5,7 +5,7 @@ import os
 from core.execution import create_run_dir, setup_debug_logger, timed_phase
 from core.integrations.clingo import run_clingo
 from core.integrations.fast_downward import run_fast_downward
-from core.integrations.plasp import plan_to_asp
+from core.integrations.plasp import sas_to_asp
 
 
 def compute_concrete_plan(
@@ -51,7 +51,7 @@ def compute_concrete_plan(
         # Generate the ASP representation of the concrete problem.
         asp_path = os.path.join(base_dir, "output_c.lp")
         with timed_phase(logger, "ASP generation time") as asp_timing:
-            plan_to_asp(task["sasFile"], asp_path, encoding, time_step)
+            sas_to_asp(task["sasFile"], asp_path, encoding, time_step)
 
         # Solve the concrete problem using Clingo.
         with timed_phase(logger, "Concrete solving time") as solve_timing:

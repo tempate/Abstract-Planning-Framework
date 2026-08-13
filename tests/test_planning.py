@@ -9,7 +9,7 @@ from scripts.utils.arguments import nonnegative_int
 
 class ConcretePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.concrete.run_clingo")
-    @patch("core.planning.concrete.plan_to_asp")
+    @patch("core.planning.concrete.sas_to_asp")
     @patch("core.planning.concrete.run_fast_downward")
     @patch("core.planning.concrete.setup_debug_logger")
     @patch("core.planning.concrete.create_run_dir")
@@ -18,7 +18,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         create_run_dir,
         setup_debug_logger,
         run_fast_downward,
-        plan_to_asp,
+        sas_to_asp,
         run_clingo,
     ):
         with tempfile.TemporaryDirectory() as directory:
@@ -58,7 +58,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             "concrete",
             "translate",
         )
-        plan_to_asp.assert_called_once_with(
+        sas_to_asp.assert_called_once_with(
             str(Path(directory, "output.sas")),
             str(Path(directory, "output_c.lp")),
             "bounded",

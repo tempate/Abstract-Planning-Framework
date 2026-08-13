@@ -19,7 +19,7 @@ _HORIZON_ENCODINGS = {
 _SWITCH_RULE_BOUNDS = {"exact": "1", "bounded": "0"}
 
 
-def plan_to_asp(
+def sas_to_asp(
     sas_path,
     asp_path,
     encoding_type = "exact",
