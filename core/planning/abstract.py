@@ -55,12 +55,15 @@ def compute_abstract_plan(
                     domain.read(), problem.read(), "concrete", "translate"
                 )
 
-            # Plan the abstract problem.
+            # A Fast Downward plan is needed only when it is the selected plan
+            # source or when its length is being used as an automatic horizon.
+            fd_task = "plan" if plan_source == "fd" or horizon is None else "translate"
+
             with (open(abstract_domain_path, "rb") as domain,
                   open(abstract_problem_path, "rb") as problem):
                 abstract_task, abstract_time = run_fast_downward(
                     os.path.join(base_dir, "abstract"),
-                    domain.read(), problem.read(), "abstract", "plan",
+                    domain.read(), problem.read(), "abstract", fd_task,
                 )
 
         fd_timings = {

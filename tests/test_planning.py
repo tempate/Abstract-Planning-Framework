@@ -56,7 +56,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             b"domain",
             b"problem",
             "concrete",
-            "plan",
+            "translate",
         )
         plan_to_asp.assert_called_once_with(
             str(Path(directory, "output.sas")),

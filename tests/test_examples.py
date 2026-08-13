@@ -86,7 +86,7 @@ class ComparisonExampleTests(unittest.TestCase):
         self.assertEqual(abstract_arguments["horizon"], 19)
         self.assertEqual(concrete_arguments["problem_path"].name, "p04.pddl")
 
-    def test_beluga_performance_pair_uses_six_concrete_trailers(self):
+    def test_beluga_performance_pair_uses_five_concrete_hangars(self):
         with (
             patch.object(beluga, "compute_concrete_plan") as concrete,
             patch.object(beluga, "compute_abstract_plan") as abstract,
@@ -100,10 +100,10 @@ class ComparisonExampleTests(unittest.TestCase):
             concrete_arguments["problem_path"],
             abstract_arguments["concrete_problem_path"],
         )
-        self.assertIn("more_trailers", concrete_arguments["problem_path"].parts)
+        self.assertIn("more_hangars", concrete_arguments["problem_path"].parts)
         self.assertEqual(
             abstract_arguments["concrete_objects"],
-            [f"beluga_trailer_{number}" for number in range(1, 7)],
+            [f"hangar{number}" for number in range(1, 6)],
         )
 
     @staticmethod

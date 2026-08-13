@@ -2,7 +2,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from core.planning.abstract import _get_planning_paths, _select_abstract_horizon
+from core.planning.abstract import (
+    _get_planning_paths,
+    _select_abstract_horizon,
+)
 from core.planning.refinement.ClingoRefinement import ClingoRefinement
 from core.planning.refinement.FastDownwardRefinement import FastDownwardRefinement
 from core.planning.refinement.factory import get_refinement_strategy

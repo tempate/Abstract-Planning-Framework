@@ -11,6 +11,7 @@ from examples._runner import all_succeeded, run_and_print, run_comparison
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BENCHMARK = PROJECT_ROOT / "data" / "benchmarks" / "beluga"
 PROBLEM_NAME = "problem_3_s45_j3_r2_oc44_f3"
+BASELINE_HORIZON = 17
 CONCRETE_DOMAIN = BENCHMARK / "concrete" / "standard" / "domain.pddl"
 CONCRETE_PROBLEM = (
     BENCHMARK / "concrete" / "standard" / f"{PROBLEM_NAME}.pddl"
@@ -26,28 +27,30 @@ REFINEMENT_PROBLEM = (
 )
 CONCRETE_TRAILERS = ["beluga_trailer_1", "beluga_trailer_2"]
 PERFORMANCE_PROBLEM_NAME = "problem_39_s82_j4_r2_oc23_f3"
+PERFORMANCE_HORIZON = 21
 PERFORMANCE_CONCRETE_DOMAIN = (
-    BENCHMARK / "concrete" / "more_trailers" / "domain.pddl"
+    BENCHMARK / "concrete" / "more_hangars" / "domain.pddl"
 )
 PERFORMANCE_CONCRETE_PROBLEM = (
     BENCHMARK
     / "concrete"
-    / "more_trailers"
+    / "more_hangars"
     / f"{PERFORMANCE_PROBLEM_NAME}.pddl"
 )
 PERFORMANCE_ABSTRACT_PROBLEM = (
     BENCHMARK
     / "abstract"
-    / "trailer"
+    / "hangar"
     / f"{PERFORMANCE_PROBLEM_NAME}_abs.pddl"
 )
-PERFORMANCE_TRAILERS = [f"beluga_trailer_{number}" for number in range(1, 7)]
+PERFORMANCE_HANGARS = [f"hangar{number}" for number in range(1, 6)]
 
 
 def run_concrete():
     return compute_concrete_plan(
         domain_path=CONCRETE_DOMAIN,
         problem_path=CONCRETE_PROBLEM,
+        horizon=BASELINE_HORIZON,
     )
 
 
@@ -57,6 +60,7 @@ def run_abstract():
         abstract_problem_path=ABSTRACT_PROBLEM,
         concrete_domain_path=CONCRETE_DOMAIN,
         concrete_problem_path=CONCRETE_PROBLEM,
+        horizon=BASELINE_HORIZON,
         abstract_symbol="hangarabs",
         concrete_objects=CONCRETE_HANGARS,
         plan_source="clingo",
@@ -71,6 +75,7 @@ def run_refinement():
         abstract_problem_path=REFINEMENT_PROBLEM,
         concrete_domain_path=CONCRETE_DOMAIN,
         concrete_problem_path=CONCRETE_PROBLEM,
+        horizon=BASELINE_HORIZON,
         abstract_symbol="beluga_abs_trailer",
         concrete_objects=CONCRETE_TRAILERS,
         plan_source="clingo",
@@ -83,26 +88,29 @@ def run_refinement_concrete():
     return compute_concrete_plan(
         domain_path=CONCRETE_DOMAIN,
         problem_path=CONCRETE_PROBLEM,
+        horizon=BASELINE_HORIZON,
     )
 
 
 def run_performance_concrete():
-    """Solve the six-trailer performance problem without abstraction."""
+    """Solve the five-hangar performance problem without abstraction."""
     return compute_concrete_plan(
         domain_path=PERFORMANCE_CONCRETE_DOMAIN,
         problem_path=PERFORMANCE_CONCRETE_PROBLEM,
+        horizon=PERFORMANCE_HORIZON,
     )
 
 
 def run_performance_abstract():
-    """Collapse six trailers, then refine the resulting abstract plan."""
+    """Collapse five hangars, then realize the resulting abstract plan."""
     return compute_abstract_plan(
-        abstract_domain_path=REFINEMENT_DOMAIN,
+        abstract_domain_path=ABSTRACT_DOMAIN,
         abstract_problem_path=PERFORMANCE_ABSTRACT_PROBLEM,
         concrete_domain_path=PERFORMANCE_CONCRETE_DOMAIN,
         concrete_problem_path=PERFORMANCE_CONCRETE_PROBLEM,
-        abstract_symbol="beluga_abs_trailer",
-        concrete_objects=PERFORMANCE_TRAILERS,
+        horizon=PERFORMANCE_HORIZON,
+        abstract_symbol="hangarabs",
+        concrete_objects=PERFORMANCE_HANGARS,
         plan_source="clingo",
         profile_name="beluga",
     )

@@ -15,12 +15,14 @@ REFINEMENT_PROBLEM = "p01"
 REFINEMENT_HORIZON = 11
 PERFORMANCE_PROBLEM = "p04"
 PERFORMANCE_HORIZON = 19
+BASELINE_HORIZON = 14
 
 
 def run_concrete():
     return compute_concrete_plan(
         domain_path=EXAMPLE / "concrete" / "domain.pddl",
         problem_path=EXAMPLE / "concrete" / "problem.pddl",
+        horizon=BASELINE_HORIZON,
     )
 
 
@@ -30,6 +32,7 @@ def run_abstract():
         abstract_problem_path=EXAMPLE / "abstract" / "problem.pddl",
         concrete_domain_path=EXAMPLE / "concrete" / "domain.pddl",
         concrete_problem_path=EXAMPLE / "concrete" / "problem.pddl",
+        horizon=BASELINE_HORIZON,
         plan_source="clingo",
         profile_name="no_mystery",
     )

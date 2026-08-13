@@ -30,9 +30,10 @@ realized in full, so decremental solving relaxes it before finding a concrete
 plan. The exact positive decrement count can vary with Clingo's parallel model
 selection.
 
-The performance comparison uses `p04` at horizon 19. On the machine used to
-select it, the abstract workflow completed in about 2 seconds while direct
-concrete search did not finish within 60 seconds. This case does not normally
+The performance comparison uses `p04` at horizon 19. After removing the
+redundant Fast Downward planning pass, the abstract workflow completed in
+about 6 seconds while direct concrete Clingo search did not finish within 90
+seconds. This case does not normally
 need decrements; its purpose is to isolate the search-space reduction supplied
 by the fuel abstraction. Expect machine-dependent runtimes, and use `quick`
 for a short demonstration.
@@ -48,9 +49,18 @@ The refinement comparison uses the small `problem_3` instance. It solves the
 same problem directly and with its two Beluga trailers represented by
 `beluga_abs_trailer`; the abstract plan requires decremental relaxation.
 
-The performance comparison uses `problem_39` from the `more_trailers` set. Six
-concrete Beluga trailers are collapsed into one abstract trailer. In the
-selection run, concrete planning took about 55 seconds, while abstraction plus
-refinement took about 20 seconds and performed 21 decrements. Timings and the
-exact decrement count can vary, but both columns always refer to the same
-domain variant, problem, and resulting horizon.
+The performance comparison uses `problem_39` from the `more_hangars` set. Five
+concrete hangars are collapsed into `hangarabs`. After removing the redundant
+Fast Downward planning pass, the selection run took about 24 seconds concretely
+and 17 seconds through the abstraction. This plan is fully realizable without
+decrements; the separate trailer comparison above demonstrates refinement.
+Timings can vary, but both columns always refer to the same domain variant,
+problem, and horizon.
+
+## Horizons and Fast Downward
+
+All examples provide explicit horizons. Fast Downward therefore translates
+PDDL to SAS but does not search for a plan that Clingo would discard. In the
+general Python API, omitting a horizon with a Clingo plan source still asks Fast
+Downward for a plan length as an automatic horizon. Selecting `plan_source="fd"`
+runs Fast Downward planning because that workflow consumes the actual FD plan.
