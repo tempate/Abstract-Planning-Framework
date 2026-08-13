@@ -49,13 +49,13 @@ The refinement comparison uses the small `problem_3` instance. It solves the
 same problem directly and with its two Beluga trailers represented by
 `beluga_abs_trailer`; the abstract plan requires decremental relaxation.
 
-The performance comparison uses `problem_39` from the `more_hangars` set. Five
-concrete hangars are collapsed into `hangarabs`. After removing the redundant
-Fast Downward planning pass, the selection run took about 24 seconds concretely
-and 17 seconds through the abstraction. This plan is fully realizable without
-decrements; the separate trailer comparison above demonstrates refinement.
-Timings can vary, but both columns always refer to the same domain variant,
-problem, and horizon.
+The performance comparison uses standard `problem_38` at horizon 26. Its three
+concrete hangars are collapsed into `hangarabs`. Fast Downward produces the
+abstract plan, and Clingo realizes it against the concrete task. In three
+paired validation runs, direct concrete planning took 20.8–30.2 seconds while
+the abstract workflow took 12.28–12.33 seconds, a 1.69x–2.45x speedup. This
+abstract plan was fully realizable without decrements; the separate trailer
+comparison above demonstrates refinement.
 
 ## Horizons and Fast Downward
 

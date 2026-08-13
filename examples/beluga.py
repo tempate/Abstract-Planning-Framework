@@ -26,15 +26,13 @@ REFINEMENT_PROBLEM = (
     BENCHMARK / "abstract" / "trailer" / f"{PROBLEM_NAME}_abs.pddl"
 )
 CONCRETE_TRAILERS = ["beluga_trailer_1", "beluga_trailer_2"]
-PERFORMANCE_PROBLEM_NAME = "problem_39_s82_j4_r2_oc23_f3"
-PERFORMANCE_HORIZON = 21
-PERFORMANCE_CONCRETE_DOMAIN = (
-    BENCHMARK / "concrete" / "more_hangars" / "domain.pddl"
-)
+PERFORMANCE_PROBLEM_NAME = "problem_38_s81_j5_r2_oc31_f4"
+PERFORMANCE_HORIZON = 26
+PERFORMANCE_CONCRETE_DOMAIN = CONCRETE_DOMAIN
 PERFORMANCE_CONCRETE_PROBLEM = (
     BENCHMARK
     / "concrete"
-    / "more_hangars"
+    / "standard"
     / f"{PERFORMANCE_PROBLEM_NAME}.pddl"
 )
 PERFORMANCE_ABSTRACT_PROBLEM = (
@@ -43,7 +41,7 @@ PERFORMANCE_ABSTRACT_PROBLEM = (
     / "hangar"
     / f"{PERFORMANCE_PROBLEM_NAME}_abs.pddl"
 )
-PERFORMANCE_HANGARS = [f"hangar{number}" for number in range(1, 6)]
+PERFORMANCE_HANGARS = ["hangar1", "hangar2", "hangar3"]
 
 
 def run_concrete():
@@ -93,7 +91,7 @@ def run_refinement_concrete():
 
 
 def run_performance_concrete():
-    """Solve the five-hangar performance problem without abstraction."""
+    """Solve standard problem 38 without abstraction."""
     return compute_concrete_plan(
         domain_path=PERFORMANCE_CONCRETE_DOMAIN,
         problem_path=PERFORMANCE_CONCRETE_PROBLEM,
