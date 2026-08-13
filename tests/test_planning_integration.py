@@ -6,6 +6,8 @@ from unittest.mock import patch
 
 from core.planning.abstract import compute_abstract_plan
 from core.planning.concrete import compute_concrete_plan
+from examples.beluga import run_abstract as run_beluga_abstract
+from examples.beluga import run_concrete as run_beluga_concrete
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -48,6 +50,31 @@ class NoMysteryWorkflowTests(unittest.TestCase):
                     plan_source="clingo",
                     profile_name="no_mystery",
                 )
+
+        self.assertTrue(result["success"])
+        self.assertIsNotNone(result["plan"])
+        self.assertEqual(result["timings"]["iterations"], 1)
+        self.assertGreaterEqual(result["timings"]["decrements"], 0)
+
+
+@unittest.skipUnless(
+    RUN_INTEGRATION,
+    "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain",
+)
+class BelugaWorkflowTests(unittest.TestCase):
+    def test_concrete_example_finds_a_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("core.execution.TEMP_DIR", directory):
+                result = run_beluga_concrete()
+
+        self.assertTrue(result["success"])
+        self.assertIsNotNone(result["plan"])
+        self.assertGreater(result["horizon"], 0)
+
+    def test_hangar_abstraction_refines_to_a_concrete_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("core.execution.TEMP_DIR", directory):
+                result = run_beluga_abstract()
 
         self.assertTrue(result["success"])
         self.assertIsNotNone(result["plan"])

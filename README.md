@@ -136,6 +136,7 @@ PDDL collections are under `data/benchmarks/`.
 
 The Python API options are documented in
 [`examples/README.md`](examples/README.md).
+The examples include both NoMystery and a Beluga hangar abstraction.
 
 ### Tests
 
