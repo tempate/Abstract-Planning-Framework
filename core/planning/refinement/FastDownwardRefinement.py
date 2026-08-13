@@ -11,40 +11,41 @@ class FastDownwardRefinement(BaseRefinement):
         context = self.context
         context.logger.info("Using Fast Downward plan")
 
-        with timed_phase(
-            context.logger,
-            "Abstract occurrences from Fast Downward",
-        ) as occurrence_timing:
-            abstract_atoms = self.plan_to_abstract_atoms(
-                context.abstract_task["planFile"],
-                context.paths.occurrences,
-            )
-
         iteration_times = []
         with timed_phase() as iteration_timing:
+            with timed_phase(
+                context.logger,
+                "Abstract occurrences from Fast Downward",
+            ) as occurrence_timing:
+                abstract_atoms = self.plan_to_abstract_atoms(
+                    context.abstract_task["planFile"],
+                    context.paths.occurrences,
+                )
+
             switch_map, mapping_time = self.build_mapping()
-            success, plans, bad_actions, concrete_solve_time = self.solve_concrete(
+            success, plan, bad_actions, concrete_solve_time = self.solve_concrete(
                 switch_map
             )
 
             if success:
-                self.log_success(plans)
-                iteration_times.append(
-                    self.iteration_timing(
-                        0,
-                        occurrence_timing.elapsed,
-                        mapping_time,
-                        concrete_solve_time,
-                        0.0,
-                        iteration_timing.elapsed,
-                    )
-                )
+                self.log_success(plan)
                 bad_actions = []
             else:
                 context.logger.info("Concrete solve failed.")
                 self.log_atoms("Bad abstract actions:", bad_actions)
                 context.logger.info("No abstract plan possible.")
                 context.logger.info("FAILED")
+
+            iteration_times.append(
+                self.iteration_timing(
+                    0,
+                    occurrence_timing.elapsed,
+                    mapping_time,
+                    concrete_solve_time,
+                    0.0,
+                    iteration_timing.elapsed,
+                )
+            )
 
         self.record_attempt(
             abstract_atoms,
@@ -54,10 +55,8 @@ class FastDownwardRefinement(BaseRefinement):
         self.log_iteration_totals(iteration_times)
         return self.build_result(
             success=success,
-            plans=plans,
+            plan=plan,
             iteration_times=iteration_times,
-            abstract_solve_time=0.0,
-            concrete_solve_time=concrete_solve_time,
         )
 
     def plan_to_abstract_atoms(self, plan_file_path, output_path):
@@ -70,9 +69,15 @@ class FastDownwardRefinement(BaseRefinement):
                 if not line or line.startswith(";"):
                     continue
                 action_name, *arguments = line.strip("()").split()
-                quoted_arguments = ",".join(f'"{argument}"' for argument in arguments)
+                if arguments:
+                    quoted_arguments = ",".join(
+                        f'"{argument}"' for argument in arguments
+                    )
+                    action = f'action(("{action_name}",{quoted_arguments}))'
+                else:
+                    action = f'action("{action_name}")'
                 abstract_atoms.append(
-                    f'occurs_abstract(action(("{action_name}",{quoted_arguments})), {time_step}).'
+                    f"occurs_abstract({action}, {time_step})."
                 )
                 time_step += 1
 

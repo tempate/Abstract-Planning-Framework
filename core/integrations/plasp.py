@@ -49,6 +49,7 @@ def plan_to_asp(
             asp_file.write(file.read())
 
         # Run plasp translation
+        asp_file.flush()
         command = [PLASP_BIN, "translate", sas_path]
         result = subprocess.run(
             command,
@@ -67,15 +68,16 @@ def append_pddl_facts_to_asp(pddl_path, asp_path):
     # Extract supported facts from the PDDL
     facts = []
     with open(pddl_path, "r", encoding="utf-8") as pddl_file:
-        for line in pddl_file.readlines():
+        for line in pddl_file:
+            line = line.strip()
             # Convert a supported one-line PDDL fact to its ASP representation.
             if line.startswith("(fuelcost"):
-                _, level, origin, destination = line.strip().replace("(", "").replace(")", "").split()
+                _, level, origin, destination = line.replace("(", "").replace(")", "").split()
                 fact = f'fuelcost("{level}","{origin}","{destination}").'
                 facts.append(fact)
 
             if line.startswith("(sum"):
-                _, left, right, total = line.strip().replace("(", "").replace(")", "").split()
+                _, left, right, total = line.replace("(", "").replace(")", "").split()
                 fact = f'sum("{left}","{right}","{total}").'
                 facts.append(fact)
 

@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pprint import pformat
 
 from core.execution import PhaseTiming, timed_phase
+from core.paths import OCCURRENCE_VALIDATION_ENCODING
 from core.planners.AbstractPlanner import AbstractPlanner
 from core.solvers.factory import get_solver
 
@@ -51,6 +52,8 @@ class BaseRefinement(ABC):
     def __init__(self, context):
         self.context = context
         self.solver_operations = 0
+        self.abstract_solve_time = 0.0
+        self.concrete_solve_time = 0.0
 
     @abstractmethod
     def refine(self):
@@ -75,35 +78,28 @@ class BaseRefinement(ABC):
             context.paths.concrete_asp,
             context.paths.occurrences,
             context.paths.mapping,
+            OCCURRENCE_VALIDATION_ENCODING,
         ]
         with timed_phase(context.logger, "Concrete solving time") as timing:
-            success, plans, bad_actions, operation_count = get_solver(
+            success, plan, bad_actions, operation_count = get_solver(
                 context.solving_mode
             ).solve(
                 asp_files,
                 context.horizon,
                 switch_map,
             )
+        self.concrete_solve_time += timing.elapsed
         self.solver_operations += operation_count
-        return success, plans, bad_actions, timing.elapsed
+        return success, plan, bad_actions, timing.elapsed
 
-    def build_result(
-        self,
-        *,
-        success,
-        plans,
-        iteration_times,
-        abstract_solve_time,
-        concrete_solve_time,
-    ):
+    def build_result(self, *, success, plan, iteration_times):
         """Build the shared result representation and record total runtime."""
         context = self.context
         total_time = context.total_timing.elapsed
         context.logger.info(f"TOTAL TIME: {total_time:.3f}s")
         return {
             "horizon": context.horizon,
-            "numPlans": len(plans) if success else 0,
-            "plans": plans if success else [],
+            "plan": plan if success else None,
             "success": success,
             "timings": {
                 "iterations": len(iteration_times),
@@ -123,8 +119,8 @@ class BaseRefinement(ABC):
                 "asp_concrete_time": context.concrete_asp_time,
                 "asp_abstract_time": context.abstract_asp_time,
                 "asp_total_time": context.asp_total_time,
-                "abstract_solve_time": abstract_solve_time,
-                "concrete_solve_time": concrete_solve_time,
+                "abstract_solve_time": self.abstract_solve_time,
+                "concrete_solve_time": self.concrete_solve_time,
                 "total_time": total_time,
                 "run_id": context.base_dir,
             },
@@ -152,11 +148,11 @@ class BaseRefinement(ABC):
             "iter": total,
         }
 
-    def log_success(self, plans):
+    def log_success(self, plan):
         logger = self.context.logger
         logger.info("SUCCESS: Concrete plan found.")
-        logger.info("Plans:")
-        logger.info(pformat(plans))
+        logger.info("Plan:")
+        logger.info(pformat(plan))
 
     def log_atoms(self, heading, atoms):
         logger = self.context.logger

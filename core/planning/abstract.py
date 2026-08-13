@@ -40,7 +40,7 @@ def compute_abstract_plan(
 
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
-    logger.info(f"Horizon: {horizon}")
+    logger.info(f"Requested horizon: {horizon if horizon is not None else 'auto'}")
     logger.info(f"Encoding: {encoding}")
     logger.info(f"Mode: {solving_mode}")
     logger.info(f"Profile: {profile_name}")
@@ -49,7 +49,7 @@ def compute_abstract_plan(
 
     print("Directory:", base_dir)
 
-    with timed_phase() as total_timing:
+    with timed_phase() as run_timing:
         with timed_phase(logger, "Fast Downward time") as fd_total:
             # Translate the concrete problem into SAS.
             with (open(concrete_domain_path, "rb") as domain,
@@ -73,12 +73,16 @@ def compute_abstract_plan(
             "fd_total_time": fd_total.elapsed,
         }
 
-        if horizon is None:
-            horizon = abstract_task.get("horizon", 0)
+        horizon = _select_abstract_horizon(
+            horizon,
+            abstract_task.get("horizon", 0),
+            plan_source,
+        )
+        logger.info(f"Effective horizon: {horizon}")
 
         paths = _get_planning_paths(base_dir)
 
-        with timed_phase(logger, "Total ASP generation") as total_timing:
+        with timed_phase(logger, "Total ASP generation") as asp_total_timing:
 
             # Generate the ASP representation of the concrete problem.
             with timed_phase(logger, "Concrete ASP generation") as concrete_timing:
@@ -111,8 +115,8 @@ def compute_abstract_plan(
             fd_timings=fd_timings,
             concrete_asp_time=concrete_timing.elapsed,
             abstract_asp_time=abstract_time,
-            asp_total_time=total_timing.elapsed,
-            total_timing=total_timing,
+            asp_total_time=asp_total_timing.elapsed,
+            total_timing=run_timing,
             base_dir=base_dir,
             debug_dir=debug_dir,
             logger=logger,
@@ -135,3 +139,15 @@ def _get_planning_paths(base_dir):
         mapping=os.path.join(dir, "map.lp"),
         forbidden_actions=os.path.join(dir, "forbid_abstract.lp"),
     )
+
+
+def _select_abstract_horizon(requested_horizon, plan_horizon, plan_source):
+    """Select a horizon that can contain a Fast Downward-sourced plan."""
+    if requested_horizon is None:
+        return plan_horizon
+    if plan_source == "fd" and requested_horizon < plan_horizon:
+        raise ValueError(
+            f"Fast Downward plan length {plan_horizon} exceeds "
+            f"the explicit horizon {requested_horizon}"
+        )
+    return requested_horizon

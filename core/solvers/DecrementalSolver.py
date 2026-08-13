@@ -12,13 +12,13 @@ class DecrementalSolver(AbstractSolver):
     def _solve(self):
         active_switches = set(self.switches)
         if self.is_satisfiable(active_switches):
-            self.logger.info(f"[{self.log_prefix}] Full model SAT")
-            plans = self.collect_models(active_switches)
+            self.logger.info(f"[{self.log_prefix}] Full plan SAT")
+            plan = self.collect_plan(active_switches)
             abstract_actions = self.mapped_abstract_actions(active_switches)
-            return True, plans, abstract_actions
+            return plan is not None, plan, abstract_actions
 
         self.logger.info(
-            f"[{self.log_prefix}] Full model UNSAT. Reverse disabling begins."
+            f"[{self.log_prefix}] Full plan UNSAT. Reverse disabling begins."
         )
         for switch in reversed(self.switches):
             switch_id = self.switch_ids[switch]
@@ -31,10 +31,10 @@ class DecrementalSolver(AbstractSolver):
                 self.logger.info(
                     f"[{self.log_prefix}] SAT after disabling switch={switch_id}"
                 )
-                plans = self.collect_models(active_switches)
+                plan = self.collect_plan(active_switches)
                 failing_actions = self.mapped_abstract_actions(active_switches)
                 failing_actions.append(self.switch_map[switch_id]["atom"])
-                return False, plans, list(dict.fromkeys(failing_actions))
+                return False, plan, list(dict.fromkeys(failing_actions))
 
         earliest_abstract = next(
             (
@@ -47,4 +47,4 @@ class DecrementalSolver(AbstractSolver):
         self.logger.info(
             f"[{self.log_prefix}] Minimal failing action={earliest_abstract}"
         )
-        return False, [], [earliest_abstract]
+        return False, None, [earliest_abstract]

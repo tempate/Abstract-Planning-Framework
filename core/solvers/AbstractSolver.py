@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from core.integrations.clingo import collect_models, create_control
+from core.integrations.clingo import collect_plan, create_control
 from core.execution import get_logger, timed_phase
 
 
@@ -46,8 +46,8 @@ class AbstractSolver(ABC):
         result = self.control.solve(assumptions=self.assumptions(active_switches))
         return result.unsatisfiable
 
-    def collect_models(self, active_switches):
-        return collect_models(self.control, self.assumptions(active_switches))
+    def collect_plan(self, active_switches):
+        return collect_plan(self.control, self.assumptions(active_switches))
 
     def mapped_abstract_actions(self, selected_switches):
         return [

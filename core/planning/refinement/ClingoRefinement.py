@@ -28,28 +28,24 @@ class ClingoRefinement(BaseRefinement):
 
                 abstract_atoms, abstract_solve_time = self._solve_abstract(iteration)
                 if abstract_atoms is None:
-                    self.context.logger.info("No abstract plan possible.")
-                    self.context.logger.info("FAILED")
-                    return self.build_result(
-                        success=False,
-                        plans=[],
-                        iteration_times=self.iteration_times,
-                        abstract_solve_time=abstract_solve_time,
-                        concrete_solve_time=0.0,
+                    return self._finish_no_abstract_plan(
+                        iteration,
+                        abstract_solve_time,
+                        iteration_timing,
                     )
 
                 occurrence_time, mapping_time, switch_map = self._prepare_plan(
                     iteration,
                     abstract_atoms,
                 )
-                success, plans, bad_actions, concrete_solve_time = self.solve_concrete(
+                success, plan, bad_actions, concrete_solve_time = self.solve_concrete(
                     switch_map
                 )
                 if success:
                     return self._finish_success(
                         iteration=iteration,
                         abstract_atoms=abstract_atoms,
-                        plans=plans,
+                        plan=plan,
                         abstract_solve_time=abstract_solve_time,
                         occurrence_time=occurrence_time,
                         mapping_time=mapping_time,
@@ -57,7 +53,7 @@ class ClingoRefinement(BaseRefinement):
                         iteration_timing=iteration_timing,
                     )
 
-                self._refine_failed_plan(
+                new_forbidden = self._refine_failed_plan(
                     iteration=iteration,
                     abstract_atoms=abstract_atoms,
                     bad_actions=bad_actions,
@@ -67,27 +63,56 @@ class ClingoRefinement(BaseRefinement):
                     concrete_solve_time=concrete_solve_time,
                     iteration_timing=iteration_timing,
                 )
+                if not new_forbidden:
+                    return self._finish_stalled_refinement()
 
     def _solve_abstract(self, iteration):
         context = self.context
         asp_files = [context.paths.abstract_asp]
 
-        with timed_phase(context.logger, "Abstract solving time") as timing:
-            if self.forbidden_actions:
-                write_forbidden_actions(
-                    self.forbidden_actions,
-                    context.paths.forbidden_actions,
-                )
-                asp_files.append(context.paths.forbidden_actions)
-                save_iteration_file(
-                    context.debug_dir,
-                    iteration,
-                    "forbidden.lp",
-                    "\n".join(self.forbidden_actions),
-                )
+        if self.forbidden_actions:
+            write_forbidden_actions(
+                self.forbidden_actions,
+                context.paths.forbidden_actions,
+            )
+            asp_files.append(context.paths.forbidden_actions)
+            save_iteration_file(
+                context.debug_dir,
+                iteration,
+                "forbidden.lp",
+                "\n".join(self.forbidden_actions),
+            )
 
-            models = run_clingo(asp_files, context.horizon)
-        return (models[0] if models else None), timing.elapsed
+        with timed_phase(context.logger, "Abstract solving time") as timing:
+            plan = run_clingo(asp_files, context.horizon)
+        self.abstract_solve_time += timing.elapsed
+        return plan, timing.elapsed
+
+    def _finish_no_abstract_plan(
+        self,
+        iteration,
+        abstract_solve_time,
+        iteration_timing,
+    ):
+        timing = self.iteration_timing(
+            abstract_solve_time,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            iteration_timing.elapsed,
+        )
+        self.iteration_times.append(timing)
+        self._log_iteration_summary(iteration, timing)
+
+        self.context.logger.info("No abstract plan possible.")
+        self.context.logger.info("FAILED")
+        self.log_iteration_totals(self.iteration_times)
+        return self.build_result(
+            success=False,
+            plan=None,
+            iteration_times=self.iteration_times,
+        )
 
     def _prepare_plan(self, iteration, abstract_atoms):
         context = self.context
@@ -117,7 +142,7 @@ class ClingoRefinement(BaseRefinement):
         *,
         iteration,
         abstract_atoms,
-        plans,
+        plan,
         abstract_solve_time,
         occurrence_time,
         mapping_time,
@@ -125,12 +150,12 @@ class ClingoRefinement(BaseRefinement):
         iteration_timing,
     ):
         context = self.context
-        self.log_success(plans)
+        self.log_success(plan)
         save_json_iteration_file(
             context.debug_dir,
             iteration,
             "concrete_plans.json",
-            plans,
+            plan,
         )
 
         self.iteration_times.append(
@@ -147,10 +172,8 @@ class ClingoRefinement(BaseRefinement):
         self.log_iteration_totals(self.iteration_times)
         return self.build_result(
             success=True,
-            plans=plans,
+            plan=plan,
             iteration_times=self.iteration_times,
-            abstract_solve_time=abstract_solve_time,
-            concrete_solve_time=concrete_solve_time,
         )
 
     def _refine_failed_plan(
@@ -199,6 +222,18 @@ class ClingoRefinement(BaseRefinement):
             abstract_atoms,
             success=False,
             bad_actions=bad_actions,
+        )
+        return new_forbidden
+
+    def _finish_stalled_refinement(self):
+        logger = self.context.logger
+        logger.info("Refinement cannot continue: no new forbidden actions.")
+        logger.info("FAILED")
+        self.log_iteration_totals(self.iteration_times)
+        return self.build_result(
+            success=False,
+            plan=None,
+            iteration_times=self.iteration_times,
         )
 
     def _add_forbidden_actions(self, bad_actions):
