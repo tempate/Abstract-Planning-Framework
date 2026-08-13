@@ -81,7 +81,7 @@ class BaseRefinement(ABC):
             OCCURRENCE_VALIDATION_ENCODING,
         ]
         with timed_phase(context.logger, "Concrete solving time") as timing:
-            success, plans, bad_actions, operation_count = get_solver(
+            success, plan, bad_actions, operation_count = get_solver(
                 context.solving_mode
             ).solve(
                 asp_files,
@@ -90,17 +90,16 @@ class BaseRefinement(ABC):
             )
         self.concrete_solve_time += timing.elapsed
         self.solver_operations += operation_count
-        return success, plans, bad_actions, timing.elapsed
+        return success, plan, bad_actions, timing.elapsed
 
-    def build_result(self, *, success, plans, iteration_times):
+    def build_result(self, *, success, plan, iteration_times):
         """Build the shared result representation and record total runtime."""
         context = self.context
         total_time = context.total_timing.elapsed
         context.logger.info(f"TOTAL TIME: {total_time:.3f}s")
         return {
             "horizon": context.horizon,
-            "numPlans": len(plans) if success else 0,
-            "plans": plans if success else [],
+            "plan": plan if success else None,
             "success": success,
             "timings": {
                 "iterations": len(iteration_times),
@@ -149,11 +148,11 @@ class BaseRefinement(ABC):
             "iter": total,
         }
 
-    def log_success(self, plans):
+    def log_success(self, plan):
         logger = self.context.logger
         logger.info("SUCCESS: Concrete plan found.")
-        logger.info("Plans:")
-        logger.info(pformat(plans))
+        logger.info("Plan:")
+        logger.info(pformat(plan))
 
     def log_atoms(self, heading, atoms):
         logger = self.context.logger

@@ -29,8 +29,8 @@ class IncrementalSolver(AbstractSolver):
             )
             return False, [], failing_actions
 
-        plans = self.collect_models(active_switches)
+        plan = self.collect_plan(active_switches)
         abstract_actions = self.mapped_abstract_actions(active_switches)
 
-        self.logger.info(f"[{self.log_prefix}] Plans found={len(plans)}")
-        return True, plans, abstract_actions
+        self.logger.info(f"[{self.log_prefix}] Plan found={plan is not None}")
+        return plan is not None, plan, abstract_actions

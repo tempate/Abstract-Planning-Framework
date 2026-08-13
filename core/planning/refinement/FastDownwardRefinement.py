@@ -23,12 +23,12 @@ class FastDownwardRefinement(BaseRefinement):
                 )
 
             switch_map, mapping_time = self.build_mapping()
-            success, plans, bad_actions, concrete_solve_time = self.solve_concrete(
+            success, plan, bad_actions, concrete_solve_time = self.solve_concrete(
                 switch_map
             )
 
             if success:
-                self.log_success(plans)
+                self.log_success(plan)
                 bad_actions = []
             else:
                 context.logger.info("Concrete solve failed.")
@@ -55,7 +55,7 @@ class FastDownwardRefinement(BaseRefinement):
         self.log_iteration_totals(iteration_times)
         return self.build_result(
             success=success,
-            plans=plans,
+            plan=plan,
             iteration_times=iteration_times,
         )
 

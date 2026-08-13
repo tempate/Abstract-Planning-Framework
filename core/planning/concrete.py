@@ -48,22 +48,21 @@ def compute_concrete_plan(
 
         # Solve the concrete problem using Clingo.
         with timed_phase(logger, "Concrete solving time") as solve_timing:
-            plans = run_clingo([asp_path], effective_horizon)
+            plan = run_clingo([asp_path], effective_horizon)
 
     downward_time = downward_timing.elapsed
     asp_time = asp_timing.elapsed
     solve_time = solve_timing.elapsed
     total_time = total_timing.elapsed
 
-    logger.info(f"Plans found: {len(plans)}")
+    logger.info(f"Plan found: {plan is not None}")
     logger.info(f"Total runtime: {total_time:.3f}s")
     logger.info("=" * 70)
 
     return {
         "horizon": effective_horizon,
-        "numPlans": len(plans),
-        "plans": plans,
-        "success": bool(plans),
+        "plan": plan,
+        "success": plan is not None,
         "timings": {
             "iterations": None,
             "fd_conc": downward_time,

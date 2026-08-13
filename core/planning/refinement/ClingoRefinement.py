@@ -38,14 +38,14 @@ class ClingoRefinement(BaseRefinement):
                     iteration,
                     abstract_atoms,
                 )
-                success, plans, bad_actions, concrete_solve_time = self.solve_concrete(
+                success, plan, bad_actions, concrete_solve_time = self.solve_concrete(
                     switch_map
                 )
                 if success:
                     return self._finish_success(
                         iteration=iteration,
                         abstract_atoms=abstract_atoms,
-                        plans=plans,
+                        plan=plan,
                         abstract_solve_time=abstract_solve_time,
                         occurrence_time=occurrence_time,
                         mapping_time=mapping_time,
@@ -84,9 +84,9 @@ class ClingoRefinement(BaseRefinement):
             )
 
         with timed_phase(context.logger, "Abstract solving time") as timing:
-            models = run_clingo(asp_files, context.horizon)
+            plan = run_clingo(asp_files, context.horizon)
         self.abstract_solve_time += timing.elapsed
-        return (models[0] if models else None), timing.elapsed
+        return plan, timing.elapsed
 
     def _finish_no_abstract_plan(
         self,
@@ -110,7 +110,7 @@ class ClingoRefinement(BaseRefinement):
         self.log_iteration_totals(self.iteration_times)
         return self.build_result(
             success=False,
-            plans=[],
+            plan=None,
             iteration_times=self.iteration_times,
         )
 
@@ -142,7 +142,7 @@ class ClingoRefinement(BaseRefinement):
         *,
         iteration,
         abstract_atoms,
-        plans,
+        plan,
         abstract_solve_time,
         occurrence_time,
         mapping_time,
@@ -150,12 +150,12 @@ class ClingoRefinement(BaseRefinement):
         iteration_timing,
     ):
         context = self.context
-        self.log_success(plans)
+        self.log_success(plan)
         save_json_iteration_file(
             context.debug_dir,
             iteration,
             "concrete_plans.json",
-            plans,
+            plan,
         )
 
         self.iteration_times.append(
@@ -172,7 +172,7 @@ class ClingoRefinement(BaseRefinement):
         self.log_iteration_totals(self.iteration_times)
         return self.build_result(
             success=True,
-            plans=plans,
+            plan=plan,
             iteration_times=self.iteration_times,
         )
 
@@ -232,7 +232,7 @@ class ClingoRefinement(BaseRefinement):
         self.log_iteration_totals(self.iteration_times)
         return self.build_result(
             success=False,
-            plans=[],
+            plan=None,
             iteration_times=self.iteration_times,
         )
 
