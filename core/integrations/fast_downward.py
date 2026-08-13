@@ -8,6 +8,11 @@ from core.execution import get_logger, timed_phase
 from core.paths import FAST_DOWNWARD_SCRIPT
 
 
+# Fast Downward exit codes
+_PLAN_FOUND = {0, 1, 2, 3}
+_UNSOLVABLE = {10, 11}
+
+
 def run_fast_downward(base_dir, domain, problem, label, task):
     """Run concrete planning and, when provided, abstract planning."""
     logger = get_logger()
@@ -53,10 +58,19 @@ def _run_task(label, dir, domain, problem, task, logger):
             text=True,
         )
 
-    if result.returncode != 0:
+    if result.returncode in _UNSOLVABLE:
+        raise RuntimeError(f"Fast Downward ({label}): problem is unsolvable")
+
+    if result.returncode not in _PLAN_FOUND:
+        diagnostics = "\n".join(
+            output.strip() for output in (result.stdout, result.stderr) if output.strip()
+        )
         logger.error(f"[FD] {label.title()} planner FAILED")
-        logger.error(result.stderr)
-        raise RuntimeError(f"Fast Downward ({label}) failed:\n{result.stderr}")
+        logger.error(diagnostics)
+        raise RuntimeError(
+            f"Fast Downward ({label}) failed with exit code "
+            f"{result.returncode}:\n{diagnostics}"
+        )
 
     logger.info(f"[FD] {label.title()} planner success")
 
