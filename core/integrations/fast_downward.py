@@ -3,6 +3,7 @@
 import os
 from statistics import mode
 import subprocess
+import sys
 
 from core.execution import get_logger, timed_phase
 from core.paths import FAST_DOWNWARD_SCRIPT
@@ -91,7 +92,7 @@ def _get_command(paths, task):
     """Get the Fast Downward command for a task."""
     commands = {
         "plan": [
-            "python3",
+            sys.executable,
             FAST_DOWNWARD_SCRIPT,
             "--plan-file", paths["plan"],
             "--sas-file", paths["sas"],
@@ -102,7 +103,7 @@ def _get_command(paths, task):
             "astar(lmcut())",
         ],
         "translate": [
-            "python3",
+            sys.executable,
             FAST_DOWNWARD_SCRIPT,
             "--sas-file", paths["sas"],
             "--keep-sas-file",
