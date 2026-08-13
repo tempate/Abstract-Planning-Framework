@@ -57,7 +57,7 @@ class ClingoRefinement(BaseRefinement):
                         iteration_timing=iteration_timing,
                     )
 
-                self._refine_failed_plan(
+                new_forbidden = self._refine_failed_plan(
                     iteration=iteration,
                     abstract_atoms=abstract_atoms,
                     bad_actions=bad_actions,
@@ -67,6 +67,11 @@ class ClingoRefinement(BaseRefinement):
                     concrete_solve_time=concrete_solve_time,
                     iteration_timing=iteration_timing,
                 )
+                if not new_forbidden:
+                    return self._finish_stalled_refinement(
+                        abstract_solve_time=abstract_solve_time,
+                        concrete_solve_time=concrete_solve_time,
+                    )
 
     def _solve_abstract(self, iteration):
         context = self.context
@@ -199,6 +204,25 @@ class ClingoRefinement(BaseRefinement):
             abstract_atoms,
             success=False,
             bad_actions=bad_actions,
+        )
+        return new_forbidden
+
+    def _finish_stalled_refinement(
+        self,
+        *,
+        abstract_solve_time,
+        concrete_solve_time,
+    ):
+        logger = self.context.logger
+        logger.info("Refinement cannot continue: no new forbidden actions.")
+        logger.info("FAILED")
+        self.log_iteration_totals(self.iteration_times)
+        return self.build_result(
+            success=False,
+            plans=[],
+            iteration_times=self.iteration_times,
+            abstract_solve_time=abstract_solve_time,
+            concrete_solve_time=concrete_solve_time,
         )
 
     def _add_forbidden_actions(self, bad_actions):
