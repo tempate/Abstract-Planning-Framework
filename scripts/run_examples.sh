@@ -28,21 +28,13 @@ run_concrete() {
 }
 
 run_abstract() {
-    local mode="$1"
-    local label
-    if [[ "${mode}" == "inc" ]]; then
-        label="INCREMENTAL ABSTRACTION"
-    else
-        label="DECREMENTAL ABSTRACTION"
-    fi
-    print_case_header "${label} — NOMYSTERY"
+    print_case_header "ABSTRACT NOMYSTERY"
     "${PYTHON_BIN}" -m scripts.abstract_planner \
         --profile no_mystery \
         --abstract-domain "${EXAMPLE_DIR}/abstract/domain.pddl" \
         --abstract-problem "${EXAMPLE_DIR}/abstract/problem.pddl" \
         --concrete-domain "${EXAMPLE_DIR}/concrete/domain.pddl" \
         --concrete-problem "${EXAMPLE_DIR}/concrete/problem.pddl" \
-        --mode "${mode}" \
         --plan-source clingo
 }
 
@@ -52,16 +44,15 @@ case "${CASE}" in
     concrete)
         run_concrete
         ;;
-    inc|dec)
-        run_abstract "${CASE}"
+    abstract)
+        run_abstract
         ;;
     all)
         run_concrete
-        run_abstract inc
-        run_abstract dec
+        run_abstract
         ;;
     *)
-        echo "Usage: $0 [concrete|inc|dec|all]" >&2
+        echo "Usage: $0 [concrete|abstract|all]" >&2
         exit 2
         ;;
 esac

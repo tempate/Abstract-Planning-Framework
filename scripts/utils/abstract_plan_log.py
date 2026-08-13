@@ -79,24 +79,28 @@ def initialize_plan_log(
     )
 
 
-def record_plan_attempt(path, abstract_atoms, success, bad_actions, mode):
-    """Record one abstract-plan attempt for a concrete solving mode."""
+def record_plan_attempt(path, abstract_atoms, success, bad_actions):
+    """Record one abstract-plan realization attempt."""
     data = _load_plan_log(path)
     plan_hash = hash_abstract_plan(abstract_atoms)
     plan_entry = data["plans"].setdefault(
         plan_hash,
-        {"plan": [str(atom) for atom in abstract_atoms], "modes": {}},
+        {
+            "plan": [str(atom) for atom in abstract_atoms],
+            "success_count": 0,
+            "failure_count": 0,
+            "failures": [],
+        },
     )
-    mode_entry = plan_entry["modes"].setdefault(
-        mode,
-        {"success_count": 0, "failure_count": 0, "failures": []},
-    )
+    plan_entry.setdefault("success_count", 0)
+    plan_entry.setdefault("failure_count", 0)
+    plan_entry.setdefault("failures", [])
 
     if success:
-        mode_entry["success_count"] += 1
+        plan_entry["success_count"] += 1
     else:
-        mode_entry["failure_count"] += 1
-        mode_entry["failures"].append([str(atom) for atom in bad_actions])
+        plan_entry["failure_count"] += 1
+        plan_entry["failures"].append([str(atom) for atom in bad_actions])
     _save_plan_log(path, data)
 
 

@@ -48,14 +48,13 @@ def main():
         time_step=args.time_step,
         abstract_symbol=args.abstract_symbol,
         concrete_objects=args.concrete_objects,
-        solving_mode=args.mode,
         plan_source=args.plan_source,
         profile_name=args.profile,
         attempt_recorder=partial(record_plan_attempt, plan_log_path),
     )
 
     print_planning_result(result, get_logger())
-    save_result_summary(args.abstract_problem, "abstract", args.mode, result)
+    save_result_summary(args.abstract_problem, "abstract", result)
 
 
 def _argument_parser():
@@ -87,7 +86,6 @@ def _argument_parser():
             "(required by the beluga profile)"
         ),
     )
-    parser.add_argument("--mode", choices=["inc", "dec"], default="inc")
     parser.add_argument(
         "--plan-source",
         choices=["fd", "clingo"],

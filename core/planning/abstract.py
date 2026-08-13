@@ -24,7 +24,6 @@ def compute_abstract_plan(
     time_step=False,
     abstract_symbol=None,
     concrete_objects=None,
-    solving_mode="inc",
     plan_source="clingo",
     profile_name="beluga",
     attempt_recorder=None,
@@ -42,7 +41,6 @@ def compute_abstract_plan(
     logger.info("NEW PLANNING RUN STARTED")
     logger.info(f"Requested horizon: {horizon if horizon is not None else 'auto'}")
     logger.info(f"Encoding: {encoding}")
-    logger.info(f"Mode: {solving_mode}")
     logger.info(f"Profile: {profile_name}")
     logger.info(f"Run ID: {run_id}")
     logger.info(f"Base dir: {base_dir}")
@@ -110,7 +108,6 @@ def compute_abstract_plan(
             horizon=horizon,
             abstract_symbol=abstract_symbol,
             concrete_objects=concrete_objects,
-            solving_mode=solving_mode,
             refinement_filter=refinement_filter,
             fd_timings=fd_timings,
             concrete_asp_time=concrete_timing.elapsed,
