@@ -28,12 +28,10 @@ class ClingoRefinement(BaseRefinement):
 
                 abstract_atoms, abstract_solve_time = self._solve_abstract(iteration)
                 if abstract_atoms is None:
-                    self.context.logger.info("No abstract plan possible.")
-                    self.context.logger.info("FAILED")
-                    return self.build_result(
-                        success=False,
-                        plans=[],
-                        iteration_times=self.iteration_times,
+                    return self._finish_no_abstract_plan(
+                        iteration,
+                        abstract_solve_time,
+                        iteration_timing,
                     )
 
                 occurrence_time, mapping_time, switch_map = self._prepare_plan(
@@ -72,23 +70,49 @@ class ClingoRefinement(BaseRefinement):
         context = self.context
         asp_files = [context.paths.abstract_asp]
 
-        with timed_phase(context.logger, "Abstract solving time") as timing:
-            if self.forbidden_actions:
-                write_forbidden_actions(
-                    self.forbidden_actions,
-                    context.paths.forbidden_actions,
-                )
-                asp_files.append(context.paths.forbidden_actions)
-                save_iteration_file(
-                    context.debug_dir,
-                    iteration,
-                    "forbidden.lp",
-                    "\n".join(self.forbidden_actions),
-                )
+        if self.forbidden_actions:
+            write_forbidden_actions(
+                self.forbidden_actions,
+                context.paths.forbidden_actions,
+            )
+            asp_files.append(context.paths.forbidden_actions)
+            save_iteration_file(
+                context.debug_dir,
+                iteration,
+                "forbidden.lp",
+                "\n".join(self.forbidden_actions),
+            )
 
+        with timed_phase(context.logger, "Abstract solving time") as timing:
             models = run_clingo(asp_files, context.horizon)
         self.abstract_solve_time += timing.elapsed
         return (models[0] if models else None), timing.elapsed
+
+    def _finish_no_abstract_plan(
+        self,
+        iteration,
+        abstract_solve_time,
+        iteration_timing,
+    ):
+        timing = self.iteration_timing(
+            abstract_solve_time,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            iteration_timing.elapsed,
+        )
+        self.iteration_times.append(timing)
+        self._log_iteration_summary(iteration, timing)
+
+        self.context.logger.info("No abstract plan possible.")
+        self.context.logger.info("FAILED")
+        self.log_iteration_totals(self.iteration_times)
+        return self.build_result(
+            success=False,
+            plans=[],
+            iteration_times=self.iteration_times,
+        )
 
     def _prepare_plan(self, iteration, abstract_atoms):
         context = self.context
