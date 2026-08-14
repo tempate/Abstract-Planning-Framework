@@ -11,49 +11,34 @@ class FastDownwardRefinement(BaseRefinement):
         context = self.context
         context.logger.info("Using Fast Downward plan")
 
-        iteration_times = []
-        with timed_phase() as iteration_timing:
-            with timed_phase(
-                context.logger,
-                "Abstract occurrences from Fast Downward",
-            ) as occurrence_timing:
-                abstract_atoms = self.plan_to_abstract_atoms(
-                    context.abstract_task["planFile"],
-                    context.paths.occurrences,
-                )
-
-            mapping_time = self.build_mapping()
-            success, plan, concrete_solve_time = self.solve_concrete()
-
-            if success:
-                self.log_success(plan)
-            else:
-                context.logger.info(
-                    "No concrete plan found at the selected horizon."
-                )
-                context.logger.info("FAILED")
-
-            iteration_times.append(
-                self.iteration_timing(
-                    0,
-                    occurrence_timing.elapsed,
-                    mapping_time,
-                    concrete_solve_time,
-                    0.0,
-                    iteration_timing.elapsed,
-                )
+        with timed_phase(
+            context.logger,
+            "Abstract occurrences from Fast Downward",
+        ):
+            abstract_atoms = self.plan_to_abstract_atoms(
+                context.abstract_task["planFile"],
+                context.paths.occurrences,
             )
+
+        self.build_mapping()
+        success, plan, _ = self.solve_concrete()
+
+        if success:
+            self.log_success(plan)
+        else:
+            context.logger.info(
+                "No concrete plan found at the selected horizon."
+            )
+            context.logger.info("FAILED")
 
         self.record_attempt(
             abstract_atoms,
             success=success,
             bad_actions=[],
         )
-        self.log_iteration_totals(iteration_times)
         return self.build_result(
             success=success,
             plan=plan,
-            iteration_times=iteration_times,
         )
 
     def plan_to_abstract_atoms(self, plan_file_path, output_path):

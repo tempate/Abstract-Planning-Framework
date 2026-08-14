@@ -3,6 +3,10 @@
 import argparse
 from pathlib import Path
 
+from core.planning.config import (
+    AbstractPlanningConfig,
+    ConcretePlanningConfig,
+)
 from core.planning.abstract import compute_abstract_plan
 from core.planning.concrete import compute_concrete_plan
 from examples._runner import all_succeeded, run_and_print, run_comparison
@@ -45,73 +49,91 @@ PERFORMANCE_HANGARS = ["hangar1", "hangar2", "hangar3"]
 
 
 def run_concrete():
-    return compute_concrete_plan(
+    config = ConcretePlanningConfig(
         domain_path=CONCRETE_DOMAIN,
         problem_path=CONCRETE_PROBLEM,
         horizon=BASELINE_HORIZON,
+        encoding="exact",
+        time_step=False,
     )
+    return compute_concrete_plan(config)
 
 
 def run_abstract():
-    return compute_abstract_plan(
+    config = AbstractPlanningConfig(
         abstract_domain_path=ABSTRACT_DOMAIN,
         abstract_problem_path=ABSTRACT_PROBLEM,
         concrete_domain_path=CONCRETE_DOMAIN,
         concrete_problem_path=CONCRETE_PROBLEM,
         horizon=BASELINE_HORIZON,
-        abstract_symbol="hangarabs",
-        concrete_objects=CONCRETE_HANGARS,
+        encoding="exact",
+        time_step=False,
         plan_source="clingo",
         profile_name="beluga",
+        abstract_symbol="hangarabs",
+        concrete_objects=CONCRETE_HANGARS,
     )
+    return compute_abstract_plan(config)
 
 
 def run_refinement():
     """Run a trailer-abstracted plan that cannot be fully realized."""
-    return compute_abstract_plan(
+    config = AbstractPlanningConfig(
         abstract_domain_path=REFINEMENT_DOMAIN,
         abstract_problem_path=REFINEMENT_PROBLEM,
         concrete_domain_path=CONCRETE_DOMAIN,
         concrete_problem_path=CONCRETE_PROBLEM,
         horizon=BASELINE_HORIZON,
-        abstract_symbol="beluga_abs_trailer",
-        concrete_objects=CONCRETE_TRAILERS,
+        encoding="exact",
+        time_step=False,
         plan_source="clingo",
         profile_name="beluga",
+        abstract_symbol="beluga_abs_trailer",
+        concrete_objects=CONCRETE_TRAILERS,
     )
+    return compute_abstract_plan(config)
 
 
 def run_refinement_concrete():
     """Solve the concrete problem used by :func:`run_refinement`."""
-    return compute_concrete_plan(
+    config = ConcretePlanningConfig(
         domain_path=CONCRETE_DOMAIN,
         problem_path=CONCRETE_PROBLEM,
         horizon=BASELINE_HORIZON,
+        encoding="exact",
+        time_step=False,
     )
+    return compute_concrete_plan(config)
 
 
 def run_performance_concrete():
     """Solve standard problem 38 without abstraction."""
-    return compute_concrete_plan(
+    config = ConcretePlanningConfig(
         domain_path=PERFORMANCE_CONCRETE_DOMAIN,
         problem_path=PERFORMANCE_CONCRETE_PROBLEM,
         horizon=PERFORMANCE_HORIZON,
+        encoding="exact",
+        time_step=False,
     )
+    return compute_concrete_plan(config)
 
 
 def run_performance_abstract():
     """Collapse five hangars, then realize the resulting abstract plan."""
-    return compute_abstract_plan(
+    config = AbstractPlanningConfig(
         abstract_domain_path=ABSTRACT_DOMAIN,
         abstract_problem_path=PERFORMANCE_ABSTRACT_PROBLEM,
         concrete_domain_path=PERFORMANCE_CONCRETE_DOMAIN,
         concrete_problem_path=PERFORMANCE_CONCRETE_PROBLEM,
         horizon=PERFORMANCE_HORIZON,
-        abstract_symbol="hangarabs",
-        concrete_objects=PERFORMANCE_HANGARS,
+        encoding="exact",
+        time_step=False,
         plan_source="clingo",
         profile_name="beluga",
+        abstract_symbol="hangarabs",
+        concrete_objects=PERFORMANCE_HANGARS,
     )
+    return compute_abstract_plan(config)
 
 
 def _run_quick() -> list[dict]:

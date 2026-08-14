@@ -173,6 +173,31 @@ RUN_PLANNER_INTEGRATION=1 \
 See [`tests/README.md`](tests/README.md) for the test layers and the command
 that runs the complete suite.
 
+### Planning configuration
+
+Programmatic runs use one immutable configuration object per workflow. Paths
+and behavior options are assembled once at the entry point and then passed
+through the planning pipeline together:
+
+```python
+from core.planning.config import ConcretePlanningConfig
+from core.planning.concrete import compute_concrete_plan
+
+config = ConcretePlanningConfig(
+    domain_path="domain.pddl",
+    problem_path="problem.pddl",
+    horizon=None,
+    encoding="exact",
+    time_step=False,
+)
+result = compute_concrete_plan(config)
+```
+
+`AbstractPlanningConfig` provides the equivalent API for abstraction-based
+runs. Shared default constants in `core.planning.config` are authoritative,
+and each result includes the submitted configuration under
+`result["configuration"]`.
+
 ### Concrete Planning
 
 ```bash
@@ -212,10 +237,10 @@ python -m scripts.abstract_planner \
 | `--concrete-problem` | Concrete problem file |
 | `--abstract-symbol` | Abstract object symbol (e.g. `hangarabs`, `beluga_abs_trailer`) |
 | `--concrete-objects` | Concrete objects mapped to abstraction |
-| `--plan-source` | `clingo` or `fd` — chooses whether to compute the abstract plan using Clingo or use a Fast Downward-generated plan |
-| `--horizon` | Optional planning horizon |
-| `--encoding` | ASP encoding type |
-| `--time-step` | Enables time-step based encoding |
+| `--plan-source` | `clingo` (default) or `fd` — chooses whether to compute the abstract plan using Clingo or use a Fast Downward-generated plan |
+| `--horizon` | Planning horizon; by default Fast Downward infers it |
+| `--encoding` | ASP encoding type (default: `exact`) |
+| `--time-step` | Enables time-step based encoding (default: disabled) |
 
 ### NoMystery Abstraction Planning
 
@@ -245,9 +270,9 @@ python -m scripts.abstract_planner \
 | `--concrete-problem` | Concrete problem file |
 | `--abstract-symbol` | Abstract object symbol |
 | `--concrete-objects` | Concrete objects represented by the abstraction |
-| `--plan-source` | `clingo` or `fd` — chooses whether to compute the abstract plan using Clingo or use a Fast Downward-generated plan |
-| `--horizon` | Optional planning horizon |
-| `--encoding` | ASP encoding type |
-| `--time-step` | Enables time-step based encoding |
+| `--plan-source` | `clingo` (default) or `fd` — chooses whether to compute the abstract plan using Clingo or use a Fast Downward-generated plan |
+| `--horizon` | Planning horizon; by default Fast Downward infers it |
+| `--encoding` | ASP encoding type (default: `exact`) |
+| `--time-step` | Enables time-step based encoding (default: disabled) |
 
 ---

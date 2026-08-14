@@ -4,6 +4,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from core.planning.config import (
+    AbstractPlanningConfig,
+    ConcretePlanningConfig,
+)
 from core.planning.abstract import compute_abstract_plan
 from core.planning.concrete import compute_concrete_plan
 from examples.beluga import run_abstract as run_beluga_abstract
@@ -35,8 +39,10 @@ class NoMysteryWorkflowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with patch("core.execution.TEMP_DIR", directory):
                 result = compute_concrete_plan(
-                    self.concrete_domain,
-                    self.concrete_problem,
+                    ConcretePlanningConfig(
+                        domain_path=self.concrete_domain,
+                        problem_path=self.concrete_problem,
+                    )
                 )
 
         self.assertTrue(result["success"])
@@ -48,12 +54,14 @@ class NoMysteryWorkflowTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with patch("core.execution.TEMP_DIR", directory):
                 result = compute_abstract_plan(
-                    abstract_domain_path=self.abstract_domain,
-                    abstract_problem_path=self.abstract_problem,
-                    concrete_domain_path=self.concrete_domain,
-                    concrete_problem_path=self.concrete_problem,
-                    plan_source="clingo",
-                    profile_name="no_mystery",
+                    AbstractPlanningConfig(
+                        abstract_domain_path=self.abstract_domain,
+                        abstract_problem_path=self.abstract_problem,
+                        concrete_domain_path=self.concrete_domain,
+                        concrete_problem_path=self.concrete_problem,
+                        plan_source="clingo",
+                        profile_name="no_mystery",
+                    )
                 )
 
         self.assertTrue(result["success"])

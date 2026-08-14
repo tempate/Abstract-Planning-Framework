@@ -4,6 +4,14 @@ import argparse
 from functools import partial
 
 from core.execution import get_logger
+from core.planning.config import (
+    DEFAULT_ENCODING,
+    DEFAULT_HORIZON,
+    DEFAULT_PLAN_SOURCE,
+    DEFAULT_PROFILE_NAME,
+    DEFAULT_TIME_STEP,
+    AbstractPlanningConfig,
+)
 from core.planning.abstract import compute_abstract_plan
 from core.planners.factory import PLANNER_TYPES, get_planner
 
@@ -13,7 +21,7 @@ from .utils.abstract_plan_log import (
     initialize_plan_log,
     record_plan_attempt,
 )
-from .utils.reporting import print_planning_result, save_result_summary
+from .utils.reporting import print_planning_result
 
 
 def main():
@@ -38,7 +46,7 @@ def main():
         concrete_objects=args.concrete_objects,
     )
 
-    result = compute_abstract_plan(
+    config = AbstractPlanningConfig(
         abstract_domain_path=args.abstract_domain,
         abstract_problem_path=args.abstract_problem,
         concrete_domain_path=args.concrete_domain,
@@ -50,28 +58,66 @@ def main():
         concrete_objects=args.concrete_objects,
         plan_source=args.plan_source,
         profile_name=args.profile,
+    )
+    result = compute_abstract_plan(
+        config,
         attempt_recorder=partial(record_plan_attempt, plan_log_path),
     )
 
     print_planning_result(result, get_logger())
-    save_result_summary(args.abstract_problem, "abstract", result)
 
 
 def _argument_parser():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
         "--profile",
         choices=sorted(PLANNER_TYPES),
-        default="beluga",
+        default=DEFAULT_PROFILE_NAME,
         help="Domain-specific mapping and refinement configuration",
     )
-    parser.add_argument("--abstract-domain", required=True)
-    parser.add_argument("--abstract-problem", required=True)
-    parser.add_argument("--concrete-domain", required=True)
-    parser.add_argument("--concrete-problem", required=True)
-    parser.add_argument("--horizon", type=nonnegative_int, default=None)
-    parser.add_argument("--encoding", default="exact")
-    parser.add_argument("--time-step", action="store_true")
+    parser.add_argument(
+        "--abstract-domain",
+        required=True,
+        default=argparse.SUPPRESS,
+        help="Abstract domain file",
+    )
+    parser.add_argument(
+        "--abstract-problem",
+        required=True,
+        default=argparse.SUPPRESS,
+        help="Abstract problem file",
+    )
+    parser.add_argument(
+        "--concrete-domain",
+        required=True,
+        default=argparse.SUPPRESS,
+        help="Concrete domain file",
+    )
+    parser.add_argument(
+        "--concrete-problem",
+        required=True,
+        default=argparse.SUPPRESS,
+        help="Concrete problem file",
+    )
+    parser.add_argument(
+        "--horizon",
+        type=nonnegative_int,
+        default=DEFAULT_HORIZON,
+        help="Planning horizon; omit to infer it with Fast Downward",
+    )
+    parser.add_argument(
+        "--encoding",
+        default=DEFAULT_ENCODING,
+        help="ASP encoding type",
+    )
+    parser.add_argument(
+        "--time-step",
+        action="store_true",
+        default=DEFAULT_TIME_STEP,
+        help="Enable time-step based encoding",
+    )
     parser.add_argument(
         "--abstract-symbol",
         default=None,
@@ -89,7 +135,7 @@ def _argument_parser():
     parser.add_argument(
         "--plan-source",
         choices=["fd", "clingo"],
-        default="clingo",
+        default=DEFAULT_PLAN_SOURCE,
         help="Use a Fast Downward plan directly or compute one with Clingo",
     )
     return parser

@@ -3,6 +3,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+from core.planning.config import (
+    AbstractPlanningConfig,
+    ConcretePlanningConfig,
+)
 from core.planning.concrete import compute_concrete_plan
 from scripts.utils.arguments import nonnegative_int
 
@@ -38,18 +42,20 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             )
             run_clingo.return_value = ["occurs(action,3)"]
 
-            result = compute_concrete_plan(
-                domain,
-                problem,
+            config = ConcretePlanningConfig(
+                domain_path=domain,
+                problem_path=problem,
                 horizon=3,
                 encoding="bounded",
                 time_step=True,
             )
+            result = compute_concrete_plan(config)
 
         self.assertTrue(result["success"])
         self.assertEqual(result["horizon"], 3)
         self.assertEqual(result["plan"], ["occurs(action,3)"])
         self.assertEqual(result["timings"]["run_id"], directory)
+        self.assertEqual(result["configuration"], config.as_dict())
         self.assertIsNone(result["timings"]["iterations"])
         run_fast_downward.assert_called_once_with(
             directory,
@@ -78,6 +84,38 @@ class ArgumentTests(unittest.TestCase):
     def test_nonnegative_integer_rejects_negative_values(self):
         with self.assertRaisesRegex(Exception, "must be nonnegative"):
             nonnegative_int("-1")
+
+
+class PlanningConfigurationTests(unittest.TestCase):
+    def test_shared_defaults_are_explicit(self):
+        concrete = ConcretePlanningConfig("domain.pddl", "problem.pddl")
+        abstract = AbstractPlanningConfig(
+            "abstract-domain.pddl",
+            "abstract-problem.pddl",
+            "concrete-domain.pddl",
+            "concrete-problem.pddl",
+        )
+
+        self.assertIsNone(concrete.horizon)
+        self.assertEqual(concrete.encoding, "exact")
+        self.assertFalse(concrete.time_step)
+        self.assertEqual(abstract.plan_source, "clingo")
+        self.assertEqual(abstract.profile_name, "beluga")
+        self.assertIsNone(abstract.abstract_symbol)
+        self.assertIsNone(abstract.concrete_objects)
+
+    def test_concrete_objects_are_stored_immutably(self):
+        objects = ["hangar1", "hangar2"]
+        config = AbstractPlanningConfig(
+            "abstract-domain.pddl",
+            "abstract-problem.pddl",
+            "concrete-domain.pddl",
+            "concrete-problem.pddl",
+            concrete_objects=objects,
+        )
+        objects.append("hangar3")
+
+        self.assertEqual(config.concrete_objects, ("hangar1", "hangar2"))
 
 
 if __name__ == "__main__":
