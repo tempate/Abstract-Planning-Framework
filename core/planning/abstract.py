@@ -7,7 +7,7 @@ from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import (
     add_switch_to_asp_rule,
     append_pddl_facts_to_asp,
-    plan_to_asp,
+    sas_to_asp,
 )
 from core.planning.refinement.BaseRefinement import PlanningPaths, RefinementContext
 from core.planning.refinement.factory import get_refinement_strategy
@@ -55,12 +55,15 @@ def compute_abstract_plan(
                     domain.read(), problem.read(), "concrete", "translate"
                 )
 
-            # Plan the abstract problem.
+            # A Fast Downward plan is needed only when it is the selected plan
+            # source or when its length is being used as an automatic horizon.
+            fd_task = "plan" if plan_source == "fd" or horizon is None else "translate"
+
             with (open(abstract_domain_path, "rb") as domain,
                   open(abstract_problem_path, "rb") as problem):
                 abstract_task, abstract_time = run_fast_downward(
                     os.path.join(base_dir, "abstract"),
-                    domain.read(), problem.read(), "abstract", "plan",
+                    domain.read(), problem.read(), "abstract", fd_task,
                 )
 
         fd_timings = {
@@ -82,7 +85,7 @@ def compute_abstract_plan(
 
             # Generate the ASP representation of the concrete problem.
             with timed_phase(logger, "Concrete ASP generation") as concrete_timing:
-                plan_to_asp(
+                sas_to_asp(
                     concrete_task["sasFile"], paths.concrete_asp, encoding, time_step
                 )
 
@@ -94,7 +97,7 @@ def compute_abstract_plan(
             abstract_time = 0.0
             if plan_source == "clingo":
                 with timed_phase(logger, "Abstract ASP generation") as abstract_timing:
-                    plan_to_asp(
+                    sas_to_asp(
                         abstract_task["sasFile"], paths.abstract_asp, encoding, time_step
                     )
                 abstract_time = abstract_timing.elapsed

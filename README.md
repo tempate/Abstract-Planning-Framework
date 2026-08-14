@@ -149,6 +149,11 @@ python -m examples.beluga performance
 These runs can take a minute or longer. Their final tables report the measured
 end-to-end ratio rather than assuming that abstraction is faster.
 
+The examples pass explicit horizons, so Fast Downward only translates their
+PDDL inputs to SAS. If the Python API is called without a horizon, Fast
+Downward planning is used explicitly as an automatic horizon oracle; with
+`plan_source="fd"`, its actual plan drives refinement.
+
 ### Tests
 
 Run the fast unit, component, and solver suite:
