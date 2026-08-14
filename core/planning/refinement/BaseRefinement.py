@@ -8,6 +8,7 @@ from pprint import pformat
 
 from core.execution import PhaseTiming, timed_phase
 from core.paths import OCCURRENCE_VALIDATION_ENCODING
+from core.planning.config import AbstractPlanningConfig
 from core.planners.BasePlanner import BasePlanner
 from core.solvers.decremental import solve_decrementally
 
@@ -26,12 +27,11 @@ class PlanningPaths:
 class RefinementContext:
     """Configuration and run state shared by refinement strategies."""
 
+    config: AbstractPlanningConfig
     planner: BasePlanner
     paths: PlanningPaths
     abstract_task: dict
     horizon: int
-    abstract_symbol: str | None
-    concrete_objects: list[str] | None
     fd_timings: dict
     concrete_asp_time: float
     abstract_asp_time: float
@@ -63,8 +63,8 @@ class BaseRefinement(ABC):
             context.planner.build_mapping(
                 context.paths.occurrences,
                 context.paths.mapping,
-                context.abstract_symbol,
-                context.concrete_objects,
+                context.config.abstract_symbol,
+                context.config.concrete_objects,
             )
         return timing.elapsed
 
@@ -92,6 +92,7 @@ class BaseRefinement(ABC):
         total_time = context.total_timing.elapsed
         context.logger.info(f"TOTAL TIME: {total_time:.3f}s")
         return {
+            "configuration": context.config.as_dict(),
             "horizon": context.horizon,
             "plan": plan if success else None,
             "success": success,

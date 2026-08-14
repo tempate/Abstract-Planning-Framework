@@ -9,6 +9,8 @@ from unittest.mock import patch
 
 from examples import beluga, no_mystery
 from examples._runner import print_comparison
+from scripts.abstract_planner import _argument_parser as abstract_argument_parser
+from scripts.concrete_planner import _argument_parser as concrete_argument_parser
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -51,6 +53,19 @@ class RunnableExampleTests(unittest.TestCase):
         )
 
 
+class PlannerHelpTests(unittest.TestCase):
+    def test_concrete_help_displays_shared_defaults(self):
+        help_text = concrete_argument_parser().format_help()
+
+        self.assertIn("ASP encoding type (default: exact)", help_text)
+        self.assertIn("time-step based encoding (default: False)", help_text)
+
+    def test_abstract_help_displays_abstract_defaults(self):
+        help_text = abstract_argument_parser().format_help()
+
+        self.assertIn("(default: beluga)", help_text)
+        self.assertIn("(default: clingo)", help_text)
+
 class ComparisonExampleTests(unittest.TestCase):
     def test_comparison_output_places_end_to_end_results_side_by_side(self):
         concrete = self._result(total_time=8.0, decrements=None)
@@ -76,15 +91,15 @@ class ComparisonExampleTests(unittest.TestCase):
             no_mystery.run_performance_concrete()
             no_mystery.run_performance_abstract()
 
-        concrete_arguments = concrete.call_args.kwargs
-        abstract_arguments = abstract.call_args.kwargs
+        concrete_config = concrete.call_args.args[0]
+        abstract_config = abstract.call_args.args[0]
         self.assertEqual(
-            concrete_arguments["problem_path"],
-            abstract_arguments["concrete_problem_path"],
+            concrete_config.problem_path,
+            abstract_config.concrete_problem_path,
         )
-        self.assertEqual(concrete_arguments["horizon"], 19)
-        self.assertEqual(abstract_arguments["horizon"], 19)
-        self.assertEqual(concrete_arguments["problem_path"].name, "p04.pddl")
+        self.assertEqual(concrete_config.horizon, 19)
+        self.assertEqual(abstract_config.horizon, 19)
+        self.assertEqual(concrete_config.problem_path.name, "p04.pddl")
 
     def test_beluga_performance_pair_uses_standard_problem_38(self):
         with (
@@ -94,22 +109,22 @@ class ComparisonExampleTests(unittest.TestCase):
             beluga.run_performance_concrete()
             beluga.run_performance_abstract()
 
-        concrete_arguments = concrete.call_args.kwargs
-        abstract_arguments = abstract.call_args.kwargs
+        concrete_config = concrete.call_args.args[0]
+        abstract_config = abstract.call_args.args[0]
         self.assertEqual(
-            concrete_arguments["problem_path"],
-            abstract_arguments["concrete_problem_path"],
+            concrete_config.problem_path,
+            abstract_config.concrete_problem_path,
         )
-        self.assertIn("standard", concrete_arguments["problem_path"].parts)
+        self.assertIn("standard", concrete_config.problem_path.parts)
         self.assertEqual(
-            concrete_arguments["problem_path"].name,
+            concrete_config.problem_path.name,
             "problem_38_s81_j5_r2_oc31_f4.pddl",
         )
-        self.assertEqual(concrete_arguments["horizon"], 26)
-        self.assertEqual(abstract_arguments["horizon"], 26)
+        self.assertEqual(concrete_config.horizon, 26)
+        self.assertEqual(abstract_config.horizon, 26)
         self.assertEqual(
-            abstract_arguments["concrete_objects"],
-            ["hangar1", "hangar2", "hangar3"],
+            abstract_config.concrete_objects,
+            ("hangar1", "hangar2", "hangar3"),
         )
 
     @staticmethod

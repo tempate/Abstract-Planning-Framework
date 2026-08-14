@@ -1,11 +1,14 @@
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 from core.planning.abstract import (
     _get_planning_paths,
     _select_abstract_horizon,
 )
+from core.planning.config import AbstractPlanningConfig
 from core.planning.refinement.ClingoRefinement import ClingoRefinement
 from core.planning.refinement.FastDownwardRefinement import FastDownwardRefinement
 from core.planning.refinement.factory import get_refinement_strategy
@@ -48,6 +51,35 @@ class RefinementStrategyTests(unittest.TestCase):
         self.assertIsInstance(
             get_refinement_strategy("fd", context),
             FastDownwardRefinement,
+        )
+
+    def test_mapping_receives_configuration_values(self):
+        planner = Mock()
+        config = AbstractPlanningConfig(
+            "abstract-domain.pddl",
+            "abstract-problem.pddl",
+            "concrete-domain.pddl",
+            "concrete-problem.pddl",
+            abstract_symbol="hangarabs",
+            concrete_objects=["hangar1", "hangar2"],
+        )
+        context = SimpleNamespace(
+            config=config,
+            planner=planner,
+            paths=SimpleNamespace(
+                occurrences="occurrences.lp",
+                mapping="mapping.lp",
+            ),
+            logger=Mock(),
+        )
+
+        ClingoRefinement(context).build_mapping()
+
+        planner.build_mapping.assert_called_once_with(
+            "occurrences.lp",
+            "mapping.lp",
+            "hangarabs",
+            ("hangar1", "hangar2"),
         )
 
     def test_fast_downward_plan_conversion_skips_comments_and_numbers_steps(self):
