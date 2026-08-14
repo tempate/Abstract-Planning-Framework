@@ -19,4 +19,3 @@ OCCURRENCE_VALIDATION_ENCODING = _project_path("encodings", "occurrence-validati
 FAST_DOWNWARD_SCRIPT = _project_path("lib", "downward", "fast-downward.py")
 TEMP_DIR = _project_path("scripts", "utils", "temp")
 BASE_JSON_DIR = _project_path("scripts", "utils", "temp", "jsonFiles")
-EXCEL_FILE = _project_path("scripts", "utils", "results_automatically.xlsx")

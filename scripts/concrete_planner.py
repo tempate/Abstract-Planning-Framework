@@ -4,7 +4,7 @@ from core.execution import get_logger
 from core.planning.concrete import compute_concrete_plan
 
 from .utils.arguments import nonnegative_int
-from .utils.reporting import print_planning_result, save_result_summary
+from .utils.reporting import print_planning_result
 
 
 def main():
@@ -22,7 +22,6 @@ def main():
     )
 
     print_planning_result(result, get_logger())
-    save_result_summary(args.problem, "concrete", result)
 
 
 def _argument_parser():

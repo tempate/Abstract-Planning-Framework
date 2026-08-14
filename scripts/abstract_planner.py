@@ -13,7 +13,7 @@ from .utils.abstract_plan_log import (
     initialize_plan_log,
     record_plan_attempt,
 )
-from .utils.reporting import print_planning_result, save_result_summary
+from .utils.reporting import print_planning_result
 
 
 def main():
@@ -54,7 +54,6 @@ def main():
     )
 
     print_planning_result(result, get_logger())
-    save_result_summary(args.abstract_problem, "abstract", result)
 
 
 def _argument_parser():
