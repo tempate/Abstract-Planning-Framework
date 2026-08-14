@@ -9,7 +9,7 @@ from pprint import pformat
 from core.execution import PhaseTiming, timed_phase
 from core.paths import OCCURRENCE_VALIDATION_ENCODING
 from core.planners.BasePlanner import BasePlanner
-from core.solvers.DecrementalSolver import DecrementalSolver
+from core.solvers.decremental import solve_decrementally
 
 
 @dataclass(frozen=True)
@@ -78,7 +78,7 @@ class BaseRefinement(ABC):
             OCCURRENCE_VALIDATION_ENCODING,
         ]
         with timed_phase(context.logger, "Concrete solving time") as timing:
-            success, plan, operation_count = DecrementalSolver().solve(
+            success, plan, operation_count = solve_decrementally(
                 asp_files,
                 context.horizon,
             )
@@ -86,7 +86,7 @@ class BaseRefinement(ABC):
         self.solver_operations += operation_count
         return success, plan, timing.elapsed
 
-    def build_result(self, *, success, plan, iteration_times):
+    def build_result(self, *, success, plan):
         """Build the shared result representation and record total runtime."""
         context = self.context
         total_time = context.total_timing.elapsed
@@ -96,7 +96,7 @@ class BaseRefinement(ABC):
             "plan": plan if success else None,
             "success": success,
             "timings": {
-                "iterations": len(iteration_times),
+                "iterations": 1,
                 "decrements": self.solver_operations,
                 "fd_concrete_time": context.fd_timings["fd_concrete_time"],
                 "fd_abstract_time": context.fd_timings["fd_abstract_time"],
@@ -121,40 +121,8 @@ class BaseRefinement(ABC):
                 bad_actions=bad_actions,
             )
 
-    @staticmethod
-    def iteration_timing(abstract, occurs, mapping, concrete, refinement, total):
-        return {
-            "abs": abstract,
-            "occ": occurs,
-            "map": mapping,
-            "conc": concrete,
-            "ref": refinement,
-            "iter": total,
-        }
-
     def log_success(self, plan):
         logger = self.context.logger
         logger.info("SUCCESS: Concrete plan found.")
         logger.info("Plan:")
         logger.info(pformat(plan))
-
-    def log_atoms(self, heading, atoms):
-        logger = self.context.logger
-        logger.info(heading)
-        for atom in atoms:
-            logger.info(f"  {atom}")
-
-    def log_iteration_totals(self, iteration_times):
-        totals = {
-            phase: sum(timing[phase] for timing in iteration_times)
-            for phase in ("abs", "occ", "map", "conc", "ref", "iter")
-        }
-        logger = self.context.logger
-        logger.info("=" * 70)
-        logger.info(
-            "ITERATIONS TOTAL SUMMARY | "
-            f"iters={len(iteration_times)} | "
-            f"abs={totals['abs']:.3f}s | occ={totals['occ']:.3f}s | "
-            f"map={totals['map']:.3f}s | conc={totals['conc']:.3f}s | "
-            f"ref={totals['ref']:.3f}s | iter_total={totals['iter']:.3f}s"
-        )

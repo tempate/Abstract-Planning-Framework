@@ -1,1 +1,1 @@
-"""Concrete solving strategies for refining abstract plans."""
+"""Concrete solving operations for refining abstract plans."""
