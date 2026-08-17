@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from pprint import pformat
 
 from core.execution import PhaseTiming, timed_phase
-from core.paths import OCCURRENCE_VALIDATION_ENCODING
 from core.planning.config import AbstractPlanningConfig
 from core.planners.BasePlanner import BasePlanner
 from core.solvers.decremental import solve_decrementally
@@ -75,7 +74,6 @@ class BaseRefinement(ABC):
             context.paths.concrete_asp,
             context.paths.occurrences,
             context.paths.mapping,
-            OCCURRENCE_VALIDATION_ENCODING,
         ]
         with timed_phase(context.logger, "Concrete solving time") as timing:
             success, plan, operation_count = solve_decrementally(

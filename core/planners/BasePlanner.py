@@ -5,6 +5,11 @@ from core.asp import write_asp_program
 from core.execution import get_logger
 
 
+OCCURRENCE_VALIDATION_CONSTRAINT = (
+    ":- occurs(Action, T), not action(Action)."
+)
+
+
 class BasePlanner(ABC):
     """Base class for domain-specific abstraction mapping and refinement."""
 
@@ -30,7 +35,11 @@ class BasePlanner(ABC):
     @staticmethod
     def _write_mapping(map_path, lines, switch_map, mapping_name):
         logger = get_logger()
-        write_asp_program(map_path, lines)
+        
+        write_asp_program(
+            map_path,
+            [*lines, OCCURRENCE_VALIDATION_CONSTRAINT],
+        )
         logger.info(f"[MAP] Switches created={len(switch_map)}")
         logger.info(f"[FILES] wrote {map_path}")
         logger.info("[MAP] Grounded plan:")
