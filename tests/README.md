@@ -17,11 +17,13 @@ Run the fast suite from the repository root:
 python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-Run only the real planner workflows:
+Run only the real planner and symmetry integrations:
 
 ```bash
 RUN_PLANNER_INTEGRATION=1 \
-    python -m unittest tests.test_planning_integration -v
+    python -m unittest \
+        tests.test_planning_integration \
+        tests.test_symmetry_abstraction.RealSymmetryIntegrationTests -v
 ```
 
 Run every test, including the workflow layer:

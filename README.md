@@ -102,6 +102,13 @@ python -m scripts.abstract_object \
     --auto --bliss-time-limit 300
 ```
 
+Automatic mode ignores symmetry classes containing domain constants and picks
+the class with the fewest schema-level unary deletes. It breaks ties by
+preferring the larger class and then lexical order. In either mode, the tool
+collapses exactly one same-typed object set and removes compatible unary delete
+effects across that type. Generated PDDL is reformatted and does not retain
+comments.
+
 ---
 
 ## Project Structure
@@ -115,6 +122,7 @@ project/
 │
 ├── core/paths.py
 ├── core/asp.py
+├── core/symmetry_abstraction.py
 ├── core/planners/
 │   ├── BasePlanner.py
 │   ├── BelugaPlanner.py
@@ -126,6 +134,7 @@ project/
 ├── core/integrations/
 │   ├── clingo.py
 │   ├── fast_downward.py
+│   ├── pddl_symmetries.py
 │   └── plasp.py
 ├── core/execution.py
 ├── scripts/utils/reporting.py
@@ -142,6 +151,7 @@ project/
 └── lib/
     ├── clingo/
     ├── fast-downward/
+    ├── pddl-symmetries/
     └── planpilot/
 ```
 

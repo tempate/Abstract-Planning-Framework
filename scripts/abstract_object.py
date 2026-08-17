@@ -3,10 +3,13 @@
 import argparse
 from pathlib import Path
 
+from core.integrations.pddl_symmetries import (
+    PddlSymmetriesError,
+    find_symmetric_object_sets,
+)
 from core.symmetry_abstraction import (
     AbstractionError,
     abstract_task,
-    find_symmetric_object_sets,
     rank_symmetry_classes,
 )
 from .utils.arguments import positive_int
@@ -15,46 +18,58 @@ from .utils.arguments import positive_int
 def main() -> None:
     parser = _argument_parser()
     args = parser.parse_args()
+    try:
+        _validate_output_paths(args)
+        domain_text = args.domain.read_text(encoding="utf-8")
+        problem_text = args.problem.read_text(encoding="utf-8")
 
-    if args.output_domain.resolve() == args.output_problem.resolve():
-        parser.error("domain and problem outputs must be different files")
-    for output in (args.output_domain, args.output_problem):
-        if output.resolve() in (args.domain.resolve(), args.problem.resolve()):
-            parser.error("output files must not overwrite the inputs")
-
-    domain_text = args.domain.read_text(encoding="utf-8")
-    problem_text = args.problem.read_text(encoding="utf-8")
-    objects = args.objects
-    if args.auto:
-        try:
+        ranked = []
+        objects = args.objects
+        if args.auto:
             classes = find_symmetric_object_sets(
-                args.domain, args.problem, args.bliss_time_limit,
+                args.domain,
+                args.problem,
+                args.bliss_time_limit,
             )
             ranked = rank_symmetry_classes(domain_text, problem_text, classes)
-        except (AbstractionError, RuntimeError) as error:
-            parser.error(str(error))
-        if not ranked:
-            parser.error("PDDL Symmetries found no non-trivial object classes")
-        objects = list(ranked[0].objects)
+            if not ranked:
+                raise AbstractionError(
+                    "PDDL Symmetries found no abstractable object classes"
+                )
+            objects = ranked[0].objects
+
+        result = abstract_task(
+            domain_text,
+            problem_text,
+            objects or (),
+            args.abstract_name,
+        )
+        for output in (args.output_domain, args.output_problem):
+            output.parent.mkdir(parents=True, exist_ok=True)
+        args.output_domain.write_text(result.domain_text, encoding="utf-8")
+        args.output_problem.write_text(result.problem_text, encoding="utf-8")
+    except (AbstractionError, PddlSymmetriesError, OSError, UnicodeError) as error:
+        parser.error(str(error))
+    _report(args, result, ranked)
+
+
+def _validate_output_paths(args) -> None:
+    inputs = {args.domain.resolve(), args.problem.resolve()}
+    outputs = {args.output_domain.resolve(), args.output_problem.resolve()}
+    if len(outputs) != 2:
+        raise AbstractionError("Domain and problem outputs must be different files")
+    if inputs & outputs:
+        raise AbstractionError("Output files must not overwrite the inputs")
+
+
+def _report(args, result, ranked) -> None:
+    if ranked:
         print("Ranked symmetric object classes:")
         for rank, item in enumerate(ranked, start=1):
             print(
                 f"  {rank}. {list(item.objects)} "
                 f"(type={item.object_type}, unary deletes={item.unary_delete_score})"
             )
-
-    try:
-        result = abstract_task(
-            domain_text, problem_text, objects or (), args.abstract_name,
-        )
-    except AbstractionError as error:
-        parser.error(str(error))
-
-    args.output_domain.parent.mkdir(parents=True, exist_ok=True)
-    args.output_problem.parent.mkdir(parents=True, exist_ok=True)
-    args.output_domain.write_text(result.domain_text, encoding="utf-8")
-    args.output_problem.write_text(result.problem_text, encoding="utf-8")
-
     print(
         f"Collapsed {list(result.objects)} into {result.abstract_name} "
         f"(type={result.object_type})"
