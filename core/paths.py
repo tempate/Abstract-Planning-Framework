@@ -14,7 +14,6 @@ EXACT_HORIZON_ENCODING = _project_path("lib", "planpilot", "encodings", "exact-s
 BOUNDED_HORIZON_ENCODING = _project_path("lib", "planpilot", "encodings", "bounded-sequential-horizon.lp")
 ABSTRACT_TIME_STEPS_ENCODING = _project_path("lib", "planpilot", "encodings", "abstract-time-steps.lp")
 ACTION_PER_TIME_STEP_ENCODING = _project_path("lib", "planpilot", "encodings", "action-per-time-step.lp")
-OCCURRENCE_VALIDATION_ENCODING = _project_path("encodings", "occurrence-validation.lp")
 
 FAST_DOWNWARD_SCRIPT = _project_path("lib", "downward", "fast-downward.py")
 TEMP_DIR = _project_path("scripts", "utils", "temp")

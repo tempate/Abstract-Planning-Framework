@@ -75,6 +75,19 @@ occurs_abstract(action(("inspect","jig1")),1).
         self.assertFalse(switch_map[1]["is_abstract"])
         self.assertTrue(switch_map[2]["is_abstract"])
 
+    def test_mapping_rejects_occurrences_that_are_not_concrete_actions(self):
+        mapping, _ = self._build(
+            BelugaPlanner(),
+            'occurs_abstract(action(("inspect","jig1")),1).\n',
+            "hangarabs",
+            ["hangar1"],
+        )
+
+        self.assertIn(
+            ":- occurs(Action, T), not action(Action).",
+            mapping,
+        )
+
     def test_no_mystery_expands_abstract_drive_fuel_arguments(self):
         occurrences = (
             'occurs_abstract(action(("drive","t0","l0","l1",'
