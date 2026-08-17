@@ -18,6 +18,7 @@ research data dump.
 Experiment results and generated files belong under `scripts/utils/temp/`, not
 in this input directory.
 
-The problem transformations used to produce the abstract instances are
-available under [`scripts/abstraction/`](../../scripts/abstraction/). Beluga's
-abstract domain files additionally contain manually maintained relaxations.
+New object abstractions can be generated with
+[`scripts/abstract_object.py`](../../scripts/abstract_object.py). The retained
+benchmark abstractions predate that generic tool, and Beluga's abstract domain
+files additionally contain manually maintained relaxations.

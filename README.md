@@ -82,8 +82,21 @@ git submodule update --init --recursive
 make -C lib/pddl-symmetries/src/translate/pybliss-0.73
 ```
 
-See [`scripts/abstraction/README.md`](scripts/abstraction/README.md) for the
-explicit and automatic abstraction commands.
+Collapse a chosen object set explicitly:
+
+```bash
+python -m scripts.abstract_object \
+    DOMAIN.pddl PROBLEM.pddl ABSTRACT_DOMAIN.pddl ABSTRACT_PROBLEM.pddl \
+    --objects hangar1 hangar2 hangar3
+```
+
+Or detect and rank symmetric object sets automatically:
+
+```bash
+python -m scripts.abstract_object \
+    DOMAIN.pddl PROBLEM.pddl ABSTRACT_DOMAIN.pddl ABSTRACT_PROBLEM.pddl \
+    --auto --bliss-time-limit 300
+```
 
 ---
 
@@ -94,7 +107,7 @@ project/
 │
 ├── scripts/concrete_planner.py
 ├── scripts/abstract_planner.py
-├── scripts/abstraction/
+├── scripts/abstract_object.py
 │
 ├── core/paths.py
 ├── core/asp.py
