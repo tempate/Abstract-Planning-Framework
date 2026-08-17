@@ -16,12 +16,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class ShellExampleTests(unittest.TestCase):
-    def _run(self, example, workflow, python_bin=None):
+    def _run(self, example, workflow=None, python_bin=None):
         environment = os.environ.copy()
         if python_bin is not None:
             environment["PYTHON_BIN"] = python_bin
+        command = [f"examples/{example}.sh"]
+        if workflow is not None:
+            command.append(workflow)
         return subprocess.run(
-            [f"examples/{example}.sh", workflow],
+            command,
             cwd=PROJECT_ROOT,
             env=environment,
             capture_output=True,
@@ -29,23 +32,31 @@ class ShellExampleTests(unittest.TestCase):
             check=False,
         )
 
-    def test_no_mystery_example_supports_direct_execution(self):
-        result = self._run("no_mystery", "--help")
+    def test_planning_examples_support_domain_selection(self):
+        for example in ("concrete", "abstract", "refinement"):
+            with self.subTest(example=example):
+                result = self._run(example, "--help")
+
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("[no_mystery|beluga|all]", result.stdout)
+
+    def test_performance_example_requires_domain_selection(self):
+        result = self._run("performance", "--help")
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn(
-            "[concrete|abstract|refinement|performance|quick|all]",
-            result.stdout,
-        )
+        self.assertIn("{no_mystery|beluga|all}", result.stdout)
 
-    def test_beluga_example_supports_direct_execution(self):
-        result = self._run("beluga", "--help")
+        missing_domain = self._run("performance")
+        self.assertEqual(missing_domain.returncode, 2)
 
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn(
-            "[concrete|abstract|refinement|performance|quick|all]",
-            result.stdout,
-        )
+    def test_quick_workflows_default_to_no_mystery(self):
+        for example in ("concrete", "abstract", "refinement"):
+            with self.subTest(example=example):
+                result = self._run(example, python_bin="/bin/echo")
+
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn("no_mystery", result.stdout)
+                self.assertNotIn("--profile beluga", result.stdout)
 
     def test_abstract_object_example_supports_explicit_and_auto_modes(self):
         result = self._run("abstract_object", "--help")
@@ -94,7 +105,7 @@ class ShellExampleTests(unittest.TestCase):
             self.assertIn("hangarabs", problem_text)
 
     def test_no_mystery_performance_uses_the_same_p04_problem(self):
-        result = self._run("no_mystery", "performance", "/bin/echo")
+        result = self._run("performance", "no_mystery", "/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.count("concrete/p04.pddl"), 2)
@@ -102,7 +113,7 @@ class ShellExampleTests(unittest.TestCase):
         self.assertEqual(result.stdout.count("--horizon 19"), 2)
 
     def test_beluga_performance_uses_standard_problem_38(self):
-        result = self._run("beluga", "performance", "/bin/echo")
+        result = self._run("performance", "beluga", "/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
         problem = "standard/problem_38_s81_j5_r2_oc31_f4.pddl"

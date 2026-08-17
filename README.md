@@ -163,8 +163,9 @@ examples. The shell scripts show the complete CLI commands used at every
 stage:
 
 ```bash
-./examples/no_mystery.sh
-./examples/beluga.sh
+./examples/concrete.sh
+./examples/abstract.sh
+./examples/refinement.sh
 ```
 
 The concrete and abstract baselines use the small NoMystery problem in
@@ -172,16 +173,17 @@ The concrete and abstract baselines use the small NoMystery problem in
 and through the abstraction. See [`data/README.md`](data/README.md) for the
 data layout.
 
-Pass `concrete`, `abstract`, `refinement`, or `performance` to run one part,
-for example `./examples/beluga.sh abstract`. All options are documented in
+These scripts use NoMystery by default. Pass `beluga` to run the same workflow
+for Beluga, for example `./examples/abstract.sh beluga`, or pass `all` to run
+both domains. All options are documented in
 [`examples/README.md`](examples/README.md).
-The NoMystery and Beluga examples each include a matched `refinement` mode and
-an opt-in `performance` mode. The latter compares a deliberately slow concrete
-search with the abstract workflow on exactly the same problem:
+
+Performance comparisons are kept in a separate script and require an explicit
+domain because they can be deliberately slow:
 
 ```bash
-./examples/no_mystery.sh performance
-./examples/beluga.sh performance
+./examples/performance.sh no_mystery
+./examples/performance.sh beluga
 ```
 
 These runs can take a minute or longer and report each planner's measured

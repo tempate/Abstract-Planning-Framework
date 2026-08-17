@@ -61,28 +61,28 @@ class ExampleWorkflowTests(unittest.TestCase):
         )
 
     def test_no_mystery_concrete_example_finds_a_plan(self):
-        self._assert_success(self._run("no_mystery", "concrete"))
+        self._assert_success(self._run("concrete", "no_mystery"))
 
     def test_no_mystery_abstract_example_is_fully_realizable(self):
-        result = self._run("no_mystery", "abstract")
+        result = self._run("abstract", "no_mystery")
 
         self._assert_success(result)
         self.assertIn("Decrements: 0", result.stdout)
 
     def test_no_mystery_refinement_relaxes_the_abstract_plan(self):
-        self._assert_refinement(self._run("no_mystery", "refinement"))
+        self._assert_refinement(self._run("refinement", "no_mystery"))
 
     def test_beluga_concrete_example_finds_a_plan(self):
-        self._assert_success(self._run("beluga", "concrete"))
+        self._assert_success(self._run("concrete", "beluga"))
 
     def test_beluga_hangar_abstraction_is_fully_realizable(self):
-        result = self._run("beluga", "abstract")
+        result = self._run("abstract", "beluga")
 
         self._assert_success(result)
         self.assertIn("Decrements: 0", result.stdout)
 
     def test_beluga_trailer_refinement_relaxes_the_abstract_plan(self):
-        self._assert_refinement(self._run("beluga", "refinement"))
+        self._assert_refinement(self._run("refinement", "beluga"))
 
 
 if __name__ == "__main__":

@@ -1,20 +1,75 @@
 # Examples
 
-Each domain has a Bash quick-start containing the complete planner commands.
-Run them from the repository root after installing `requirements.txt`.
+The examples are organized by planning workflow. Each Bash script contains
+the complete public CLI commands, making its arguments easy to inspect and
+copy. Run them from the repository root after installing `requirements.txt`.
 
-| Mode | What it runs |
-| --- | --- |
-| `concrete` | Small concrete baseline |
-| `abstract` | Small, fully realizable abstract baseline |
-| `refinement` | A matched concrete and abstract pair that requires refinement |
-| `performance` | A matched pair selected to expose the cost of concrete search |
-| `quick` | Both baselines and the refinement comparison; this is the default |
-| `all` | `quick` followed by the deliberately long `performance` comparison |
+| Script | Default | Other choices |
+| --- | --- | --- |
+| `concrete.sh` | NoMystery | `beluga`, `all` |
+| `abstract.sh` | NoMystery | `beluga`, `all` |
+| `refinement.sh` | NoMystery | `beluga`, `all` |
+| `performance.sh` | none | `no_mystery`, `beluga`, `all` |
+| `abstract_object.sh` | explicit selection | `auto`, `all` |
 
-The scripts execute the public `scripts.concrete_planner` and
-`scripts.abstract_planner` entry points directly, making their arguments easy
-to inspect and copy.
+## Concrete planning
+
+Run direct planning without abstraction:
+
+```bash
+./examples/concrete.sh
+./examples/concrete.sh no_mystery
+./examples/concrete.sh beluga
+```
+
+## Abstract planning
+
+Run a small, fully realizable abstract planning workflow:
+
+```bash
+./examples/abstract.sh
+./examples/abstract.sh no_mystery
+./examples/abstract.sh beluga
+```
+
+The NoMystery example uses a fuel abstraction. The Beluga example represents
+the three concrete hangars with `hangarabs`.
+
+## Refinement
+
+Run the concrete problem followed by its abstraction and decremental
+refinement:
+
+```bash
+./examples/refinement.sh
+./examples/refinement.sh no_mystery
+./examples/refinement.sh beluga
+```
+
+NoMystery uses benchmark `p01` at horizon 11. Its abstract fuel route cannot
+be realized in full, so solving relaxes it before finding a concrete plan. The
+exact positive decrement count can vary with Clingo's parallel model
+selection.
+
+Beluga uses the small `problem_3` instance at horizon 17. Its two Beluga
+trailers are represented by `beluga_abs_trailer`, and the abstract plan also
+requires decremental relaxation.
+
+## Performance comparison
+
+Performance runs require an explicit domain so they are not launched by
+accident:
+
+```bash
+./examples/performance.sh no_mystery
+./examples/performance.sh beluga
+./examples/performance.sh all
+```
+
+NoMystery uses `p04` at horizon 19. Beluga uses standard `problem_38` at
+horizon 26 with its three hangars collapsed into `hangarabs`. Both scripts run
+the concrete and abstract workflows against the same problem. Expect
+machine-dependent runtimes of a minute or longer.
 
 ## Object abstraction
 
@@ -37,52 +92,11 @@ README. Use `all` to run both variants. Outputs are kept separate under
 `scripts/utils/temp/abstract_object/explicit/` and
 `scripts/utils/temp/abstract_object/auto/`.
 
-## NoMystery
-
-```bash
-./examples/no_mystery.sh
-./examples/no_mystery.sh refinement
-./examples/no_mystery.sh performance
-```
-
-The refinement comparison solves benchmark `p01` concretely and through the
-fuel abstraction at the same horizon, 11. The abstract fuel route cannot be
-realized in full, so decremental solving relaxes it before finding a concrete
-plan. The exact positive decrement count can vary with Clingo's parallel model
-selection.
-
-The performance comparison uses `p04` at horizon 19. After removing the
-redundant Fast Downward planning pass, the abstract workflow completed in
-about 6 seconds while direct concrete Clingo search did not finish within 90
-seconds. This case does not normally
-need decrements; its purpose is to isolate the search-space reduction supplied
-by the fuel abstraction. Expect machine-dependent runtimes, and use `quick`
-for a short demonstration.
-
-## Beluga
-
-```bash
-./examples/beluga.sh
-./examples/beluga.sh refinement
-./examples/beluga.sh performance
-```
-
-The refinement comparison uses the small `problem_3` instance. It solves the
-same problem directly and with its two Beluga trailers represented by
-`beluga_abs_trailer`; the abstract plan requires decremental relaxation.
-
-The performance comparison uses standard `problem_38` at horizon 26. Its three
-concrete hangars are collapsed into `hangarabs`. Fast Downward produces the
-abstract plan, and Clingo realizes it against the concrete task. In three
-paired validation runs, direct concrete planning took 20.8–30.2 seconds while
-the abstract workflow took 12.28–12.33 seconds, a 1.69x–2.45x speedup. This
-abstract plan was fully realizable without decrements; the separate trailer
-comparison above demonstrates refinement.
-
 ## Horizons and Fast Downward
 
 All examples provide explicit horizons. Fast Downward therefore translates
 PDDL to SAS but does not search for a plan that Clingo would discard. In the
-general Python API, omitting a horizon with a Clingo plan source still asks Fast
-Downward for a plan length as an automatic horizon. Selecting `plan_source="fd"`
-runs Fast Downward planning because that workflow consumes the actual FD plan.
+general Python API, omitting a horizon with a Clingo plan source still asks
+Fast Downward for a plan length as an automatic horizon. Selecting
+`plan_source="fd"` runs Fast Downward planning because that workflow consumes
+the actual FD plan.
