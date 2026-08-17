@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
+          submodules: recursive
 
       - name: Set up Python
         uses: actions/setup-python@v7
@@ -38,6 +39,9 @@ jobs:
 
       - name: Build Fast Downward
         run: python lib/downward/build.py release
+
+      - name: Build PDDL Symmetries
+        run: make -C lib/pddl-symmetries/src/translate/pybliss-0.73
 
       - name: Run all tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v
