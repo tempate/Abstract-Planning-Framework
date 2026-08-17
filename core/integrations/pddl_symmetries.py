@@ -14,12 +14,7 @@ class PddlSymmetriesError(RuntimeError):
     """Raised when PDDL Symmetries cannot produce object classes."""
 
 
-def find_symmetric_object_sets(
-    domain_path: str | Path,
-    problem_path: str | Path,
-    time_limit: int = 300,
-    translator_path: str | Path = PDDL_SYMMETRIES_TRANSLATOR,
-) -> list[list[str]]:
+def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, translator_path=PDDL_SYMMETRIES_TRANSLATOR):
     """Run PDDL Symmetries and return its non-trivial object classes."""
     if time_limit < 1:
         raise ValueError("PDDL Symmetries time limit must be positive")

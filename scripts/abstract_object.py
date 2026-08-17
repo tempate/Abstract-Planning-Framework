@@ -8,7 +8,7 @@ from core.symmetry_abstraction import AbstractionError, abstract_task, rank_symm
 from .utils.arguments import positive_int
 
 
-def main() -> None:
+def main():
     parser = _argument_parser()
     args = parser.parse_args()
     try:
@@ -35,7 +35,7 @@ def main() -> None:
     _report(args, result, ranked)
 
 
-def _validate_output_paths(args) -> None:
+def _validate_output_paths(args):
     inputs = {args.domain.resolve(), args.problem.resolve()}
     outputs = {args.output_domain.resolve(), args.output_problem.resolve()}
     if len(outputs) != 2:
@@ -44,7 +44,7 @@ def _validate_output_paths(args) -> None:
         raise AbstractionError("Output files must not overwrite the inputs")
 
 
-def _report(args, result, ranked) -> None:
+def _report(args, result, ranked):
     if ranked:
         print("Ranked symmetric object classes:")
         for rank, item in enumerate(ranked, start=1):

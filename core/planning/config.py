@@ -3,7 +3,6 @@
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from os import PathLike
-from typing import Any
 
 Path = str | PathLike[str]
 DEFAULT_HORIZON = None
@@ -23,8 +22,7 @@ class ConcretePlanningConfig:
     encoding: str = DEFAULT_ENCODING
     time_step: bool = DEFAULT_TIME_STEP
 
-    def as_dict(self) -> dict[str, Any]:
-        """Return a result- and log-friendly representation."""
+    def as_dict(self):
         values = asdict(self)
         values["domain_path"] = str(self.domain_path)
         values["problem_path"] = str(self.problem_path)
@@ -51,8 +49,7 @@ class AbstractPlanningConfig:
         if self.concrete_objects is not None:
             object.__setattr__(self, "concrete_objects", tuple(self.concrete_objects))
 
-    def as_dict(self) -> dict[str, Any]:
-        """Return a result- and log-friendly representation."""
+    def as_dict(self):
         values = asdict(self)
         values["abstract_domain_path"] = str(self.abstract_domain_path)
         values["abstract_problem_path"] = str(self.abstract_problem_path)

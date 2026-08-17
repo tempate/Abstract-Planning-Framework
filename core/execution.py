@@ -8,7 +8,6 @@ import time
 import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Iterator
 
 from core.paths import TEMP_DIR
 
@@ -72,18 +71,18 @@ class PhaseTiming:
     _elapsed: float | None = None
 
     @property
-    def elapsed(self) -> float:
+    def elapsed(self):
         if self._elapsed is not None:
             return self._elapsed
         return time.perf_counter() - self._started_at
 
-    def stop(self) -> None:
+    def stop(self):
         if self._elapsed is None:
             self._elapsed = time.perf_counter() - self._started_at
 
 
 @contextmanager
-def timed_phase(logger: logging.Logger | None = None, name: str | None = None) -> Iterator[PhaseTiming]:
+def timed_phase(logger=None, name=None):
     """Measure a phase and optionally log its duration on exit."""
     timing = PhaseTiming()
     try:

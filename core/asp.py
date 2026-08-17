@@ -1,12 +1,9 @@
 """Read and write ASP programs used for plan mapping and refinement."""
 
-from collections.abc import Iterable, Iterator
-from pathlib import Path
-
 from core.execution import get_logger, timed_phase
 
 
-def read_abstract_actions(path: str | Path) -> Iterator[tuple[str, int]]:
+def read_abstract_actions(path):
     """Yield abstract actions in chronological order."""
     actions = []
     with open(path, "r", encoding="utf-8") as source:
@@ -22,7 +19,7 @@ def read_abstract_actions(path: str | Path) -> Iterator[tuple[str, int]]:
     return sorted(actions, key=lambda item: item[1])
 
 
-def write_asp_program(path: str | Path, statements: Iterable[str]) -> None:
+def write_asp_program(path, statements):
     """Write ASP statements separated by newlines."""
     with open(path, "w", encoding="utf-8") as output_file:
         output_file.write("\n".join(statements))

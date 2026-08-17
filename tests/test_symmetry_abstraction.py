@@ -15,12 +15,12 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BELUGA_CONCRETE = PROJECT_ROOT / "data" / "beluga" / "concrete" / "standard"
 
 
-def pddl_tokens(text: str) -> list[str]:
+def pddl_tokens(text):
     without_comments = re.sub(r";[^\n]*", "", text)
     return [token.casefold() for token in re.findall(r"[()]|[^\s();]+", without_comments)]
 
 
-def _stub_symmetry_inputs(directory: str) -> tuple[Path, Path, Path]:
+def _stub_symmetry_inputs(directory):
     root = Path(directory)
     translator = root / "translate.py"
     domain = root / "domain.pddl"
