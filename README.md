@@ -162,30 +162,33 @@ project/
 ### Quick start with verified examples
 
 Run the quick concrete, fully realizable abstract, and matched refinement
-examples:
+examples. The shell scripts show the complete CLI commands used at every
+stage:
 
 ```bash
-python -m examples.no_mystery
+./examples/no_mystery.sh
+./examples/beluga.sh
 ```
 
 The concrete and abstract baselines use the small NoMystery problem in
 `data/examples/`. The refinement mode solves benchmark `p01` both concretely
-and through the abstraction, then prints their timings side by side. See
-[`data/README.md`](data/README.md) for the data layout.
+and through the abstraction. See [`data/README.md`](data/README.md) for the
+data layout.
 
-The Python API options are documented in
+Pass `concrete`, `abstract`, `refinement`, or `performance` to run one part,
+for example `./examples/beluga.sh abstract`. All options are documented in
 [`examples/README.md`](examples/README.md).
 The NoMystery and Beluga examples each include a matched `refinement` mode and
 an opt-in `performance` mode. The latter compares a deliberately slow concrete
 search with the abstract workflow on exactly the same problem:
 
 ```bash
-python -m examples.no_mystery performance
-python -m examples.beluga performance
+./examples/no_mystery.sh performance
+./examples/beluga.sh performance
 ```
 
-These runs can take a minute or longer. Their final tables report the measured
-end-to-end ratio rather than assuming that abstraction is faster.
+These runs can take a minute or longer and report each planner's measured
+end-to-end runtime.
 
 The examples pass explicit horizons, so Fast Downward only translates their
 PDDL inputs to SAS. If the Python API is called without a horizon, Fast
@@ -205,7 +208,7 @@ they invoke Fast Downward and PlanPilot:
 
 ```bash
 RUN_PLANNER_INTEGRATION=1 \
-    python -m unittest tests.test_planning_integration -v
+    python -m unittest tests.test_example_workflows_integration -v
 ```
 
 See [`tests/README.md`](tests/README.md) for the test layers and the command

@@ -1,0 +1,146 @@
+import os
+import subprocess
+import unittest
+from argparse import Namespace
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+from scripts import abstract_planner, concrete_planner
+from scripts.abstract_planner import _argument_parser as abstract_argument_parser
+from scripts.concrete_planner import _argument_parser as concrete_argument_parser
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+class ShellExampleTests(unittest.TestCase):
+    def _run(self, example, workflow, python_bin=None):
+        environment = os.environ.copy()
+        if python_bin is not None:
+            environment["PYTHON_BIN"] = python_bin
+        return subprocess.run(
+            [f"examples/{example}.sh", workflow],
+            cwd=PROJECT_ROOT,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    def test_no_mystery_example_supports_direct_execution(self):
+        result = self._run("no_mystery", "--help")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(
+            "[concrete|abstract|refinement|performance|quick|all]",
+            result.stdout,
+        )
+
+    def test_beluga_example_supports_direct_execution(self):
+        result = self._run("beluga", "--help")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(
+            "[concrete|abstract|refinement|performance|quick|all]",
+            result.stdout,
+        )
+
+    def test_no_mystery_performance_uses_the_same_p04_problem(self):
+        result = self._run("no_mystery", "performance", "/bin/echo")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout.count("concrete/p04.pddl"), 2)
+        self.assertIn("abstract/p04.pddl", result.stdout)
+        self.assertEqual(result.stdout.count("--horizon 19"), 2)
+
+    def test_beluga_performance_uses_standard_problem_38(self):
+        result = self._run("beluga", "performance", "/bin/echo")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        problem = "standard/problem_38_s81_j5_r2_oc31_f4.pddl"
+        self.assertEqual(result.stdout.count(problem), 2)
+        self.assertEqual(result.stdout.count("--horizon 26"), 2)
+        self.assertIn(
+            "--concrete-objects hangar1 hangar2 hangar3",
+            result.stdout,
+        )
+
+
+class PlannerHelpTests(unittest.TestCase):
+    def test_concrete_help_displays_shared_defaults(self):
+        help_text = concrete_argument_parser().format_help()
+
+        self.assertIn("ASP encoding type (default: exact)", help_text)
+        self.assertIn("time-step based encoding (default: False)", help_text)
+
+    def test_abstract_help_displays_abstract_defaults(self):
+        help_text = abstract_argument_parser().format_help()
+
+        self.assertIn("(default: beluga)", help_text)
+        self.assertIn("(default: clingo)", help_text)
+
+
+class PlannerExitStatusTests(unittest.TestCase):
+    def test_concrete_cli_returns_failure_when_no_plan_is_found(self):
+        parser = Mock()
+        parser.parse_args.return_value = Namespace(
+            domain="domain.pddl",
+            problem="problem.pddl",
+            horizon=1,
+            encoding="exact",
+            time_step=False,
+        )
+        with (
+            patch.object(concrete_planner, "_argument_parser", return_value=parser),
+            patch.object(
+                concrete_planner,
+                "compute_concrete_plan",
+                return_value={"success": False},
+            ),
+            patch.object(concrete_planner, "print_planning_result"),
+            patch.object(concrete_planner, "get_logger"),
+        ):
+            status = concrete_planner.main()
+
+        self.assertEqual(status, 1)
+
+    def test_abstract_cli_returns_failure_when_no_plan_is_found(self):
+        parser = Mock()
+        parser.parse_args.return_value = Namespace(
+            profile="no_mystery",
+            abstract_domain="abstract-domain.pddl",
+            abstract_problem="abstract-problem.pddl",
+            concrete_domain="concrete-domain.pddl",
+            concrete_problem="concrete-problem.pddl",
+            horizon=1,
+            encoding="exact",
+            time_step=False,
+            abstract_symbol=None,
+            concrete_objects=None,
+            plan_source="clingo",
+        )
+        planner = Mock(run_directory="noMystery")
+        with (
+            patch.object(abstract_planner, "_argument_parser", return_value=parser),
+            patch.object(abstract_planner, "get_planner", return_value=planner),
+            patch.object(
+                abstract_planner,
+                "get_plan_log_path",
+                return_value=("plan-log.json", "hash"),
+            ),
+            patch.object(abstract_planner, "initialize_plan_log"),
+            patch.object(
+                abstract_planner,
+                "compute_abstract_plan",
+                return_value={"success": False},
+            ),
+            patch.object(abstract_planner, "print_planning_result"),
+            patch.object(abstract_planner, "get_logger"),
+        ):
+            status = abstract_planner.main()
+
+        self.assertEqual(status, 1)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 # Project filesystem layout. Keep fixed paths here so callers do not need to
@@ -19,5 +20,8 @@ FAST_DOWNWARD_SCRIPT = _project_path("lib", "downward", "fast-downward.py")
 PDDL_SYMMETRIES_TRANSLATOR = _project_path(
     "lib", "pddl-symmetries", "src", "translate", "translate.py"
 )
-TEMP_DIR = _project_path("scripts", "utils", "temp")
-BASE_JSON_DIR = _project_path("scripts", "utils", "temp", "jsonFiles")
+TEMP_DIR = os.environ.get(
+    "APF_TEMP_DIR",
+    _project_path("scripts", "utils", "temp"),
+)
+BASE_JSON_DIR = os.path.join(TEMP_DIR, "jsonFiles")

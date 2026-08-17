@@ -1,8 +1,7 @@
 # Examples
 
-Each domain has quick workflows and matched concrete-versus-abstraction
-comparisons. Run these commands from the repository root after installing
-`requirements.txt`.
+Each domain has a Bash quick-start containing the complete planner commands.
+Run them from the repository root after installing `requirements.txt`.
 
 | Mode | What it runs |
 | --- | --- |
@@ -13,15 +12,16 @@ comparisons. Run these commands from the repository root after installing
 | `quick` | Both baselines and the refinement comparison; this is the default |
 | `all` | `quick` followed by the deliberately long `performance` comparison |
 
-Both comparison modes print the two complete results followed by a
-side-by-side table containing plan status, horizon, refinement decrements,
-total runtime, and the end-to-end runtime ratio.
+The scripts execute the public `scripts.concrete_planner` and
+`scripts.abstract_planner` entry points directly, making their arguments easy
+to inspect and copy.
 
 ## NoMystery
 
 ```bash
-python -m examples.no_mystery refinement
-python -m examples.no_mystery performance
+./examples/no_mystery.sh
+./examples/no_mystery.sh refinement
+./examples/no_mystery.sh performance
 ```
 
 The refinement comparison solves benchmark `p01` concretely and through the
@@ -41,8 +41,9 @@ for a short demonstration.
 ## Beluga
 
 ```bash
-python -m examples.beluga refinement
-python -m examples.beluga performance
+./examples/beluga.sh
+./examples/beluga.sh refinement
+./examples/beluga.sh performance
 ```
 
 The refinement comparison uses the small `problem_3` instance. It solves the
