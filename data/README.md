@@ -2,20 +2,16 @@
 
 ```text
 data/
-├── examples/no_mystery/   # Small concrete and abstract p02 inputs
-└── benchmarks/            # Beluga and NoMystery benchmark collections
+├── beluga/
+│   ├── concrete/   # Standard and modified concrete variants
+│   └── abstract/   # Hangar and trailer abstractions
+└── no_mystery/
+    ├── concrete/   # Exact-fuel domain and problems
+    └── abstract/   # Fuel-abstracted domain and problems
 ```
 
-Run the small NoMystery inputs explicitly with:
+The NoMystery quick examples use `p02`; refinement uses `p01`. Beluga quick
+examples use the small standard `problem_3` instance.
 
-```bash
-./examples/concrete.sh no_mystery
-./examples/abstract.sh no_mystery
-```
-
-The refinement and performance scripts use matched problems from
-`benchmarks/`. Input PDDL stays under `data/`; generated plans, encodings, and
-logs belong under `scripts/utils/temp/`.
-
-See [benchmarks/README.md](benchmarks/README.md) for the retained benchmark
-variants.
+Input PDDL stays under `data/`. Generated plans, encodings, and logs belong
+under `scripts/utils/temp/`.

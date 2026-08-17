@@ -84,4 +84,3 @@ See [tests/README.md](tests/README.md) for the test layers.
 
 - [Example commands](examples/README.md)
 - [Data layout](data/README.md)
-- [Benchmark inputs](data/benchmarks/README.md)

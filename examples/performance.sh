@@ -8,17 +8,17 @@ python_bin="${PYTHON_BIN:-python}"
 
 run_no_mystery() {
     "$python_bin" -m scripts.concrete_planner \
-        --domain data/benchmarks/nomystery/concrete/domain.pddl \
-        --problem data/benchmarks/nomystery/concrete/p04.pddl \
+        --domain data/no_mystery/concrete/domain.pddl \
+        --problem data/no_mystery/concrete/p04.pddl \
         --horizon 19 \
         --encoding exact
 
     "$python_bin" -m scripts.abstract_planner \
         --profile no_mystery \
-        --abstract-domain data/benchmarks/nomystery/abstract/domain.pddl \
-        --abstract-problem data/benchmarks/nomystery/abstract/p04.pddl \
-        --concrete-domain data/benchmarks/nomystery/concrete/domain.pddl \
-        --concrete-problem data/benchmarks/nomystery/concrete/p04.pddl \
+        --abstract-domain data/no_mystery/abstract/domain.pddl \
+        --abstract-problem data/no_mystery/abstract/p04.pddl \
+        --concrete-domain data/no_mystery/concrete/domain.pddl \
+        --concrete-problem data/no_mystery/concrete/p04.pddl \
         --horizon 19 \
         --encoding exact \
         --plan-source clingo
@@ -28,17 +28,17 @@ run_beluga() {
     local problem="problem_38_s81_j5_r2_oc31_f4"
 
     "$python_bin" -m scripts.concrete_planner \
-        --domain data/benchmarks/beluga/concrete/standard/domain.pddl \
-        --problem "data/benchmarks/beluga/concrete/standard/${problem}.pddl" \
+        --domain data/beluga/concrete/standard/domain.pddl \
+        --problem "data/beluga/concrete/standard/${problem}.pddl" \
         --horizon 26 \
         --encoding exact
 
     "$python_bin" -m scripts.abstract_planner \
         --profile beluga \
-        --abstract-domain data/benchmarks/beluga/abstract/hangar/domain.pddl \
-        --abstract-problem "data/benchmarks/beluga/abstract/hangar/${problem}_abs.pddl" \
-        --concrete-domain data/benchmarks/beluga/concrete/standard/domain.pddl \
-        --concrete-problem "data/benchmarks/beluga/concrete/standard/${problem}.pddl" \
+        --abstract-domain data/beluga/abstract/hangar/domain.pddl \
+        --abstract-problem "data/beluga/abstract/hangar/${problem}_abs.pddl" \
+        --concrete-domain data/beluga/concrete/standard/domain.pddl \
+        --concrete-problem "data/beluga/concrete/standard/${problem}.pddl" \
         --abstract-symbol hangarabs \
         --concrete-objects hangar1 hangar2 hangar3 \
         --horizon 26 \

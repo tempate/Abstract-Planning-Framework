@@ -20,7 +20,7 @@ from scripts.abstract_object import _argument_parser
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BELUGA_CONCRETE = PROJECT_ROOT / "data" / "benchmarks" / "beluga" / "concrete" / "standard"
+BELUGA_CONCRETE = PROJECT_ROOT / "data" / "beluga" / "concrete" / "standard"
 
 
 def pddl_tokens(text: str) -> list[str]:
@@ -223,7 +223,7 @@ class ObjectAbstractionTests(unittest.TestCase):
         result = abstract_task(
             domain, problem, ["hangar1", "hangar2", "hangar3"], "hangarabs",
         )
-        expected_dir = PROJECT_ROOT / "data" / "benchmarks" / "beluga" / "abstract" / "hangar"
+        expected_dir = PROJECT_ROOT / "data" / "beluga" / "abstract" / "hangar"
 
         self.assertEqual(
             pddl_tokens(result.domain_text),
@@ -245,7 +245,7 @@ class ObjectAbstractionTests(unittest.TestCase):
             ["beluga_trailer_1", "beluga_trailer_2"],
             "beluga_abs_trailer",
         )
-        expected_dir = PROJECT_ROOT / "data" / "benchmarks" / "beluga" / "abstract" / "trailer"
+        expected_dir = PROJECT_ROOT / "data" / "beluga" / "abstract" / "trailer"
 
         self.assertEqual(result.unary_delete_score, 4)
         self.assertEqual(
