@@ -19,5 +19,5 @@ Experiment results and generated files belong under `scripts/utils/temp/`, not
 in this input directory.
 
 The problem transformations used to produce the abstract instances are
-available under [`tools/abstraction/`](../../tools/abstraction/). Beluga's
+available under [`scripts/abstraction/`](../../scripts/abstraction/). Beluga's
 abstract domain files additionally contain manually maintained relaxations.

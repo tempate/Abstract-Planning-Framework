@@ -4,9 +4,9 @@ These deterministic scripts reproduce the project-specific abstraction of
 concrete PDDL **problem files**:
 
 ```bash
-python -m tools.abstraction.collapse_hangars INPUT.pddl OUTPUT_abs.pddl
-python -m tools.abstraction.collapse_trailers INPUT.pddl OUTPUT_abs.pddl
-python -m tools.abstraction.collapse_fuel_levels INPUT.pddl OUTPUT.pddl
+python -m scripts.abstraction.collapse_hangars INPUT.pddl OUTPUT_abs.pddl
+python -m scripts.abstraction.collapse_trailers INPUT.pddl OUTPUT_abs.pddl
+python -m scripts.abstraction.collapse_fuel_levels INPUT.pddl OUTPUT.pddl
 ```
 
 The Beluga scripts were recovered from the former

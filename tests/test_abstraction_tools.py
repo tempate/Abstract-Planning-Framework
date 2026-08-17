@@ -2,9 +2,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.abstraction.collapse_fuel_levels import collapse_fuel_levels
-from tools.abstraction.collapse_hangars import collapse_hangars, count_hangars
-from tools.abstraction.collapse_trailers import collapse_trailers, count_trailers
+from scripts.abstraction.collapse_fuel_levels import collapse_fuel_levels
+from scripts.abstraction.collapse_hangars import collapse_hangars, count_hangars
+from scripts.abstraction.collapse_trailers import collapse_trailers, count_trailers
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

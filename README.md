@@ -82,6 +82,7 @@ project/
 │
 ├── scripts/concrete_planner.py
 ├── scripts/abstract_planner.py
+├── scripts/abstraction/
 │
 ├── core/paths.py
 ├── core/asp.py
@@ -98,8 +99,6 @@ project/
 │   ├── fast_downward.py
 │   └── plasp.py
 ├── core/execution.py
-├── tools/symmetry_abstraction.py
-│
 ├── scripts/utils/reporting.py
 ├── scripts/utils/abstract_plan_log.py
 │
