@@ -51,6 +51,15 @@ class ExampleWorkflowTests(unittest.TestCase):
         self.assertTrue(decrements, result.stdout)
         self.assertGreater(decrements[-1], 0, result.stdout)
 
+    def test_automatic_object_abstraction_selects_the_hangars(self):
+        result = self._run("abstract_object", "auto")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(
+            "Collapsed ['hangar1', 'hangar2', 'hangar3'] into hangarabs",
+            result.stdout,
+        )
+
     def test_no_mystery_concrete_example_finds_a_plan(self):
         self._assert_success(self._run("no_mystery", "concrete"))
 

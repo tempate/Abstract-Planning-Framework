@@ -85,22 +85,19 @@ make -C lib/pddl-symmetries/src/translate/pybliss-0.73
 Collapse a chosen object set explicitly:
 
 ```bash
-python -m scripts.abstract_object \
-    --domain DOMAIN.pddl --problem PROBLEM.pddl \
-    --output-domain ABSTRACT_DOMAIN.pddl \
-    --output-problem ABSTRACT_PROBLEM.pddl \
-    --objects hangar1 hangar2 hangar3
+./examples/abstract_object.sh explicit
 ```
 
 Or detect and rank symmetric object sets automatically:
 
 ```bash
-python -m scripts.abstract_object \
-    --domain DOMAIN.pddl --problem PROBLEM.pddl \
-    --output-domain ABSTRACT_DOMAIN.pddl \
-    --output-problem ABSTRACT_PROBLEM.pddl \
-    --auto --bliss-time-limit 300
+./examples/abstract_object.sh auto
 ```
+
+The example writes generated PDDL below
+`scripts/utils/temp/abstract_object/`. Open
+[`examples/abstract_object.sh`](examples/abstract_object.sh) to see and adapt
+the complete commands, input paths, selected objects, and output paths.
 
 Automatic mode ignores symmetry classes containing domain constants and picks
 the class with the fewest schema-level unary deletes. It breaks ties by

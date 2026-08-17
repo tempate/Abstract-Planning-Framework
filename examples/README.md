@@ -16,6 +16,27 @@ The scripts execute the public `scripts.concrete_planner` and
 `scripts.abstract_planner` entry points directly, making their arguments easy
 to inspect and copy.
 
+## Object abstraction
+
+Generate a Beluga hangar abstraction by selecting the objects explicitly:
+
+```bash
+./examples/abstract_object.sh
+./examples/abstract_object.sh explicit
+```
+
+Generate the same abstraction using PDDL Symmetries to select and rank the
+objects:
+
+```bash
+./examples/abstract_object.sh auto
+```
+
+Automatic selection requires the pybliss extension described in the main
+README. Use `all` to run both variants. Outputs are kept separate under
+`scripts/utils/temp/abstract_object/explicit/` and
+`scripts/utils/temp/abstract_object/auto/`.
+
 ## NoMystery
 
 ```bash

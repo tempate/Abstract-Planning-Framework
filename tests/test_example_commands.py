@@ -1,5 +1,7 @@
 import os
 import subprocess
+import sys
+import tempfile
 import unittest
 from argparse import Namespace
 from pathlib import Path
@@ -44,6 +46,52 @@ class ShellExampleTests(unittest.TestCase):
             "[concrete|abstract|refinement|performance|quick|all]",
             result.stdout,
         )
+
+    def test_abstract_object_example_supports_explicit_and_auto_modes(self):
+        result = self._run("abstract_object", "--help")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("[explicit|auto|all]", result.stdout)
+
+    def test_abstract_object_auto_command_uses_symmetry_selection(self):
+        result = self._run("abstract_object", "auto", "/bin/echo")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("-m scripts.abstract_object", result.stdout)
+        self.assertIn("--auto", result.stdout)
+        self.assertIn("--bliss-time-limit 300", result.stdout)
+        self.assertNotIn("--objects", result.stdout)
+
+    def test_abstract_object_explicit_command_selects_three_hangars(self):
+        result = self._run("abstract_object", "explicit", "/bin/echo")
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("-m scripts.abstract_object", result.stdout)
+        self.assertIn("--objects hangar1 hangar2 hangar3", result.stdout)
+        self.assertNotIn("--auto", result.stdout)
+
+    def test_abstract_object_explicit_example_writes_both_pddl_files(self):
+        with tempfile.TemporaryDirectory(
+            prefix="apf-abstract-object-"
+        ) as directory:
+            environment = os.environ.copy()
+            environment["PYTHON_BIN"] = sys.executable
+            environment["APF_TEMP_DIR"] = directory
+            result = subprocess.run(
+                ["examples/abstract_object.sh", "explicit"],
+                cwd=PROJECT_ROOT,
+                env=environment,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+
+            output = Path(directory, "abstract_object", "explicit")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(Path(output, "domain.pddl").is_file())
+            self.assertTrue(Path(output, "problem.pddl").is_file())
+            problem_text = Path(output, "problem.pddl").read_text()
+            self.assertIn("hangarabs", problem_text)
 
     def test_no_mystery_performance_uses_the_same_p04_problem(self):
         result = self._run("no_mystery", "performance", "/bin/echo")
