@@ -70,8 +70,20 @@ The following tools must be available in the `lib/` directory:
 lib/
 ├── clingo/
 ├── fast-downward/
+├── pddl-symmetries/
 └── planpilot/
 ```
+
+Initialize the PDDL Symmetries submodule and compile its Python extension when
+using automatic object abstraction:
+
+```bash
+git submodule update --init --recursive
+make -C lib/pddl-symmetries/src/translate/pybliss-0.73
+```
+
+See [`scripts/abstraction/README.md`](scripts/abstraction/README.md) for the
+explicit and automatic abstraction commands.
 
 ---
 
