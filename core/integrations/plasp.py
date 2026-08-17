@@ -11,20 +11,12 @@ from core.paths import (
     PLASP_BIN,
 )
 
-_HORIZON_ENCODINGS = {
-    "exact": EXACT_HORIZON_ENCODING,
-    "bounded": BOUNDED_HORIZON_ENCODING,
-}
+_HORIZON_ENCODINGS = {"exact": EXACT_HORIZON_ENCODING, "bounded": BOUNDED_HORIZON_ENCODING}
 
 _SWITCH_RULE_BOUNDS = {"exact": "1", "bounded": "0"}
 
 
-def sas_to_asp(
-    sas_path,
-    asp_path,
-    encoding_type = "exact",
-    abstract_time_steps = False,
-):
+def sas_to_asp(sas_path, asp_path, encoding_type="exact", abstract_time_steps=False):
     """Translate a SAS instance to ASP and prepend its encodings."""
     # Encoding files for translation
     encoding_file = _HORIZON_ENCODINGS[encoding_type]
@@ -38,28 +30,23 @@ def sas_to_asp(
         raise FileNotFoundError(f"plasp binary not found: {PLASP_BIN}")
 
     # Create the output directory if it doesn't exist
-    dir = os.path.dirname(asp_path)
-    os.makedirs(dir, exist_ok=True)
+    output_directory = os.path.dirname(asp_path)
+    os.makedirs(output_directory, exist_ok=True)
 
     with open(asp_path, "w", encoding="utf-8") as asp_file:
         # Write encodings
-        with open(encoding_file, "r", encoding="utf-8") as file:
-            asp_file.write(file.read())
-        with open(time_file, "r", encoding="utf-8") as file:
-            asp_file.write(file.read())
+        with open(encoding_file, "r", encoding="utf-8") as encoding_source:
+            asp_file.write(encoding_source.read())
+        with open(time_file, "r", encoding="utf-8") as time_source:
+            asp_file.write(time_source.read())
 
         # Run plasp translation
         asp_file.flush()
         command = [PLASP_BIN, "translate", sas_path]
-        result = subprocess.run(
-            command,
-            stdout=asp_file,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
+        completed_process = subprocess.run(command, stdout=asp_file, stderr=subprocess.PIPE, text=True)
 
-    if result.returncode != 0:
-        raise RuntimeError(f"plasp failed:\n{result.stderr}")
+    if completed_process.returncode != 0:
+        raise RuntimeError(f"plasp failed:\n{completed_process.stderr}")
 
 
 def append_pddl_facts_to_asp(pddl_path, asp_path):
@@ -92,10 +79,7 @@ def add_switch_to_asp_rule(asp_path, encoding_type="exact"):
     # Define the original rule and the modified rule based on the encoding type
     bound = _SWITCH_RULE_BOUNDS[encoding_type]
     rule_to_modify = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), T > 0."
-    modified_rule = (
-        f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- "
-        "time(T), not switch(T), T > 0."
-    )
+    modified_rule = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), not switch(T), T > 0."
 
     # Read the ASP file, modify the rule, and write it back
     with open(asp_path, "r", encoding="utf-8") as source_file:

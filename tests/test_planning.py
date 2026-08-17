@@ -4,10 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from core.planning.config import (
-    AbstractPlanningConfig,
-    ConcretePlanningConfig,
-)
+from core.planning.config import AbstractPlanningConfig, ConcretePlanningConfig
 from core.planning.concrete import compute_concrete_plan
 from scripts.utils.arguments import nonnegative_int, positive_int
 
@@ -19,12 +16,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.concrete.setup_debug_logger")
     @patch("core.planning.concrete.create_run_dir")
     def test_pipeline_uses_an_explicit_horizon_and_returns_normalized_timings(
-        self,
-        create_run_dir,
-        setup_debug_logger,
-        run_fast_downward,
-        sas_to_asp,
-        run_clingo,
+        self, create_run_dir, setup_debug_logger, run_fast_downward, sas_to_asp, run_clingo
     ):
         with tempfile.TemporaryDirectory() as directory:
             domain = Path(directory, "domain.pddl")
@@ -44,11 +36,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             run_clingo.return_value = ["occurs(action,3)"]
 
             config = ConcretePlanningConfig(
-                domain_path=domain,
-                problem_path=problem,
-                horizon=3,
-                encoding="bounded",
-                time_step=True,
+                domain_path=domain, problem_path=problem, horizon=3, encoding="bounded", time_step=True
             )
             result = compute_concrete_plan(config)
 
@@ -58,23 +46,11 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(result["timings"]["run_id"], directory)
         self.assertEqual(result["configuration"], config.as_dict())
         self.assertIsNone(result["timings"]["iterations"])
-        run_fast_downward.assert_called_once_with(
-            directory,
-            b"domain",
-            b"problem",
-            "concrete",
-            "translate",
-        )
+        run_fast_downward.assert_called_once_with(directory, b"domain", b"problem", "concrete", "translate")
         sas_to_asp.assert_called_once_with(
-            str(Path(directory, "output.sas")),
-            str(Path(directory, "output_c.lp")),
-            "bounded",
-            True,
+            str(Path(directory, "output.sas")), str(Path(directory, "output_c.lp")), "bounded", True
         )
-        run_clingo.assert_called_once_with(
-            [str(Path(directory, "output_c.lp"))],
-            3,
-        )
+        run_clingo.assert_called_once_with([str(Path(directory, "output_c.lp"))], 3)
 
 
 class ArgumentTests(unittest.TestCase):
@@ -95,10 +71,7 @@ class PlanningConfigurationTests(unittest.TestCase):
     def test_shared_defaults_are_explicit(self):
         concrete = ConcretePlanningConfig("domain.pddl", "problem.pddl")
         abstract = AbstractPlanningConfig(
-            "abstract-domain.pddl",
-            "abstract-problem.pddl",
-            "concrete-domain.pddl",
-            "concrete-problem.pddl",
+            "abstract-domain.pddl", "abstract-problem.pddl", "concrete-domain.pddl", "concrete-problem.pddl"
         )
 
         self.assertIsNone(concrete.horizon)

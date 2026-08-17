@@ -12,7 +12,6 @@ from typing import Iterator
 
 from core.paths import TEMP_DIR
 
-
 LOGGER_NAME = "planner_debug"
 
 
@@ -31,10 +30,7 @@ def setup_debug_logger(base_dir):
         logger.removeHandler(handler)
 
     file_handler = logging.FileHandler(log_file, mode="a")
-    formatter = logging.Formatter(
-        "%(asctime)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    formatter = logging.Formatter("%(asctime)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
@@ -65,12 +61,7 @@ def copy_iteration_file(debug_dir, iteration, file_path):
 
 def save_json_iteration_file(debug_dir, iteration, name, data):
     """Serialize an object as a formatted JSON iteration artifact."""
-    save_iteration_file(
-        debug_dir,
-        iteration,
-        name,
-        json.dumps(data, indent=2),
-    )
+    save_iteration_file(debug_dir, iteration, name, json.dumps(data, indent=2))
 
 
 @dataclass
@@ -92,10 +83,7 @@ class PhaseTiming:
 
 
 @contextmanager
-def timed_phase(
-    logger: logging.Logger | None = None,
-    name: str | None = None,
-) -> Iterator[PhaseTiming]:
+def timed_phase(logger: logging.Logger | None = None, name: str | None = None) -> Iterator[PhaseTiming]:
     """Measure a phase and optionally log its duration on exit."""
     timing = PhaseTiming()
     try:

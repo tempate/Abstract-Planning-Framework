@@ -6,25 +6,15 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from core.integrations.clingo import collect_plan, create_control
-from core.integrations.fast_downward import (
-    _get_command,
-    _run_task,
-    calc_horizon,
-)
-from core.integrations.plasp import (
-    add_switch_to_asp_rule,
-    append_pddl_facts_to_asp,
-)
+from core.integrations.fast_downward import _get_command, _run_task, calc_horizon
+from core.integrations.plasp import add_switch_to_asp_rule, append_pddl_facts_to_asp
 
 
 class ClingoIntegrationTests(unittest.TestCase):
     def test_control_receives_the_requested_horizon(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory, "horizon.lp")
-            path.write_text(
-                "step(1..horizon).\n#show step/1.\n",
-                encoding="utf-8",
-            )
+            path.write_text("step(1..horizon).\n#show step/1.\n", encoding="utf-8")
 
             plan = collect_plan(create_control([str(path)], horizon=3))
 
@@ -44,20 +34,12 @@ class FastDownwardHelperTests(unittest.TestCase):
     def test_calc_horizon_counts_only_actions(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory, "sas_plan")
-            path.write_text(
-                "; cost = 2\n\n(move a b)\n  ; planner note\n(load p t l)\n",
-                encoding="utf-8",
-            )
+            path.write_text("; cost = 2\n\n(move a b)\n  ; planner note\n(load p t l)\n", encoding="utf-8")
 
             self.assertEqual(calc_horizon(path), 2)
 
     def test_plan_command_uses_the_active_python_interpreter(self):
-        paths = {
-            "domain": "domain.pddl",
-            "problem": "problem.pddl",
-            "sas": "output.sas",
-            "plan": "sas_plan",
-        }
+        paths = {"domain": "domain.pddl", "problem": "problem.pddl", "sas": "output.sas", "plan": "sas_plan"}
 
         command = _get_command(paths, "plan")
 
@@ -68,39 +50,20 @@ class FastDownwardHelperTests(unittest.TestCase):
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_run_task_surfaces_external_tool_diagnostics(self, run):
         run.return_value = subprocess.CompletedProcess(
-            args=[],
-            returncode=20,
-            stdout="translator output",
-            stderr="search failed",
+            args=[], returncode=20, stdout="translator output", stderr="search failed"
         )
 
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(RuntimeError, "translator output"):
-                _run_task(
-                    "concrete",
-                    directory,
-                    b"domain",
-                    b"problem",
-                    "translate",
-                    Mock(),
-                )
+                _run_task("concrete", directory, b"domain", b"problem", "translate", Mock())
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_run_task_classifies_unsolvable_problems(self, run):
-        run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=11, stdout="", stderr=""
-        )
+        run.return_value = subprocess.CompletedProcess(args=[], returncode=11, stdout="", stderr="")
 
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(RuntimeError, "problem is unsolvable"):
-                _run_task(
-                    "abstract",
-                    directory,
-                    b"domain",
-                    b"problem",
-                    "translate",
-                    Mock(),
-                )
+                _run_task("abstract", directory, b"domain", b"problem", "translate", Mock())
 
 
 class PlaspPostProcessingTests(unittest.TestCase):

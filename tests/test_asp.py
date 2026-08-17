@@ -2,11 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from core.asp import (
-    read_abstract_actions,
-    write_abstract_occurrences,
-    write_asp_program,
-)
+from core.asp import read_abstract_actions, write_abstract_occurrences, write_asp_program
 
 
 class AbstractActionIOTests(unittest.TestCase):
@@ -36,20 +32,14 @@ occurs_abstract(action(("load","p0","t0","l0")), 1).
     def test_read_actions_preserves_commas_inside_an_action(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory, "occurrences.lp")
-            path.write_text(
-                'occurs_abstract(action(("move","a","b")), 7).\n',
-                encoding="utf-8",
-            )
+            path.write_text('occurs_abstract(action(("move","a","b")), 7).\n', encoding="utf-8")
 
-            self.assertEqual(
-                list(read_abstract_actions(path)),
-                [('action(("move","a","b"))', 7)],
-            )
+            self.assertEqual(list(read_abstract_actions(path)), [('action(("move","a","b"))', 7)])
 
     def test_write_occurrences_normalizes_supported_atoms(self):
         atoms = [
             'occurs(action(("load","p0","t0","l0")),1)',
-            'cost(4)',
+            "cost(4)",
             'occurs_abstract(action(("drive","t0","l0","l1")),2)',
         ]
 
@@ -74,10 +64,7 @@ occurs_abstract(action(("load","p0","t0","l0")), 1).
 
             write_asp_program(path, statements)
 
-            self.assertEqual(
-                path.read_text(encoding="utf-8"),
-                "value(0).\nvalue(1).\nvalue(2).",
-            )
+            self.assertEqual(path.read_text(encoding="utf-8"), "value(0).\nvalue(1).\nvalue(2).")
 
 
 if __name__ == "__main__":

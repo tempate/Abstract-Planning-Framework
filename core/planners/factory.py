@@ -1,7 +1,6 @@
 from core.planners.BelugaPlanner import BelugaPlanner
 from core.planners.NoMysteryPlanner import NoMysteryPlanner
 
-
 PLANNER_TYPES = ("beluga", "no_mystery")
 
 

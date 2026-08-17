@@ -5,7 +5,6 @@ from dataclasses import asdict, dataclass
 from os import PathLike
 from typing import Any
 
-
 Path = str | PathLike[str]
 DEFAULT_HORIZON = None
 DEFAULT_ENCODING = "exact"
@@ -50,11 +49,7 @@ class AbstractPlanningConfig:
 
     def __post_init__(self):
         if self.concrete_objects is not None:
-            object.__setattr__(
-                self,
-                "concrete_objects",
-                tuple(self.concrete_objects),
-            )
+            object.__setattr__(self, "concrete_objects", tuple(self.concrete_objects))
 
     def as_dict(self) -> dict[str, Any]:
         """Return a result- and log-friendly representation."""

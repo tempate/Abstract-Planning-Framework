@@ -6,7 +6,6 @@ import os
 
 from core.paths import BASE_JSON_DIR
 
-
 _HASH_LENGTH = 16
 
 
@@ -55,12 +54,7 @@ def _save_plan_log(path, data):
 
 
 def initialize_plan_log(
-    path,
-    problem_hash,
-    abstract_problem_path,
-    concrete_problem_path,
-    abstract_symbol=None,
-    concrete_objects=None,
+    path, problem_hash, abstract_problem_path, concrete_problem_path, abstract_symbol=None, concrete_objects=None
 ):
     """Create an abstract-plan log containing its mapping metadata."""
     if os.path.exists(path):
@@ -85,12 +79,7 @@ def record_plan_attempt(path, abstract_atoms, success, bad_actions):
     plan_hash = hash_abstract_plan(abstract_atoms)
     plan_entry = data["plans"].setdefault(
         plan_hash,
-        {
-            "plan": [str(atom) for atom in abstract_atoms],
-            "success_count": 0,
-            "failure_count": 0,
-            "failures": [],
-        },
+        {"plan": [str(atom) for atom in abstract_atoms], "success_count": 0, "failure_count": 0, "failures": []},
     )
     plan_entry.setdefault("success_count", 0)
     plan_entry.setdefault("failure_count", 0)

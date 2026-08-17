@@ -4,10 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from core.planning.abstract import (
-    _get_planning_paths,
-    _select_abstract_horizon,
-)
+from core.planning.abstract import _get_planning_paths, _select_abstract_horizon
 from core.planning.config import AbstractPlanningConfig
 from core.planning.refinement.ClingoRefinement import ClingoRefinement
 from core.planning.refinement.FastDownwardRefinement import FastDownwardRefinement
@@ -31,10 +28,7 @@ class AbstractPlanningHelperTests(unittest.TestCase):
             paths = _get_planning_paths(directory)
 
             self.assertEqual(paths.concrete_asp, str(Path(directory, "output_c.lp")))
-            self.assertEqual(
-                paths.abstract_asp,
-                str(Path(directory, "abstract", "output_a.lp")),
-            )
+            self.assertEqual(paths.abstract_asp, str(Path(directory, "abstract", "output_a.lp")))
             self.assertTrue(Path(directory, "clingo").is_dir())
             self.assertEqual(paths.occurrences, str(Path(directory, "clingo", "occurs_abs.lp")))
             self.assertEqual(paths.mapping, str(Path(directory, "clingo", "map.lp")))
@@ -44,14 +38,8 @@ class RefinementStrategyTests(unittest.TestCase):
     def test_factory_selects_the_requested_strategy(self):
         context = object()
 
-        self.assertIsInstance(
-            get_refinement_strategy("clingo", context),
-            ClingoRefinement,
-        )
-        self.assertIsInstance(
-            get_refinement_strategy("fd", context),
-            FastDownwardRefinement,
-        )
+        self.assertIsInstance(get_refinement_strategy("clingo", context), ClingoRefinement)
+        self.assertIsInstance(get_refinement_strategy("fd", context), FastDownwardRefinement)
 
     def test_mapping_receives_configuration_values(self):
         planner = Mock()
@@ -66,20 +54,14 @@ class RefinementStrategyTests(unittest.TestCase):
         context = SimpleNamespace(
             config=config,
             planner=planner,
-            paths=SimpleNamespace(
-                occurrences="occurrences.lp",
-                mapping="mapping.lp",
-            ),
+            paths=SimpleNamespace(occurrences="occurrences.lp", mapping="mapping.lp"),
             logger=Mock(),
         )
 
         ClingoRefinement(context).build_mapping()
 
         planner.build_mapping.assert_called_once_with(
-            "occurrences.lp",
-            "mapping.lp",
-            "hangarabs",
-            ("hangar1", "hangar2"),
+            "occurrences.lp", "mapping.lp", "hangarabs", ("hangar1", "hangar2")
         )
 
     def test_fast_downward_plan_conversion_skips_comments_and_numbers_steps(self):
@@ -95,9 +77,7 @@ class RefinementStrategyTests(unittest.TestCase):
             destination = Path(directory, "occurrences.lp")
             source.write_text(plan, encoding="utf-8")
 
-            atoms = FastDownwardRefinement.plan_to_abstract_atoms(
-                object(), source, destination
-            )
+            atoms = FastDownwardRefinement.plan_to_abstract_atoms(object(), source, destination)
 
             self.assertEqual(
                 atoms,
@@ -107,10 +87,7 @@ class RefinementStrategyTests(unittest.TestCase):
                     'occurs_abstract(action("wait"), 3).',
                 ],
             )
-            self.assertEqual(
-                destination.read_text(encoding="utf-8"),
-                "\n".join(atoms),
-            )
+            self.assertEqual(destination.read_text(encoding="utf-8"), "\n".join(atoms))
 
 
 if __name__ == "__main__":

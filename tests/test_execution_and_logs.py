@@ -13,11 +13,7 @@ from core.execution import (
     save_json_iteration_file,
     setup_debug_logger,
 )
-from scripts.utils.abstract_plan_log import (
-    hash_abstract_plan,
-    initialize_plan_log,
-    record_plan_attempt,
-)
+from scripts.utils.abstract_plan_log import hash_abstract_plan, initialize_plan_log, record_plan_attempt
 
 
 class ExecutionArtifactTests(unittest.TestCase):
@@ -39,10 +35,7 @@ class ExecutionArtifactTests(unittest.TestCase):
             save_json_iteration_file(debug_dir, 2, "values.json", {"value": 3})
             copied_path = copy_iteration_file(debug_dir, 3, text_path)
 
-            self.assertIn(
-                "test message",
-                Path(debug_dir, "planner_debug.log").read_text(encoding="utf-8"),
-            )
+            self.assertIn("test message", Path(debug_dir, "planner_debug.log").read_text(encoding="utf-8"))
             self.assertEqual(Path(text_path).read_text(encoding="utf-8"), "fact.\n")
             self.assertEqual(json.loads(json_path.read_text(encoding="utf-8")), {"value": 3})
             self.assertEqual(Path(copied_path).read_text(encoding="utf-8"), "fact.\n")
@@ -113,10 +106,7 @@ class AbstractPlanLogTests(unittest.TestCase):
 
             initialize_plan_log(path, "hash", "abstract", "concrete")
 
-            self.assertEqual(
-                json.loads(path.read_text(encoding="utf-8")),
-                {"sentinel": True},
-            )
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8")), {"sentinel": True})
 
 
 if __name__ == "__main__":

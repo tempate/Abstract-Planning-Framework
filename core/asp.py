@@ -14,7 +14,7 @@ def read_abstract_actions(path: str | Path) -> Iterator[tuple[str, int]]:
             line = line.strip()
             if not line.startswith("occurs_abstract("):
                 continue
-            inner = line[len("occurs_abstract("):].rstrip(").")
+            inner = line[len("occurs_abstract(") :].rstrip(").")
             if "," in inner:
                 action, raw_time_step = inner.rsplit(",", 1)
                 actions.append((action.strip(), int(raw_time_step.strip())))
@@ -36,7 +36,7 @@ def write_abstract_occurrences(atoms, output_path):
         for atom in atoms:
             atom = atom.strip()
             if atom.startswith("occurs("):
-                statements.append("occurs_abstract" + atom[len("occurs"):] + ".")
+                statements.append("occurs_abstract" + atom[len("occurs") :] + ".")
             elif atom.startswith("occurs_abstract("):
                 statements.append(atom + ".")
 
