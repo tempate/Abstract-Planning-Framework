@@ -9,32 +9,13 @@ from core.symmetry_abstraction import (
     find_symmetric_object_sets,
     rank_symmetry_classes,
 )
+from .utils.arguments import positive_int
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument("domain", type=Path, help="Concrete domain PDDL")
-    parser.add_argument("problem", type=Path, help="Concrete problem PDDL")
-    parser.add_argument("output_domain", type=Path, help="Abstract domain to write")
-    parser.add_argument("output_problem", type=Path, help="Abstract problem to write")
-    selection = parser.add_mutually_exclusive_group(required=True)
-    selection.add_argument("--objects", nargs="+", help="Objects to collapse")
-    selection.add_argument(
-        "--auto", action="store_true",
-        help="Select one class using PDDL Symmetries",
-    )
-    parser.add_argument("--abstract-name", help="Name of the collapsed object")
-    parser.add_argument(
-        "--bliss-time-limit", type=int, default=300,
-        help="PDDL Symmetries search limit in seconds",
-    )
+    parser = _argument_parser()
     args = parser.parse_args()
 
-    if args.bliss_time_limit < 1:
-        parser.error("--bliss-time-limit must be positive")
     if args.output_domain.resolve() == args.output_problem.resolve():
         parser.error("domain and problem outputs must be different files")
     for output in (args.output_domain, args.output_problem):
@@ -49,11 +30,8 @@ def main() -> None:
             classes = find_symmetric_object_sets(
                 args.domain, args.problem, args.bliss_time_limit,
             )
-        except RuntimeError as error:
-            parser.error(str(error))
-        try:
             ranked = rank_symmetry_classes(domain_text, problem_text, classes)
-        except AbstractionError as error:
+        except (AbstractionError, RuntimeError) as error:
             parser.error(str(error))
         if not ranked:
             parser.error("PDDL Symmetries found no non-trivial object classes")
@@ -86,6 +64,56 @@ def main() -> None:
         print(f"  {removed.action}: (not ({removed.predicate} {removed.variable}))")
     print(f"Written abstract domain to: {args.output_domain}")
     print(f"Written abstract problem to: {args.output_problem}")
+
+
+def _argument_parser():
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument(
+        "--domain",
+        type=Path,
+        required=True,
+        default=argparse.SUPPRESS,
+        help="Concrete domain PDDL",
+    )
+    parser.add_argument(
+        "--problem",
+        type=Path,
+        required=True,
+        default=argparse.SUPPRESS,
+        help="Concrete problem PDDL",
+    )
+    parser.add_argument(
+        "--output-domain",
+        type=Path,
+        required=True,
+        default=argparse.SUPPRESS,
+        help="Abstract domain to write",
+    )
+    parser.add_argument(
+        "--output-problem",
+        type=Path,
+        required=True,
+        default=argparse.SUPPRESS,
+        help="Abstract problem to write",
+    )
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("--objects", nargs="+", help="Objects to collapse")
+    selection.add_argument(
+        "--auto",
+        action="store_true",
+        help="Select one class using PDDL Symmetries",
+    )
+    parser.add_argument("--abstract-name", help="Name of the collapsed object")
+    parser.add_argument(
+        "--bliss-time-limit",
+        type=positive_int,
+        default=300,
+        help="PDDL Symmetries search limit in seconds",
+    )
+    return parser
 
 
 if __name__ == "__main__":

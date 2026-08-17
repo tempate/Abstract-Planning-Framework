@@ -12,6 +12,7 @@ from core.symmetry_abstraction import (
     find_symmetric_object_sets,
     rank_symmetry_classes,
 )
+from scripts.abstract_object import _argument_parser
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -213,6 +214,33 @@ class SymmetrySelectionTests(unittest.TestCase):
 
             with self.assertRaisesRegex(RuntimeError, "bliss is not built"):
                 find_symmetric_object_sets("d.pddl", "p.pddl", 10, translator)
+
+
+class AbstractionArgumentTests(unittest.TestCase):
+    def test_explicit_selection_arguments(self):
+        args = _argument_parser().parse_args([
+            "--domain", "domain.pddl",
+            "--problem", "problem.pddl",
+            "--output-domain", "abstract-domain.pddl",
+            "--output-problem", "abstract-problem.pddl",
+            "--objects", "hangar1", "hangar2",
+        ])
+
+        self.assertEqual(args.domain, Path("domain.pddl"))
+        self.assertEqual(args.objects, ["hangar1", "hangar2"])
+        self.assertFalse(args.auto)
+
+    def test_automatic_selection_arguments(self):
+        args = _argument_parser().parse_args([
+            "--domain", "domain.pddl",
+            "--problem", "problem.pddl",
+            "--output-domain", "abstract-domain.pddl",
+            "--output-problem", "abstract-problem.pddl",
+            "--auto",
+        ])
+
+        self.assertTrue(args.auto)
+        self.assertIsNone(args.objects)
 
 
 @unittest.skipUnless(

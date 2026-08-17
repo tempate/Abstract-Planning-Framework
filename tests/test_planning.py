@@ -1,3 +1,4 @@
+import argparse
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,7 +9,7 @@ from core.planning.config import (
     ConcretePlanningConfig,
 )
 from core.planning.concrete import compute_concrete_plan
-from scripts.utils.arguments import nonnegative_int
+from scripts.utils.arguments import nonnegative_int, positive_int
 
 
 class ConcretePlanningOrchestrationTests(unittest.TestCase):
@@ -84,6 +85,10 @@ class ArgumentTests(unittest.TestCase):
     def test_nonnegative_integer_rejects_negative_values(self):
         with self.assertRaisesRegex(Exception, "must be nonnegative"):
             nonnegative_int("-1")
+
+    def test_positive_integer_rejects_zero(self):
+        with self.assertRaises(argparse.ArgumentTypeError):
+            positive_int("0")
 
 
 class PlanningConfigurationTests(unittest.TestCase):

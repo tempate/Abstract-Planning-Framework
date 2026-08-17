@@ -86,7 +86,9 @@ Collapse a chosen object set explicitly:
 
 ```bash
 python -m scripts.abstract_object \
-    DOMAIN.pddl PROBLEM.pddl ABSTRACT_DOMAIN.pddl ABSTRACT_PROBLEM.pddl \
+    --domain DOMAIN.pddl --problem PROBLEM.pddl \
+    --output-domain ABSTRACT_DOMAIN.pddl \
+    --output-problem ABSTRACT_PROBLEM.pddl \
     --objects hangar1 hangar2 hangar3
 ```
 
@@ -94,7 +96,9 @@ Or detect and rank symmetric object sets automatically:
 
 ```bash
 python -m scripts.abstract_object \
-    DOMAIN.pddl PROBLEM.pddl ABSTRACT_DOMAIN.pddl ABSTRACT_PROBLEM.pddl \
+    --domain DOMAIN.pddl --problem PROBLEM.pddl \
+    --output-domain ABSTRACT_DOMAIN.pddl \
+    --output-problem ABSTRACT_PROBLEM.pddl \
     --auto --bliss-time-limit 300
 ```
 
