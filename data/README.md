@@ -6,11 +6,11 @@ data/
 └── benchmarks/            # Beluga and NoMystery benchmark collections
 ```
 
-The small NoMystery inputs provide stable quick starts:
+Run the small NoMystery inputs explicitly with:
 
 ```bash
-./examples/concrete.sh
-./examples/abstract.sh
+./examples/concrete.sh no_mystery
+./examples/abstract.sh no_mystery
 ```
 
 The refinement and performance scripts use matched problems from

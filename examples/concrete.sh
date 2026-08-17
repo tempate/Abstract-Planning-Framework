@@ -26,7 +26,7 @@ usage() {
     echo "Usage: $0 [no_mystery|beluga|all]"
 }
 
-domain="${1:-no_mystery}"
+domain="${1:-beluga}"
 case "$domain" in
     no_mystery)
         run_no_mystery

@@ -40,23 +40,20 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertIn("[no_mystery|beluga|all]", result.stdout)
 
-    def test_performance_example_requires_domain_selection(self):
+    def test_performance_example_supports_domain_selection(self):
         result = self._run("performance", "--help")
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("{no_mystery|beluga|all}", result.stdout)
+        self.assertIn("[no_mystery|beluga|all]", result.stdout)
 
-        missing_domain = self._run("performance")
-        self.assertEqual(missing_domain.returncode, 2)
-
-    def test_quick_workflows_default_to_no_mystery(self):
-        for example in ("concrete", "abstract", "refinement"):
+    def test_planning_workflows_default_to_beluga(self):
+        for example in ("concrete", "abstract", "refinement", "performance"):
             with self.subTest(example=example):
                 result = self._run(example, python_bin="/bin/echo")
 
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("no_mystery", result.stdout)
-                self.assertNotIn("--profile beluga", result.stdout)
+                self.assertIn("beluga", result.stdout)
+                self.assertNotIn("no_mystery", result.stdout)
 
     def test_abstract_object_example_supports_explicit_and_auto_modes(self):
         result = self._run("abstract_object", "--help")

@@ -47,15 +47,11 @@ run_beluga() {
 }
 
 usage() {
-    echo "Usage: $0 {no_mystery|beluga|all}"
+    echo "Usage: $0 [no_mystery|beluga|all]"
 }
 
-if [[ $# -eq 0 ]]; then
-    usage >&2
-    exit 2
-fi
-
-case "$1" in
+domain="${1:-beluga}"
+case "$domain" in
     no_mystery)
         run_no_mystery
         ;;

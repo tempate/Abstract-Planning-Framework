@@ -5,10 +5,10 @@ from the repository root.
 
 | Script | Default | Choices |
 | --- | --- | --- |
-| `concrete.sh` | NoMystery | `no_mystery`, `beluga`, `all` |
-| `abstract.sh` | NoMystery | `no_mystery`, `beluga`, `all` |
-| `refinement.sh` | NoMystery | `no_mystery`, `beluga`, `all` |
-| `performance.sh` | none | `no_mystery`, `beluga`, `all` |
+| `concrete.sh` | Beluga | `no_mystery`, `beluga`, `all` |
+| `abstract.sh` | Beluga | `no_mystery`, `beluga`, `all` |
+| `refinement.sh` | Beluga | `no_mystery`, `beluga`, `all` |
+| `performance.sh` | Beluga | `no_mystery`, `beluga`, `all` |
 | `abstract_object.sh` | explicit | `explicit`, `auto`, `all` |
 
 ## Planning
@@ -17,12 +17,12 @@ from the repository root.
 ./examples/concrete.sh [no_mystery|beluga|all]
 ./examples/abstract.sh [no_mystery|beluga|all]
 ./examples/refinement.sh [no_mystery|beluga|all]
-./examples/performance.sh {no_mystery|beluga|all}
+./examples/performance.sh [no_mystery|beluga|all]
 ```
 
 `refinement.sh` first runs the concrete task, then an abstract version that
 requires decremental relaxation. `performance.sh` uses larger matched tasks
-and requires an explicit domain to avoid launching a long run accidentally.
+and can take a minute or longer.
 
 ## Object abstraction
 

@@ -26,24 +26,23 @@ make -C lib/pddl-symmetries/src/translate/pybliss-0.73
 
 ## Try it
 
-The examples contain complete, copyable CLI commands. NoMystery is the default
-quick domain; pass `beluga` or `all` to select another domain.
+The examples contain complete, copyable CLI commands. Beluga is the default;
+pass `no_mystery` or `all` to select another domain.
 
 ```bash
 ./examples/concrete.sh
 ./examples/abstract.sh
 ./examples/refinement.sh
 
-./examples/concrete.sh beluga
-./examples/abstract.sh beluga
+./examples/concrete.sh no_mystery
+./examples/abstract.sh no_mystery
 ```
 
-Performance comparisons require an explicit domain because they can take a
-minute or longer:
+Performance comparisons can take a minute or longer:
 
 ```bash
+./examples/performance.sh
 ./examples/performance.sh no_mystery
-./examples/performance.sh beluga
 ```
 
 See [examples/README.md](examples/README.md) for the workflow and object
