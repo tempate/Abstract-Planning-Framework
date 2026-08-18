@@ -258,6 +258,10 @@ class SymmetrySelectionTests(unittest.TestCase):
         self.assertEqual(ranked[0].unary_delete_score, 1)
         self.assertEqual(ranked[1].objects[0], "beluga_trailer_1")
         self.assertEqual(ranked[1].unary_delete_score, 4)
+        self.assertEqual(
+            [removed.action for removed in ranked[1].removed_deletes],
+            ["unload-beluga", "get-from-hangar", "pick-up-rack", "unstack-rack"],
+        )
 
     def test_equal_scores_prefer_the_largest_class(self):
         domain = """

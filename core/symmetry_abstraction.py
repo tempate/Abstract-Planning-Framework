@@ -28,7 +28,11 @@ class RelaxedDelete:
 class RankedSymmetryClass:
     objects: tuple[str, ...]
     object_type: str
-    unary_delete_score: int
+    removed_deletes: tuple[RelaxedDelete, ...]
+
+    @property
+    def unary_delete_score(self):
+        return len(self.removed_deletes)
 
 
 @dataclass(frozen=True)
@@ -517,7 +521,7 @@ def rank_symmetry_classes(domain_text, problem_text, classes):
     known_names = set(problem_objects) | constant_names
 
     ranked = []
-    scores_by_type = {}
+    deletes_by_type = {}
     seen_classes = set()
     for symmetry_class in classes:
         requested = tuple(sorted(dict.fromkeys(_normalized(name) for name in symmetry_class)))
@@ -537,13 +541,13 @@ def rank_symmetry_classes(domain_text, problem_text, classes):
             raise AbstractionError("A symmetry class contains objects of different types")
         object_type = declared[0][1]
         normalized_type = _normalized(object_type)
-        if normalized_type not in scores_by_type:
-            scores_by_type[normalized_type] = unary_delete_score(domain_text, object_type)
+        if normalized_type not in deletes_by_type:
+            deletes_by_type[normalized_type] = tuple(_relax_domain(_parse(domain_text, "domain"), object_type))
         ranked.append(
             RankedSymmetryClass(
                 objects=tuple(name for name, _ in declared),
                 object_type=object_type,
-                unary_delete_score=scores_by_type[normalized_type],
+                removed_deletes=deletes_by_type[normalized_type],
             )
         )
 

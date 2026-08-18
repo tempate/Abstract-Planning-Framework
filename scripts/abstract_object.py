@@ -51,6 +51,8 @@ def _report(args, result, ranked):
             print(
                 f"  {rank}. {list(item.objects)} " f"(type={item.object_type}, unary deletes={item.unary_delete_score})"
             )
+            for removed in item.removed_deletes:
+                print(f"    {removed.action}: (not ({removed.predicate} {removed.variable}))")
     print(f"Collapsed {list(result.objects)} into {result.abstract_name} " f"(type={result.object_type})")
     print(f"Relaxed {result.unary_delete_score} unary delete effects")
     for removed in result.removed_deletes:
