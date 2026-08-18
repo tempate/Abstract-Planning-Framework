@@ -6,15 +6,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
 
 
-@unittest.skipUnless(
-    RUN_INTEGRATION,
-    "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain",
-)
+@unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
 class ExampleWorkflowTests(unittest.TestCase):
     def _run(self, example, workflow):
         environment = os.environ.copy()
@@ -32,22 +28,11 @@ class ExampleWorkflowTests(unittest.TestCase):
 
     def _assert_success(self, result, expected_plans=1):
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(
-            result.stdout.count("Plan found: yes"),
-            expected_plans,
-            result.stdout,
-        )
+        self.assertEqual(result.stdout.count("Plan found: yes"), expected_plans, result.stdout)
 
     def _assert_refinement(self, result):
         self._assert_success(result, expected_plans=2)
-        decrements = [
-            int(value)
-            for value in re.findall(
-                r"^Decrements: (\d+)$",
-                result.stdout,
-                flags=re.MULTILINE,
-            )
-        ]
+        decrements = [int(value) for value in re.findall(r"^Decrements: (\d+)$", result.stdout, flags=re.MULTILINE)]
         self.assertTrue(decrements, result.stdout)
         self.assertGreater(decrements[-1], 0, result.stdout)
 
@@ -55,10 +40,7 @@ class ExampleWorkflowTests(unittest.TestCase):
         result = self._run("abstract_object", "auto")
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn(
-            "Collapsed ['hangar1', 'hangar2', 'hangar3'] into hangarabs",
-            result.stdout,
-        )
+        self.assertIn("Collapsed ['hangar1', 'hangar2', 'hangar3'] into hangarabs", result.stdout)
 
     def test_no_mystery_concrete_example_finds_a_plan(self):
         self._assert_success(self._run("concrete", "no_mystery"))
