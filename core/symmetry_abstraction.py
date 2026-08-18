@@ -28,7 +28,11 @@ class RelaxedDelete:
 class RankedSymmetryClass:
     objects: tuple[str, ...]
     object_type: str
-    unary_delete_score: int
+    removed_deletes: tuple[RelaxedDelete, ...]
+
+    @property
+    def unary_delete_score(self):
+        return len(self.removed_deletes)
 
 
 @dataclass(frozen=True)
@@ -262,7 +266,7 @@ def _action_field(action, keyword):
     return None
 
 
-def _relax_effect(effect, variables, object_type, unary_predicates, parents, action_name, removed):
+def _relax_effect(effect, variables, object_type, unary_predicates, parents, action_name, removed, allowed_deletes):
     if not isinstance(effect, list) or not effect:
         return effect
     head = _head(effect)
@@ -270,19 +274,23 @@ def _relax_effect(effect, variables, object_type, unary_predicates, parents, act
     if head == "and":
         children = []
         for child in effect[1:]:
-            transformed = _relax_effect(child, variables, object_type, unary_predicates, parents, action_name, removed)
+            transformed = _relax_effect(
+                child, variables, object_type, unary_predicates, parents, action_name, removed, allowed_deletes
+            )
             if transformed is not None:
                 children.append(transformed)
         return [effect[0], *children] if children else None
 
     if head == "when" and len(effect) == 3:
-        transformed = _relax_effect(effect[2], variables, object_type, unary_predicates, parents, action_name, removed)
+        transformed = _relax_effect(
+            effect[2], variables, object_type, unary_predicates, parents, action_name, removed, allowed_deletes
+        )
         return [effect[0], effect[1], transformed] if transformed is not None else None
 
     if head == "forall" and len(effect) == 3 and isinstance(effect[1], list):
         nested_variables = variables | _variable_types(effect[1], parents, f"forall effect in action {action_name}")
         transformed = _relax_effect(
-            effect[2], nested_variables, object_type, unary_predicates, parents, action_name, removed
+            effect[2], nested_variables, object_type, unary_predicates, parents, action_name, removed, allowed_deletes
         )
         return [effect[0], effect[1], transformed] if transformed is not None else None
 
@@ -291,7 +299,12 @@ def _relax_effect(effect, variables, object_type, unary_predicates, parents, act
         if len(literal) == 2 and _head(literal) in unary_predicates:
             argument = _symbol(literal[1])
             parameter_type = variables.get(_normalized(argument))
-            if parameter_type and _is_subtype(object_type, parameter_type, parents):
+            delete_key = (_normalized(action_name), _head(literal), _normalized(argument))
+            if (
+                parameter_type
+                and _is_subtype(object_type, parameter_type, parents)
+                and (allowed_deletes is None or delete_key in allowed_deletes)
+            ):
                 removed.append(
                     RelaxedDelete(
                         action=action_name,
@@ -313,7 +326,7 @@ def _variable_types(declarations, parents, label):
     return result
 
 
-def _relax_domain(domain, object_type):
+def _relax_domain(domain, object_type, allowed_deletes=None):
     parents = _domain_types(domain)
     if _normalized(object_type) not in parents:
         raise AbstractionError(f"Unknown PDDL object type: {object_type}")
@@ -337,9 +350,98 @@ def _relax_domain(domain, object_type):
         if effect_field is None:
             raise AbstractionError(f"Action {action_name} has no :effect")
         effect_index, effect = effect_field
-        transformed = _relax_effect(effect, variables, object_type, predicates, parents, action_name, removed)
+        transformed = _relax_effect(
+            effect, variables, object_type, predicates, parents, action_name, removed, allowed_deletes
+        )
         action[effect_index] = transformed if transformed is not None else ["and"]
     return removed
+
+
+def _effect_predicates(effect):
+    if not isinstance(effect, list) or not effect:
+        return set()
+    head = _head(effect)
+    if head == "and":
+        return set().union(*(_effect_predicates(child) for child in effect[1:]))
+    if head in {"when", "forall"} and len(effect) == 3:
+        return _effect_predicates(effect[2])
+    if head == "not" and len(effect) == 2:
+        return {_head(effect[1])} if isinstance(effect[1], list) else set()
+    if head in {"assign", "decrease", "increase", "scale-down", "scale-up"}:
+        return set()
+    return {head} if head else set()
+
+
+def _static_predicates(domain):
+    declarations = _find_form(domain, ":predicates")
+    declared = {_head(item) for item in declarations[1:] if isinstance(item, list)} if declarations else set()
+    changed = set()
+    for action in domain:
+        if not isinstance(action, list) or _head(action) != ":action":
+            continue
+        effect = _action_field(action, ":effect")
+        if effect is not None:
+            changed.update(_effect_predicates(effect[1]))
+    return declared - changed
+
+
+def _static_variable_preconditions(expression, variable, static_predicates):
+    if not isinstance(expression, list) or not expression:
+        return []
+    if _head(expression) == "and":
+        return [
+            atom
+            for child in expression[1:]
+            for atom in _static_variable_preconditions(child, variable, static_predicates)
+        ]
+    if _head(expression) in static_predicates and any(
+        isinstance(item, str) and _normalized(item) == variable for item in expression[1:]
+    ):
+        return [expression]
+    return []
+
+
+def _matches_static_fact(atom, fact, variable, object_name):
+    if not isinstance(fact, list) or len(atom) != len(fact) or _head(atom) != _head(fact):
+        return False
+    for expected, actual in zip(atom[1:], fact[1:]):
+        if not isinstance(expected, str) or not isinstance(actual, str):
+            if _expression_key(expected) != _expression_key(actual):
+                return False
+        elif expected.startswith("?"):
+            if _normalized(expected) == variable and _normalized(actual) != _normalized(object_name):
+                return False
+        elif _normalized(expected) != _normalized(actual):
+            return False
+    return True
+
+
+def _action_possible_for_objects(action, variable, objects, static_predicates, initial_facts):
+    precondition = _action_field(action, ":precondition")
+    atoms = _static_variable_preconditions(precondition[1], variable, static_predicates) if precondition else []
+    return not atoms or any(
+        all(any(_matches_static_fact(atom, fact, variable, object_name) for fact in initial_facts) for atom in atoms)
+        for object_name in objects
+    )
+
+
+def _applicable_deletes(domain, problem, object_type, objects):
+    static_predicates = _static_predicates(domain)
+    init = _find_form(problem, ":init")
+    initial_facts = [fact for fact in init[1:] if isinstance(fact, list) and _head(fact) not in {"=", "not"}]
+    actions = {
+        _normalized(_symbol(action[1])): action
+        for action in domain
+        if isinstance(action, list) and _head(action) == ":action" and len(action) > 1
+    }
+    removed = _relax_domain(domain, object_type)
+    return tuple(
+        item
+        for item in removed
+        if _action_possible_for_objects(
+            actions[_normalized(item.action)], _normalized(item.variable), objects, static_predicates, initial_facts
+        )
+    )
 
 
 def _validate_task_pair(domain, problem):
@@ -489,8 +591,15 @@ def abstract_task(domain_text, problem_text, objects, abstract_name=None):
     problem = _parse(problem_text, "problem")
     _validate_task_pair(domain, problem)
     selection = _prepare_selection(domain, problem, objects, abstract_name)
+    applicable_deletes = _applicable_deletes(
+        _parse(domain_text, "domain"), problem, selection.object_type, selection.objects
+    )
     _rewrite_problem(problem, selection)
-    removed = _relax_domain(domain, selection.object_type)
+    allowed_deletes = {
+        (_normalized(item.action), _normalized(item.predicate), _normalized(item.variable))
+        for item in applicable_deletes
+    }
+    removed = _relax_domain(domain, selection.object_type, allowed_deletes)
     return AbstractionResult(
         domain_text=_dump(domain),
         problem_text=_dump(problem),
@@ -517,7 +626,6 @@ def rank_symmetry_classes(domain_text, problem_text, classes):
     known_names = set(problem_objects) | constant_names
 
     ranked = []
-    scores_by_type = {}
     seen_classes = set()
     for symmetry_class in classes:
         requested = tuple(sorted(dict.fromkeys(_normalized(name) for name in symmetry_class)))
@@ -536,14 +644,12 @@ def rank_symmetry_classes(domain_text, problem_text, classes):
         if len(types) != 1:
             raise AbstractionError("A symmetry class contains objects of different types")
         object_type = declared[0][1]
-        normalized_type = _normalized(object_type)
-        if normalized_type not in scores_by_type:
-            scores_by_type[normalized_type] = unary_delete_score(domain_text, object_type)
+        removed_deletes = _applicable_deletes(
+            _parse(domain_text, "domain"), problem, object_type, tuple(name for name, _ in declared)
+        )
         ranked.append(
             RankedSymmetryClass(
-                objects=tuple(name for name, _ in declared),
-                object_type=object_type,
-                unary_delete_score=scores_by_type[normalized_type],
+                objects=tuple(name for name, _ in declared), object_type=object_type, removed_deletes=removed_deletes
             )
         )
 

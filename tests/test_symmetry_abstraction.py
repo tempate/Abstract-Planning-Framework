@@ -220,23 +220,18 @@ class ObjectAbstractionTests(unittest.TestCase):
             pddl_tokens((expected_dir / f"{problem_name}_abs.pddl").read_text(encoding="utf-8")),
         )
 
-    def test_type_wide_trailer_output_matches_legacy_domain(self):
+    def test_trailer_abstraction_ignores_statically_impossible_actions(self):
         domain = (BELUGA_CONCRETE / "domain.pddl").read_text(encoding="utf-8")
         problem_name = "problem_3_s45_j3_r2_oc44_f3"
         problem = (BELUGA_CONCRETE / f"{problem_name}.pddl").read_text(encoding="utf-8")
 
         result = abstract_task(domain, problem, ["beluga_trailer_1", "beluga_trailer_2"], "beluga_abs_trailer")
-        expected_dir = PROJECT_ROOT / "data" / "beluga" / "abstract" / "trailer"
-
-        self.assertEqual(result.unary_delete_score, 4)
+        self.assertEqual(result.unary_delete_score, 3)
         self.assertEqual(
-            pddl_tokens(result.domain_text),
-            pddl_tokens((expected_dir / "domain_legacy.pddl").read_text(encoding="utf-8")),
+            [removed.action for removed in result.removed_deletes], ["unload-beluga", "pick-up-rack", "unstack-rack"]
         )
-        self.assertEqual(
-            pddl_tokens(result.problem_text),
-            pddl_tokens((expected_dir / f"{problem_name}_abs.pddl").read_text(encoding="utf-8")),
-        )
+        get_from_hangar = result.domain_text.split("get-from-hangar", 1)[1].split("deliver-to-hangar", 1)[0]
+        self.assertIn("(not\n        (empty ?t)", get_from_hangar)
 
 
 class SymmetrySelectionTests(unittest.TestCase):
@@ -257,7 +252,14 @@ class SymmetrySelectionTests(unittest.TestCase):
         self.assertEqual(ranked[0].objects, ("hangar1", "hangar2", "hangar3"))
         self.assertEqual(ranked[0].unary_delete_score, 1)
         self.assertEqual(ranked[1].objects[0], "beluga_trailer_1")
-        self.assertEqual(ranked[1].unary_delete_score, 4)
+        self.assertEqual(ranked[1].unary_delete_score, 3)
+        self.assertEqual(
+            [removed.action for removed in ranked[1].removed_deletes], ["unload-beluga", "pick-up-rack", "unstack-rack"]
+        )
+        self.assertEqual(
+            [removed.action for removed in ranked[2].removed_deletes],
+            ["get-from-hangar", "pick-up-rack", "unstack-rack"],
+        )
 
     def test_equal_scores_prefer_the_largest_class(self):
         domain = """
