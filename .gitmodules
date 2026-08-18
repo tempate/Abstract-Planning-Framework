@@ -1,0 +1,3 @@
+[submodule "lib/pddl-symmetries"]
+	path = lib/pddl-symmetries
+	url = https://github.com/silvansievers/pddl-symmetries.git

@@ -1,43 +1,26 @@
 # Tests
 
-The suite is layered so that ordinary development does not require invoking
-the bundled planner executables.
-
-| Layer | Coverage | Default |
-| --- | --- | --- |
-| Unit/component | ASP I/O, abstraction transforms, mappings, logs, helpers | yes |
-| Solver | Clingo control setup and decremental switch relaxation | yes |
-| Orchestration | Planner calls replaced by deterministic test doubles | yes |
-| Workflow | Real Fast Downward, PlanPilot, and Clingo on both domains | opt-in |
-
-Run the fast suite from the repository root:
+The default suite uses test doubles for external planners. Real workflow and
+PDDL Symmetries tests are opt-in.
 
 ```bash
+# Fast/default suite
 python -m unittest discover -s tests -p 'test_*.py' -v
-```
 
-Run only the real planner workflows:
-
-```bash
-RUN_PLANNER_INTEGRATION=1 \
-    python -m unittest tests.test_planning_integration -v
-```
-
-Run every test, including the workflow layer:
-
-```bash
+# Real external-tool workflows as well
 RUN_PLANNER_INTEGRATION=1 \
     python -m unittest discover -s tests -p 'test_*.py' -v
 ```
 
-The tests use Python's standard `unittest` runner, so no development-only
-package is required. Workflow tests create isolated temporary run directories
-and do not update the JSON plan history.
+To run only the real integrations:
 
-GitHub Actions runs the complete suite, including the real planner workflows,
-on every push and pull request. Its clean Linux runner builds Fast Downward
-before executing the tests.
+```bash
+RUN_PLANNER_INTEGRATION=1 \
+    python -m unittest \
+        tests.test_example_workflows_integration \
+        tests.test_symmetry_abstraction.RealSymmetryIntegrationTests -v
+```
 
-The deliberately long `performance` example modes are demonstrations, not
-test cases. CI covers their argument wiring without running the minute-scale
-concrete searches; the smaller real workflows cover the external toolchain.
+The integration tests execute the public Bash examples in temporary output
+directories. Performance examples are intentionally excluded because they can
+take a minute or longer.

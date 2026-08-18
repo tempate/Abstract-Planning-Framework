@@ -65,6 +65,7 @@ def main():
     )
 
     print_planning_result(result, get_logger())
+    return 0 if result["success"] else 1
 
 
 def _argument_parser():
@@ -142,4 +143,4 @@ def _argument_parser():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

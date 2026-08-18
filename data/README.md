@@ -1,45 +1,17 @@
-# Data layout
-
-The small, verified inputs under `examples/` are the best place to start:
+# Data
 
 ```text
-examples/
+data/
+├── beluga/
+│   ├── concrete/   # Standard and modified concrete variants
+│   └── abstract/   # Hangar and trailer abstractions
 └── no_mystery/
-    ├── abstract/
-    │   ├── domain.pddl
-    │   └── problem.pddl
-    └── concrete/
-        ├── domain.pddl
-        └── problem.pddl
+    ├── concrete/   # Exact-fuel domain and problems
+    └── abstract/   # Fuel-abstracted domain and problems
 ```
 
-Both problems describe the same NoMystery `p02` instance. The abstract version
-collapses the concrete fuel levels, while the concrete version contains the
-full fuel arithmetic. This instance is intentionally duplicated here so that
-the example remains stable if the benchmark archive is reorganized.
+The NoMystery quick examples use `p02`; refinement uses `p01`. Beluga quick
+examples use the small standard `problem_3` instance.
 
-From the repository root, run:
-
-```bash
-python -m examples.no_mystery
-```
-
-The default `quick` command runs concrete and fully realizable abstract cases
-for `p02`, followed by a matched comparison that solves benchmark `p01`
-concretely and through refinement. Every case should find a plan. Generated
-plans, ASP files, and debug logs are written below `scripts/utils/temp/`; they
-do not belong in `data/`.
-
-`python -m examples.no_mystery refinement` uses benchmark `p01` at horizon 11
-to demonstrate actual decremental relaxation and prints its concrete result
-alongside it. The quick-start `p02` plan is fully realizable without any
-decrements.
-
-`python -m examples.no_mystery performance` uses the matched concrete and
-abstract `p04` inputs at horizon 19. It is intentionally slow on the concrete
-side and is not part of the default command.
-
-`benchmarks/` contains the larger Beluga and NoMystery PDDL collections. It is
-intended for experiments after the quick-start example; historical outputs,
-generated planner files, caches, and obsolete batch scripts have been removed.
-See [`benchmarks/README.md`](benchmarks/README.md) for the retained inputs.
+Input PDDL stays under `data/`. Generated plans, encodings, and logs belong
+under `scripts/utils/temp/`.
