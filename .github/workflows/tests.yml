@@ -32,10 +32,13 @@ jobs:
           python-version: "3.13"
           architecture: x64
           cache: pip
-          cache-dependency-path: requirements.txt
+          cache-dependency-path: requirements-dev.txt
 
       - name: Install Python dependencies
-        run: python -m pip install -r requirements.txt
+        run: python -m pip install -r requirements-dev.txt
+
+      - name: Check Black formatting
+        run: python -m black --check .
 
       - name: Build Fast Downward
         run: python lib/downward/build.py release
