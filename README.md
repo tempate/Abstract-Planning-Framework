@@ -11,23 +11,32 @@ concrete plan.
 ## Setup
 
 ```bash
+git submodule update --init --recursive
 python -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
 python lib/downward/build.py release
 ```
 
-Automatic object selection additionally requires PDDL Symmetries and pybliss:
+Automatic object selection additionally requires the pybliss extension:
 
 ```bash
-git submodule update --init --recursive
 make -C lib/pddl-symmetries/src/translate/pybliss-0.73
+```
+
+For development tools and automatic formatting, install the development
+requirements and enable the pre-commit hook:
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pip install pre-commit
+pre-commit install
 ```
 
 ## Try it
 
 The examples contain complete, copyable CLI commands. Beluga is the default;
-pass `no_mystery` or `all` to select another domain.
+pass `no_mystery`, `beluga`, or `all` to choose the workflow.
 
 ```bash
 ./examples/concrete.sh
@@ -36,6 +45,7 @@ pass `no_mystery` or `all` to select another domain.
 
 ./examples/concrete.sh no_mystery
 ./examples/abstract.sh no_mystery
+./examples/abstract_object.sh auto
 ```
 
 Performance comparisons can take a minute or longer:
