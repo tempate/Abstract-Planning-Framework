@@ -70,16 +70,9 @@ class BaseRefinement(ABC):
     def solve_concrete(self):
         """Run and time the selected concrete solver."""
         context = self.context
-        asp_files = [
-            context.paths.concrete_asp,
-            context.paths.occurrences,
-            context.paths.mapping,
-        ]
+        asp_files = [context.paths.concrete_asp, context.paths.occurrences, context.paths.mapping]
         with timed_phase(context.logger, "Concrete solving time") as timing:
-            success, plan, operation_count = solve_decrementally(
-                asp_files,
-                context.horizon,
-            )
+            success, plan, operation_count = solve_decrementally(asp_files, context.horizon)
         self.concrete_solve_time += timing.elapsed
         self.solver_operations += operation_count
         return success, plan, timing.elapsed
@@ -114,11 +107,7 @@ class BaseRefinement(ABC):
         """Send an attempt to the optional experiment recorder."""
         recorder = self.context.attempt_recorder
         if recorder:
-            recorder(
-                abstract_atoms,
-                success=success,
-                bad_actions=bad_actions,
-            )
+            recorder(abstract_atoms, success=success, bad_actions=bad_actions)
 
     def log_success(self, plan):
         logger = self.context.logger

@@ -1,13 +1,11 @@
 """Domain-specific hooks for the shared abstraction-planning workflow."""
+
 from abc import ABC, abstractmethod
 
 from core.asp import write_asp_program
 from core.execution import get_logger
 
-
-OCCURRENCE_VALIDATION_CONSTRAINT = (
-    ":- occurs(Action, T), not action(Action)."
-)
+OCCURRENCE_VALIDATION_CONSTRAINT = ":- occurs(Action, T), not action(Action)."
 
 
 class BasePlanner(ABC):
@@ -20,12 +18,9 @@ class BasePlanner(ABC):
 
     def validate_configuration(self, abstract_symbol, concrete_objects):
         """Validate domain-specific inputs before planning starts."""
-        if self.requires_mapping_arguments and (
-            not abstract_symbol or not concrete_objects
-        ):
+        if self.requires_mapping_arguments and (not abstract_symbol or not concrete_objects):
             raise ValueError(
-                "--abstract-symbol and --concrete-objects are required by the "
-                f"{self.profile_name} profile"
+                "--abstract-symbol and --concrete-objects are required by the " f"{self.profile_name} profile"
             )
 
     @abstractmethod
@@ -35,11 +30,8 @@ class BasePlanner(ABC):
     @staticmethod
     def _write_mapping(map_path, lines, switch_map, mapping_name):
         logger = get_logger()
-        
-        write_asp_program(
-            map_path,
-            [*lines, OCCURRENCE_VALIDATION_CONSTRAINT],
-        )
+
+        write_asp_program(map_path, [*lines, OCCURRENCE_VALIDATION_CONSTRAINT])
         logger.info(f"[MAP] Switches created={len(switch_map)}")
         logger.info(f"[FILES] wrote {map_path}")
         logger.info("[MAP] Grounded plan:")

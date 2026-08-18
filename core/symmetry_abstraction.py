@@ -1,14 +1,7 @@
 """Collapse same-typed PDDL objects and relax their unary delete effects."""
 
-from __future__ import annotations
-
 import re
-from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-
-
-SExpression = str | list["SExpression"]
-ExpressionKey = str | tuple["ExpressionKey", ...]
 
 _PDDL_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_-]*")
 _NON_OBJECT_ARGUMENTS = {
@@ -48,7 +41,7 @@ class AbstractionResult:
     removed_deletes: tuple[RelaxedDelete, ...]
 
     @property
-    def unary_delete_score(self) -> int:
+    def unary_delete_score(self):
         return len(self.removed_deletes)
 
 
@@ -60,42 +53,42 @@ class _Selection:
     replacements: frozenset[str]
 
 
-def _normalized(value: str) -> str:
+def _normalized(value):
     return value.casefold()
 
 
-def _symbol(value: SExpression) -> str:
+def _symbol(value):
     if not isinstance(value, str):
         raise AbstractionError(f"Expected a PDDL symbol, got {value!r}")
     return value
 
 
-def _expression_key(expression: SExpression) -> ExpressionKey:
+def _expression_key(expression):
     if isinstance(expression, str):
         return _normalized(expression)
     return tuple(_expression_key(item) for item in expression)
 
 
-def _tokenize(text: str) -> list[str]:
-    tokens: list[str] = []
+def _tokenize(text):
+    tokens = []
     for line in text.splitlines():
         source = line.split(";", 1)[0]
         tokens.extend(re.findall(r"[()]|[^\s()]+", source))
     return tokens
 
 
-def _parse(text: str, label: str) -> list[SExpression]:
+def _parse(text, label):
     tokens = _tokenize(text)
     position = 0
 
-    def parse_expression() -> SExpression:
+    def parse_expression():
         nonlocal position
         if position >= len(tokens):
             raise AbstractionError(f"Unexpected end of {label}")
         token = tokens[position]
         position += 1
         if token == "(":
-            result: list[SExpression] = []
+            result = []
             while position < len(tokens) and tokens[position] != ")":
                 result.append(parse_expression())
             if position >= len(tokens):
@@ -106,7 +99,7 @@ def _parse(text: str, label: str) -> list[SExpression]:
             raise AbstractionError(f"Unexpected ')' in {label}")
         return token
 
-    expressions: list[SExpression] = []
+    expressions = []
     while position < len(tokens):
         expressions.append(parse_expression())
     if len(expressions) != 1 or not isinstance(expressions[0], list):
@@ -117,11 +110,11 @@ def _parse(text: str, label: str) -> list[SExpression]:
     return root
 
 
-def _indent(text: str) -> str:
+def _indent(text):
     return "\n".join(f"  {line}" for line in text.splitlines())
 
 
-def _render(expression: SExpression) -> str:
+def _render(expression):
     if isinstance(expression, str):
         return expression
     if not expression:
@@ -133,57 +126,42 @@ def _render(expression: SExpression) -> str:
     return "(" + "\n".join(rendered) + "\n)"
 
 
-def _dump(expression: SExpression) -> str:
+def _dump(expression):
     return _render(expression) + "\n"
 
 
-def _head(expression: SExpression) -> str | None:
+def _head(expression):
     if isinstance(expression, list) and expression and isinstance(expression[0], str):
         return _normalized(expression[0])
     return None
 
 
-def _find_form(root: Sequence[SExpression], name: str) -> list[SExpression] | None:
+def _find_form(root, name):
     wanted = _normalized(name)
-    matches = [
-        child
-        for child in root
-        if isinstance(child, list) and _head(child) == wanted
-    ]
+    matches = [child for child in root if isinstance(child, list) and _head(child) == wanted]
     if len(matches) > 1:
         raise AbstractionError(f"Duplicate PDDL section: {name}")
     return matches[0] if matches else None
 
 
-def _required_form(
-    root: Sequence[SExpression],
-    name: str,
-    label: str,
-) -> list[SExpression]:
+def _required_form(root, name, label):
     form = _find_form(root, name)
     if form is None:
         raise AbstractionError(f"{label} has no {name} section")
     return form
 
 
-def _declared_name(
-    root: Sequence[SExpression],
-    section: str,
-    label: str,
-) -> str:
+def _declared_name(root, section, label):
     form = _required_form(root, section, label)
     if len(form) != 2:
         raise AbstractionError(f"Malformed {label.lower()} {section} declaration")
     return _symbol(form[1])
 
 
-def _typed_symbols(
-    items: Iterable[SExpression],
-    default_type: str = "object",
-) -> list[tuple[str, str]]:
+def _typed_symbols(items, default_type="object"):
     tokens = list(items)
-    result: list[tuple[str, str]] = []
-    pending: list[str] = []
+    result = []
+    pending = []
     index = 0
     while index < len(tokens):
         token = _symbol(tokens[index])
@@ -201,27 +179,24 @@ def _typed_symbols(
     return result
 
 
-def _declarations(root: Sequence[SExpression], section: str) -> list[tuple[str, str]]:
+def _declarations(root, section):
     form = _find_form(root, section)
     return _typed_symbols(form[1:]) if form is not None else []
 
 
-def _flatten_typed(declarations: Iterable[tuple[str, str]]) -> list[SExpression]:
+def _flatten_typed(declarations):
     declarations = list(declarations)
     if all(_normalized(type_name) == "object" for _, type_name in declarations):
         return [name for name, _ in declarations]
 
-    result: list[SExpression] = []
+    result = []
     for name, type_name in declarations:
         result.extend((name, "-", type_name))
     return result
 
 
-def _declaration_map(
-    declarations: Iterable[tuple[str, str]],
-    label: str,
-) -> dict[str, tuple[str, str]]:
-    result: dict[str, tuple[str, str]] = {}
+def _declaration_map(declarations, label):
+    result = {}
     for name, type_name in declarations:
         normalized_name = _normalized(name)
         if normalized_name in result:
@@ -230,7 +205,7 @@ def _declaration_map(
     return result
 
 
-def _domain_types(domain: Sequence[SExpression]) -> dict[str, str]:
+def _domain_types(domain):
     parents = {"object": ""}
     for name, parent in _declarations(domain, ":types"):
         normalized_name = _normalized(name)
@@ -240,7 +215,7 @@ def _domain_types(domain: Sequence[SExpression]) -> dict[str, str]:
 
     for type_name in parents:
         current = type_name
-        visited: set[str] = set()
+        visited = set()
         while current:
             if current in visited:
                 raise AbstractionError(f"Cyclic PDDL type hierarchy at {type_name}")
@@ -251,7 +226,7 @@ def _domain_types(domain: Sequence[SExpression]) -> dict[str, str]:
     return parents
 
 
-def _is_subtype(child: str, parent: str, parents: dict[str, str]) -> bool:
+def _is_subtype(child, parent, parents):
     current = _normalized(child)
     target = _normalized(parent)
     while current:
@@ -261,7 +236,7 @@ def _is_subtype(child: str, parent: str, parents: dict[str, str]) -> bool:
     return False
 
 
-def _unary_predicates(domain: Sequence[SExpression]) -> set[str]:
+def _unary_predicates(domain):
     predicates = _find_form(domain, ":predicates")
     if predicates is None:
         return set()
@@ -275,66 +250,39 @@ def _unary_predicates(domain: Sequence[SExpression]) -> set[str]:
     return result
 
 
-def _action_field(
-    action: Sequence[SExpression],
-    keyword: str,
-) -> tuple[int, SExpression] | None:
+def _action_field(action, keyword):
     wanted = _normalized(keyword)
     for index in range(2, len(action)):
         item = action[index]
         if isinstance(item, str) and _normalized(item) == wanted:
             if index + 1 >= len(action):
                 action_name = _symbol(action[1]) if len(action) > 1 else "<unknown>"
-                raise AbstractionError(
-                    f"Action {action_name} has no value for {keyword}"
-                )
+                raise AbstractionError(f"Action {action_name} has no value for {keyword}")
             return index + 1, action[index + 1]
     return None
 
 
-def _relax_effect(
-    effect: SExpression,
-    variables: dict[str, str],
-    object_type: str,
-    unary_predicates: set[str],
-    parents: dict[str, str],
-    action_name: str,
-    removed: list[RelaxedDelete],
-) -> SExpression | None:
+def _relax_effect(effect, variables, object_type, unary_predicates, parents, action_name, removed):
     if not isinstance(effect, list) or not effect:
         return effect
     head = _head(effect)
 
     if head == "and":
-        children: list[SExpression] = []
+        children = []
         for child in effect[1:]:
-            transformed = _relax_effect(
-                child,
-                variables,
-                object_type,
-                unary_predicates,
-                parents,
-                action_name,
-                removed,
-            )
+            transformed = _relax_effect(child, variables, object_type, unary_predicates, parents, action_name, removed)
             if transformed is not None:
                 children.append(transformed)
         return [effect[0], *children] if children else None
 
     if head == "when" and len(effect) == 3:
-        transformed = _relax_effect(
-            effect[2], variables, object_type, unary_predicates,
-            parents, action_name, removed,
-        )
+        transformed = _relax_effect(effect[2], variables, object_type, unary_predicates, parents, action_name, removed)
         return [effect[0], effect[1], transformed] if transformed is not None else None
 
     if head == "forall" and len(effect) == 3 and isinstance(effect[1], list):
-        nested_variables = variables | _variable_types(
-            effect[1], parents, f"forall effect in action {action_name}",
-        )
+        nested_variables = variables | _variable_types(effect[1], parents, f"forall effect in action {action_name}")
         transformed = _relax_effect(
-            effect[2], nested_variables, object_type, unary_predicates,
-            parents, action_name, removed,
+            effect[2], nested_variables, object_type, unary_predicates, parents, action_name, removed
         )
         return [effect[0], effect[1], transformed] if transformed is not None else None
 
@@ -344,44 +292,33 @@ def _relax_effect(
             argument = _symbol(literal[1])
             parameter_type = variables.get(_normalized(argument))
             if parameter_type and _is_subtype(object_type, parameter_type, parents):
-                removed.append(RelaxedDelete(
-                    action=action_name,
-                    predicate=_symbol(literal[0]),
-                    variable=argument,
-                    parameter_type=parameter_type,
-                ))
+                removed.append(
+                    RelaxedDelete(
+                        action=action_name,
+                        predicate=_symbol(literal[0]),
+                        variable=argument,
+                        parameter_type=parameter_type,
+                    )
+                )
                 return None
 
     return effect
 
 
-def _variable_types(
-    declarations: Iterable[SExpression],
-    parents: dict[str, str],
-    label: str,
-) -> dict[str, str]:
-    result = {
-        _normalized(name): type_name
-        for name, type_name in _typed_symbols(declarations)
-    }
-    unknown = sorted({
-        type_name for type_name in result.values()
-        if _normalized(type_name) not in parents
-    })
+def _variable_types(declarations, parents, label):
+    result = {_normalized(name): type_name for name, type_name in _typed_symbols(declarations)}
+    unknown = sorted({type_name for type_name in result.values() if _normalized(type_name) not in parents})
     if unknown:
         raise AbstractionError(f"Unknown PDDL type {unknown[0]!r} in {label}")
     return result
 
 
-def _relax_domain(
-    domain: list[SExpression],
-    object_type: str,
-) -> list[RelaxedDelete]:
+def _relax_domain(domain, object_type):
     parents = _domain_types(domain)
     if _normalized(object_type) not in parents:
         raise AbstractionError(f"Unknown PDDL object type: {object_type}")
     predicates = _unary_predicates(domain)
-    removed: list[RelaxedDelete] = []
+    removed = []
     for action in domain:
         if not isinstance(action, list) or _head(action) != ":action":
             continue
@@ -390,73 +327,46 @@ def _relax_domain(
         action_name = _symbol(action[1])
         parameter_field = _action_field(action, ":parameters")
         if parameter_field is None:
-            parameter_form: SExpression = []
+            parameter_form = []
         else:
             _, parameter_form = parameter_field
         if not isinstance(parameter_form, list):
             raise AbstractionError(f"Malformed parameters in action {action_name}")
-        variables = _variable_types(
-            parameter_form, parents, f"parameters of action {action_name}",
-        )
+        variables = _variable_types(parameter_form, parents, f"parameters of action {action_name}")
         effect_field = _action_field(action, ":effect")
         if effect_field is None:
             raise AbstractionError(f"Action {action_name} has no :effect")
         effect_index, effect = effect_field
-        transformed = _relax_effect(
-            effect, variables, object_type, predicates, parents,
-            action_name, removed,
-        )
+        transformed = _relax_effect(effect, variables, object_type, predicates, parents, action_name, removed)
         action[effect_index] = transformed if transformed is not None else ["and"]
     return removed
 
 
-def _validate_task_pair(
-    domain: Sequence[SExpression],
-    problem: Sequence[SExpression],
-) -> None:
+def _validate_task_pair(domain, problem):
     domain_name = _declared_name(domain, "domain", "Domain")
     _declared_name(problem, "problem", "Problem")
     problem_domain_name = _declared_name(problem, ":domain", "Problem")
     if _normalized(domain_name) != _normalized(problem_domain_name):
-        raise AbstractionError(
-            f"Problem references domain {problem_domain_name!r}, "
-            f"not {domain_name!r}"
-        )
+        raise AbstractionError(f"Problem references domain {problem_domain_name!r}, " f"not {domain_name!r}")
 
 
-def _task_declarations(
-    domain: Sequence[SExpression],
-    problem: Sequence[SExpression],
-) -> tuple[dict[str, tuple[str, str]], dict[str, tuple[str, str]]]:
-    problem_objects = _declaration_map(
-        _declarations(problem, ":objects"), "problem object",
-    )
-    domain_constants = _declaration_map(
-        _declarations(domain, ":constants"), "domain constant",
-    )
+def _task_declarations(domain, problem):
+    problem_objects = _declaration_map(_declarations(problem, ":objects"), "problem object")
+    domain_constants = _declaration_map(_declarations(domain, ":constants"), "domain constant")
     duplicate_names = problem_objects.keys() & domain_constants.keys()
     if duplicate_names:
         duplicate = sorted(duplicate_names)[0]
-        raise AbstractionError(
-            f"Object {duplicate!r} is declared in both domain and problem"
-        )
+        raise AbstractionError(f"Object {duplicate!r} is declared in both domain and problem")
 
     parents = _domain_types(domain)
     declarations = [*problem_objects.values(), *domain_constants.values()]
     for name, type_name in declarations:
         if _normalized(type_name) not in parents:
-            raise AbstractionError(
-                f"Object {name!r} uses unknown PDDL type {type_name!r}"
-            )
+            raise AbstractionError(f"Object {name!r} uses unknown PDDL type {type_name!r}")
     return problem_objects, domain_constants
 
 
-def _prepare_selection(
-    domain: Sequence[SExpression],
-    problem: list[SExpression],
-    objects: Iterable[str],
-    abstract_name: str | None,
-) -> _Selection:
+def _prepare_selection(domain, problem, objects, abstract_name):
     object_form = _required_form(problem, ":objects", "Problem")
     object_declarations = _typed_symbols(object_form[1:])
     problem_objects, domain_constants = _task_declarations(domain, problem)
@@ -468,9 +378,7 @@ def _prepare_selection(
     if missing:
         raise AbstractionError(f"Unknown problem objects: {', '.join(missing)}")
 
-    selected_types = {
-        _normalized(problem_objects[name][1]) for name in requested
-    }
+    selected_types = {_normalized(problem_objects[name][1]) for name in requested}
     if len(selected_types) != 1:
         raise AbstractionError("Selected objects must have the same declared type")
     object_type = problem_objects[requested[0]][1]
@@ -479,17 +387,12 @@ def _prepare_selection(
         raise AbstractionError(f"Invalid PDDL object name: {chosen_name!r}")
     normalized_abstract_name = _normalized(chosen_name)
     if normalized_abstract_name in domain_constants:
-        raise AbstractionError(
-            f"Abstract object name is a domain constant: {chosen_name}"
-        )
-    if (
-        normalized_abstract_name in problem_objects
-        and normalized_abstract_name not in requested
-    ):
+        raise AbstractionError(f"Abstract object name is a domain constant: {chosen_name}")
+    if normalized_abstract_name in problem_objects and normalized_abstract_name not in requested:
         raise AbstractionError(f"Abstract object name already exists: {chosen_name}")
 
     selected_names = tuple(problem_objects[name][0] for name in requested)
-    new_declarations: list[tuple[str, str]] = []
+    new_declarations = []
     inserted = False
     for name, type_name in object_declarations:
         if _normalized(name) in requested:
@@ -500,16 +403,13 @@ def _prepare_selection(
             new_declarations.append((name, type_name))
     object_form[:] = [object_form[0], *_flatten_typed(new_declarations)]
     return _Selection(
-        objects=selected_names,
-        object_type=object_type,
-        abstract_name=chosen_name,
-        replacements=frozenset(requested),
+        objects=selected_names, object_type=object_type, abstract_name=chosen_name, replacements=frozenset(requested)
     )
 
 
-def _unique(expressions: Iterable[SExpression]) -> list[SExpression]:
-    result: list[SExpression] = []
-    seen: set[ExpressionKey] = set()
+def _unique(expressions):
+    result = []
+    seen = set()
     for expression in expressions:
         key = _expression_key(expression)
         if key not in seen:
@@ -518,13 +418,10 @@ def _unique(expressions: Iterable[SExpression]) -> list[SExpression]:
     return result
 
 
-def _rewrite_expression(
-    expression: SExpression,
-    selection: _Selection,
-) -> SExpression:
+def _rewrite_expression(expression, selection):
     if not isinstance(expression, list) or not expression:
         return expression
-    rewritten: list[SExpression] = [expression[0]]
+    rewritten = [expression[0]]
     head = _head(expression)
     protected = _NON_OBJECT_ARGUMENTS.get(head, frozenset())
     if head == "preference" and len(expression) == 3:
@@ -533,23 +430,17 @@ def _rewrite_expression(
         if index in protected:
             rewritten.append(child)
         elif isinstance(child, str):
-            rewritten.append(
-                selection.abstract_name
-                if _normalized(child) in selection.replacements
-                else child
-            )
+            rewritten.append(selection.abstract_name if _normalized(child) in selection.replacements else child)
         else:
             rewritten.append(_rewrite_expression(child, selection))
     if _is_false_inequality(rewritten) and not _is_false_inequality(expression):
-        raise AbstractionError(
-            "Object collapse creates a false '(not (= object object))' constraint"
-        )
+        raise AbstractionError("Object collapse creates a false '(not (= object object))' constraint")
     if _head(rewritten) == "and":
         return [rewritten[0], *_unique(rewritten[1:])]
     return rewritten
 
 
-def _is_false_inequality(expression: SExpression) -> bool:
+def _is_false_inequality(expression):
     if not isinstance(expression, list):
         return False
     if _head(expression) == "not" and len(expression) == 2:
@@ -559,10 +450,10 @@ def _is_false_inequality(expression: SExpression) -> bool:
     return False
 
 
-def _validate_initial_state(init: Sequence[SExpression]) -> None:
-    numeric: dict[ExpressionKey, ExpressionKey] = {}
-    positive: set[ExpressionKey] = set()
-    negative: set[ExpressionKey] = set()
+def _validate_initial_state(init):
+    numeric = {}
+    positive = set()
+    negative = set()
     for fact in init[1:]:
         if not isinstance(fact, list) or not fact:
             continue
@@ -570,10 +461,7 @@ def _validate_initial_state(init: Sequence[SExpression]) -> None:
             fluent = _expression_key(fact[1])
             value = _expression_key(fact[2])
             if fluent in numeric and numeric[fluent] != value:
-                raise AbstractionError(
-                    "Object collapse creates conflicting initial values for "
-                    f"{_render(fact[1])}"
-                )
+                raise AbstractionError("Object collapse creates conflicting initial values for " f"{_render(fact[1])}")
             numeric[fluent] = value
         elif _head(fact) == "not" and len(fact) == 2:
             negative.add(_expression_key(fact[1]))
@@ -583,7 +471,7 @@ def _validate_initial_state(init: Sequence[SExpression]) -> None:
         raise AbstractionError("Object collapse creates contradictory initial facts")
 
 
-def _rewrite_problem(problem: list[SExpression], selection: _Selection) -> None:
+def _rewrite_problem(problem, selection):
     excluded_sections = {"problem", ":domain", ":requirements", ":objects"}
     for index, section in enumerate(problem[1:], start=1):
         if not isinstance(section, list) or _head(section) in excluded_sections:
@@ -595,12 +483,7 @@ def _rewrite_problem(problem: list[SExpression], selection: _Selection) -> None:
         problem[index] = rewritten
 
 
-def abstract_task(
-    domain_text: str,
-    problem_text: str,
-    objects: Iterable[str],
-    abstract_name: str | None = None,
-) -> AbstractionResult:
+def abstract_task(domain_text, problem_text, objects, abstract_name=None):
     """Collapse one same-typed object set and relax its unary deletes."""
     domain = _parse(domain_text, "domain")
     problem = _parse(problem_text, "problem")
@@ -618,17 +501,13 @@ def abstract_task(
     )
 
 
-def unary_delete_score(domain_text: str, object_type: str) -> int:
+def unary_delete_score(domain_text, object_type):
     """Count schema-level unary deletes relaxed for ``object_type``."""
     domain = _parse(domain_text, "domain")
     return len(_relax_domain(domain, object_type))
 
 
-def rank_symmetry_classes(
-    domain_text: str,
-    problem_text: str,
-    classes: Iterable[Iterable[str]],
-) -> list[RankedSymmetryClass]:
+def rank_symmetry_classes(domain_text, problem_text, classes):
     """Rank abstractable classes by delete score, size, then object names."""
     domain = _parse(domain_text, "domain")
     problem = _parse(problem_text, "problem")
@@ -637,47 +516,42 @@ def rank_symmetry_classes(
     constant_names = set(domain_constants)
     known_names = set(problem_objects) | constant_names
 
-    ranked: list[RankedSymmetryClass] = []
-    scores_by_type: dict[str, int] = {}
-    seen_classes: set[frozenset[str]] = set()
+    ranked = []
+    scores_by_type = {}
+    seen_classes = set()
     for symmetry_class in classes:
-        requested = tuple(sorted(
-            dict.fromkeys(_normalized(name) for name in symmetry_class)
-        ))
+        requested = tuple(sorted(dict.fromkeys(_normalized(name) for name in symmetry_class)))
         class_key = frozenset(requested)
         if len(class_key) < 2 or class_key in seen_classes:
             continue
         seen_classes.add(class_key)
         unknown = class_key - known_names
         if unknown:
-            raise AbstractionError(
-                f"PDDL Symmetries returned unknown object {sorted(unknown)[0]!r}"
-            )
+            raise AbstractionError(f"PDDL Symmetries returned unknown object {sorted(unknown)[0]!r}")
         if class_key & constant_names:
             continue
 
         declared = [problem_objects[name] for name in requested]
         types = {_normalized(type_name) for _, type_name in declared}
         if len(types) != 1:
-            raise AbstractionError(
-                "A symmetry class contains objects of different types"
-            )
+            raise AbstractionError("A symmetry class contains objects of different types")
         object_type = declared[0][1]
         normalized_type = _normalized(object_type)
         if normalized_type not in scores_by_type:
-            scores_by_type[normalized_type] = unary_delete_score(
-                domain_text,
-                object_type,
+            scores_by_type[normalized_type] = unary_delete_score(domain_text, object_type)
+        ranked.append(
+            RankedSymmetryClass(
+                objects=tuple(name for name, _ in declared),
+                object_type=object_type,
+                unary_delete_score=scores_by_type[normalized_type],
             )
-        ranked.append(RankedSymmetryClass(
-            objects=tuple(name for name, _ in declared),
-            object_type=object_type,
-            unary_delete_score=scores_by_type[normalized_type],
-        ))
+        )
 
-    ranked.sort(key=lambda item: (
-        item.unary_delete_score,
-        -len(item.objects),
-        tuple(_normalized(name) for name in item.objects),
-    ))
+    ranked.sort(
+        key=lambda item: (
+            item.unary_delete_score,
+            -len(item.objects),
+            tuple(_normalized(name) for name in item.objects),
+        )
+    )
     return ranked

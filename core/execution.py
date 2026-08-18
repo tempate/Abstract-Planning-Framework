@@ -8,10 +8,8 @@ import time
 import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Iterator
 
 from core.paths import TEMP_DIR
-
 
 LOGGER_NAME = "planner_debug"
 
@@ -31,10 +29,7 @@ def setup_debug_logger(base_dir):
         logger.removeHandler(handler)
 
     file_handler = logging.FileHandler(log_file, mode="a")
-    formatter = logging.Formatter(
-        "%(asctime)s | %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
+    formatter = logging.Formatter("%(asctime)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
@@ -65,12 +60,7 @@ def copy_iteration_file(debug_dir, iteration, file_path):
 
 def save_json_iteration_file(debug_dir, iteration, name, data):
     """Serialize an object as a formatted JSON iteration artifact."""
-    save_iteration_file(
-        debug_dir,
-        iteration,
-        name,
-        json.dumps(data, indent=2),
-    )
+    save_iteration_file(debug_dir, iteration, name, json.dumps(data, indent=2))
 
 
 @dataclass
@@ -81,21 +71,18 @@ class PhaseTiming:
     _elapsed: float | None = None
 
     @property
-    def elapsed(self) -> float:
+    def elapsed(self):
         if self._elapsed is not None:
             return self._elapsed
         return time.perf_counter() - self._started_at
 
-    def stop(self) -> None:
+    def stop(self):
         if self._elapsed is None:
             self._elapsed = time.perf_counter() - self._started_at
 
 
 @contextmanager
-def timed_phase(
-    logger: logging.Logger | None = None,
-    name: str | None = None,
-) -> Iterator[PhaseTiming]:
+def timed_phase(logger=None, name=None):
     """Measure a phase and optionally log its duration on exit."""
     timing = PhaseTiming()
     try:

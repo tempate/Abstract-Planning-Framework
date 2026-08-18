@@ -11,7 +11,6 @@ from scripts import abstract_planner, concrete_planner
 from scripts.abstract_planner import _argument_parser as abstract_argument_parser
 from scripts.concrete_planner import _argument_parser as concrete_argument_parser
 
-
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -23,14 +22,7 @@ class ShellExampleTests(unittest.TestCase):
         command = [f"examples/{example}.sh"]
         if workflow is not None:
             command.append(workflow)
-        return subprocess.run(
-            command,
-            cwd=PROJECT_ROOT,
-            env=environment,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        return subprocess.run(command, cwd=PROJECT_ROOT, env=environment, capture_output=True, text=True, check=False)
 
     def test_planning_examples_support_domain_selection(self):
         for example in ("concrete", "abstract", "refinement"):
@@ -79,9 +71,7 @@ class ShellExampleTests(unittest.TestCase):
         self.assertNotIn("--auto", result.stdout)
 
     def test_abstract_object_explicit_example_writes_both_pddl_files(self):
-        with tempfile.TemporaryDirectory(
-            prefix="apf-abstract-object-"
-        ) as directory:
+        with tempfile.TemporaryDirectory(prefix="apf-abstract-object-") as directory:
             environment = os.environ.copy()
             environment["PYTHON_BIN"] = sys.executable
             environment["APF_TEMP_DIR"] = directory
@@ -116,10 +106,7 @@ class ShellExampleTests(unittest.TestCase):
         problem = "standard/problem_38_s81_j5_r2_oc31_f4.pddl"
         self.assertEqual(result.stdout.count(problem), 2)
         self.assertEqual(result.stdout.count("--horizon 26"), 2)
-        self.assertIn(
-            "--concrete-objects hangar1 hangar2 hangar3",
-            result.stdout,
-        )
+        self.assertIn("--concrete-objects hangar1 hangar2 hangar3", result.stdout)
 
 
 class PlannerHelpTests(unittest.TestCase):
@@ -140,19 +127,11 @@ class PlannerExitStatusTests(unittest.TestCase):
     def test_concrete_cli_returns_failure_when_no_plan_is_found(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
-            domain="domain.pddl",
-            problem="problem.pddl",
-            horizon=1,
-            encoding="exact",
-            time_step=False,
+            domain="domain.pddl", problem="problem.pddl", horizon=1, encoding="exact", time_step=False
         )
         with (
             patch.object(concrete_planner, "_argument_parser", return_value=parser),
-            patch.object(
-                concrete_planner,
-                "compute_concrete_plan",
-                return_value={"success": False},
-            ),
+            patch.object(concrete_planner, "compute_concrete_plan", return_value={"success": False}),
             patch.object(concrete_planner, "print_planning_result"),
             patch.object(concrete_planner, "get_logger"),
         ):
@@ -179,17 +158,9 @@ class PlannerExitStatusTests(unittest.TestCase):
         with (
             patch.object(abstract_planner, "_argument_parser", return_value=parser),
             patch.object(abstract_planner, "get_planner", return_value=planner),
-            patch.object(
-                abstract_planner,
-                "get_plan_log_path",
-                return_value=("plan-log.json", "hash"),
-            ),
+            patch.object(abstract_planner, "get_plan_log_path", return_value=("plan-log.json", "hash")),
             patch.object(abstract_planner, "initialize_plan_log"),
-            patch.object(
-                abstract_planner,
-                "compute_abstract_plan",
-                return_value={"success": False},
-            ),
+            patch.object(abstract_planner, "compute_abstract_plan", return_value={"success": False}),
             patch.object(abstract_planner, "print_planning_result"),
             patch.object(abstract_planner, "get_logger"),
         ):

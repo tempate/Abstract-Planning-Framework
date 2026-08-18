@@ -6,7 +6,6 @@ import clingo
 
 from core.execution import get_logger, timed_phase
 
-
 THREADS = os.cpu_count() or 1
 
 
@@ -26,13 +25,7 @@ def run_clingo(asp_files, horizon):
 
 def create_control(asp_files, horizon):
     """Load and ground ASP files in a configured Clingo control."""
-    arguments = [
-        "-c",
-        f"horizon={horizon}",
-        "-t",
-        str(THREADS),
-        "--warn=none",
-    ]
+    arguments = ["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"]
     control = clingo.Control(arguments)
     control.configuration.solve.models = 1
     for asp_file in asp_files:

@@ -7,31 +7,20 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.integrations.pddl_symmetries import (
-    PddlSymmetriesError,
-    find_symmetric_object_sets,
-)
-from core.symmetry_abstraction import (
-    AbstractionError,
-    abstract_task,
-    rank_symmetry_classes,
-)
+from core.integrations.pddl_symmetries import PddlSymmetriesError, find_symmetric_object_sets
+from core.symmetry_abstraction import AbstractionError, abstract_task, rank_symmetry_classes
 from scripts.abstract_object import _argument_parser
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BELUGA_CONCRETE = PROJECT_ROOT / "data" / "beluga" / "concrete" / "standard"
 
 
-def pddl_tokens(text: str) -> list[str]:
+def pddl_tokens(text):
     without_comments = re.sub(r";[^\n]*", "", text)
-    return [
-        token.casefold()
-        for token in re.findall(r"[()]|[^\s();]+", without_comments)
-    ]
+    return [token.casefold() for token in re.findall(r"[()]|[^\s();]+", without_comments)]
 
 
-def _stub_symmetry_inputs(directory: str) -> tuple[Path, Path, Path]:
+def _stub_symmetry_inputs(directory):
     root = Path(directory)
     translator = root / "translate.py"
     domain = root / "domain.pddl"
@@ -220,14 +209,11 @@ class ObjectAbstractionTests(unittest.TestCase):
         problem_name = "problem_3_s45_j3_r2_oc44_f3"
         problem = (BELUGA_CONCRETE / f"{problem_name}.pddl").read_text(encoding="utf-8")
 
-        result = abstract_task(
-            domain, problem, ["hangar1", "hangar2", "hangar3"], "hangarabs",
-        )
+        result = abstract_task(domain, problem, ["hangar1", "hangar2", "hangar3"], "hangarabs")
         expected_dir = PROJECT_ROOT / "data" / "beluga" / "abstract" / "hangar"
 
         self.assertEqual(
-            pddl_tokens(result.domain_text),
-            pddl_tokens((expected_dir / "domain.pddl").read_text(encoding="utf-8")),
+            pddl_tokens(result.domain_text), pddl_tokens((expected_dir / "domain.pddl").read_text(encoding="utf-8"))
         )
         self.assertEqual(
             pddl_tokens(result.problem_text),
@@ -239,12 +225,7 @@ class ObjectAbstractionTests(unittest.TestCase):
         problem_name = "problem_3_s45_j3_r2_oc44_f3"
         problem = (BELUGA_CONCRETE / f"{problem_name}.pddl").read_text(encoding="utf-8")
 
-        result = abstract_task(
-            domain,
-            problem,
-            ["beluga_trailer_1", "beluga_trailer_2"],
-            "beluga_abs_trailer",
-        )
+        result = abstract_task(domain, problem, ["beluga_trailer_1", "beluga_trailer_2"], "beluga_abs_trailer")
         expected_dir = PROJECT_ROOT / "data" / "beluga" / "abstract" / "trailer"
 
         self.assertEqual(result.unary_delete_score, 4)
@@ -290,9 +271,7 @@ class SymmetrySelectionTests(unittest.TestCase):
   (:init) (:goal (and)))
 """
 
-        ranked = rank_symmetry_classes(
-            domain, problem, [["a1", "a2"], ["b1", "b2", "b3"]],
-        )
+        ranked = rank_symmetry_classes(domain, problem, [["a1", "a2"], ["b1", "b2", "b3"]])
 
         self.assertEqual(ranked[0].objects, ("b1", "b2", "b3"))
 
@@ -306,37 +285,26 @@ class SymmetrySelectionTests(unittest.TestCase):
   (:objects a1 a2 - item) (:init) (:goal (and)))
 """
 
-        ranked = rank_symmetry_classes(
-            domain,
-            problem,
-            [["c1", "c2"], ["a2", "a1"], ["a1", "a2"]],
-        )
+        ranked = rank_symmetry_classes(domain, problem, [["c1", "c2"], ["a2", "a1"], ["a1", "a2"]])
 
         self.assertEqual([item.objects for item in ranked], [("a1", "a2")])
 
     def test_rejects_unknown_objects_from_symmetry_output(self):
         with self.assertRaisesRegex(AbstractionError, "unknown object"):
-            rank_symmetry_classes(
-                self.domain, self.problem, [["hangar1", "not-an-object"]],
-            )
+            rank_symmetry_classes(self.domain, self.problem, [["hangar1", "not-an-object"]])
 
     @patch("core.integrations.pddl_symmetries.subprocess.run")
     def test_extracts_object_sets_from_translator_output(self, run):
         run.return_value = subprocess.CompletedProcess(
             args=[],
             returncode=0,
-            stdout=(
-                "translator diagnostics\n"
-                "Non-trivial symmetric object sets: [['b', 'a'], ['x', 'y']]\n"
-            ),
+            stdout=("translator diagnostics\n" "Non-trivial symmetric object sets: [['b', 'a'], ['x', 'y']]\n"),
             stderr="",
         )
         with tempfile.TemporaryDirectory() as directory:
             translator, domain, problem = _stub_symmetry_inputs(directory)
 
-            result = find_symmetric_object_sets(
-                domain, problem, 17, translator,
-            )
+            result = find_symmetric_object_sets(domain, problem, 17, translator)
 
         self.assertEqual(result, [["b", "a"], ["x", "y"]])
         command = run.call_args.args[0]
@@ -349,9 +317,7 @@ class SymmetrySelectionTests(unittest.TestCase):
 
     @patch("core.integrations.pddl_symmetries.subprocess.run")
     def test_surfaces_translator_diagnostics(self, run):
-        run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=1, stdout="", stderr="bliss is not built",
-        )
+        run.return_value = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="bliss is not built")
         with tempfile.TemporaryDirectory() as directory:
             translator, domain, problem = _stub_symmetry_inputs(directory)
 
@@ -374,26 +340,40 @@ class SymmetrySelectionTests(unittest.TestCase):
 
 class AbstractionArgumentTests(unittest.TestCase):
     def test_explicit_selection_arguments(self):
-        args = _argument_parser().parse_args([
-            "--domain", "domain.pddl",
-            "--problem", "problem.pddl",
-            "--output-domain", "abstract-domain.pddl",
-            "--output-problem", "abstract-problem.pddl",
-            "--objects", "hangar1", "hangar2",
-        ])
+        args = _argument_parser().parse_args(
+            [
+                "--domain",
+                "domain.pddl",
+                "--problem",
+                "problem.pddl",
+                "--output-domain",
+                "abstract-domain.pddl",
+                "--output-problem",
+                "abstract-problem.pddl",
+                "--objects",
+                "hangar1",
+                "hangar2",
+            ]
+        )
 
         self.assertEqual(args.domain, Path("domain.pddl"))
         self.assertEqual(args.objects, ["hangar1", "hangar2"])
         self.assertFalse(args.auto)
 
     def test_automatic_selection_arguments(self):
-        args = _argument_parser().parse_args([
-            "--domain", "domain.pddl",
-            "--problem", "problem.pddl",
-            "--output-domain", "abstract-domain.pddl",
-            "--output-problem", "abstract-problem.pddl",
-            "--auto",
-        ])
+        args = _argument_parser().parse_args(
+            [
+                "--domain",
+                "domain.pddl",
+                "--problem",
+                "problem.pddl",
+                "--output-domain",
+                "abstract-domain.pddl",
+                "--output-problem",
+                "abstract-problem.pddl",
+                "--auto",
+            ]
+        )
 
         self.assertTrue(args.auto)
         self.assertIsNone(args.objects)
@@ -442,8 +422,7 @@ class AbstractionArgumentTests(unittest.TestCase):
 
 
 @unittest.skipUnless(
-    os.environ.get("RUN_PLANNER_INTEGRATION") == "1",
-    "set RUN_PLANNER_INTEGRATION=1 to run PDDL Symmetries",
+    os.environ.get("RUN_PLANNER_INTEGRATION") == "1", "set RUN_PLANNER_INTEGRATION=1 to run PDDL Symmetries"
 )
 class RealSymmetryIntegrationTests(unittest.TestCase):
     def test_beluga_symmetries_select_hangars(self):
@@ -451,9 +430,7 @@ class RealSymmetryIntegrationTests(unittest.TestCase):
 
         classes = find_symmetric_object_sets(BELUGA_CONCRETE / "domain.pddl", problem)
         ranked = rank_symmetry_classes(
-            (BELUGA_CONCRETE / "domain.pddl").read_text(encoding="utf-8"),
-            problem.read_text(encoding="utf-8"),
-            classes,
+            (BELUGA_CONCRETE / "domain.pddl").read_text(encoding="utf-8"), problem.read_text(encoding="utf-8"), classes
         )
 
         self.assertEqual(

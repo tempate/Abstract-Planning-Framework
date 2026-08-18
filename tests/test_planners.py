@@ -35,12 +35,7 @@ class MappingTests(unittest.TestCase):
         occurs_path = Path(directory.name, "occurrences.lp")
         mapping_path = Path(directory.name, "mapping.lp")
         occurs_path.write_text(occurrences, encoding="utf-8")
-        switch_map = planner.build_mapping(
-            occurs_path,
-            mapping_path,
-            symbol,
-            objects,
-        )
+        switch_map = planner.build_mapping(occurs_path, mapping_path, symbol, objects)
         return mapping_path.read_text(encoding="utf-8"), switch_map
 
     def test_beluga_maps_concrete_actions_directly_and_abstract_objects_by_choice(self):
@@ -49,72 +44,43 @@ occurs_abstract(action(("move","hangarabs","dock")),2).
 occurs_abstract(action(("inspect","jig1")),1).
 """
 
-        mapping, switch_map = self._build(
-            BelugaPlanner(),
-            occurrences,
-            "hangarabs",
-            ["hangar1", "hangar2"],
-        )
+        mapping, switch_map = self._build(BelugaPlanner(), occurrences, "hangarabs", ["hangar1", "hangar2"])
 
         self.assertIn("0 { switch(1) } 1.", mapping)
         self.assertIn("0 { switch(2) } 1.", mapping)
         self.assertIn(
-            'occurs(action(("inspect","jig1")),1) :- '
-            'occurs_abstract(action(("inspect","jig1")),1), switch(1).',
+            'occurs(action(("inspect","jig1")),1) :- ' 'occurs_abstract(action(("inspect","jig1")),1), switch(1).',
             mapping,
         )
-        self.assertIn(
-            'occurs(action(("move","hangar1","dock")), 2)',
-            mapping,
-        )
-        self.assertIn(
-            'occurs(action(("move","hangar2","dock")), 2)',
-            mapping,
-        )
+        self.assertIn('occurs(action(("move","hangar1","dock")), 2)', mapping)
+        self.assertIn('occurs(action(("move","hangar2","dock")), 2)', mapping)
         self.assertEqual(list(switch_map), [1, 2])
         self.assertFalse(switch_map[1]["is_abstract"])
         self.assertTrue(switch_map[2]["is_abstract"])
 
     def test_mapping_rejects_occurrences_that_are_not_concrete_actions(self):
         mapping, _ = self._build(
-            BelugaPlanner(),
-            'occurs_abstract(action(("inspect","jig1")),1).\n',
-            "hangarabs",
-            ["hangar1"],
+            BelugaPlanner(), 'occurs_abstract(action(("inspect","jig1")),1).\n', "hangarabs", ["hangar1"]
         )
 
-        self.assertIn(
-            ":- occurs(Action, T), not action(Action).",
-            mapping,
-        )
+        self.assertIn(":- occurs(Action, T), not action(Action).", mapping)
 
     def test_no_mystery_expands_abstract_drive_fuel_arguments(self):
-        occurrences = (
-            'occurs_abstract(action(("drive","t0","l0","l1",'
-            '"abslevel1","abslevel2","abslevel1")),4).\n'
-        )
+        occurrences = 'occurs_abstract(action(("drive","t0","l0","l1",' '"abslevel1","abslevel2","abslevel1")),4).\n'
 
         mapping, switch_map = self._build(NoMysteryPlanner(), occurrences)
 
-        self.assertIn(
-            'occurs(action(("drive","t0","l0","l1",Post,Diff,Pre)),4)',
-            mapping,
-        )
+        self.assertIn('occurs(action(("drive","t0","l0","l1",Post,Diff,Pre)),4)', mapping)
         self.assertIn('fuelcost(Diff,"l0","l1")', mapping)
         self.assertIn("sum(Post,Diff,Pre)", mapping)
         self.assertTrue(switch_map[4]["is_abstract"])
 
     def test_no_mystery_maps_non_drive_actions_directly(self):
-        occurrences = (
-            'occurs_abstract(action(("load","p0","t0","l0")),1).\n'
-        )
+        occurrences = 'occurs_abstract(action(("load","p0","t0","l0")),1).\n'
 
         mapping, switch_map = self._build(NoMysteryPlanner(), occurrences)
 
-        self.assertIn(
-            'occurs(action(("load","p0","t0","l0")),1) :-',
-            mapping,
-        )
+        self.assertIn('occurs(action(("load","p0","t0","l0")),1) :-', mapping)
         self.assertFalse(switch_map[1]["is_abstract"])
 
     def test_no_mystery_rejects_an_unparseable_drive_action(self):

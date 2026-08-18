@@ -11,14 +11,8 @@ class FastDownwardRefinement(BaseRefinement):
         context = self.context
         context.logger.info("Using Fast Downward plan")
 
-        with timed_phase(
-            context.logger,
-            "Abstract occurrences from Fast Downward",
-        ):
-            abstract_atoms = self.plan_to_abstract_atoms(
-                context.abstract_task["planFile"],
-                context.paths.occurrences,
-            )
+        with timed_phase(context.logger, "Abstract occurrences from Fast Downward"):
+            abstract_atoms = self.plan_to_abstract_atoms(context.abstract_task["planFile"], context.paths.occurrences)
 
         self.build_mapping()
         success, plan, _ = self.solve_concrete()
@@ -26,20 +20,11 @@ class FastDownwardRefinement(BaseRefinement):
         if success:
             self.log_success(plan)
         else:
-            context.logger.info(
-                "No concrete plan found at the selected horizon."
-            )
+            context.logger.info("No concrete plan found at the selected horizon.")
             context.logger.info("FAILED")
 
-        self.record_attempt(
-            abstract_atoms,
-            success=success,
-            bad_actions=[],
-        )
-        return self.build_result(
-            success=success,
-            plan=plan,
-        )
+        self.record_attempt(abstract_atoms, success=success, bad_actions=[])
+        return self.build_result(success=success, plan=plan)
 
     def plan_to_abstract_atoms(self, plan_file_path, output_path):
         """Convert a Fast Downward plan into ``occurs_abstract`` facts."""
@@ -52,15 +37,11 @@ class FastDownwardRefinement(BaseRefinement):
                     continue
                 action_name, *arguments = line.strip("()").split()
                 if arguments:
-                    quoted_arguments = ",".join(
-                        f'"{argument}"' for argument in arguments
-                    )
+                    quoted_arguments = ",".join(f'"{argument}"' for argument in arguments)
                     action = f'action(("{action_name}",{quoted_arguments}))'
                 else:
                     action = f'action("{action_name}")'
-                abstract_atoms.append(
-                    f"occurs_abstract({action}, {time_step})."
-                )
+                abstract_atoms.append(f"occurs_abstract({action}, {time_step}).")
                 time_step += 1
 
         with open(output_path, "w") as output_file:

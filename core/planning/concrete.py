@@ -17,10 +17,7 @@ def compute_concrete_plan(config: ConcretePlanningConfig):
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
     logger.info(f"Configuration: {config.as_dict()}")
-    logger.info(
-        f"Requested horizon: "
-        f"{config.horizon if config.horizon is not None else 'auto'}"
-    )
+    logger.info(f"Requested horizon: {config.horizon if config.horizon is not None else 'auto'}")
     logger.info(f"Encoding: {config.encoding}")
     logger.info(f"Run ID: {run_id}")
     logger.info(f"Base dir: {base_dir}")
@@ -32,32 +29,16 @@ def compute_concrete_plan(config: ConcretePlanningConfig):
         fd_task = "plan" if config.horizon is None else "translate"
 
         with timed_phase(logger, "Fast Downward time") as downward_timing:
-            with (
-                open(config.domain_path, "rb") as domain,
-                open(config.problem_path, "rb") as problem,
-            ):
-                task, _ = run_fast_downward(
-                    base_dir,
-                    domain.read(),
-                    problem.read(),
-                    "concrete",
-                    fd_task,
-                )
+            with open(config.domain_path, "rb") as domain, open(config.problem_path, "rb") as problem:
+                task, _ = run_fast_downward(base_dir, domain.read(), problem.read(), "concrete", fd_task)
 
-        effective_horizon = (
-            task["horizon"] if config.horizon is None else config.horizon
-        )
+        effective_horizon = task["horizon"] if config.horizon is None else config.horizon
         logger.info(f"Effective horizon: {effective_horizon}")
 
         # Generate the ASP representation of the concrete problem.
         asp_path = os.path.join(base_dir, "output_c.lp")
         with timed_phase(logger, "ASP generation time") as asp_timing:
-            sas_to_asp(
-                task["sasFile"],
-                asp_path,
-                config.encoding,
-                config.time_step,
-            )
+            sas_to_asp(task["sasFile"], asp_path, config.encoding, config.time_step)
 
         # Solve the concrete problem using Clingo.
         with timed_phase(logger, "Concrete solving time") as solve_timing:
