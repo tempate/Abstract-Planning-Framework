@@ -1,7 +1,6 @@
 [submodule "lib/pddl-symmetries"]
 	path = lib/pddl-symmetries
-	url = https://github.com/tempate/pddl-symmetries.git
-	branch = fix/pddl-symmetries-build
+	url = https://github.com/silvansievers/pddl-symmetries.git
 [submodule "lib/downward"]
 	path = lib/downward
 	url = https://github.com/aibasel/downward.git
