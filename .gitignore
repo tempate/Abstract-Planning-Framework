@@ -1,8 +1,6 @@
-ven/
+venv/
+.venv/
 temp/
-temp_2/
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.DS_Store
+*.py[cod]
+*.so
