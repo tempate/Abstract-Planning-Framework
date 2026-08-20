@@ -66,6 +66,10 @@ are:
   identifiers.
 - Promise semantic paired-PDDL output, not preservation of comments, order,
   case, exact requirements, headers, or untyped spelling.
+- UP normalizes explicit negative initial facts to the Boolean false default
+  when reading PDDL, so their lexical presence is not retained. The model API
+  still detects conflicts when callers provide explicit true/false values; the
+  production corpus contains no explicit negative initial facts.
 
 ### PR 1 supported scope
 
