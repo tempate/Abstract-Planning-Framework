@@ -6,18 +6,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pprint import pformat
 
+from core.asp import join_asp
 from core.execution import PhaseTiming, timed_phase
 from core.planning.config import AbstractPlanningConfig
 from core.planners.BasePlanner import BasePlanner
 from core.solvers.decremental import solve_decrementally
-
-
-@dataclass(frozen=True)
-class PlanningPaths:
-    """ASP files retained for plan mapping and refinement diagnostics."""
-
-    occurrences: str
-    mapping: str
 
 
 @dataclass(frozen=True)
@@ -26,7 +19,6 @@ class RefinementContext:
 
     config: AbstractPlanningConfig
     planner: BasePlanner
-    paths: PlanningPaths
     concrete_asp: str
     abstract_asp: str | None
     abstract_task: dict
@@ -55,24 +47,21 @@ class BaseRefinement(ABC):
     def refine(self):
         """Run the refinement strategy and return a planning result."""
 
-    def build_mapping(self):
+    def build_mapping(self, occurrences):
         """Build and time the domain-specific abstract-to-concrete mapping."""
         context = self.context
         with timed_phase(context.logger, "Mapping generation time") as timing:
-            context.planner.build_mapping(
-                context.paths.occurrences,
-                context.paths.mapping,
-                context.config.abstract_symbol,
-                context.config.concrete_objects,
+            mapping, _ = context.planner.build_mapping(
+                occurrences, context.config.abstract_symbol, context.config.concrete_objects
             )
-        return timing.elapsed
+        return mapping, timing.elapsed
 
-    def solve_concrete(self):
+    def solve_concrete(self, refinement_asp):
         """Run and time the selected concrete solver."""
         context = self.context
         with timed_phase(context.logger, "Concrete solving time") as timing:
             success, plan, operation_count = solve_decrementally(
-                context.concrete_asp, context.horizon, asp_files=[context.paths.occurrences, context.paths.mapping]
+                join_asp(context.concrete_asp, refinement_asp), context.horizon
             )
         self.concrete_solve_time += timing.elapsed
         self.solver_operations += operation_count

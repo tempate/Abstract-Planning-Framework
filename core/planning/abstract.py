@@ -6,7 +6,7 @@ from core.execution import create_run_dir, setup_debug_logger, timed_phase
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import add_switch_to_asp_rule, append_pddl_facts_to_asp, sas_to_asp
 from core.planning.config import AbstractPlanningConfig
-from core.planning.refinement.BaseRefinement import PlanningPaths, RefinementContext
+from core.planning.refinement.BaseRefinement import RefinementContext
 from core.planning.refinement.factory import get_refinement_strategy
 from core.planners.factory import get_planner
 
@@ -56,8 +56,6 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
         horizon = _select_abstract_horizon(config.horizon, abstract_task.get("horizon", 0), config.plan_source)
         logger.info(f"Effective horizon: {horizon}")
 
-        paths = _get_planning_paths(base_dir)
-
         with timed_phase(logger, "Total ASP generation") as asp_total_timing:
 
             # Generate the ASP representation of the concrete problem.
@@ -79,7 +77,6 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
         context = RefinementContext(
             config=config,
             planner=planner,
-            paths=paths,
             concrete_asp=concrete_asp,
             abstract_asp=abstract_asp,
             abstract_task=abstract_task,
@@ -95,18 +92,6 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
             attempt_recorder=attempt_recorder,
         )
         return get_refinement_strategy(config.plan_source, context).refine()
-
-
-def _get_planning_paths(base_dir):
-    clingo_directory = os.path.join(base_dir, "clingo")
-
-    # Create the directory for the task if it doesn't exist
-    os.makedirs(clingo_directory, exist_ok=True)
-
-    # Define the paths for the input and output files
-    return PlanningPaths(
-        occurrences=os.path.join(clingo_directory, "occurs_abs.lp"), mapping=os.path.join(clingo_directory, "map.lp")
-    )
 
 
 def _select_abstract_horizon(requested_horizon, plan_horizon, plan_source):

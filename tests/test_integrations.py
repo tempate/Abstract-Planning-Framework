@@ -22,15 +22,6 @@ class ClingoIntegrationTests(unittest.TestCase):
 
         self.assertIsNone(plan)
 
-    def test_control_combines_in_memory_programs_with_refinement_files(self):
-        with tempfile.TemporaryDirectory() as directory:
-            refinement = Path(directory, "refinement.lp")
-            refinement.write_text("selected(refined) :- base.\n#show selected/1.\n", encoding="utf-8")
-
-            plan = collect_plan(create_control("base.\n", horizon=0, asp_files=[refinement]))
-
-        self.assertEqual(plan, ["selected(refined)"])
-
 
 class FastDownwardHelperTests(unittest.TestCase):
     def test_calc_horizon_counts_only_actions(self):

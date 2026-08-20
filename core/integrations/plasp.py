@@ -3,6 +3,7 @@
 import os
 import subprocess
 
+from core.asp import join_asp
 from core.paths import (
     ABSTRACT_TIME_STEPS_ENCODING,
     ACTION_PER_TIME_STEP_ENCODING,
@@ -39,7 +40,7 @@ def sas_to_asp(sas_path, encoding_type="exact", abstract_time_steps=False):
 
     if completed_process.returncode != 0:
         raise RuntimeError(f"plasp failed:\n{completed_process.stderr}")
-    return _join_asp(encoding, time_encoding, completed_process.stdout)
+    return join_asp(encoding, time_encoding, completed_process.stdout)
 
 
 def append_pddl_facts_to_asp(pddl_path, asp):
@@ -62,7 +63,7 @@ def append_pddl_facts_to_asp(pddl_path, asp):
                 facts.append(fact)
 
     additions = "\n".join(["% --- ADDED FROM PDDL ---", *facts])
-    return _join_asp(asp, additions)
+    return join_asp(asp, additions)
 
 
 def add_switch_to_asp_rule(asp, encoding_type="exact"):
@@ -75,8 +76,3 @@ def add_switch_to_asp_rule(asp, encoding_type="exact"):
 
     lines = [modified_rule if line.strip() == rule_to_modify else line for line in asp.splitlines()]
     return "\n".join(lines) + ("\n" if asp.endswith("\n") else "")
-
-
-def _join_asp(*programs):
-    """Join nonempty ASP program fragments with exactly one separating newline."""
-    return "\n".join(program.rstrip("\n") for program in programs if program) + "\n"

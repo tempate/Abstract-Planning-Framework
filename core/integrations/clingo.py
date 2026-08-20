@@ -22,14 +22,12 @@ def run_clingo(asp, horizon):
     return plan
 
 
-def create_control(asp, horizon, *, asp_files=()):
-    """Add a program, load optional files, and return a grounded Clingo control."""
+def create_control(asp, horizon):
+    """Add an ASP program and return a grounded Clingo control."""
     arguments = ["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"]
     control = clingo.Control(arguments)
     control.configuration.solve.models = 1
     control.add("base", [], asp)
-    for asp_file in asp_files:
-        control.load(os.fspath(asp_file))
     control.ground([("base", [])])
     return control
 

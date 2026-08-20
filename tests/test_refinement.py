@@ -4,7 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock
 
-from core.planning.abstract import _get_planning_paths, _select_abstract_horizon
+from core.planning.abstract import _select_abstract_horizon
 from core.planning.config import AbstractPlanningConfig
 from core.planning.refinement.ClingoRefinement import ClingoRefinement
 from core.planning.refinement.FastDownwardRefinement import FastDownwardRefinement
@@ -22,16 +22,6 @@ class AbstractPlanningHelperTests(unittest.TestCase):
     def test_fd_source_rejects_a_plan_that_exceeds_the_horizon(self):
         with self.assertRaisesRegex(ValueError, "plan length 6"):
             _select_abstract_horizon(5, 6, "fd")
-
-    def test_planning_paths_are_isolated_below_the_run_directory(self):
-        with tempfile.TemporaryDirectory() as directory:
-            paths = _get_planning_paths(directory)
-
-            self.assertTrue(Path(directory, "clingo").is_dir())
-            self.assertEqual(paths.occurrences, str(Path(directory, "clingo", "occurs_abs.lp")))
-            self.assertEqual(paths.mapping, str(Path(directory, "clingo", "map.lp")))
-            self.assertFalse(Path(directory, "output_c.lp").exists())
-            self.assertFalse(Path(directory, "abstract", "output_a.lp").exists())
 
 
 class RefinementStrategyTests(unittest.TestCase):
@@ -51,18 +41,13 @@ class RefinementStrategyTests(unittest.TestCase):
             abstract_symbol="hangarabs",
             concrete_objects=["hangar1", "hangar2"],
         )
-        context = SimpleNamespace(
-            config=config,
-            planner=planner,
-            paths=SimpleNamespace(occurrences="occurrences.lp", mapping="mapping.lp"),
-            logger=Mock(),
-        )
+        context = SimpleNamespace(config=config, planner=planner, logger=Mock())
+        planner.build_mapping.return_value = ("mapping.", {})
 
-        ClingoRefinement(context).build_mapping()
+        mapping, _ = ClingoRefinement(context).build_mapping("occurrences.")
 
-        planner.build_mapping.assert_called_once_with(
-            "occurrences.lp", "mapping.lp", "hangarabs", ("hangar1", "hangar2")
-        )
+        self.assertEqual(mapping, "mapping.")
+        planner.build_mapping.assert_called_once_with("occurrences.", "hangarabs", ("hangar1", "hangar2"))
 
     def test_fast_downward_plan_conversion_skips_comments_and_numbers_steps(self):
         plan = """
@@ -74,10 +59,9 @@ class RefinementStrategyTests(unittest.TestCase):
 """
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory, "sas_plan")
-            destination = Path(directory, "occurrences.lp")
             source.write_text(plan, encoding="utf-8")
 
-            atoms = FastDownwardRefinement.plan_to_abstract_atoms(object(), source, destination)
+            atoms = FastDownwardRefinement.plan_to_abstract_atoms(object(), source)
 
             self.assertEqual(
                 atoms,
@@ -87,7 +71,6 @@ class RefinementStrategyTests(unittest.TestCase):
                     'occurs_abstract(action("wait"), 3).',
                 ],
             )
-            self.assertEqual(destination.read_text(encoding="utf-8"), "\n".join(atoms))
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 
-from core.asp import write_asp_program
+from core.asp import join_asp
 from core.execution import get_logger
 
 OCCURRENCE_VALIDATION_CONSTRAINT = ":- occurs(Action, T), not action(Action)."
@@ -24,18 +24,16 @@ class BasePlanner(ABC):
             )
 
     @abstractmethod
-    def build_mapping(self, occurs_path, map_path, abstract_symbol, concrete_objects):
-        """Write the concrete mapping for an abstract occurrence sequence."""
+    def build_mapping(self, occurrences, abstract_symbol, concrete_objects):
+        """Return the concrete mapping for an abstract occurrence sequence."""
 
     @staticmethod
-    def _write_mapping(map_path, lines, switch_map, mapping_name):
+    def _build_mapping(lines, switch_map, mapping_name):
         logger = get_logger()
 
-        write_asp_program(map_path, [*lines, OCCURRENCE_VALIDATION_CONSTRAINT])
         logger.info(f"[MAP] Switches created={len(switch_map)}")
-        logger.info(f"[FILES] wrote {map_path}")
         logger.info("[MAP] Grounded plan:")
         for line in lines:
             logger.info(f"  {line}")
         logger.info(f"[MAP] Mapping implementation={mapping_name}")
-        return switch_map
+        return join_asp(*lines, OCCURRENCE_VALIDATION_CONSTRAINT), switch_map
