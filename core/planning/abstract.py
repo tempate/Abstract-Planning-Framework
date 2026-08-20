@@ -17,7 +17,7 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
     planner.validate_configuration(config.abstract_symbol, config.concrete_objects)
 
     base_dir, run_id = create_run_dir(planner.run_directory)
-    logger, debug_dir = setup_debug_logger(base_dir)
+    logger, _ = setup_debug_logger(base_dir)
 
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
@@ -93,7 +93,6 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
             asp_total_time=asp_total_timing.elapsed,
             total_timing=run_timing,
             base_dir=base_dir,
-            debug_dir=debug_dir,
             logger=logger,
             attempt_recorder=attempt_recorder,
         )

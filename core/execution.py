@@ -1,9 +1,7 @@
 """Manage planning workspaces, diagnostic output, logging, and timing."""
 
-import json
 import logging
 import os
-import shutil
 import time
 import uuid
 from contextlib import contextmanager
@@ -36,31 +34,6 @@ def setup_debug_logger(base_dir):
     logger.debug_dir = debug_dir
 
     return logger, debug_dir
-
-
-def save_iteration_file(debug_dir, iteration, name, content):
-    """Save text content under an iteration-specific debug directory."""
-    path = os.path.join(_iteration_dir(debug_dir, iteration), name)
-
-    with open(path, "w", encoding="utf-8") as output_file:
-        output_file.write(content)
-
-    return path
-
-
-def copy_iteration_file(debug_dir, iteration, file_path):
-    """Copy an existing file into an iteration-specific debug directory."""
-    filename = os.path.basename(file_path)
-    destination_path = os.path.join(_iteration_dir(debug_dir, iteration), filename)
-
-    shutil.copyfile(file_path, destination_path)
-
-    return destination_path
-
-
-def save_json_iteration_file(debug_dir, iteration, name, data):
-    """Serialize an object as a formatted JSON iteration artifact."""
-    save_iteration_file(debug_dir, iteration, name, json.dumps(data, indent=2))
 
 
 @dataclass
@@ -104,10 +77,3 @@ def create_run_dir(dir_name="concrete"):
     base_dir = os.path.join(TEMP_DIR, dir_name, run_id)
     os.makedirs(base_dir, exist_ok=True)
     return base_dir, run_id
-
-
-def _iteration_dir(debug_dir, iteration):
-    """Create and return the debug subdirectory for one iteration."""
-    folder = os.path.join(debug_dir, f"iter_{iteration:03d}")
-    os.makedirs(folder, exist_ok=True)
-    return folder

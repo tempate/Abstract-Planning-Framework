@@ -5,41 +5,25 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.execution import (
-    LOGGER_NAME,
-    PhaseTiming,
-    copy_iteration_file,
-    save_iteration_file,
-    save_json_iteration_file,
-    setup_debug_logger,
-)
+from core.execution import LOGGER_NAME, PhaseTiming, setup_debug_logger
 from scripts.utils.abstract_plan_log import hash_abstract_plan, initialize_plan_log, record_plan_attempt
 
 
-class ExecutionArtifactTests(unittest.TestCase):
+class ExecutionTests(unittest.TestCase):
     def tearDown(self):
         logger = logging.getLogger(LOGGER_NAME)
         for handler in logger.handlers:
             handler.close()
         logger.handlers.clear()
 
-    def test_logger_and_iteration_artifacts_are_kept_under_the_run_directory(self):
+    def test_logger_is_kept_under_the_run_directory(self):
         with tempfile.TemporaryDirectory() as directory:
             logger, debug_dir = setup_debug_logger(directory)
             logger.info("test message")
             for handler in logger.handlers:
                 handler.flush()
 
-            text_path = save_iteration_file(debug_dir, 2, "notes.lp", "fact.\n")
-            json_path = Path(debug_dir, "iter_002", "values.json")
-            save_json_iteration_file(debug_dir, 2, "values.json", {"value": 3})
-            copied_path = copy_iteration_file(debug_dir, 3, text_path)
-
             self.assertIn("test message", Path(debug_dir, "planner_debug.log").read_text(encoding="utf-8"))
-            self.assertEqual(Path(text_path).read_text(encoding="utf-8"), "fact.\n")
-            self.assertEqual(json.loads(json_path.read_text(encoding="utf-8")), {"value": 3})
-            self.assertEqual(Path(copied_path).read_text(encoding="utf-8"), "fact.\n")
-            self.assertEqual(Path(copied_path).parent.name, "iter_003")
 
     def test_reconfiguring_the_logger_closes_the_previous_file(self):
         with tempfile.TemporaryDirectory() as directory:

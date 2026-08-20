@@ -1,7 +1,7 @@
 """Clingo-guided decremental concrete planning."""
 
 from core.asp import format_abstract_occurrences, join_asp
-from core.execution import save_json_iteration_file, timed_phase
+from core.execution import timed_phase
 from core.integrations.clingo import run_clingo
 from core.planning.refinement.BaseRefinement import BaseRefinement
 
@@ -34,7 +34,6 @@ class ClingoRefinement(BaseRefinement):
         success, plan, _ = self.solve_concrete(join_asp(occurrences, mapping))
         if success:
             self.log_success(plan)
-            save_json_iteration_file(context.debug_dir, 1, "concrete_plans.json", plan)
         else:
             context.logger.info("No concrete plan found at the selected horizon.")
             context.logger.info("FAILED")

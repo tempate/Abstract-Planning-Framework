@@ -29,7 +29,6 @@ class RefinementContext:
     asp_total_time: float
     total_timing: PhaseTiming
     base_dir: str
-    debug_dir: str
     logger: logging.Logger
     attempt_recorder: Callable[..., None] | None = None
 
