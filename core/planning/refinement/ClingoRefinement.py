@@ -1,7 +1,7 @@
 """Clingo-guided decremental concrete planning."""
 
 from core.asp import format_abstract_occurrences, join_asp
-from core.execution import save_iteration_file, save_json_iteration_file, timed_phase
+from core.execution import save_json_iteration_file, timed_phase
 from core.integrations.clingo import run_clingo
 from core.planning.refinement.BaseRefinement import BaseRefinement
 
@@ -28,10 +28,8 @@ class ClingoRefinement(BaseRefinement):
 
         with timed_phase(context.logger, "Abstract occurrence generation time"):
             occurrences = format_abstract_occurrences(abstract_atoms)
-        save_iteration_file(context.debug_dir, 1, "occurs_abs.lp", occurrences)
 
         mapping, _ = self.build_mapping(occurrences)
-        save_iteration_file(context.debug_dir, 1, "map.lp", mapping)
 
         success, plan, _ = self.solve_concrete(join_asp(occurrences, mapping))
         if success:
