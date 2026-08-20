@@ -4,7 +4,8 @@ import argparse
 from pathlib import Path
 
 from core.integrations.pddl_symmetries import PddlSymmetriesError, find_symmetric_object_sets
-from core.symmetry_abstraction import AbstractionError, abstract_task, rank_symmetry_classes
+from core.integrations.unified_planning import PddlError, read_problem, write_problem
+from core.model_abstraction import AbstractionError, abstract_problem, rank_symmetry_classes
 from .utils.arguments import positive_int
 
 
@@ -13,24 +14,24 @@ def main():
     args = parser.parse_args()
     try:
         _validate_output_paths(args)
-        domain_text = args.domain.read_text(encoding="utf-8")
-        problem_text = args.problem.read_text(encoding="utf-8")
+        problem = read_problem(args.domain, args.problem)
 
         ranked = []
         objects = args.objects
         if args.auto:
             classes = find_symmetric_object_sets(args.domain, args.problem, args.bliss_time_limit)
-            ranked = rank_symmetry_classes(domain_text, problem_text, classes)
+            ranked = rank_symmetry_classes(problem, classes)
             if not ranked:
                 raise AbstractionError("PDDL Symmetries found no abstractable object classes")
             objects = ranked[0].objects
 
-        result = abstract_task(domain_text, problem_text, objects or (), args.abstract_name)
+        result = abstract_problem(problem, objects or (), args.abstract_name)
+        serialized = write_problem(result.problem)
         for output in (args.output_domain, args.output_problem):
             output.parent.mkdir(parents=True, exist_ok=True)
-        args.output_domain.write_text(result.domain_text, encoding="utf-8")
-        args.output_problem.write_text(result.problem_text, encoding="utf-8")
-    except (AbstractionError, PddlSymmetriesError, OSError, UnicodeError) as error:
+        args.output_domain.write_text(serialized.domain, encoding="utf-8")
+        args.output_problem.write_text(serialized.problem, encoding="utf-8")
+    except (AbstractionError, PddlError, PddlSymmetriesError, OSError, UnicodeError) as error:
         parser.error(str(error))
     _report(args, result, ranked)
 
