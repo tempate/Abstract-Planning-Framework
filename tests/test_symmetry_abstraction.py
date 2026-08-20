@@ -173,6 +173,42 @@ class ObjectAbstractionTests(unittest.TestCase):
         with self.assertRaisesRegex(AbstractionError, "conflicting initial values"):
             abstract_task(domain, problem, ["x1", "x2"])
 
+    def test_deduplicates_equal_numeric_values_created_by_collapse(self):
+        domain = """
+(define (domain d)
+  (:requirements :typing :fluents)
+  (:types item)
+  (:predicates)
+  (:functions (value ?x - item)))
+"""
+        problem = """
+(define (problem p) (:domain d)
+  (:objects x1 x2 - item)
+  (:init (= (value x1) 1) (= (value x2) 1))
+  (:goal (and)))
+"""
+
+        result = abstract_task(domain, problem, ["x1", "x2"])
+
+        self.assertEqual(result.problem_text.count("(value item_abs)"), 1)
+
+    def test_rejects_contradictory_boolean_facts_created_by_collapse(self):
+        domain = """
+(define (domain d)
+  (:requirements :typing :negative-preconditions)
+  (:types item)
+  (:predicates (ready ?x - item)))
+"""
+        problem = """
+(define (problem p) (:domain d)
+  (:objects x1 x2 - item)
+  (:init (ready x1) (not (ready x2)))
+  (:goal (and)))
+"""
+
+        with self.assertRaisesRegex(AbstractionError, "contradictory initial facts"):
+            abstract_task(domain, problem, ["x1", "x2"])
+
     def test_rejects_domain_mismatches_constant_collisions_and_false_inequality(self):
         domain = """
 (define (domain d)
