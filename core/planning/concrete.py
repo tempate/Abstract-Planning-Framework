@@ -1,6 +1,6 @@
 """Orchestrate concrete planning from PDDL translation through ASP solving."""
 
-from core.execution import create_run_dir, setup_debug_logger, timed_phase
+from core.execution import create_run_dir, get_logger, timed_phase
 from core.integrations.clingo import run_clingo
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import sas_to_asp
@@ -10,7 +10,7 @@ from core.planning.config import ConcretePlanningConfig
 def compute_concrete_plan(config: ConcretePlanningConfig):
     """Translate and solve one concrete PDDL planning problem."""
     base_dir, run_id = create_run_dir()
-    logger, _ = setup_debug_logger(base_dir)
+    logger = get_logger()
 
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")

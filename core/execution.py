@@ -1,4 +1,4 @@
-"""Manage planning workspaces, diagnostic output, logging, and timing."""
+"""Manage planning workspaces, logging, and timing."""
 
 import logging
 import os
@@ -9,31 +9,7 @@ from dataclasses import dataclass, field
 
 from core.paths import TEMP_DIR
 
-LOGGER_NAME = "planner_debug"
-
-
-def setup_debug_logger(base_dir):
-    """Configure the file logger for a single planning run."""
-    debug_dir = os.path.join(base_dir, "debug")
-    os.makedirs(debug_dir, exist_ok=True)
-
-    log_file = os.path.join(debug_dir, "planner_debug.log")
-
-    logger = logging.getLogger(LOGGER_NAME)
-    logger.setLevel(logging.INFO)
-
-    for handler in logger.handlers[:]:
-        handler.close()
-        logger.removeHandler(handler)
-
-    file_handler = logging.FileHandler(log_file, mode="a")
-    formatter = logging.Formatter("%(asctime)s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
-    logger.debug_dir = debug_dir
-
-    return logger, debug_dir
+LOGGER_NAME = "planner"
 
 
 @dataclass

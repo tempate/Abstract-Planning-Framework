@@ -2,7 +2,7 @@
 
 import os
 
-from core.execution import create_run_dir, setup_debug_logger, timed_phase
+from core.execution import create_run_dir, get_logger, timed_phase
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import add_switch_to_asp_rule, append_pddl_facts_to_asp, sas_to_asp
 from core.planning.config import AbstractPlanningConfig
@@ -17,7 +17,7 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
     planner.validate_configuration(config.abstract_symbol, config.concrete_objects)
 
     base_dir, run_id = create_run_dir(planner.run_directory)
-    logger, _ = setup_debug_logger(base_dir)
+    logger = get_logger()
 
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")

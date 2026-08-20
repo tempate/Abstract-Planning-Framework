@@ -2,7 +2,7 @@ import argparse
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from core.planning.config import AbstractPlanningConfig, ConcretePlanningConfig
 from core.planning.concrete import compute_concrete_plan
@@ -13,10 +13,9 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.concrete.run_clingo")
     @patch("core.planning.concrete.sas_to_asp")
     @patch("core.planning.concrete.run_fast_downward")
-    @patch("core.planning.concrete.setup_debug_logger")
     @patch("core.planning.concrete.create_run_dir")
     def test_pipeline_uses_an_explicit_horizon_and_returns_normalized_timings(
-        self, create_run_dir, setup_debug_logger, run_fast_downward, sas_to_asp, run_clingo
+        self, create_run_dir, run_fast_downward, sas_to_asp, run_clingo
     ):
         with tempfile.TemporaryDirectory() as directory:
             domain = Path(directory, "domain.pddl")
@@ -24,7 +23,6 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             domain.write_bytes(b"domain")
             problem.write_bytes(b"problem")
             create_run_dir.return_value = (directory, "run-123")
-            setup_debug_logger.return_value = (Mock(), str(Path(directory, "debug")))
             run_fast_downward.return_value = (
                 {
                     "horizon": 8,

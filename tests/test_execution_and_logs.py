@@ -1,42 +1,14 @@
 import json
-import logging
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.execution import LOGGER_NAME, PhaseTiming, setup_debug_logger
+from core.execution import PhaseTiming
 from scripts.utils.abstract_plan_log import hash_abstract_plan, initialize_plan_log, record_plan_attempt
 
 
 class ExecutionTests(unittest.TestCase):
-    def tearDown(self):
-        logger = logging.getLogger(LOGGER_NAME)
-        for handler in logger.handlers:
-            handler.close()
-        logger.handlers.clear()
-
-    def test_logger_is_kept_under_the_run_directory(self):
-        with tempfile.TemporaryDirectory() as directory:
-            logger, debug_dir = setup_debug_logger(directory)
-            logger.info("test message")
-            for handler in logger.handlers:
-                handler.flush()
-
-            self.assertIn("test message", Path(debug_dir, "planner_debug.log").read_text(encoding="utf-8"))
-
-    def test_reconfiguring_the_logger_closes_the_previous_file(self):
-        with tempfile.TemporaryDirectory() as directory:
-            first_run = Path(directory, "first")
-            second_run = Path(directory, "second")
-            logger, _ = setup_debug_logger(first_run)
-            previous_handler = logger.handlers[0]
-
-            setup_debug_logger(second_run)
-
-            self.assertIsNone(previous_handler.stream)
-            self.assertEqual(len(logger.handlers), 1)
-
     @patch("core.execution.time.perf_counter", return_value=12.5)
     def test_phase_timing_stops_once(self, perf_counter):
         timing = PhaseTiming(_started_at=10.0)
