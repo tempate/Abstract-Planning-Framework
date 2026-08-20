@@ -33,19 +33,25 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
     with timed_phase() as run_timing:
         with timed_phase(logger, "Fast Downward time") as fd_total:
             # Translate the concrete problem into SAS.
-            with open(config.concrete_domain_path, "rb") as domain, open(config.concrete_problem_path, "rb") as problem:
-                concrete_task, concrete_time = run_fast_downward(
-                    os.path.join(base_dir, "concrete"), domain.read(), problem.read(), "concrete", "translate"
-                )
+            concrete_task, concrete_time = run_fast_downward(
+                os.path.join(base_dir, "concrete"),
+                config.concrete_domain_path,
+                config.concrete_problem_path,
+                "concrete",
+                "translate",
+            )
 
             # A Fast Downward plan is needed only when it is the selected plan
             # source or when its length is being used as an automatic horizon.
             fd_task = "plan" if config.plan_source == "fd" or config.horizon is None else "translate"
 
-            with open(config.abstract_domain_path, "rb") as domain, open(config.abstract_problem_path, "rb") as problem:
-                abstract_task, abstract_time = run_fast_downward(
-                    os.path.join(base_dir, "abstract"), domain.read(), problem.read(), "abstract", fd_task
-                )
+            abstract_task, abstract_time = run_fast_downward(
+                os.path.join(base_dir, "abstract"),
+                config.abstract_domain_path,
+                config.abstract_problem_path,
+                "abstract",
+                fd_task,
+            )
 
         fd_timings = {
             "fd_concrete_time": concrete_time,

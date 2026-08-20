@@ -47,7 +47,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(result["timings"]["run_id"], directory)
         self.assertEqual(result["configuration"], config.as_dict())
         self.assertIsNone(result["timings"]["iterations"])
-        run_fast_downward.assert_called_once_with(directory, b"domain", b"problem", "concrete", "translate")
+        run_fast_downward.assert_called_once_with(directory, domain, problem, "concrete", "translate")
         sas_to_asp.assert_called_once_with(str(Path(directory, "output.sas")), "bounded", True)
         run_clingo.assert_called_once_with("asp program", 3)
 

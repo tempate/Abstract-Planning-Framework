@@ -47,8 +47,16 @@ class FastDownwardHelperTests(unittest.TestCase):
         )
 
         with tempfile.TemporaryDirectory() as directory:
+            domain = Path(directory, "source-domain.pddl")
+            problem = Path(directory, "source-problem.pddl")
             with self.assertRaisesRegex(RuntimeError, "translator output"):
-                _run_task("concrete", directory, b"domain", b"problem", "translate", Mock())
+                _run_task("concrete", directory, domain, problem, "translate", Mock())
+
+            command = run.call_args.args[0]
+            self.assertIn(str(domain), command)
+            self.assertIn(str(problem), command)
+            self.assertFalse(Path(directory, "domain.pddl").exists())
+            self.assertFalse(Path(directory, "problem.pddl").exists())
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_run_task_classifies_unsolvable_problems(self, run):
@@ -56,7 +64,14 @@ class FastDownwardHelperTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(RuntimeError, "problem is unsolvable"):
-                _run_task("abstract", directory, b"domain", b"problem", "translate", Mock())
+                _run_task(
+                    "abstract",
+                    directory,
+                    Path(directory, "domain.pddl"),
+                    Path(directory, "problem.pddl"),
+                    "translate",
+                    Mock(),
+                )
 
 
 class PlaspPostProcessingTests(unittest.TestCase):

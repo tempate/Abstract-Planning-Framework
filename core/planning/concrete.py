@@ -27,8 +27,7 @@ def compute_concrete_plan(config: ConcretePlanningConfig):
         fd_task = "plan" if config.horizon is None else "translate"
 
         with timed_phase(logger, "Fast Downward time") as downward_timing:
-            with open(config.domain_path, "rb") as domain, open(config.problem_path, "rb") as problem:
-                task, _ = run_fast_downward(base_dir, domain.read(), problem.read(), "concrete", fd_task)
+            task, _ = run_fast_downward(base_dir, config.domain_path, config.problem_path, "concrete", fd_task)
 
         effective_horizon = task["horizon"] if config.horizon is None else config.horizon
         logger.info(f"Effective horizon: {effective_horizon}")
