@@ -3,14 +3,14 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.execution import PhaseTiming, temporary_run_dir
+from core.execution import PhaseTiming, temp_run_dir
 
 
 class ExecutionTests(unittest.TestCase):
-    def test_temporary_run_directory_is_removed_after_use(self):
+    def test_temp_run_directory_is_removed_after_use(self):
         with tempfile.TemporaryDirectory() as directory:
             with patch("core.execution.TEMP_DIR", directory):
-                with temporary_run_dir("beluga") as (run_directory, run_id):
+                with temp_run_dir("beluga") as (run_directory, run_id):
                     path = Path(run_directory)
                     self.assertTrue(path.is_dir())
                     self.assertIn(run_id, path.name)

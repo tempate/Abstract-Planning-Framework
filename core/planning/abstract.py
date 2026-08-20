@@ -2,7 +2,7 @@
 
 import os
 
-from core.execution import get_logger, temporary_run_dir, timed_phase
+from core.execution import get_logger, temp_run_dir, timed_phase
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import add_switch_to_asp_rule, append_pddl_facts_to_asp, sas_to_asp
 from core.planning.config import AbstractPlanningConfig
@@ -16,7 +16,7 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
     planner = get_planner(config.profile_name)
     planner.validate_configuration(config.abstract_symbol, config.concrete_objects)
 
-    with temporary_run_dir(planner.run_directory) as (base_dir, run_id):
+    with temp_run_dir(planner.run_directory) as (base_dir, run_id):
         return _compute_abstract_plan(config, planner, base_dir, run_id)
 
 

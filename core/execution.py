@@ -49,7 +49,7 @@ def get_logger():
 
 
 @contextmanager
-def temporary_run_dir(dir_name="concrete"):
+def temp_run_dir(dir_name="concrete"):
     """Yield an isolated planner directory and delete it after the run."""
     os.makedirs(TEMP_DIR, exist_ok=True)
     run_id = str(uuid.uuid4())
