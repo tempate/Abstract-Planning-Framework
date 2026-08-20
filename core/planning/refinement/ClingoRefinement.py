@@ -14,7 +14,7 @@ class ClingoRefinement(BaseRefinement):
         context.logger.info("Abstract plan search")
 
         with timed_phase(context.logger, "Abstract solving time") as timing:
-            abstract_atoms = run_clingo([context.paths.abstract_asp], context.horizon)
+            abstract_atoms = run_clingo(context.abstract_asp, context.horizon)
         self.abstract_solve_time = timing.elapsed
 
         if abstract_atoms is None:

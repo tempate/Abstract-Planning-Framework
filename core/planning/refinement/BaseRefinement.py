@@ -14,10 +14,8 @@ from core.solvers.decremental import solve_decrementally
 
 @dataclass(frozen=True)
 class PlanningPaths:
-    """ASP files shared by the abstract planning and refinement phases."""
+    """ASP files retained for plan mapping and refinement diagnostics."""
 
-    concrete_asp: str
-    abstract_asp: str
     occurrences: str
     mapping: str
 
@@ -29,6 +27,8 @@ class RefinementContext:
     config: AbstractPlanningConfig
     planner: BasePlanner
     paths: PlanningPaths
+    concrete_asp: str
+    abstract_asp: str | None
     abstract_task: dict
     horizon: int
     fd_timings: dict
@@ -70,9 +70,10 @@ class BaseRefinement(ABC):
     def solve_concrete(self):
         """Run and time the selected concrete solver."""
         context = self.context
-        asp_files = [context.paths.concrete_asp, context.paths.occurrences, context.paths.mapping]
         with timed_phase(context.logger, "Concrete solving time") as timing:
-            success, plan, operation_count = solve_decrementally(asp_files, context.horizon)
+            success, plan, operation_count = solve_decrementally(
+                context.concrete_asp, context.horizon, asp_files=[context.paths.occurrences, context.paths.mapping]
+            )
         self.concrete_solve_time += timing.elapsed
         self.solver_operations += operation_count
         return success, plan, timing.elapsed

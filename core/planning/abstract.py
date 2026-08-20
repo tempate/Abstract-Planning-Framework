@@ -62,23 +62,26 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
 
             # Generate the ASP representation of the concrete problem.
             with timed_phase(logger, "Concrete ASP generation") as concrete_timing:
-                sas_to_asp(concrete_task["sasFile"], paths.concrete_asp, config.encoding, config.time_step)
+                concrete_asp = sas_to_asp(concrete_task["sasFile"], config.encoding, config.time_step)
 
-                add_switch_to_asp_rule(paths.concrete_asp, config.encoding)
+                concrete_asp = add_switch_to_asp_rule(concrete_asp, config.encoding)
                 if planner.append_concrete_pddl_facts:
-                    append_pddl_facts_to_asp(config.concrete_problem_path, paths.concrete_asp)
+                    concrete_asp = append_pddl_facts_to_asp(config.concrete_problem_path, concrete_asp)
 
             # Generate the ASP representation of the abstract problem.
             abstract_time = 0.0
+            abstract_asp = None
             if config.plan_source == "clingo":
                 with timed_phase(logger, "Abstract ASP generation") as abstract_timing:
-                    sas_to_asp(abstract_task["sasFile"], paths.abstract_asp, config.encoding, config.time_step)
+                    abstract_asp = sas_to_asp(abstract_task["sasFile"], config.encoding, config.time_step)
                 abstract_time = abstract_timing.elapsed
 
         context = RefinementContext(
             config=config,
             planner=planner,
             paths=paths,
+            concrete_asp=concrete_asp,
+            abstract_asp=abstract_asp,
             abstract_task=abstract_task,
             horizon=horizon,
             fd_timings=fd_timings,
@@ -102,10 +105,7 @@ def _get_planning_paths(base_dir):
 
     # Define the paths for the input and output files
     return PlanningPaths(
-        concrete_asp=os.path.join(base_dir, "output_c.lp"),
-        abstract_asp=os.path.join(base_dir, "abstract", "output_a.lp"),
-        occurrences=os.path.join(clingo_directory, "occurs_abs.lp"),
-        mapping=os.path.join(clingo_directory, "map.lp"),
+        occurrences=os.path.join(clingo_directory, "occurs_abs.lp"), mapping=os.path.join(clingo_directory, "map.lp")
     )
 
 

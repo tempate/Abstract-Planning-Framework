@@ -27,11 +27,11 @@ class AbstractPlanningHelperTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             paths = _get_planning_paths(directory)
 
-            self.assertEqual(paths.concrete_asp, str(Path(directory, "output_c.lp")))
-            self.assertEqual(paths.abstract_asp, str(Path(directory, "abstract", "output_a.lp")))
             self.assertTrue(Path(directory, "clingo").is_dir())
             self.assertEqual(paths.occurrences, str(Path(directory, "clingo", "occurs_abs.lp")))
             self.assertEqual(paths.mapping, str(Path(directory, "clingo", "map.lp")))
+            self.assertFalse(Path(directory, "output_c.lp").exists())
+            self.assertFalse(Path(directory, "abstract", "output_a.lp").exists())
 
 
 class RefinementStrategyTests(unittest.TestCase):

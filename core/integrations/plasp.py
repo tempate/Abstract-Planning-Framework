@@ -16,8 +16,8 @@ _HORIZON_ENCODINGS = {"exact": EXACT_HORIZON_ENCODING, "bounded": BOUNDED_HORIZO
 _SWITCH_RULE_BOUNDS = {"exact": "1", "bounded": "0"}
 
 
-def sas_to_asp(sas_path, asp_path, encoding_type="exact", abstract_time_steps=False):
-    """Translate a SAS instance to ASP and prepend its encodings."""
+def sas_to_asp(sas_path, encoding_type="exact", abstract_time_steps=False):
+    """Translate a SAS instance and return an in-memory ASP program."""
     # Encoding files for translation
     encoding_file = _HORIZON_ENCODINGS[encoding_type]
 
@@ -29,28 +29,21 @@ def sas_to_asp(sas_path, asp_path, encoding_type="exact", abstract_time_steps=Fa
     if not os.path.exists(PLASP_BIN):
         raise FileNotFoundError(f"plasp binary not found: {PLASP_BIN}")
 
-    # Create the output directory if it doesn't exist
-    output_directory = os.path.dirname(asp_path)
-    os.makedirs(output_directory, exist_ok=True)
+    with open(encoding_file, "r", encoding="utf-8") as encoding_source:
+        encoding = encoding_source.read()
+    with open(time_file, "r", encoding="utf-8") as time_source:
+        time_encoding = time_source.read()
 
-    with open(asp_path, "w", encoding="utf-8") as asp_file:
-        # Write encodings
-        with open(encoding_file, "r", encoding="utf-8") as encoding_source:
-            asp_file.write(encoding_source.read())
-        with open(time_file, "r", encoding="utf-8") as time_source:
-            asp_file.write(time_source.read())
-
-        # Run plasp translation
-        asp_file.flush()
-        command = [PLASP_BIN, "translate", sas_path]
-        completed_process = subprocess.run(command, stdout=asp_file, stderr=subprocess.PIPE, text=True)
+    command = [PLASP_BIN, "translate", sas_path]
+    completed_process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
     if completed_process.returncode != 0:
         raise RuntimeError(f"plasp failed:\n{completed_process.stderr}")
+    return _join_asp(encoding, time_encoding, completed_process.stdout)
 
 
-def append_pddl_facts_to_asp(pddl_path, asp_path):
-    """Append No-Mystery fuel and arithmetic facts from a PDDL problem."""
+def append_pddl_facts_to_asp(pddl_path, asp):
+    """Return an ASP program with No-Mystery fuel and arithmetic facts."""
 
     # Extract supported facts from the PDDL
     facts = []
@@ -68,26 +61,22 @@ def append_pddl_facts_to_asp(pddl_path, asp_path):
                 fact = f'sum("{left}","{right}","{total}").'
                 facts.append(fact)
 
-    with open(asp_path, "a", encoding="utf-8") as asp_file:
-        asp_file.write("\n% --- ADDED FROM PDDL ---\n")
-        asp_file.writelines(f"{fact}\n" for fact in facts)
+    additions = "\n".join(["% --- ADDED FROM PDDL ---", *facts])
+    return _join_asp(asp, additions)
 
 
-def add_switch_to_asp_rule(asp_path, encoding_type="exact"):
-    """Add a switch guard to the action-occurrence constraint."""
+def add_switch_to_asp_rule(asp, encoding_type="exact"):
+    """Return an ASP program with a switch-guarded occurrence constraint."""
 
     # Define the original rule and the modified rule based on the encoding type
     bound = _SWITCH_RULE_BOUNDS[encoding_type]
     rule_to_modify = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), T > 0."
     modified_rule = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), not switch(T), T > 0."
 
-    # Read the ASP file, modify the rule, and write it back
-    with open(asp_path, "r", encoding="utf-8") as source_file:
-        lines = source_file.readlines()
+    lines = [modified_rule if line.strip() == rule_to_modify else line for line in asp.splitlines()]
+    return "\n".join(lines) + ("\n" if asp.endswith("\n") else "")
 
-    with open(asp_path, "w", encoding="utf-8") as output_file:
-        for line in lines:
-            if line.strip() == rule_to_modify:
-                output_file.write(modified_rule + "\n")
-            else:
-                output_file.write(line)
+
+def _join_asp(*programs):
+    """Join nonempty ASP program fragments with exactly one separating newline."""
+    return "\n".join(program.rstrip("\n") for program in programs if program) + "\n"

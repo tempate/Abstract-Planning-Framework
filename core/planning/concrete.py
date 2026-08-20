@@ -1,7 +1,5 @@
 """Orchestrate concrete planning from PDDL translation through ASP solving."""
 
-import os
-
 from core.execution import create_run_dir, setup_debug_logger, timed_phase
 from core.integrations.clingo import run_clingo
 from core.integrations.fast_downward import run_fast_downward
@@ -36,13 +34,12 @@ def compute_concrete_plan(config: ConcretePlanningConfig):
         logger.info(f"Effective horizon: {effective_horizon}")
 
         # Generate the ASP representation of the concrete problem.
-        asp_path = os.path.join(base_dir, "output_c.lp")
         with timed_phase(logger, "ASP generation time") as asp_timing:
-            sas_to_asp(task["sasFile"], asp_path, config.encoding, config.time_step)
+            asp = sas_to_asp(task["sasFile"], config.encoding, config.time_step)
 
         # Solve the concrete problem using Clingo.
         with timed_phase(logger, "Concrete solving time") as solve_timing:
-            plan = run_clingo([asp_path], effective_horizon)
+            plan = run_clingo(asp, effective_horizon)
 
     downward_time = downward_timing.elapsed
     asp_time = asp_timing.elapsed
