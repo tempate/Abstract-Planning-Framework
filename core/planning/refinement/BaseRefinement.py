@@ -27,7 +27,7 @@ class RefinementContext:
     abstract_asp_time: float
     asp_total_time: float
     total_timing: PhaseTiming
-    base_dir: str
+    run_id: str
     logger: logging.Logger
 
 
@@ -86,7 +86,7 @@ class BaseRefinement(ABC):
                 "abstract_solve_time": self.abstract_solve_time,
                 "concrete_solve_time": self.concrete_solve_time,
                 "total_time": total_time,
-                "run_id": context.base_dir,
+                "run_id": context.run_id,
             },
         }
 

@@ -6,6 +6,7 @@ import time
 import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from tempfile import TemporaryDirectory
 
 from core.paths import TEMP_DIR
 
@@ -47,9 +48,10 @@ def get_logger():
     return logging.getLogger(LOGGER_NAME)
 
 
-def create_run_dir(dir_name="concrete"):
-    """Create and return an isolated directory for a planner run."""
+@contextmanager
+def temporary_run_dir(dir_name="concrete"):
+    """Yield an isolated planner directory and delete it after the run."""
+    os.makedirs(TEMP_DIR, exist_ok=True)
     run_id = str(uuid.uuid4())
-    base_dir = os.path.join(TEMP_DIR, dir_name, run_id)
-    os.makedirs(base_dir, exist_ok=True)
-    return base_dir, run_id
+    with TemporaryDirectory(prefix=f"{dir_name}-{run_id}-", dir=TEMP_DIR) as base_dir:
+        yield base_dir, run_id

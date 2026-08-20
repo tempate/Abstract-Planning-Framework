@@ -2,7 +2,7 @@
 
 import os
 
-from core.execution import create_run_dir, get_logger, timed_phase
+from core.execution import get_logger, temporary_run_dir, timed_phase
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import add_switch_to_asp_rule, append_pddl_facts_to_asp, sas_to_asp
 from core.planning.config import AbstractPlanningConfig
@@ -16,7 +16,11 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
     planner = get_planner(config.profile_name)
     planner.validate_configuration(config.abstract_symbol, config.concrete_objects)
 
-    base_dir, run_id = create_run_dir(planner.run_directory)
+    with temporary_run_dir(planner.run_directory) as (base_dir, run_id):
+        return _compute_abstract_plan(config, planner, base_dir, run_id)
+
+
+def _compute_abstract_plan(config, planner, base_dir, run_id):
     logger = get_logger()
 
     logger.info("=" * 70)
@@ -27,8 +31,6 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
     logger.info(f"Profile: {config.profile_name}")
     logger.info(f"Run ID: {run_id}")
     logger.info(f"Base dir: {base_dir}")
-
-    print("Directory:", base_dir)
 
     with timed_phase() as run_timing:
         with timed_phase(logger, "Fast Downward time") as fd_total:
@@ -92,7 +94,7 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
             abstract_asp_time=abstract_time,
             asp_total_time=asp_total_timing.elapsed,
             total_timing=run_timing,
-            base_dir=base_dir,
+            run_id=run_id,
             logger=logger,
         )
         return get_refinement_strategy(config.plan_source, context).refine()

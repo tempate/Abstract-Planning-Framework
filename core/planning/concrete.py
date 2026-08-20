@@ -1,6 +1,6 @@
 """Orchestrate concrete planning from PDDL translation through ASP solving."""
 
-from core.execution import create_run_dir, get_logger, timed_phase
+from core.execution import get_logger, temporary_run_dir, timed_phase
 from core.integrations.clingo import run_clingo
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import sas_to_asp
@@ -9,7 +9,11 @@ from core.planning.config import ConcretePlanningConfig
 
 def compute_concrete_plan(config: ConcretePlanningConfig):
     """Translate and solve one concrete PDDL planning problem."""
-    base_dir, run_id = create_run_dir()
+    with temporary_run_dir() as (base_dir, run_id):
+        return _compute_concrete_plan(config, base_dir, run_id)
+
+
+def _compute_concrete_plan(config, base_dir, run_id):
     logger = get_logger()
 
     logger.info("=" * 70)
@@ -20,7 +24,6 @@ def compute_concrete_plan(config: ConcretePlanningConfig):
     logger.info(f"Run ID: {run_id}")
     logger.info(f"Base dir: {base_dir}")
 
-    print("Directory:", base_dir)
     with timed_phase() as total_timing:
         # Translate the concrete problem into SAS. With no requested horizon,
         # Fast Downward also finds a plan whose length supplies the horizon.
@@ -65,6 +68,6 @@ def compute_concrete_plan(config: ConcretePlanningConfig):
             "abstract_solve_time": None,
             "concrete_solve_time": solve_time,
             "total_time": total_time,
-            "run_id": base_dir,
+            "run_id": run_id,
         },
     }

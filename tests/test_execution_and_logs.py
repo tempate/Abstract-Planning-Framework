@@ -1,10 +1,22 @@
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from core.execution import PhaseTiming
+from core.execution import PhaseTiming, temporary_run_dir
 
 
 class ExecutionTests(unittest.TestCase):
+    def test_temporary_run_directory_is_removed_after_use(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch("core.execution.TEMP_DIR", directory):
+                with temporary_run_dir("beluga") as (run_directory, run_id):
+                    path = Path(run_directory)
+                    self.assertTrue(path.is_dir())
+                    self.assertIn(run_id, path.name)
+
+                self.assertFalse(path.exists())
+
     @patch("core.execution.time.perf_counter", return_value=12.5)
     def test_phase_timing_stops_once(self, perf_counter):
         timing = PhaseTiming(_started_at=10.0)

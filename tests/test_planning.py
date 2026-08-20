@@ -13,16 +13,16 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.concrete.run_clingo")
     @patch("core.planning.concrete.sas_to_asp")
     @patch("core.planning.concrete.run_fast_downward")
-    @patch("core.planning.concrete.create_run_dir")
+    @patch("core.planning.concrete.temporary_run_dir")
     def test_pipeline_uses_an_explicit_horizon_and_returns_normalized_timings(
-        self, create_run_dir, run_fast_downward, sas_to_asp, run_clingo
+        self, temporary_run_dir, run_fast_downward, sas_to_asp, run_clingo
     ):
         with tempfile.TemporaryDirectory() as directory:
             domain = Path(directory, "domain.pddl")
             problem = Path(directory, "problem.pddl")
             domain.write_bytes(b"domain")
             problem.write_bytes(b"problem")
-            create_run_dir.return_value = (directory, "run-123")
+            temporary_run_dir.return_value.__enter__.return_value = (directory, "run-123")
             run_fast_downward.return_value = (
                 {
                     "horizon": 8,
@@ -42,7 +42,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(result["horizon"], 3)
         self.assertEqual(result["plan"], ["occurs(action,3)"])
-        self.assertEqual(result["timings"]["run_id"], directory)
+        self.assertEqual(result["timings"]["run_id"], "run-123")
         self.assertEqual(result["configuration"], config.as_dict())
         self.assertIsNone(result["timings"]["iterations"])
         run_fast_downward.assert_called_once_with(directory, domain, problem, "concrete", "translate")
