@@ -21,10 +21,15 @@ class PddlText:
 
 def read_problem(domain_path, problem_path):
     """Read a PDDL pair from disk into a Unified Planning problem."""
+    domain = Path(domain_path).read_text(encoding="utf-8")
+    problem = Path(problem_path).read_text(encoding="utf-8")
+    return parse_problem(domain, problem)
+
+
+def parse_problem(domain_text, problem_text):
+    """Parse a PDDL pair."""
     try:
-        domain = Path(domain_path).read_text(encoding="utf-8")
-        problem = Path(problem_path).read_text(encoding="utf-8")
-        return PDDLReader().parse_problem_string(domain, problem)
+        return PDDLReader().parse_problem_string(domain_text, problem_text)
     except Exception as error:
         raise PddlError(f"Could not parse PDDL task: {error}") from error
 

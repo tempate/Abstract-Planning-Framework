@@ -1,12 +1,9 @@
 """Symmetric-object abstraction over Unified Planning models."""
 
-import re
 from dataclasses import dataclass
 
 from unified_planning.model import InstantaneousAction, Object, Problem
 from unified_planning.model.metrics import MinimizeActionCosts, MinimizeSequentialPlanLength
-
-_PDDL_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_-]*")
 
 
 class AbstractionError(ValueError):
@@ -89,28 +86,12 @@ def abstract_problem(problem: Problem, objects, abstract_name=None):
 
 def rank_symmetry_classes(problem: Problem, classes):
     """Rank abstractable symmetry classes by delete score, size, and names."""
-    _validate_supported_problem(problem)
     known = {item.name.casefold(): item for item in problem.all_objects}
-    constants = {item.name.casefold() for item in _domain_constants(problem)}
     ranked = []
-    seen_classes = set()
 
     for symmetry_class in classes:
-        requested = tuple(sorted(dict.fromkeys(str(name).casefold() for name in symmetry_class)))
-        class_key = frozenset(requested)
-        if len(class_key) < 2 or class_key in seen_classes:
-            continue
-        seen_classes.add(class_key)
-
-        unknown = class_key - known.keys()
-        if unknown:
-            raise AbstractionError(f"PDDL Symmetries returned unknown object {sorted(unknown)[0]!r}")
-        if class_key & constants:
-            continue
-
+        requested = tuple(sorted(str(name).casefold() for name in symmetry_class))
         selected = tuple(known[name] for name in requested)
-        if len({item.type for item in selected}) != 1:
-            raise AbstractionError("A symmetry class contains objects of different types")
         removed = _applicable_deletes(problem, selected[0].type, selected)
         ranked.append(
             RankedSymmetryClass(
@@ -162,24 +143,11 @@ def _prepare_selection(problem, objects, abstract_name):
     missing = [name for name in requested if name not in known]
     if missing:
         raise AbstractionError(f"Unknown problem objects: {', '.join(missing)}")
-    constants = {item.name.casefold() for item in _domain_constants(problem)}
-    selected_constants = set(requested) & constants
-    if selected_constants:
-        raise AbstractionError(f"Cannot collapse domain constant: {sorted(selected_constants)[0]}")
-
     selected = tuple(known[name] for name in requested)
     if len({item.type for item in selected}) != 1:
         raise AbstractionError("Selected objects must have the same declared type")
 
     chosen_name = abstract_name or f"{selected[0].type.name}_abs"
-    if _PDDL_NAME.fullmatch(chosen_name) is None:
-        raise AbstractionError(f"Invalid PDDL object name: {chosen_name!r}")
-    normalized_name = chosen_name.casefold()
-    if normalized_name in constants:
-        raise AbstractionError(f"Abstract object name is a domain constant: {chosen_name}")
-    if normalized_name in known and normalized_name not in requested:
-        raise AbstractionError(f"Abstract object name already exists: {chosen_name}")
-
     return _Selection(objects=selected, abstract_object=Object(chosen_name, selected[0].type, problem.environment))
 
 
@@ -255,43 +223,11 @@ def _copy_problem(source, selection, allowed_deletes):
 
 
 def _substitute(expression, substitutions):
-    if _creates_false_inequality(expression, substitutions):
-        raise AbstractionError("Object collapse creates a false '(not (= object object))' constraint")
     return expression.substitute(substitutions).simplify()
 
 
-def _creates_false_inequality(expression, substitutions):
-    if expression.is_not() and expression.arg(0).is_equals():
-        equality = expression.arg(0)
-        before = equality.arg(0) == equality.arg(1)
-        rewritten = equality.substitute(substitutions)
-        if not before and rewritten.arg(0) == rewritten.arg(1):
-            return True
-    return any(_creates_false_inequality(argument, substitutions) for argument in expression.args)
-
-
-def _domain_constants(problem):
-    constants = set()
-    for action in problem.actions:
-        expressions = [*action.preconditions]
-        for effect in action.effects:
-            expressions.extend((effect.fluent, effect.value, effect.condition))
-        for expression in expressions:
-            constants.update(_objects_in(expression))
-    return constants
-
-
-def _objects_in(expression):
-    if expression.is_object_exp():
-        return {expression.object()}
-    result = set()
-    for argument in expression.args:
-        result.update(_objects_in(argument))
-    return result
-
-
 def _applicable_deletes(problem, object_type, objects):
-    static_fluents = _static_fluents(problem)
+    static_fluents = problem.get_static_fluents()
     positive_initial = tuple(
         fluent
         for fluent, value in problem.explicit_initial_values.items()
@@ -320,7 +256,7 @@ def _delete_candidate(action, effect, object_type):
         variable = argument.variable()
     else:
         return None
-    if not _is_subtype(object_type, variable.type):
+    if not object_type.is_subtype(variable.type):
         return None
     metadata = RelaxedDelete(
         action=action.name,
@@ -329,20 +265,6 @@ def _delete_candidate(action, effect, object_type):
         parameter_type=variable.type.name,
     )
     return _DeleteCandidate(action, effect.fluent.fluent(), argument, metadata)
-
-
-def _is_subtype(child, parent):
-    current = child
-    while current is not None:
-        if current == parent:
-            return True
-        current = current.father if current.is_user_type() else None
-    return False
-
-
-def _static_fluents(problem):
-    changed = {effect.fluent.fluent() for action in problem.actions for effect in action.effects}
-    return {fluent for fluent in problem.fluents if fluent not in changed}
 
 
 def _action_possible(action, variable, objects, static_fluents, positive_initial):

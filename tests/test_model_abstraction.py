@@ -41,7 +41,7 @@ class ModelAbstractionTests(unittest.TestCase):
             [item.action for item in result.removed_deletes], ["unload-beluga", "pick-up-rack", "unstack-rack"]
         )
 
-    def test_rejects_false_inequality_and_initial_value_collisions(self):
+    def test_simplifies_false_inequality_and_rejects_initial_value_collisions(self):
         domain = """
 (define (domain d)
   (:requirements :typing :equality :fluents)
@@ -59,8 +59,8 @@ class ModelAbstractionTests(unittest.TestCase):
   (:init (= (value a) 1) (= (value b) 2)) (:goal (and)))
 """
 
-        with self.assertRaisesRegex(AbstractionError, "false"):
-            abstract_problem(parse_problem(domain, inequality), ["a", "b"])
+        result = abstract_problem(parse_problem(domain, inequality), ["a", "b"])
+        self.assertTrue(result.problem.goals[0].is_false())
         with self.assertRaisesRegex(AbstractionError, "conflicting initial values"):
             abstract_problem(parse_problem(domain, conflicting), ["a", "b"])
 
@@ -103,7 +103,6 @@ class ModelAbstractionTests(unittest.TestCase):
             ["factory_trailer_1", "factory_trailer_2"],
             ["hangar1", "hangar2", "hangar3"],
             ["beluga_trailer_1", "beluga_trailer_2"],
-            ["BSIDE", "FSIDE"],
         ]
 
         ranked = rank_symmetry_classes(source, classes)

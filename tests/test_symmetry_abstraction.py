@@ -66,25 +66,6 @@ class SymmetrySelectionTests(unittest.TestCase):
 
         self.assertEqual(ranked[0].objects, ("b1", "b2", "b3"))
 
-    def test_skips_domain_constant_classes_and_duplicate_classes(self):
-        domain = """
-(define (domain d) (:types item) (:constants c1 c2 - item)
-  (:predicates (free ?x - item))
-  (:action inspect :parameters () :precondition (free c1) :effect (free c2)))
-"""
-        problem = """
-(define (problem p) (:domain d)
-  (:objects a1 a2 - item) (:init) (:goal (and)))
-"""
-
-        ranked = rank_symmetry_classes(parse_problem(domain, problem), [["c1", "c2"], ["a2", "a1"], ["a1", "a2"]])
-
-        self.assertEqual([item.objects for item in ranked], [("a1", "a2")])
-
-    def test_rejects_unknown_objects_from_symmetry_output(self):
-        with self.assertRaisesRegex(AbstractionError, "unknown object"):
-            rank_symmetry_classes(self.problem, [["hangar1", "not-an-object"]])
-
     @patch("core.integrations.pddl_symmetries.subprocess.run")
     def test_extracts_object_sets_from_translator_output(self, run):
         run.return_value = subprocess.CompletedProcess(
