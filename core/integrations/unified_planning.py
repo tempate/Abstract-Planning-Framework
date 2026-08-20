@@ -27,7 +27,7 @@ def read_problem(domain_path, problem_path):
 
 
 def parse_problem(domain_text, problem_text):
-    """Parse a PDDL pair."""
+    """Parse a PDDL pair into a Unified Planning problem."""
     try:
         return PDDLReader().parse_problem_string(domain_text, problem_text)
     except Exception as error:

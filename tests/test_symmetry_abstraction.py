@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from core.integrations.pddl_symmetries import PddlSymmetriesError, find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.model_abstraction import AbstractionError, rank_symmetry_classes
+from core.model_abstraction import rank_symmetry_classes
 from scripts.abstract_object import _argument_parser
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -62,7 +62,8 @@ class SymmetrySelectionTests(unittest.TestCase):
   (:init) (:goal (and)))
 """
 
-        ranked = rank_symmetry_classes(parse_problem(domain, problem), [["a1", "a2"], ["b1", "b2", "b3"]])
+        source = parse_problem(domain, problem)
+        ranked = rank_symmetry_classes(source, [["a1", "a2"], ["b1", "b2", "b3"]])
 
         self.assertEqual(ranked[0].objects, ("b1", "b2", "b3"))
 

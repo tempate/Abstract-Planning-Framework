@@ -1,3 +1,4 @@
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -18,12 +19,17 @@ class UnifiedPlanningCodecTests(unittest.TestCase):
         self.assertEqual(len(list(reparsed.all_objects)), len(list(source.all_objects)))
         self.assertEqual([type(metric).__name__ for metric in reparsed.quality_metrics], ["MinimizeActionCosts"])
 
-    def test_wraps_parser_failures(self):
+    def test_wraps_reader_failures(self):
         domain = "(define (domain d) (:predicates (ready))"
         problem = "(define (problem p) (:domain d) (:init) (:goal (ready)))"
 
-        with self.assertRaisesRegex(PddlError, "Could not parse"):
-            parse_problem(domain, problem)
+        with tempfile.TemporaryDirectory() as directory:
+            domain_path = Path(directory, "domain.pddl")
+            problem_path = Path(directory, "problem.pddl")
+            domain_path.write_text(domain, encoding="utf-8")
+            problem_path.write_text(problem, encoding="utf-8")
+            with self.assertRaisesRegex(PddlError, "Could not parse"):
+                read_problem(domain_path, problem_path)
 
 
 if __name__ == "__main__":
