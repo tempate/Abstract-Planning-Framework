@@ -1,7 +1,6 @@
 """Command-line entry point for abstraction-based planning."""
 
 import argparse
-from functools import partial
 
 from core.execution import get_logger
 from core.planning.config import (
@@ -16,7 +15,6 @@ from core.planning.abstract import compute_abstract_plan
 from core.planners.factory import PLANNER_TYPES, get_planner
 
 from .utils.arguments import nonnegative_int
-from .utils.abstract_plan_log import get_plan_log_path, initialize_plan_log, record_plan_attempt
 from .utils.reporting import print_planning_result
 
 
@@ -28,16 +26,6 @@ def main():
     planner.validate_configuration(args.abstract_symbol, args.concrete_objects)
 
     print("Starting")
-    plan_log_path, problem_hash = get_plan_log_path(args.abstract_problem, args.concrete_problem, planner.run_directory)
-    initialize_plan_log(
-        plan_log_path,
-        problem_hash,
-        args.abstract_problem,
-        args.concrete_problem,
-        abstract_symbol=args.abstract_symbol,
-        concrete_objects=args.concrete_objects,
-    )
-
     config = AbstractPlanningConfig(
         abstract_domain_path=args.abstract_domain,
         abstract_problem_path=args.abstract_problem,
@@ -51,7 +39,7 @@ def main():
         plan_source=args.plan_source,
         profile_name=args.profile,
     )
-    result = compute_abstract_plan(config, attempt_recorder=partial(record_plan_attempt, plan_log_path))
+    result = compute_abstract_plan(config)
 
     print_planning_result(result, get_logger())
     return 0 if result["success"] else 1

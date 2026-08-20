@@ -2,7 +2,6 @@
 
 import logging
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from dataclasses import dataclass
 from pprint import pformat
 
@@ -30,7 +29,6 @@ class RefinementContext:
     total_timing: PhaseTiming
     base_dir: str
     logger: logging.Logger
-    attempt_recorder: Callable[..., None] | None = None
 
 
 class BaseRefinement(ABC):
@@ -91,12 +89,6 @@ class BaseRefinement(ABC):
                 "run_id": context.base_dir,
             },
         }
-
-    def record_attempt(self, abstract_atoms, *, success, bad_actions):
-        """Send an attempt to the optional experiment recorder."""
-        recorder = self.context.attempt_recorder
-        if recorder:
-            recorder(abstract_atoms, success=success, bad_actions=bad_actions)
 
     def log_success(self, plan):
         logger = self.context.logger

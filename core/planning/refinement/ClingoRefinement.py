@@ -38,5 +38,4 @@ class ClingoRefinement(BaseRefinement):
             context.logger.info("No concrete plan found at the selected horizon.")
             context.logger.info("FAILED")
 
-        self.record_attempt(abstract_atoms, success=success, bad_actions=[])
         return self.build_result(success=success, plan=plan)

@@ -11,7 +11,7 @@ from core.planning.refinement.factory import get_refinement_strategy
 from core.planners.factory import get_planner
 
 
-def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=None):
+def compute_abstract_plan(config: AbstractPlanningConfig):
     """Prepare an abstract planning run and dispatch its refinement strategy."""
     planner = get_planner(config.profile_name)
     planner.validate_configuration(config.abstract_symbol, config.concrete_objects)
@@ -94,7 +94,6 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
             total_timing=run_timing,
             base_dir=base_dir,
             logger=logger,
-            attempt_recorder=attempt_recorder,
         )
         return get_refinement_strategy(config.plan_source, context).refine()
 
