@@ -1,14 +1,11 @@
 """Manage planning workspaces, logging, and timing."""
 
 import logging
-import os
 import time
-import uuid
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from pathlib import Path
 from tempfile import TemporaryDirectory
-
-from core.paths import TEMP_DIR
 
 LOGGER_NAME = "planner"
 
@@ -51,7 +48,5 @@ def get_logger():
 @contextmanager
 def temp_run_dir(dir_name="concrete"):
     """Yield an isolated planner directory and delete it after the run."""
-    os.makedirs(TEMP_DIR, exist_ok=True)
-    run_id = str(uuid.uuid4())
-    with TemporaryDirectory(prefix=f"{dir_name}-{run_id}-", dir=TEMP_DIR) as base_dir:
-        yield base_dir, run_id
+    with TemporaryDirectory(prefix=f"{dir_name}-") as run_dir:
+        yield run_dir, Path(run_dir).name
