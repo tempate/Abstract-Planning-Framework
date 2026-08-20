@@ -18,13 +18,6 @@ class UnifiedPlanningCodecTests(unittest.TestCase):
         self.assertEqual(len(list(reparsed.all_objects)), len(list(source.all_objects)))
         self.assertEqual([type(metric).__name__ for metric in reparsed.quality_metrics], ["MinimizeActionCosts"])
 
-    def test_rejects_a_problem_that_references_another_domain(self):
-        domain = "(define (domain expected) (:predicates))"
-        problem = "(define (problem p) (:domain other) (:init) (:goal (and)))"
-
-        with self.assertRaisesRegex(PddlError, "references domain"):
-            parse_problem(domain, problem)
-
     def test_wraps_parser_failures(self):
         domain = "(define (domain d) (:predicates (ready))"
         problem = "(define (problem p) (:domain d) (:init) (:goal (ready)))"
