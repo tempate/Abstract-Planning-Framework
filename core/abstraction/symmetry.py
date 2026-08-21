@@ -1,24 +1,8 @@
 """Build symmetric-object abstractions for planning workflows."""
 
-from dataclasses import dataclass
-
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import read_problem
-from core.abstraction.model import (
-    AbstractionError,
-    AbstractionResult,
-    RankedSymmetryClass,
-    abstract_problem,
-    rank_symmetry_classes,
-)
-
-
-@dataclass(frozen=True)
-class PreparedAbstraction:
-    """An abstract model together with any automatic-selection ranking."""
-
-    result: AbstractionResult
-    ranked: tuple[RankedSymmetryClass, ...] = ()
+from core.abstraction.model import AbstractionError, abstract_problem, rank_symmetry_classes
 
 
 def prepare_abstraction(
@@ -33,6 +17,6 @@ def prepare_abstraction(
         ranked = rank_symmetry_classes(problem, classes)
         if not ranked:
             raise AbstractionError("PDDL Symmetries found no abstractable object classes")
-        selected = ranked[0].objects_to_abstract
+        selected = ranked[0].abstraction.objects
 
-    return PreparedAbstraction(result=abstract_problem(problem, selected, abstract_name), ranked=ranked)
+    return abstract_problem(problem, selected, abstract_name)

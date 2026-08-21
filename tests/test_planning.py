@@ -103,19 +103,19 @@ class GeneratedAbstractionTests(unittest.TestCase):
             problem.write_text(problem_text, encoding="utf-8")
             config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"], abstract_name="combined")
 
-            abstraction, abstract_domain, abstract_problem = _resolve_abstraction(config, root / "run")
-            generated = read_problem(abstract_domain, abstract_problem)
+            abstract_problem, abstract_domain, abstract_problem_path = _resolve_abstraction(config, root / "run")
+            generated = read_problem(abstract_domain, abstract_problem_path)
 
-        self.assertEqual(abstraction.abstract_name, "combined")
+        self.assertEqual(abstract_problem.abstraction.name, "combined")
         self.assertEqual(config.abstract_name, "combined")
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual({item.name for item in generated.all_objects}, {"combined"})
 
     @patch("core.planning.abstract.prepare_abstraction")
     def test_automatic_selection_is_delegated_to_symmetry_abstraction(self, prepare_abstraction):
-        abstract_problem = Mock()
-        abstraction = Mock(problem=abstract_problem, abstract_name="item_abs", objects_to_abstract=("a", "b"))
-        prepare_abstraction.return_value = Mock(result=abstraction)
+        problem = Mock()
+        abstraction = Mock(name="item_abs", objects=("a", "b"))
+        prepare_abstraction.return_value = Mock(problem=problem, abstraction=abstraction)
         with tempfile.TemporaryDirectory() as directory:
             config = AbstractPlanningConfig("domain.pddl", "problem.pddl", bliss_time_limit=17)
             with patch("core.planning.abstract.write_problem", return_value=Mock(domain="d", problem="p")):
@@ -124,7 +124,7 @@ class GeneratedAbstractionTests(unittest.TestCase):
         prepare_abstraction.assert_called_once_with(
             "domain.pddl", "problem.pddl", objects_to_abstract=None, abstract_name=None, bliss_time_limit=17
         )
-        self.assertEqual(selected.objects_to_abstract, ("a", "b"))
+        self.assertEqual(selected.abstraction.objects, ("a", "b"))
         self.assertIsNone(config.objects_to_abstract)
         self.assertIsNone(config.abstract_name)
 

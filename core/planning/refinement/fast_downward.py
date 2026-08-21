@@ -17,9 +17,7 @@ class FastDownwardRefinement(BaseRefinement):
             abstract_atoms = self.plan_to_abstract_atoms(context.abstract_task["planFile"])
             abstract_plan = format_abstract_plan(abstract_atoms)
 
-        mapping = build_mapping(
-            abstract_plan, context.abstraction.abstract_name, context.abstraction.objects_to_abstract
-        )
+        mapping = build_mapping(abstract_plan, context.abstraction)
         success, plan, _ = self.solve_concrete(join_asp(abstract_plan, mapping))
 
         if success:

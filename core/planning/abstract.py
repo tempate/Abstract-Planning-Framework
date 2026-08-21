@@ -16,34 +16,35 @@ from core.planning.refinement.factory import get_refinement_strategy
 def compute_abstract_plan(config: AbstractPlanningConfig):
     """Abstract one concrete task and dispatch its plan-refinement workflow."""
     with temp_run_dir("abstract") as (base_dir, run_id):
-        abstraction, domain_path, problem_path = _resolve_abstraction(config, base_dir)
+        abstract_problem, domain_path, problem_path = _resolve_abstraction(config, base_dir)
+        abstraction = abstract_problem.abstraction
         result = _compute_abstract_plan(config, abstraction, base_dir, run_id, domain_path, problem_path)
         result["abstraction"] = {
-            "abstract_symbol": abstraction.abstract_name,
-            "objects_to_abstract": list(abstraction.objects_to_abstract),
+            "abstract_symbol": abstraction.name,
+            "objects_to_abstract": list(abstraction.objects),
             "object_type": abstraction.object_type,
-            "relaxed_unary_deletes": abstraction.unary_delete_score,
+            "relaxed_unary_deletes": abstract_problem.unary_delete_score,
         }
         return result
 
 
 def _resolve_abstraction(config, base_dir):
     """Generate abstract inputs from the concrete task inside the run directory."""
-    prepared = prepare_abstraction(
+    abstract_problem = prepare_abstraction(
         config.domain_path,
         config.problem_path,
         objects_to_abstract=config.objects_to_abstract,
         abstract_name=config.abstract_name,
         bliss_time_limit=config.bliss_time_limit,
     )
-    serialized = write_problem(prepared.result.problem)
+    serialized = write_problem(abstract_problem.problem)
     input_directory = Path(base_dir, "generated-abstraction")
     input_directory.mkdir(parents=True, exist_ok=True)
     domain_path = input_directory / "domain.pddl"
     problem_path = input_directory / "problem.pddl"
     domain_path.write_text(serialized.domain, encoding="utf-8")
     problem_path.write_text(serialized.problem, encoding="utf-8")
-    return prepared.result, domain_path, problem_path
+    return abstract_problem, domain_path, problem_path
 
 
 def _compute_abstract_plan(config, abstraction, base_dir, run_id, abstract_domain_path, abstract_problem_path):

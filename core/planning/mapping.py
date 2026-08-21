@@ -11,20 +11,20 @@ OCCURRENCE_VALIDATION_CONSTRAINT = ":- occurs(Action, T), not action(Action)."
 _TUPLE_ACTION = re.compile(r"^action\(\((.*)\)\)$")
 
 
-def build_mapping(abstract_plan, abstract_name, objects_to_abstract):
+def build_mapping(abstract_plan, abstraction):
     """Map an abstract plan to compatible grounded concrete actions.
 
-    Arguments equal to ``abstract_name`` become independent variables ranging
-    over the selected symmetry class.  The concrete ASP ``action/1`` relation
-    then limits the choices to grounded actions that actually exist.
+    Arguments equal to the abstraction name become independent variables
+    ranging over its objects.  The concrete ASP ``action/1`` relation then
+    limits the choices to grounded actions that actually exist.
     """
     abstract_actions = parse_abstract_actions(abstract_plan)
-    mapping_rules = [f"concrete_object({_quote(object)})." for object in objects_to_abstract]
+    mapping_rules = [f"concrete_object({_quote(object)})." for object in abstraction.objects]
 
     for abstract_action, time_step in abstract_actions:
         switch = f"switch({time_step})"
         mapping_rules.append(f"0 {{ {switch} }} 1.")
-        candidate, variables = _concrete_candidate(abstract_action, abstract_name)
+        candidate, variables = _concrete_candidate(abstract_action, abstraction.name)
 
         if variables:
             conditions = [*(f"concrete_object({variable})" for variable in variables), f"action({candidate})"]

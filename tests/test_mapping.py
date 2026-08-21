@@ -1,4 +1,5 @@
 import unittest
+from types import SimpleNamespace
 
 from core.integrations.clingo import create_control
 from core.planning.mapping import OCCURRENCE_VALIDATION_CONSTRAINT, build_mapping
@@ -7,8 +8,9 @@ from core.planning.mapping import OCCURRENCE_VALIDATION_CONSTRAINT, build_mappin
 class MappingTests(unittest.TestCase):
     def test_maps_an_abstract_argument_to_existing_grounded_actions(self):
         abstract_plan = 'occurs_abstract(action(("move","item_abs","dock")),2).\n'
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
 
-        mapping = build_mapping(abstract_plan, "item_abs", ("item1", "item2"))
+        mapping = build_mapping(abstract_plan, abstraction)
 
         self.assertIn('concrete_object("item1").', mapping)
         self.assertIn('concrete_object("item2").', mapping)
@@ -17,8 +19,9 @@ class MappingTests(unittest.TestCase):
 
     def test_each_abstract_argument_is_grounded_independently(self):
         abstract_plan = 'occurs_abstract(action(("link","node_abs","node_abs")),1).\n'
+        abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))
 
-        mapping = build_mapping(abstract_plan, "node_abs", ("a", "b"))
+        mapping = build_mapping(abstract_plan, abstraction)
 
         self.assertIn('action(("link",ConcreteObject1,ConcreteObject2))', mapping)
         self.assertIn("concrete_object(ConcreteObject1)", mapping)
@@ -26,8 +29,9 @@ class MappingTests(unittest.TestCase):
 
     def test_non_abstract_actions_are_mapped_directly(self):
         abstract_plan = 'occurs_abstract(action(("inspect","item1")),1).\n'
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
 
-        mapping = build_mapping(abstract_plan, "item_abs", ("item1", "item2"))
+        mapping = build_mapping(abstract_plan, abstraction)
 
         self.assertIn(
             'occurs(action(("inspect","item1")),1) :- ' 'occurs_abstract(action(("inspect","item1")),1), switch(1).',
@@ -36,7 +40,8 @@ class MappingTests(unittest.TestCase):
 
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = 'occurs_abstract(action(("link","node_abs","node_abs")),1).\n'
-        mapping = build_mapping(abstract_plan, "node_abs", ("a", "b"))
+        abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))
+        mapping = build_mapping(abstract_plan, abstraction)
         program = """
 action(action(("link","a","b"))).
 occurs_abstract(action(("link","node_abs","node_abs")),1).
@@ -54,7 +59,8 @@ switch(1).
         self.assertTrue(all('occurs(action(("link","a","a")),1)' not in model for model in models))
 
     def test_mapping_rejects_plan_actions_that_are_not_concrete_actions(self):
-        mapping = build_mapping('occurs_abstract(action(("inspect","item1")),1).\n', "item_abs", ("item1", "item2"))
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
+        mapping = build_mapping('occurs_abstract(action(("inspect","item1")),1).\n', abstraction)
 
         self.assertIn(OCCURRENCE_VALIDATION_CONSTRAINT, mapping)
 

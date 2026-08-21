@@ -7,7 +7,7 @@ from pprint import pformat
 
 from core.asp import join_asp
 from core.execution import PhaseTiming, timed_phase
-from core.abstraction.model import AbstractionResult
+from core.abstraction.model import Abstraction
 from core.planning.config import AbstractPlanningConfig
 from core.solvers.decremental import solve_decrementally
 
@@ -17,7 +17,7 @@ class RefinementContext:
     """Configuration and run state shared by refinement strategies."""
 
     config: AbstractPlanningConfig
-    abstraction: AbstractionResult
+    abstraction: Abstraction
     concrete_asp: str
     abstract_asp: str | None
     abstract_task: dict

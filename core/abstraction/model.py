@@ -19,9 +19,15 @@ class RelaxedDelete:
 
 
 @dataclass(frozen=True)
-class RankedSymmetryClass:
-    objects_to_abstract: tuple[str, ...]
+class Abstraction:
+    name: str
+    objects: tuple[str, ...]
     object_type: str
+
+
+@dataclass(frozen=True)
+class RankedSymmetryClass:
+    abstraction: Abstraction
     removed_deletes: tuple[RelaxedDelete, ...]
 
     @property
@@ -30,11 +36,9 @@ class RankedSymmetryClass:
 
 
 @dataclass(frozen=True)
-class AbstractionResult:
+class AbstractProblem:
+    abstraction: Abstraction
     problem: Problem
-    objects_to_abstract: tuple[str, ...]
-    object_type: str
-    abstract_name: str
     removed_deletes: tuple[RelaxedDelete, ...]
 
     @property
@@ -75,13 +79,12 @@ def abstract_problem(problem: Problem, objects_to_abstract, abstract_name=None):
     candidates = _applicable_deletes(problem, selection.object_type, selection.objects_to_abstract)
     allowed_deletes = {item.key for item in candidates}
     target, removed = _copy_problem(problem, selection, allowed_deletes)
-    return AbstractionResult(
-        problem=target,
-        objects_to_abstract=tuple(item.name for item in selection.objects_to_abstract),
+    abstraction = Abstraction(
+        name=selection.abstract_object.name,
+        objects=tuple(item.name for item in selection.objects_to_abstract),
         object_type=selection.object_type.name,
-        abstract_name=selection.abstract_object.name,
-        removed_deletes=tuple(removed),
     )
+    return AbstractProblem(abstraction=abstraction, problem=target, removed_deletes=tuple(removed))
 
 
 def rank_symmetry_classes(problem: Problem, classes):
@@ -93,19 +96,20 @@ def rank_symmetry_classes(problem: Problem, classes):
         requested = tuple(sorted(str(name).casefold() for name in symmetry_class))
         selected = tuple(known[name] for name in requested)
         removed = _applicable_deletes(problem, selected[0].type, selected)
+        abstraction = Abstraction(
+            name=f"{selected[0].type.name}_abs",
+            objects=tuple(item.name for item in selected),
+            object_type=selected[0].type.name,
+        )
         ranked.append(
-            RankedSymmetryClass(
-                objects_to_abstract=tuple(item.name for item in selected),
-                object_type=selected[0].type.name,
-                removed_deletes=tuple(item.metadata for item in removed),
-            )
+            RankedSymmetryClass(abstraction=abstraction, removed_deletes=tuple(item.metadata for item in removed))
         )
 
     ranked.sort(
         key=lambda item: (
             item.unary_delete_score,
-            -len(item.objects_to_abstract),
-            tuple(name.casefold() for name in item.objects_to_abstract),
+            -len(item.abstraction.objects),
+            tuple(name.casefold() for name in item.abstraction.objects),
         )
     )
     return tuple(ranked)
