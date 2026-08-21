@@ -18,7 +18,7 @@ To run only the real integrations:
 RUN_PLANNER_INTEGRATION=1 \
     python -m unittest \
         tests.test_example_workflows_integration \
-        tests.test_symmetry_abstraction.RealSymmetryIntegrationTests -v
+        tests.test_abstraction_symmetry.RealSymmetryIntegrationTests -v
 ```
 
 The integration tests execute the public Bash examples in temporary output

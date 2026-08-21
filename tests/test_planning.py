@@ -2,9 +2,11 @@ import argparse
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from core.planning.config import AbstractPlanningConfig, ConcretePlanningConfig
+from core.integrations.unified_planning import read_problem
+from core.planning.abstract import _resolve_abstraction
+from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.concrete import compute_concrete_plan
 from scripts.utils.arguments import nonnegative_int, positive_int
 
@@ -34,7 +36,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             sas_to_asp.return_value = "asp program"
             run_clingo.return_value = ["occurs(action,3)"]
 
-            config = ConcretePlanningConfig(
+            config = PlanningConfig(
                 domain_path=domain, problem_path=problem, horizon=3, encoding="bounded", time_step=True
             )
             result = compute_concrete_plan(config)
@@ -66,31 +68,66 @@ class ArgumentTests(unittest.TestCase):
 
 class PlanningConfigurationTests(unittest.TestCase):
     def test_shared_defaults_are_explicit(self):
-        concrete = ConcretePlanningConfig("domain.pddl", "problem.pddl")
-        abstract = AbstractPlanningConfig(
-            "abstract-domain.pddl", "abstract-problem.pddl", "concrete-domain.pddl", "concrete-problem.pddl"
-        )
+        concrete = PlanningConfig("domain.pddl", "problem.pddl")
+        abstract = AbstractPlanningConfig("domain.pddl", "problem.pddl")
 
         self.assertIsNone(concrete.horizon)
         self.assertEqual(concrete.encoding, "exact")
         self.assertFalse(concrete.time_step)
+        self.assertIsInstance(abstract, PlanningConfig)
+        self.assertEqual(abstract.encoding, concrete.encoding)
         self.assertEqual(abstract.plan_source, "clingo")
         self.assertEqual(abstract.profile_name, "beluga")
-        self.assertIsNone(abstract.abstract_symbol)
-        self.assertIsNone(abstract.concrete_objects)
+        self.assertIsNone(abstract.abstract_name)
+        self.assertIsNone(abstract.objects)
 
-    def test_concrete_objects_are_stored_immutably(self):
+    def test_selected_objects_are_stored_immutably(self):
         objects = ["hangar1", "hangar2"]
-        config = AbstractPlanningConfig(
-            "abstract-domain.pddl",
-            "abstract-problem.pddl",
-            "concrete-domain.pddl",
-            "concrete-problem.pddl",
-            concrete_objects=objects,
-        )
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", objects=objects)
         objects.append("hangar3")
 
-        self.assertEqual(config.concrete_objects, ("hangar1", "hangar2"))
+        self.assertEqual(config.objects, ("hangar1", "hangar2"))
+
+
+class GeneratedAbstractionTests(unittest.TestCase):
+    def test_explicit_objects_create_temporary_planner_inputs_and_mapping(self):
+        domain_text = "(define (domain d) (:types item) (:predicates (ready ?x - item)))"
+        problem_text = """
+(define (problem p) (:domain d)
+  (:objects a b - item) (:init (ready a) (ready b)) (:goal (and)))
+"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            domain = root / "domain.pddl"
+            problem = root / "problem.pddl"
+            domain.write_text(domain_text, encoding="utf-8")
+            problem.write_text(problem_text, encoding="utf-8")
+            config = AbstractPlanningConfig(domain, problem, objects=["a", "b"], abstract_name="combined")
+
+            abstraction, abstract_domain, abstract_problem = _resolve_abstraction(config, root / "run")
+            generated = read_problem(abstract_domain, abstract_problem)
+
+        self.assertEqual(abstraction.abstract_name, "combined")
+        self.assertEqual(config.abstract_name, "combined")
+        self.assertEqual(config.objects, ("a", "b"))
+        self.assertEqual({item.name for item in generated.all_objects}, {"combined"})
+
+    @patch("core.planning.abstract.prepare_abstraction")
+    def test_automatic_selection_is_delegated_to_symmetry_abstraction(self, prepare_abstraction):
+        abstract_problem = Mock()
+        abstraction = Mock(problem=abstract_problem, abstract_name="item_abs", objects=("a", "b"))
+        prepare_abstraction.return_value = Mock(result=abstraction)
+        with tempfile.TemporaryDirectory() as directory:
+            config = AbstractPlanningConfig("domain.pddl", "problem.pddl", bliss_time_limit=17)
+            with patch("core.planning.abstract.write_problem", return_value=Mock(domain="d", problem="p")):
+                selected, _, _ = _resolve_abstraction(config, directory)
+
+        prepare_abstraction.assert_called_once_with(
+            "domain.pddl", "problem.pddl", objects=None, abstract_name=None, bliss_time_limit=17
+        )
+        self.assertEqual(selected.objects, ("a", "b"))
+        self.assertIsNone(config.objects)
+        self.assertIsNone(config.abstract_name)
 
 
 if __name__ == "__main__":

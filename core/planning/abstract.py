@@ -1,26 +1,56 @@
 """Prepare and dispatch abstraction-based planning workflows."""
 
 import os
+from pathlib import Path
 
 from core.execution import get_logger, temp_run_dir, timed_phase
 from core.integrations.fast_downward import run_fast_downward
+from core.integrations.unified_planning import write_problem
 from core.integrations.plasp import add_switch_to_asp_rule, append_pddl_facts_to_asp, sas_to_asp
+from core.abstraction.symmetry import prepare_abstraction
 from core.planning.config import AbstractPlanningConfig
-from core.planning.refinement.BaseRefinement import RefinementContext
+from core.planning.refinement.base import RefinementContext
 from core.planning.refinement.factory import get_refinement_strategy
-from core.planners.factory import get_planner
+from core.profiles.factory import get_profile
 
 
 def compute_abstract_plan(config: AbstractPlanningConfig):
-    """Prepare an abstract planning run and dispatch its refinement strategy."""
-    planner = get_planner(config.profile_name)
-    planner.validate_configuration(config.abstract_symbol, config.concrete_objects)
+    """Abstract one concrete task and dispatch its plan-refinement workflow."""
+    profile = get_profile(config.profile_name)
 
-    with temp_run_dir(planner.run_directory) as (base_dir, run_id):
-        return _compute_abstract_plan(config, planner, base_dir, run_id)
+    with temp_run_dir(profile.run_directory) as (base_dir, run_id):
+        abstraction, domain_path, problem_path = _resolve_abstraction(config, base_dir)
+        profile.validate_configuration(abstraction.abstract_name, abstraction.objects)
+        result = _compute_abstract_plan(config, profile, abstraction, base_dir, run_id, domain_path, problem_path)
+        result["abstraction"] = {
+            "abstract_symbol": abstraction.abstract_name,
+            "concrete_objects": list(abstraction.objects),
+            "object_type": abstraction.object_type,
+            "relaxed_unary_deletes": abstraction.unary_delete_score,
+        }
+        return result
 
 
-def _compute_abstract_plan(config, planner, base_dir, run_id):
+def _resolve_abstraction(config, base_dir):
+    """Generate abstract inputs from the concrete task inside the run directory."""
+    prepared = prepare_abstraction(
+        config.domain_path,
+        config.problem_path,
+        objects=config.objects,
+        abstract_name=config.abstract_name,
+        bliss_time_limit=config.bliss_time_limit,
+    )
+    serialized = write_problem(prepared.result.problem)
+    input_directory = Path(base_dir, "generated-abstraction")
+    input_directory.mkdir(parents=True, exist_ok=True)
+    domain_path = input_directory / "domain.pddl"
+    problem_path = input_directory / "problem.pddl"
+    domain_path.write_text(serialized.domain, encoding="utf-8")
+    problem_path.write_text(serialized.problem, encoding="utf-8")
+    return prepared.result, domain_path, problem_path
+
+
+def _compute_abstract_plan(config, profile, abstraction, base_dir, run_id, abstract_domain_path, abstract_problem_path):
     logger = get_logger()
 
     logger.info("=" * 70)
@@ -36,11 +66,7 @@ def _compute_abstract_plan(config, planner, base_dir, run_id):
         with timed_phase(logger, "Fast Downward time") as fd_total:
             # Translate the concrete problem into SAS.
             concrete_task, concrete_time = run_fast_downward(
-                os.path.join(base_dir, "concrete"),
-                config.concrete_domain_path,
-                config.concrete_problem_path,
-                "concrete",
-                "translate",
+                os.path.join(base_dir, "concrete"), config.domain_path, config.problem_path, "concrete", "translate"
             )
 
             # A Fast Downward plan is needed only when it is the selected plan
@@ -48,11 +74,7 @@ def _compute_abstract_plan(config, planner, base_dir, run_id):
             fd_task = "plan" if config.plan_source == "fd" or config.horizon is None else "translate"
 
             abstract_task, abstract_time = run_fast_downward(
-                os.path.join(base_dir, "abstract"),
-                config.abstract_domain_path,
-                config.abstract_problem_path,
-                "abstract",
-                fd_task,
+                os.path.join(base_dir, "abstract"), abstract_domain_path, abstract_problem_path, "abstract", fd_task
             )
 
         fd_timings = {
@@ -71,8 +93,8 @@ def _compute_abstract_plan(config, planner, base_dir, run_id):
                 concrete_asp = sas_to_asp(concrete_task["sasFile"], config.encoding, config.time_step)
 
                 concrete_asp = add_switch_to_asp_rule(concrete_asp, config.encoding)
-                if planner.append_concrete_pddl_facts:
-                    concrete_asp = append_pddl_facts_to_asp(config.concrete_problem_path, concrete_asp)
+                if profile.append_concrete_pddl_facts:
+                    concrete_asp = append_pddl_facts_to_asp(config.problem_path, concrete_asp)
 
             # Generate the ASP representation of the abstract problem.
             abstract_time = 0.0
@@ -84,7 +106,8 @@ def _compute_abstract_plan(config, planner, base_dir, run_id):
 
         context = RefinementContext(
             config=config,
-            planner=planner,
+            abstraction=abstraction,
+            profile=profile,
             concrete_asp=concrete_asp,
             abstract_asp=abstract_asp,
             abstract_task=abstract_task,

@@ -36,22 +36,16 @@ class ExampleWorkflowTests(unittest.TestCase):
         self.assertTrue(decrements, result.stdout)
         self.assertGreater(decrements[-1], 0, result.stdout)
 
-    def test_automatic_object_abstraction_selects_the_hangars(self):
-        result = self._run("abstract_object", "auto")
-
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("Collapsed ['hangar1', 'hangar2', 'hangar3'] into hangarabs", result.stdout)
-
     def test_no_mystery_concrete_example_finds_a_plan(self):
         self._assert_success(self._run("concrete", "no_mystery"))
 
-    def test_no_mystery_abstract_example_is_fully_realizable(self):
+    def test_no_mystery_abstract_example_generates_and_solves_an_abstraction(self):
         result = self._run("abstract", "no_mystery")
 
         self._assert_success(result)
-        self.assertIn("Decrements: 0", result.stdout)
+        self.assertIn("Collapsed [", result.stdout)
 
-    def test_no_mystery_refinement_relaxes_the_abstract_plan(self):
+    def test_no_mystery_refinement_uses_the_single_problem_workflow(self):
         self._assert_refinement(self._run("refinement", "no_mystery"))
 
     def test_beluga_concrete_example_finds_a_plan(self):
@@ -61,10 +55,14 @@ class ExampleWorkflowTests(unittest.TestCase):
         result = self._run("abstract", "beluga")
 
         self._assert_success(result)
+        self.assertIn("Collapsed ['hangar1', 'hangar2', 'hangar3'] into hangar_abs", result.stdout)
         self.assertIn("Decrements: 0", result.stdout)
 
-    def test_beluga_trailer_refinement_relaxes_the_abstract_plan(self):
-        self._assert_refinement(self._run("refinement", "beluga"))
+    def test_beluga_trailer_abstraction_is_realizable_without_relaxation(self):
+        result = self._run("refinement", "beluga")
+
+        self._assert_success(result, expected_plans=2)
+        self.assertIn("Decrements: 0", result.stdout)
 
 
 if __name__ == "__main__":

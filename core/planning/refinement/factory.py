@@ -1,5 +1,5 @@
-from core.planning.refinement.ClingoRefinement import ClingoRefinement
-from core.planning.refinement.FastDownwardRefinement import FastDownwardRefinement
+from core.planning.refinement.clingo import ClingoRefinement
+from core.planning.refinement.fast_downward import FastDownwardRefinement
 
 
 def get_refinement_strategy(plan_source, context):

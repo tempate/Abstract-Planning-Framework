@@ -7,8 +7,9 @@ from pprint import pformat
 
 from core.asp import join_asp
 from core.execution import PhaseTiming, timed_phase
+from core.abstraction.model import AbstractionResult
 from core.planning.config import AbstractPlanningConfig
-from core.planners.BasePlanner import BasePlanner
+from core.profiles.base import PlanningProfile
 from core.solvers.decremental import solve_decrementally
 
 
@@ -17,7 +18,8 @@ class RefinementContext:
     """Configuration and run state shared by refinement strategies."""
 
     config: AbstractPlanningConfig
-    planner: BasePlanner
+    abstraction: AbstractionResult
+    profile: PlanningProfile
     concrete_asp: str
     abstract_asp: str | None
     abstract_task: dict
@@ -48,8 +50,8 @@ class BaseRefinement(ABC):
         """Build and time the domain-specific abstract-to-concrete mapping."""
         context = self.context
         with timed_phase(context.logger, "Mapping generation time") as timing:
-            mapping, _ = context.planner.build_mapping(
-                occurrences, context.config.abstract_symbol, context.config.concrete_objects
+            mapping, _ = context.profile.build_mapping(
+                occurrences, context.abstraction.abstract_name, context.abstraction.objects
             )
         return mapping, timing.elapsed
 

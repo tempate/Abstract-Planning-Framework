@@ -1,15 +1,14 @@
 import os
 import subprocess
-import sys
-import tempfile
 import unittest
 from argparse import Namespace
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from scripts import abstract_planner, concrete_planner
-from scripts.abstract_planner import _argument_parser as abstract_argument_parser
-from scripts.concrete_planner import _argument_parser as concrete_argument_parser
+from scripts import planner
+from scripts.planner import _argument_parser
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -47,56 +46,27 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertIn("beluga", result.stdout)
                 self.assertNotIn("no_mystery", result.stdout)
 
-    def test_abstract_object_example_supports_explicit_and_auto_modes(self):
-        result = self._run("abstract_object", "--help")
+    def test_abstract_example_uses_automatic_symmetry_selection(self):
+        result = self._run("abstract", "beluga", "/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("[explicit|auto|all]", result.stdout)
-
-    def test_abstract_object_auto_command_uses_symmetry_selection(self):
-        result = self._run("abstract_object", "auto", "/bin/echo")
-
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("-m scripts.abstract_object", result.stdout)
-        self.assertIn("--auto", result.stdout)
+        self.assertIn("-m scripts.planner abstract", result.stdout)
+        self.assertIn("--domain data/beluga/concrete/standard/domain.pddl", result.stdout)
         self.assertIn("--bliss-time-limit 300", result.stdout)
         self.assertNotIn("--objects", result.stdout)
 
-    def test_abstract_object_explicit_command_selects_three_hangars(self):
-        result = self._run("abstract_object", "explicit", "/bin/echo")
+    def test_refinement_example_selects_two_trailers_explicitly(self):
+        result = self._run("refinement", "beluga", "/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("-m scripts.abstract_object", result.stdout)
-        self.assertIn("--objects hangar1 hangar2 hangar3", result.stdout)
-        self.assertNotIn("--auto", result.stdout)
-
-    def test_abstract_object_explicit_example_writes_both_pddl_files(self):
-        with tempfile.TemporaryDirectory(prefix="apf-abstract-object-") as directory:
-            environment = os.environ.copy()
-            environment["PYTHON_BIN"] = sys.executable
-            environment["APF_TEMP_DIR"] = directory
-            result = subprocess.run(
-                ["examples/abstract_object.sh", "explicit"],
-                cwd=PROJECT_ROOT,
-                env=environment,
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-
-            output = Path(directory, "abstract_object", "explicit")
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertTrue(Path(output, "domain.pddl").is_file())
-            self.assertTrue(Path(output, "problem.pddl").is_file())
-            problem_text = Path(output, "problem.pddl").read_text()
-            self.assertIn("hangarabs", problem_text)
+        self.assertIn("-m scripts.planner abstract", result.stdout)
+        self.assertIn("--objects beluga_trailer_1 beluga_trailer_2", result.stdout)
 
     def test_no_mystery_performance_uses_the_same_p04_problem(self):
         result = self._run("performance", "no_mystery", "/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.count("concrete/p04.pddl"), 2)
-        self.assertIn("abstract/p04.pddl", result.stdout)
         self.assertEqual(result.stdout.count("--horizon 19"), 2)
 
     def test_beluga_performance_uses_standard_problem_38(self):
@@ -106,65 +76,120 @@ class ShellExampleTests(unittest.TestCase):
         problem = "standard/problem_38_s81_j5_r2_oc31_f4.pddl"
         self.assertEqual(result.stdout.count(problem), 2)
         self.assertEqual(result.stdout.count("--horizon 26"), 2)
-        self.assertIn("--concrete-objects hangar1 hangar2 hangar3", result.stdout)
+        self.assertIn("--objects hangar1 hangar2 hangar3", result.stdout)
 
 
 class PlannerHelpTests(unittest.TestCase):
+    def _help(self, mode):
+        output = StringIO()
+        with self.assertRaises(SystemExit), redirect_stdout(output):
+            _argument_parser().parse_args([mode, "--help"])
+        return output.getvalue()
+
+    def test_top_level_help_lists_both_planning_modes(self):
+        help_text = _argument_parser().format_help()
+
+        self.assertIn("concrete", help_text)
+        self.assertIn("abstract", help_text)
+
     def test_concrete_help_displays_shared_defaults(self):
-        help_text = concrete_argument_parser().format_help()
+        help_text = self._help("concrete")
 
         self.assertIn("ASP encoding type (default: exact)", help_text)
         self.assertIn("time-step based encoding (default: False)", help_text)
 
     def test_abstract_help_displays_abstract_defaults(self):
-        help_text = abstract_argument_parser().format_help()
+        help_text = self._help("abstract")
 
         self.assertIn("(default: beluga)", help_text)
         self.assertIn("(default: clingo)", help_text)
+
+    def test_abstract_mode_accepts_one_concrete_task_for_automatic_abstraction(self):
+        args = _argument_parser().parse_args(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
+
+        self.assertEqual(args.domain, "domain.pddl")
+        self.assertEqual(args.problem, "problem.pddl")
+        self.assertIsNone(args.objects)
+
+    def test_abstract_mode_accepts_explicit_objects(self):
+        args = _argument_parser().parse_args(
+            ["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl", "--objects", "a", "b"]
+        )
+
+        self.assertEqual(args.objects, ["a", "b"])
 
 
 class PlannerExitStatusTests(unittest.TestCase):
     def test_concrete_cli_returns_failure_when_no_plan_is_found(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
-            domain="domain.pddl", problem="problem.pddl", horizon=1, encoding="exact", time_step=False
+            mode="concrete", domain="domain.pddl", problem="problem.pddl", horizon=1, encoding="exact", time_step=False
         )
         with (
-            patch.object(concrete_planner, "_argument_parser", return_value=parser),
-            patch.object(concrete_planner, "compute_concrete_plan", return_value={"success": False}),
-            patch.object(concrete_planner, "print_planning_result"),
-            patch.object(concrete_planner, "get_logger"),
+            patch.object(planner, "_argument_parser", return_value=parser),
+            patch.object(planner, "compute_concrete_plan", return_value={"success": False}),
+            patch.object(planner, "print_planning_result"),
+            patch.object(planner, "get_logger"),
         ):
-            status = concrete_planner.main()
+            status = planner.main()
 
         self.assertEqual(status, 1)
 
     def test_abstract_cli_returns_failure_when_no_plan_is_found(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
+            mode="abstract",
             profile="no_mystery",
-            abstract_domain="abstract-domain.pddl",
-            abstract_problem="abstract-problem.pddl",
-            concrete_domain="concrete-domain.pddl",
-            concrete_problem="concrete-problem.pddl",
+            domain="domain.pddl",
+            problem="problem.pddl",
             horizon=1,
             encoding="exact",
             time_step=False,
-            abstract_symbol=None,
-            concrete_objects=None,
+            abstract_name=None,
+            objects=None,
+            bliss_time_limit=300,
             plan_source="clingo",
         )
-        planner = Mock(run_directory="noMystery")
         with (
-            patch.object(abstract_planner, "_argument_parser", return_value=parser),
-            patch.object(abstract_planner, "get_planner", return_value=planner),
-            patch.object(abstract_planner, "compute_abstract_plan", return_value={"success": False}),
-            patch.object(abstract_planner, "print_planning_result"),
-            patch.object(abstract_planner, "get_logger"),
+            patch.object(planner, "_argument_parser", return_value=parser),
+            patch.object(planner, "compute_abstract_plan", return_value={"success": False}),
+            patch.object(planner, "print_planning_result"),
+            patch.object(planner, "get_logger"),
         ):
-            status = abstract_planner.main()
+            status = planner.main()
 
         self.assertEqual(status, 1)
+
+    def test_abstract_cli_passes_explicit_selection_to_the_planning_pipeline(self):
+        parser = Mock()
+        parser.parse_args.return_value = Namespace(
+            mode="abstract",
+            profile="beluga",
+            domain="domain.pddl",
+            problem="problem.pddl",
+            horizon=4,
+            encoding="exact",
+            time_step=False,
+            abstract_name="combined",
+            objects=["a", "b"],
+            bliss_time_limit=17,
+            plan_source="clingo",
+        )
+        with (
+            patch.object(planner, "_argument_parser", return_value=parser),
+            patch.object(planner, "compute_abstract_plan", return_value={"success": True}) as compute,
+            patch.object(planner, "print_planning_result"),
+            patch.object(planner, "get_logger"),
+        ):
+            status = planner.main()
+
+        self.assertEqual(status, 0)
+        config = compute.call_args.args[0]
+        self.assertEqual(config.domain_path, "domain.pddl")
+        self.assertEqual(config.problem_path, "problem.pddl")
+        self.assertEqual(config.objects, ("a", "b"))
+        self.assertEqual(config.abstract_name, "combined")
+        self.assertEqual(config.bliss_time_limit, 17)
 
 
 if __name__ == "__main__":

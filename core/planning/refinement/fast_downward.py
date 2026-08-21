@@ -2,7 +2,7 @@
 
 from core.asp import format_abstract_occurrences, join_asp
 from core.execution import timed_phase
-from core.planning.refinement.BaseRefinement import BaseRefinement
+from core.planning.refinement.base import BaseRefinement
 
 
 class FastDownwardRefinement(BaseRefinement):

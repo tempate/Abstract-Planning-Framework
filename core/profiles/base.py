@@ -8,7 +8,7 @@ from core.execution import get_logger
 OCCURRENCE_VALIDATION_CONSTRAINT = ":- occurs(Action, T), not action(Action)."
 
 
-class BasePlanner(ABC):
+class PlanningProfile(ABC):
     """Base class for domain-specific abstraction mapping and refinement."""
 
     profile_name = ""
@@ -16,15 +16,13 @@ class BasePlanner(ABC):
     requires_mapping_arguments = False
     append_concrete_pddl_facts = False
 
-    def validate_configuration(self, abstract_symbol, concrete_objects):
+    def validate_configuration(self, abstract_name, objects):
         """Validate domain-specific inputs before planning starts."""
-        if self.requires_mapping_arguments and (not abstract_symbol or not concrete_objects):
-            raise ValueError(
-                "--abstract-symbol and --concrete-objects are required by the " f"{self.profile_name} profile"
-            )
+        if self.requires_mapping_arguments and (not abstract_name or not objects):
+            raise ValueError(f"An abstract object mapping is required by the {self.profile_name} profile")
 
     @abstractmethod
-    def build_mapping(self, occurrences, abstract_symbol, concrete_objects):
+    def build_mapping(self, occurrences, abstract_name, objects):
         """Return the concrete mapping for an abstract occurrence sequence."""
 
     @staticmethod

@@ -16,7 +16,7 @@ from unified_planning.shortcuts import (
 )
 
 from core.integrations.unified_planning import parse_problem, read_problem, write_problem
-from core.model_abstraction import AbstractionError, abstract_problem
+from core.abstraction.model import AbstractionError, abstract_problem
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BELUGA = PROJECT_ROOT / "data" / "beluga" / "concrete" / "standard"
