@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 from core.integrations.clingo import create_control
-from core.planning.mapping import OCCURRENCE_VALIDATION_CONSTRAINT, build_mapping
+from core.planning.mapping import build_mapping
 from core.planning.plan import PlanAction
 
 
@@ -61,8 +61,14 @@ switch(1).
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         mapping = build_mapping(abstract_plan, abstraction)
+        program = """
+action(action(("move","item1"))).
+switch(1).
+""" + mapping
 
-        self.assertIn(OCCURRENCE_VALIDATION_CONSTRAINT, mapping)
+        result = create_control(program, horizon=1).solve()
+
+        self.assertTrue(result.unsatisfiable)
 
 
 if __name__ == "__main__":

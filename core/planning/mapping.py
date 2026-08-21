@@ -5,8 +5,6 @@ import json
 from core.asp import join_asp
 from core.execution import get_logger
 
-OCCURRENCE_VALIDATION_CONSTRAINT = ":- occurs(Action, T), not action(Action)."
-
 
 def build_mapping(abstract_plan, abstraction):
     """Map an abstract plan to compatible grounded concrete actions.
@@ -31,9 +29,6 @@ def build_mapping(abstract_plan, abstraction):
         action_str, conds_str = _action_pattern(action, abstraction)
         rule = f"1 {{ occurs({action_str},{action.time_step}) : {conds_str} }} 1 :- {switch}."
         mapping_rules.append(rule)
-
-    # Add a rule to ensure that only valid concrete actions are chosen.
-    mapping_rules.append(OCCURRENCE_VALIDATION_CONSTRAINT)
 
     logger = get_logger()
     logger.info(f"[MAP] Abstract plan actions={len(abstract_plan)}")
