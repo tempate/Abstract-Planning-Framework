@@ -80,7 +80,7 @@ python -m scripts.planner abstract \
 ```
 
 The planner asks PDDL Symmetries to discover an object class by default. Use
-`--objects NAME...` to select an explicit class. Generated abstract PDDL files
+`--objects-to-abstract NAME...` to select an explicit class. Generated abstract PDDL files
 live only for the duration of the planning run.
 
 Generated plans, encodings, and logs are written below `scripts/utils/temp/`.

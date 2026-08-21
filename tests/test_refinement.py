@@ -34,7 +34,7 @@ class RefinementStrategyTests(unittest.TestCase):
     @patch("core.planning.refinement.base.build_mapping")
     def test_mapping_receives_resolved_abstraction_values(self, build_mapping):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl")
-        abstraction = SimpleNamespace(abstract_name="hangarabs", objects=("hangar1", "hangar2"))
+        abstraction = SimpleNamespace(abstract_name="hangarabs", objects_to_abstract=("hangar1", "hangar2"))
         context = SimpleNamespace(config=config, abstraction=abstraction, logger=Mock())
         build_mapping.return_value = "mapping."
 

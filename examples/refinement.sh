@@ -32,7 +32,7 @@ run_beluga() {
     "$python_bin" -m scripts.planner abstract \
         --domain data/beluga/concrete/standard/domain.pddl \
         --problem data/beluga/concrete/standard/problem_3_s45_j3_r2_oc44_f3.pddl \
-        --objects beluga_trailer_1 beluga_trailer_2 \
+        --objects-to-abstract beluga_trailer_1 beluga_trailer_2 \
         --abstract-name beluga_abs_trailer \
         --horizon 17 \
         --encoding exact \

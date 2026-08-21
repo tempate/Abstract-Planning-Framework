@@ -34,7 +34,7 @@ run_beluga() {
     "$python_bin" -m scripts.planner abstract \
         --domain data/beluga/concrete/standard/domain.pddl \
         --problem "data/beluga/concrete/standard/${problem}.pddl" \
-        --objects hangar1 hangar2 hangar3 \
+        --objects-to-abstract hangar1 hangar2 hangar3 \
         --abstract-name hangarabs \
         --horizon 26 \
         --encoding exact \

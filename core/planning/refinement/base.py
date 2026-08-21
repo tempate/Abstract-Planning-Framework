@@ -49,7 +49,9 @@ class BaseRefinement(ABC):
         """Build and time the abstract-to-concrete action mapping."""
         context = self.context
         with timed_phase(context.logger, "Mapping generation time") as timing:
-            mapping = build_mapping(abstract_plan, context.abstraction.abstract_name, context.abstraction.objects)
+            mapping = build_mapping(
+                abstract_plan, context.abstraction.abstract_name, context.abstraction.objects_to_abstract
+            )
         return mapping, timing.elapsed
 
     def solve_concrete(self, refinement_asp):

@@ -20,7 +20,7 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
         result = _compute_abstract_plan(config, abstraction, base_dir, run_id, domain_path, problem_path)
         result["abstraction"] = {
             "abstract_symbol": abstraction.abstract_name,
-            "concrete_objects": list(abstraction.objects),
+            "objects_to_abstract": list(abstraction.objects_to_abstract),
             "object_type": abstraction.object_type,
             "relaxed_unary_deletes": abstraction.unary_delete_score,
         }
@@ -32,7 +32,7 @@ def _resolve_abstraction(config, base_dir):
     prepared = prepare_abstraction(
         config.domain_path,
         config.problem_path,
-        objects=config.objects,
+        objects_to_abstract=config.objects_to_abstract,
         abstract_name=config.abstract_name,
         bliss_time_limit=config.bliss_time_limit,
     )

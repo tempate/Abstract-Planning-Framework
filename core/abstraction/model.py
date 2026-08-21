@@ -20,7 +20,7 @@ class RelaxedDelete:
 
 @dataclass(frozen=True)
 class RankedSymmetryClass:
-    objects: tuple[str, ...]
+    objects_to_abstract: tuple[str, ...]
     object_type: str
     removed_deletes: tuple[RelaxedDelete, ...]
 
@@ -32,7 +32,7 @@ class RankedSymmetryClass:
 @dataclass(frozen=True)
 class AbstractionResult:
     problem: Problem
-    objects: tuple[str, ...]
+    objects_to_abstract: tuple[str, ...]
     object_type: str
     abstract_name: str
     removed_deletes: tuple[RelaxedDelete, ...]
@@ -44,16 +44,16 @@ class AbstractionResult:
 
 @dataclass(frozen=True)
 class _Selection:
-    objects: tuple[Object, ...]
+    objects_to_abstract: tuple[Object, ...]
     abstract_object: Object
 
     @property
     def object_type(self):
-        return self.objects[0].type
+        return self.objects_to_abstract[0].type
 
     @property
     def substitutions(self):
-        return {item: self.abstract_object for item in self.objects}
+        return {item: self.abstract_object for item in self.objects_to_abstract}
 
 
 @dataclass(frozen=True)
@@ -68,16 +68,16 @@ class _DeleteCandidate:
         return self.action.name.casefold(), self.fluent.name.casefold(), self.metadata.variable.casefold()
 
 
-def abstract_problem(problem: Problem, objects, abstract_name=None):
+def abstract_problem(problem: Problem, objects_to_abstract, abstract_name=None):
     """Collapse same-typed objects in a fresh model and relax applicable unary deletes."""
     _validate_supported_problem(problem)
-    selection = _prepare_selection(problem, objects, abstract_name)
-    candidates = _applicable_deletes(problem, selection.object_type, selection.objects)
+    selection = _prepare_selection(problem, objects_to_abstract, abstract_name)
+    candidates = _applicable_deletes(problem, selection.object_type, selection.objects_to_abstract)
     allowed_deletes = {item.key for item in candidates}
     target, removed = _copy_problem(problem, selection, allowed_deletes)
     return AbstractionResult(
         problem=target,
-        objects=tuple(item.name for item in selection.objects),
+        objects_to_abstract=tuple(item.name for item in selection.objects_to_abstract),
         object_type=selection.object_type.name,
         abstract_name=selection.abstract_object.name,
         removed_deletes=tuple(removed),
@@ -95,14 +95,18 @@ def rank_symmetry_classes(problem: Problem, classes):
         removed = _applicable_deletes(problem, selected[0].type, selected)
         ranked.append(
             RankedSymmetryClass(
-                objects=tuple(item.name for item in selected),
+                objects_to_abstract=tuple(item.name for item in selected),
                 object_type=selected[0].type.name,
                 removed_deletes=tuple(item.metadata for item in removed),
             )
         )
 
     ranked.sort(
-        key=lambda item: (item.unary_delete_score, -len(item.objects), tuple(name.casefold() for name in item.objects))
+        key=lambda item: (
+            item.unary_delete_score,
+            -len(item.objects_to_abstract),
+            tuple(name.casefold() for name in item.objects_to_abstract),
+        )
     )
     return tuple(ranked)
 
@@ -134,9 +138,9 @@ def _validate_supported_problem(problem):
         raise AbstractionError("Unsupported PDDL feature: non-instantaneous actions")
 
 
-def _prepare_selection(problem, objects, abstract_name):
+def _prepare_selection(problem, objects_to_abstract, abstract_name):
     known = {item.name.casefold(): item for item in problem.all_objects}
-    requested = tuple(dict.fromkeys(str(name).casefold() for name in objects))
+    requested = tuple(dict.fromkeys(str(name).casefold() for name in objects_to_abstract))
     if len(requested) < 2:
         raise AbstractionError("At least two distinct objects must be selected")
 
@@ -148,7 +152,9 @@ def _prepare_selection(problem, objects, abstract_name):
         raise AbstractionError("Selected objects must have the same declared type")
 
     chosen_name = abstract_name or f"{selected[0].type.name}_abs"
-    return _Selection(objects=selected, abstract_object=Object(chosen_name, selected[0].type, problem.environment))
+    return _Selection(
+        objects_to_abstract=selected, abstract_object=Object(chosen_name, selected[0].type, problem.environment)
+    )
 
 
 def _copy_problem(source, selection, allowed_deletes):
@@ -158,7 +164,7 @@ def _copy_problem(source, selection, allowed_deletes):
     for fluent in source.fluents:
         target.add_fluent(fluent, default_initial_value=source.fluents_defaults.get(fluent))
     for item in source.all_objects:
-        if item not in selection.objects:
+        if item not in selection.objects_to_abstract:
             target.add_object(item)
     target.add_object(selection.abstract_object)
 
@@ -226,7 +232,7 @@ def _substitute(expression, substitutions):
     return expression.substitute(substitutions).simplify()
 
 
-def _applicable_deletes(problem, object_type, objects):
+def _applicable_deletes(problem, object_type, objects_to_abstract):
     static_fluents = problem.get_static_fluents()
     positive_initial = tuple(
         fluent
@@ -238,7 +244,7 @@ def _applicable_deletes(problem, object_type, objects):
         for effect in action.effects:
             candidate = _delete_candidate(action, effect, object_type)
             if candidate is not None and _action_possible(
-                action, candidate.argument, objects, static_fluents, positive_initial
+                action, candidate.argument, objects_to_abstract, static_fluents, positive_initial
             ):
                 result.append(candidate)
     return tuple(result)
@@ -267,7 +273,7 @@ def _delete_candidate(action, effect, object_type):
     return _DeleteCandidate(action, effect.fluent.fluent(), argument, metadata)
 
 
-def _action_possible(action, variable, objects, static_fluents, positive_initial):
+def _action_possible(action, variable, objects_to_abstract, static_fluents, positive_initial):
     atoms = [
         atom
         for precondition in action.preconditions
@@ -275,7 +281,7 @@ def _action_possible(action, variable, objects, static_fluents, positive_initial
     ]
     return not atoms or any(
         all(any(_matches_static_fact(atom, fact, variable, item) for fact in positive_initial) for atom in atoms)
-        for item in objects
+        for item in objects_to_abstract
     )
 
 

@@ -37,9 +37,9 @@ class SymmetrySelectionTests(unittest.TestCase):
         ]
         ranked = rank_symmetry_classes(self.problem, classes)
 
-        self.assertEqual(ranked[0].objects, ("hangar1", "hangar2", "hangar3"))
+        self.assertEqual(ranked[0].objects_to_abstract, ("hangar1", "hangar2", "hangar3"))
         self.assertEqual(ranked[0].unary_delete_score, 1)
-        self.assertEqual(ranked[1].objects[0], "beluga_trailer_1")
+        self.assertEqual(ranked[1].objects_to_abstract[0], "beluga_trailer_1")
         self.assertEqual(ranked[1].unary_delete_score, 3)
         self.assertEqual(
             [removed.action for removed in ranked[1].removed_deletes], ["unload-beluga", "pick-up-rack", "unstack-rack"]
@@ -64,7 +64,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         source = parse_problem(domain, problem)
         ranked = rank_symmetry_classes(source, [["a1", "a2"], ["b1", "b2", "b3"]])
 
-        self.assertEqual(ranked[0].objects, ("b1", "b2", "b3"))
+        self.assertEqual(ranked[0].objects_to_abstract, ("b1", "b2", "b3"))
 
     @patch("core.abstraction.symmetry.find_symmetric_object_sets")
     def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self, find_classes):
@@ -77,7 +77,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         prepared = prepare_abstraction(BELUGA_CONCRETE / "domain.pddl", self.problem_path, bliss_time_limit=17)
 
         find_classes.assert_called_once_with(BELUGA_CONCRETE / "domain.pddl", self.problem_path, 17)
-        self.assertEqual(prepared.result.objects, ("hangar1", "hangar2", "hangar3"))
+        self.assertEqual(prepared.result.objects_to_abstract, ("hangar1", "hangar2", "hangar3"))
         self.assertEqual(prepared.result.abstract_name, "hangar_abs")
 
     @patch("core.integrations.pddl_symmetries.subprocess.run")
@@ -136,7 +136,7 @@ class RealSymmetryIntegrationTests(unittest.TestCase):
                 ("hangar1", "hangar2", "hangar3"),
             },
         )
-        self.assertEqual(ranked[0].objects, ("hangar1", "hangar2", "hangar3"))
+        self.assertEqual(ranked[0].objects_to_abstract, ("hangar1", "hangar2", "hangar3"))
 
 
 if __name__ == "__main__":
