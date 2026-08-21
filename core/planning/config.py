@@ -13,8 +13,8 @@ DEFAULT_PROFILE_NAME = "beluga"
 
 
 @dataclass(frozen=True)
-class ConcretePlanningConfig:
-    """Complete input configuration for a concrete planning run."""
+class PlanningConfig:
+    """Input configuration shared by all planning modes."""
 
     domain_path: Path
     problem_path: Path
@@ -30,16 +30,11 @@ class ConcretePlanningConfig:
 
 
 @dataclass(frozen=True)
-class AbstractPlanningConfig:
+class AbstractPlanningConfig(PlanningConfig):
     """Complete input configuration for an abstraction-based planning run."""
 
-    domain_path: Path
-    problem_path: Path
     objects: Sequence[str] | None = None
     abstract_name: str | None = None
-    horizon: int | None = DEFAULT_HORIZON
-    encoding: str = DEFAULT_ENCODING
-    time_step: bool = DEFAULT_TIME_STEP
     plan_source: str = DEFAULT_PLAN_SOURCE
     profile_name: str = DEFAULT_PROFILE_NAME
     bliss_time_limit: int = 300
@@ -47,9 +42,3 @@ class AbstractPlanningConfig:
     def __post_init__(self):
         if self.objects is not None:
             object.__setattr__(self, "objects", tuple(self.objects))
-
-    def as_dict(self):
-        values = asdict(self)
-        values["domain_path"] = str(self.domain_path)
-        values["problem_path"] = str(self.problem_path)
-        return values

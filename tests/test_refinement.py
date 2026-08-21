@@ -31,12 +31,11 @@ class RefinementStrategyTests(unittest.TestCase):
         self.assertIsInstance(get_refinement_strategy("clingo", context), ClingoRefinement)
         self.assertIsInstance(get_refinement_strategy("fd", context), FastDownwardRefinement)
 
-    def test_mapping_receives_configuration_values(self):
+    def test_mapping_receives_resolved_abstraction_values(self):
         planner = Mock()
-        config = AbstractPlanningConfig(
-            "domain.pddl", "problem.pddl", abstract_name="hangarabs", objects=["hangar1", "hangar2"]
-        )
-        context = SimpleNamespace(config=config, planner=planner, logger=Mock())
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl")
+        abstraction = SimpleNamespace(abstract_name="hangarabs", objects=("hangar1", "hangar2"))
+        context = SimpleNamespace(config=config, abstraction=abstraction, planner=planner, logger=Mock())
         planner.build_mapping.return_value = ("mapping.", {})
 
         mapping, _ = ClingoRefinement(context).build_mapping("occurrences.")

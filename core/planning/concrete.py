@@ -4,10 +4,10 @@ from core.execution import get_logger, temp_run_dir, timed_phase
 from core.integrations.clingo import run_clingo
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import sas_to_asp
-from core.planning.config import ConcretePlanningConfig
+from core.planning.config import PlanningConfig
 
 
-def compute_concrete_plan(config: ConcretePlanningConfig):
+def compute_concrete_plan(config: PlanningConfig):
     """Translate and solve one concrete PDDL planning problem."""
     with temp_run_dir() as (base_dir, run_id):
         return _compute_concrete_plan(config, base_dir, run_id)

@@ -15,7 +15,7 @@ from core.planning.config import (
     DEFAULT_PROFILE_NAME,
     DEFAULT_TIME_STEP,
     AbstractPlanningConfig,
-    ConcretePlanningConfig,
+    PlanningConfig,
 )
 from core.planners.factory import PLANNER_TYPES
 
@@ -51,7 +51,7 @@ def _compute(args):
         "time_step": args.time_step,
     }
     if args.mode == "concrete":
-        return compute_concrete_plan(ConcretePlanningConfig(**common))
+        return compute_concrete_plan(PlanningConfig(**common))
     if args.mode == "abstract":
         return compute_abstract_plan(
             AbstractPlanningConfig(

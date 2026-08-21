@@ -1,7 +1,6 @@
 """Prepare and dispatch abstraction-based planning workflows."""
 
 import os
-from dataclasses import replace
 from pathlib import Path
 
 from core.execution import get_logger, temp_run_dir, timed_phase
@@ -20,9 +19,9 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
     planner = get_planner(config.profile_name)
 
     with temp_run_dir(planner.run_directory) as (base_dir, run_id):
-        resolved, abstraction, domain_path, problem_path = _resolve_abstraction(config, base_dir)
-        planner.validate_configuration(resolved.abstract_name, resolved.objects)
-        result = _compute_abstract_plan(resolved, planner, base_dir, run_id, domain_path, problem_path)
+        abstraction, domain_path, problem_path = _resolve_abstraction(config, base_dir)
+        planner.validate_configuration(abstraction.abstract_name, abstraction.objects)
+        result = _compute_abstract_plan(config, planner, abstraction, base_dir, run_id, domain_path, problem_path)
         result["abstraction"] = {
             "abstract_symbol": abstraction.abstract_name,
             "concrete_objects": list(abstraction.objects),
@@ -48,16 +47,10 @@ def _resolve_abstraction(config, base_dir):
     problem_path = input_directory / "problem.pddl"
     domain_path.write_text(serialized.domain, encoding="utf-8")
     problem_path.write_text(serialized.problem, encoding="utf-8")
-    result = prepared.result
-    return (
-        replace(config, abstract_name=result.abstract_name, objects=result.objects),
-        result,
-        domain_path,
-        problem_path,
-    )
+    return prepared.result, domain_path, problem_path
 
 
-def _compute_abstract_plan(config, planner, base_dir, run_id, abstract_domain_path, abstract_problem_path):
+def _compute_abstract_plan(config, planner, abstraction, base_dir, run_id, abstract_domain_path, abstract_problem_path):
     logger = get_logger()
 
     logger.info("=" * 70)
@@ -113,6 +106,7 @@ def _compute_abstract_plan(config, planner, base_dir, run_id, abstract_domain_pa
 
         context = RefinementContext(
             config=config,
+            abstraction=abstraction,
             planner=planner,
             concrete_asp=concrete_asp,
             abstract_asp=abstract_asp,
