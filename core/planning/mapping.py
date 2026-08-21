@@ -19,7 +19,7 @@ def build_mapping(abstract_plan, abstract_name, objects_to_abstract):
     then limits the choices to grounded actions that actually exist.
     """
     abstract_actions = parse_abstract_actions(abstract_plan)
-    mapping_rules = [f"concrete_object({_quote(name)})." for name in objects_to_abstract]
+    mapping_rules = [f"concrete_object({_quote(object)})." for object in objects_to_abstract]
 
     for abstract_action, time_step in abstract_actions:
         switch = f"switch({time_step})"

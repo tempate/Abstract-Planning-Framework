@@ -2,6 +2,7 @@
 
 from core.asp import format_abstract_plan, join_asp
 from core.execution import timed_phase
+from core.planning.mapping import build_mapping
 from core.planning.refinement.base import BaseRefinement
 
 
@@ -16,7 +17,9 @@ class FastDownwardRefinement(BaseRefinement):
             abstract_atoms = self.plan_to_abstract_atoms(context.abstract_task["planFile"])
             abstract_plan = format_abstract_plan(abstract_atoms)
 
-        mapping, _ = self.build_mapping(abstract_plan)
+        mapping = build_mapping(
+            abstract_plan, context.abstraction.abstract_name, context.abstraction.objects_to_abstract
+        )
         success, plan, _ = self.solve_concrete(join_asp(abstract_plan, mapping))
 
         if success:
