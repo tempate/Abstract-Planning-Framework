@@ -6,5 +6,5 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class PlanAction:
     name: str
-    arguments: tuple[str, ...]
+    args: tuple[str, ...]
     time_step: int

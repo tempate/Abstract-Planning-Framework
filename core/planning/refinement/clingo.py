@@ -1,6 +1,5 @@
 """Clingo-guided decremental concrete planning."""
 
-from core.asp import join_asp
 from core.execution import timed_phase
 from core.integrations.clingo import parse_plan_actions, run_clingo
 from core.planning.mapping import build_mapping
@@ -32,7 +31,7 @@ class ClingoRefinement(BaseRefinement):
 
         mapping = build_mapping(abstract_plan, context.abstraction)
 
-        success, plan, _ = self.solve_concrete(join_asp(*mapping))
+        success, plan, _ = self.solve_concrete(mapping)
         if success:
             self.log_success(plan)
         else:

@@ -12,23 +12,21 @@ class MappingTests(unittest.TestCase):
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
 
         mapping = build_mapping(abstract_plan, abstraction)
-        program = "\n".join(mapping)
 
         self.assertIn('concrete_object("item1").', mapping)
         self.assertIn('concrete_object("item2").', mapping)
-        self.assertIn('action(("move",ConcreteObject1,"dock"))', program)
-        self.assertIn('action(action(("move",ConcreteObject1,"dock")))', program)
+        self.assertIn('action(("move",ConcreteObject1,"dock"))', mapping)
+        self.assertIn('action(action(("move",ConcreteObject1,"dock")))', mapping)
 
     def test_each_abstract_argument_is_grounded_independently(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
         abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))
 
         mapping = build_mapping(abstract_plan, abstraction)
-        program = "\n".join(mapping)
 
-        self.assertIn('action(("link",ConcreteObject1,ConcreteObject2))', program)
-        self.assertIn("concrete_object(ConcreteObject1)", program)
-        self.assertIn("concrete_object(ConcreteObject2)", program)
+        self.assertIn('action(("link",ConcreteObject1,ConcreteObject2))', mapping)
+        self.assertIn("concrete_object(ConcreteObject1)", mapping)
+        self.assertIn("concrete_object(ConcreteObject2)", mapping)
 
     def test_non_abstract_actions_are_mapped_directly(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
@@ -36,7 +34,9 @@ class MappingTests(unittest.TestCase):
 
         mapping = build_mapping(abstract_plan, abstraction)
 
-        self.assertIn('occurs(action(("inspect","item1")),1) :- switch(1).', mapping)
+        self.assertIn(
+            '1 { occurs(action(("inspect","item1")),1) : action(action(("inspect","item1"))) } 1 :- switch(1).', mapping
+        )
 
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
@@ -45,7 +45,7 @@ class MappingTests(unittest.TestCase):
         program = """
 action(action(("link","a","b"))).
 switch(1).
-""" + "\n".join(mapping)
+""" + mapping
 
         control = create_control(program, horizon=1)
         models = []

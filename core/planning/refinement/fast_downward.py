@@ -1,6 +1,5 @@
 """Fast Downward abstract-plan refinement strategy."""
 
-from core.asp import join_asp
 from core.execution import timed_phase
 from core.planning.mapping import build_mapping
 from core.planning.plan import PlanAction
@@ -18,7 +17,7 @@ class FastDownwardRefinement(BaseRefinement):
             abstract_plan = self.read_abstract_plan(context.abstract_task["planFile"])
 
         mapping = build_mapping(abstract_plan, context.abstraction)
-        success, plan, _ = self.solve_concrete(join_asp(*mapping))
+        success, plan, _ = self.solve_concrete(mapping)
 
         if success:
             self.log_success(plan)
