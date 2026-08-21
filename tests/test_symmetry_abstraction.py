@@ -1,6 +1,5 @@
 import os
 import subprocess
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,7 +8,7 @@ from unittest.mock import patch
 from core.integrations.pddl_symmetries import PddlSymmetriesError, find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
 from core.model_abstraction import rank_symmetry_classes
-from scripts.abstract_object import _argument_parser
+from core.planning.abstraction import prepare_abstraction
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BELUGA_CONCRETE = PROJECT_ROOT / "data" / "beluga" / "concrete" / "standard"
@@ -67,6 +66,20 @@ class SymmetrySelectionTests(unittest.TestCase):
 
         self.assertEqual(ranked[0].objects, ("b1", "b2", "b3"))
 
+    @patch("core.planning.abstraction.find_symmetric_object_sets")
+    def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self, find_classes):
+        find_classes.return_value = [
+            ["factory_trailer_1", "factory_trailer_2"],
+            ["hangar1", "hangar2", "hangar3"],
+            ["beluga_trailer_1", "beluga_trailer_2"],
+        ]
+
+        prepared = prepare_abstraction(BELUGA_CONCRETE / "domain.pddl", self.problem_path, bliss_time_limit=17)
+
+        find_classes.assert_called_once_with(BELUGA_CONCRETE / "domain.pddl", self.problem_path, 17)
+        self.assertEqual(prepared.result.objects, ("hangar1", "hangar2", "hangar3"))
+        self.assertEqual(prepared.result.abstract_name, "hangar_abs")
+
     @patch("core.integrations.pddl_symmetries.subprocess.run")
     def test_extracts_object_sets_from_translator_output(self, run):
         run.return_value = subprocess.CompletedProcess(
@@ -104,86 +117,6 @@ class SymmetrySelectionTests(unittest.TestCase):
             translator, domain, problem = _stub_symmetry_inputs(directory)
             with self.assertRaisesRegex(PddlSymmetriesError, "exceeded"):
                 find_symmetric_object_sets(domain, problem, 10, translator)
-
-
-class AbstractionArgumentTests(unittest.TestCase):
-    def test_explicit_selection_arguments(self):
-        args = _argument_parser().parse_args(
-            [
-                "--domain",
-                "domain.pddl",
-                "--problem",
-                "problem.pddl",
-                "--output-domain",
-                "abstract-domain.pddl",
-                "--output-problem",
-                "abstract-problem.pddl",
-                "--objects",
-                "hangar1",
-                "hangar2",
-            ]
-        )
-        self.assertEqual(args.domain, Path("domain.pddl"))
-        self.assertEqual(args.objects, ["hangar1", "hangar2"])
-        self.assertFalse(args.auto)
-
-    def test_automatic_selection_arguments(self):
-        args = _argument_parser().parse_args(
-            [
-                "--domain",
-                "domain.pddl",
-                "--problem",
-                "problem.pddl",
-                "--output-domain",
-                "abstract-domain.pddl",
-                "--output-problem",
-                "abstract-problem.pddl",
-                "--auto",
-            ]
-        )
-        self.assertTrue(args.auto)
-        self.assertIsNone(args.objects)
-
-    def test_explicit_cli_writes_a_reparseable_pddl_pair(self):
-        domain = "(define (domain d) (:types item) (:predicates (ready ?x - item)))"
-        problem = """
-(define (problem p) (:domain d)
-  (:objects a b - item) (:init) (:goal (and)))
-"""
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            domain_path = root / "domain.pddl"
-            problem_path = root / "problem.pddl"
-            output_domain = root / "abstract" / "domain.pddl"
-            output_problem = root / "abstract" / "problem.pddl"
-            domain_path.write_text(domain, encoding="utf-8")
-            problem_path.write_text(problem, encoding="utf-8")
-            completed = subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "scripts.abstract_object",
-                    "--domain",
-                    str(domain_path),
-                    "--problem",
-                    str(problem_path),
-                    "--output-domain",
-                    str(output_domain),
-                    "--output-problem",
-                    str(output_problem),
-                    "--objects",
-                    "a",
-                    "b",
-                ],
-                cwd=PROJECT_ROOT,
-                capture_output=True,
-                text=True,
-            )
-            self.assertEqual(completed.returncode, 0, completed.stderr)
-            output = read_problem(output_domain, output_problem)
-
-        self.assertIn("item_abs", {item.name for item in output.all_objects})
-        self.assertIn("Collapsed ['a', 'b']", completed.stdout)
 
 
 @unittest.skipUnless(

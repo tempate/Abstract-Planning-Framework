@@ -10,15 +10,14 @@ run_no_mystery() {
     "$python_bin" -m scripts.concrete_planner \
         --domain data/no_mystery/concrete/domain.pddl \
         --problem data/no_mystery/concrete/p04.pddl \
+        --bliss-time-limit 300 \
         --horizon 19 \
         --encoding exact
 
     "$python_bin" -m scripts.abstract_planner \
         --profile no_mystery \
-        --abstract-domain data/no_mystery/abstract/domain.pddl \
-        --abstract-problem data/no_mystery/abstract/p04.pddl \
-        --concrete-domain data/no_mystery/concrete/domain.pddl \
-        --concrete-problem data/no_mystery/concrete/p04.pddl \
+        --domain data/no_mystery/concrete/domain.pddl \
+        --problem data/no_mystery/concrete/p04.pddl \
         --horizon 19 \
         --encoding exact \
         --plan-source clingo
@@ -35,12 +34,10 @@ run_beluga() {
 
     "$python_bin" -m scripts.abstract_planner \
         --profile beluga \
-        --abstract-domain data/beluga/abstract/hangar/domain.pddl \
-        --abstract-problem "data/beluga/abstract/hangar/${problem}_abs.pddl" \
-        --concrete-domain data/beluga/concrete/standard/domain.pddl \
-        --concrete-problem "data/beluga/concrete/standard/${problem}.pddl" \
-        --abstract-symbol hangarabs \
-        --concrete-objects hangar1 hangar2 hangar3 \
+        --domain data/beluga/concrete/standard/domain.pddl \
+        --problem "data/beluga/concrete/standard/${problem}.pddl" \
+        --objects hangar1 hangar2 hangar3 \
+        --abstract-name hangarabs \
         --horizon 26 \
         --encoding exact \
         --plan-source clingo

@@ -4,9 +4,9 @@ An experimental framework for comparing classical planning with abstraction
 and decremental refinement. It supports Beluga hangar/trailer abstractions and
 NoMystery fuel abstraction using Fast Downward, Clingo, and PlanPilot.
 
-The abstract workflow computes an abstract plan, maps it to the concrete task,
-and relaxes abstract-plan constraints in reverse order until it finds a
-concrete plan.
+The abstract workflow builds a symmetric-object abstraction directly from one
+concrete PDDL task, solves it, maps its plan to the concrete task, and relaxes
+abstract-plan constraints in reverse order until it finds a concrete plan.
 
 ## Setup
 
@@ -45,7 +45,6 @@ pass `no_mystery`, `beluga`, or `all` to choose the workflow.
 
 ./examples/concrete.sh no_mystery
 ./examples/abstract.sh no_mystery
-./examples/abstract_object.sh auto
 ```
 
 Performance comparisons can take a minute or longer:
@@ -63,13 +62,26 @@ abstraction examples.
 ```bash
 python -m scripts.concrete_planner --help
 python -m scripts.abstract_planner --help
-python -m scripts.abstract_object --help
 ```
 
 - `concrete_planner` solves a concrete PDDL task.
-- `abstract_planner` plans abstractly and realizes the result concretely.
-- `abstract_object` collapses an explicit or automatically selected symmetric
-  object set into one abstract object.
+- `abstract_planner` generates an object abstraction from one concrete task,
+  plans abstractly, and realizes the result concretely.
+
+For example, generate the abstraction automatically and use it to guide the
+concrete search:
+
+```bash
+python -m scripts.abstract_planner \
+    --profile beluga \
+    --domain data/beluga/concrete/standard/domain.pddl \
+    --problem data/beluga/concrete/standard/problem_3_s45_j3_r2_oc44_f3.pddl \
+    --horizon 17
+```
+
+The planner asks PDDL Symmetries to discover an object class by default. Use
+`--objects NAME...` to select an explicit class. Generated abstract PDDL files
+live only for the duration of the planning run.
 
 Generated plans, encodings, and logs are written below `scripts/utils/temp/`.
 

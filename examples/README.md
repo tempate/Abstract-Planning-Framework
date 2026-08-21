@@ -9,7 +9,6 @@ from the repository root.
 | `abstract.sh` | Beluga | `no_mystery`, `beluga`, `all` |
 | `refinement.sh` | Beluga | `no_mystery`, `beluga`, `all` |
 | `performance.sh` | Beluga | `no_mystery`, `beluga`, `all` |
-| `abstract_object.sh` | explicit | `explicit`, `auto`, `all` |
 
 ## Planning
 
@@ -24,17 +23,13 @@ from the repository root.
 requires decremental relaxation. `performance.sh` uses larger matched tasks
 and can take a minute or longer.
 
-## Object abstraction
-
-```bash
-./examples/abstract_object.sh explicit
-./examples/abstract_object.sh auto
-```
-
-The explicit example collapses three Beluga hangars. Automatic mode uses PDDL
-Symmetries to choose an object class and requires the pybliss setup described
-in the main README. Generated PDDL is written below
-`scripts/utils/temp/abstract_object/`.
+The Beluga workflow in `abstract.sh` demonstrates the integrated path: it
+takes one concrete domain/problem pair, lets PDDL Symmetries select the
+hangars, builds a temporary abstraction, solves it, and uses that plan to guide
+concrete search.
+Omit `--objects` to let PDDL Symmetries discover and rank the object classes,
+as the NoMystery examples do. Automatic selection requires the pybliss setup
+described in the main README.
 
 All examples use explicit horizons. Pass `--help` to the underlying Python
 modules in `scripts/` for the complete CLI reference.

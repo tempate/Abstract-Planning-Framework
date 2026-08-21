@@ -19,7 +19,7 @@ class PlannerFactoryTests(unittest.TestCase):
 
         for symbol, objects in ((None, None), ("hangarabs", []), (None, ["h1"])):
             with self.subTest(symbol=symbol, objects=objects):
-                with self.assertRaisesRegex(ValueError, "--abstract-symbol"):
+                with self.assertRaisesRegex(ValueError, "abstract object mapping"):
                     planner.validate_configuration(symbol, objects)
 
     def test_no_mystery_does_not_require_mapping_arguments(self):

@@ -34,12 +34,7 @@ class RefinementStrategyTests(unittest.TestCase):
     def test_mapping_receives_configuration_values(self):
         planner = Mock()
         config = AbstractPlanningConfig(
-            "abstract-domain.pddl",
-            "abstract-problem.pddl",
-            "concrete-domain.pddl",
-            "concrete-problem.pddl",
-            abstract_symbol="hangarabs",
-            concrete_objects=["hangar1", "hangar2"],
+            "domain.pddl", "problem.pddl", abstract_name="hangarabs", objects=["hangar1", "hangar2"]
         )
         context = SimpleNamespace(config=config, planner=planner, logger=Mock())
         planner.build_mapping.return_value = ("mapping.", {})

@@ -49,7 +49,7 @@ class BaseRefinement(ABC):
         context = self.context
         with timed_phase(context.logger, "Mapping generation time") as timing:
             mapping, _ = context.planner.build_mapping(
-                occurrences, context.config.abstract_symbol, context.config.concrete_objects
+                occurrences, context.config.abstract_name, context.config.objects
             )
         return mapping, timing.elapsed
 
