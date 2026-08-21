@@ -53,14 +53,14 @@ class ShellExampleTests(unittest.TestCase):
         self.assertIn("-m scripts.planner abstract", result.stdout)
         self.assertIn("--domain data/beluga/concrete/standard/domain.pddl", result.stdout)
         self.assertIn("--bliss-time-limit 300", result.stdout)
-        self.assertNotIn("--objects", result.stdout)
+        self.assertNotIn("--objects-to-abstract", result.stdout)
 
     def test_refinement_example_selects_two_trailers_explicitly(self):
         result = self._run("refinement", "beluga", "/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("-m scripts.planner abstract", result.stdout)
-        self.assertIn("--objects beluga_trailer_1 beluga_trailer_2", result.stdout)
+        self.assertIn("--objects-to-abstract beluga_trailer_1 beluga_trailer_2", result.stdout)
 
     def test_no_mystery_performance_uses_the_same_p04_problem(self):
         result = self._run("performance", "no_mystery", "/bin/echo")
@@ -76,7 +76,7 @@ class ShellExampleTests(unittest.TestCase):
         problem = "standard/problem_38_s81_j5_r2_oc31_f4.pddl"
         self.assertEqual(result.stdout.count(problem), 2)
         self.assertEqual(result.stdout.count("--horizon 26"), 2)
-        self.assertIn("--objects hangar1 hangar2 hangar3", result.stdout)
+        self.assertIn("--objects-to-abstract hangar1 hangar2 hangar3", result.stdout)
 
 
 class PlannerHelpTests(unittest.TestCase):
@@ -101,7 +101,6 @@ class PlannerHelpTests(unittest.TestCase):
     def test_abstract_help_displays_abstract_defaults(self):
         help_text = self._help("abstract")
 
-        self.assertIn("(default: beluga)", help_text)
         self.assertIn("(default: clingo)", help_text)
 
     def test_abstract_mode_accepts_one_concrete_task_for_automatic_abstraction(self):
@@ -109,14 +108,14 @@ class PlannerHelpTests(unittest.TestCase):
 
         self.assertEqual(args.domain, "domain.pddl")
         self.assertEqual(args.problem, "problem.pddl")
-        self.assertIsNone(args.objects)
+        self.assertIsNone(args.objects_to_abstract)
 
     def test_abstract_mode_accepts_explicit_objects(self):
         args = _argument_parser().parse_args(
-            ["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl", "--objects", "a", "b"]
+            ["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl", "--objects-to-abstract", "a", "b"]
         )
 
-        self.assertEqual(args.objects, ["a", "b"])
+        self.assertEqual(args.objects_to_abstract, ["a", "b"])
 
 
 class PlannerExitStatusTests(unittest.TestCase):
@@ -139,14 +138,13 @@ class PlannerExitStatusTests(unittest.TestCase):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
             mode="abstract",
-            profile="no_mystery",
             domain="domain.pddl",
             problem="problem.pddl",
             horizon=1,
             encoding="exact",
             time_step=False,
             abstract_name=None,
-            objects=None,
+            objects_to_abstract=None,
             bliss_time_limit=300,
             plan_source="clingo",
         )
@@ -164,14 +162,13 @@ class PlannerExitStatusTests(unittest.TestCase):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
             mode="abstract",
-            profile="beluga",
             domain="domain.pddl",
             problem="problem.pddl",
             horizon=4,
             encoding="exact",
             time_step=False,
             abstract_name="combined",
-            objects=["a", "b"],
+            objects_to_abstract=["a", "b"],
             bliss_time_limit=17,
             plan_source="clingo",
         )
@@ -187,7 +184,7 @@ class PlannerExitStatusTests(unittest.TestCase):
         config = compute.call_args.args[0]
         self.assertEqual(config.domain_path, "domain.pddl")
         self.assertEqual(config.problem_path, "problem.pddl")
-        self.assertEqual(config.objects, ("a", "b"))
+        self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual(config.abstract_name, "combined")
         self.assertEqual(config.bliss_time_limit, 17)
 

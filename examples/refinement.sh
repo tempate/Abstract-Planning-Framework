@@ -14,7 +14,6 @@ run_no_mystery() {
         --encoding exact
 
     "$python_bin" -m scripts.planner abstract \
-        --profile no_mystery \
         --domain data/no_mystery/concrete/domain.pddl \
         --problem data/no_mystery/concrete/p03.pddl \
         --bliss-time-limit 300 \
@@ -31,10 +30,9 @@ run_beluga() {
         --encoding exact
 
     "$python_bin" -m scripts.planner abstract \
-        --profile beluga \
         --domain data/beluga/concrete/standard/domain.pddl \
         --problem data/beluga/concrete/standard/problem_3_s45_j3_r2_oc44_f3.pddl \
-        --objects beluga_trailer_1 beluga_trailer_2 \
+        --objects-to-abstract beluga_trailer_1 beluga_trailer_2 \
         --abstract-name beluga_abs_trailer \
         --horizon 17 \
         --encoding exact \

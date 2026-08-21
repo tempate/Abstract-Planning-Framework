@@ -18,8 +18,8 @@ def print_planning_result(result, logger):
 
     if result["plan"] is not None:
         print("\nPlan:")
-        occurrences = [atom for atom in result["plan"] if atom.startswith("occurs(")]
-        for atom in sorted(occurrences, key=_time_step):
+        plan_actions = [atom for atom in result["plan"] if atom.startswith("occurs(")]
+        for atom in sorted(plan_actions, key=_time_step):
             print(" ", atom)
 
 

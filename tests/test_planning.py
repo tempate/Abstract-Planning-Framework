@@ -77,16 +77,15 @@ class PlanningConfigurationTests(unittest.TestCase):
         self.assertIsInstance(abstract, PlanningConfig)
         self.assertEqual(abstract.encoding, concrete.encoding)
         self.assertEqual(abstract.plan_source, "clingo")
-        self.assertEqual(abstract.profile_name, "beluga")
         self.assertIsNone(abstract.abstract_name)
-        self.assertIsNone(abstract.objects)
+        self.assertIsNone(abstract.objects_to_abstract)
 
     def test_selected_objects_are_stored_immutably(self):
-        objects = ["hangar1", "hangar2"]
-        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", objects=objects)
-        objects.append("hangar3")
+        objects_to_abstract = ["hangar1", "hangar2"]
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract)
+        objects_to_abstract.append("hangar3")
 
-        self.assertEqual(config.objects, ("hangar1", "hangar2"))
+        self.assertEqual(config.objects_to_abstract, ("hangar1", "hangar2"))
 
 
 class GeneratedAbstractionTests(unittest.TestCase):
@@ -102,31 +101,31 @@ class GeneratedAbstractionTests(unittest.TestCase):
             problem = root / "problem.pddl"
             domain.write_text(domain_text, encoding="utf-8")
             problem.write_text(problem_text, encoding="utf-8")
-            config = AbstractPlanningConfig(domain, problem, objects=["a", "b"], abstract_name="combined")
+            config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"], abstract_name="combined")
 
-            abstraction, abstract_domain, abstract_problem = _resolve_abstraction(config, root / "run")
-            generated = read_problem(abstract_domain, abstract_problem)
+            abstract_problem, abstract_domain, abstract_problem_path = _resolve_abstraction(config, root / "run")
+            generated = read_problem(abstract_domain, abstract_problem_path)
 
-        self.assertEqual(abstraction.abstract_name, "combined")
+        self.assertEqual(abstract_problem.abstraction.name, "combined")
         self.assertEqual(config.abstract_name, "combined")
-        self.assertEqual(config.objects, ("a", "b"))
+        self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual({item.name for item in generated.all_objects}, {"combined"})
 
     @patch("core.planning.abstract.prepare_abstraction")
     def test_automatic_selection_is_delegated_to_symmetry_abstraction(self, prepare_abstraction):
-        abstract_problem = Mock()
-        abstraction = Mock(problem=abstract_problem, abstract_name="item_abs", objects=("a", "b"))
-        prepare_abstraction.return_value = Mock(result=abstraction)
+        problem = Mock()
+        abstraction = Mock(name="item_abs", objects=("a", "b"))
+        prepare_abstraction.return_value = Mock(problem=problem, abstraction=abstraction)
         with tempfile.TemporaryDirectory() as directory:
             config = AbstractPlanningConfig("domain.pddl", "problem.pddl", bliss_time_limit=17)
             with patch("core.planning.abstract.write_problem", return_value=Mock(domain="d", problem="p")):
                 selected, _, _ = _resolve_abstraction(config, directory)
 
         prepare_abstraction.assert_called_once_with(
-            "domain.pddl", "problem.pddl", objects=None, abstract_name=None, bliss_time_limit=17
+            "domain.pddl", "problem.pddl", objects_to_abstract=None, abstract_name=None, bliss_time_limit=17
         )
-        self.assertEqual(selected.objects, ("a", "b"))
-        self.assertIsNone(config.objects)
+        self.assertEqual(selected.abstraction.objects, ("a", "b"))
+        self.assertIsNone(config.objects_to_abstract)
         self.assertIsNone(config.abstract_name)
 
 

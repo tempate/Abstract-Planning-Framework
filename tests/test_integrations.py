@@ -5,12 +5,30 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from core.integrations.clingo import collect_plan, create_control
+from core.integrations.clingo import collect_plan, create_control, parse_plan_actions
 from core.integrations.fast_downward import _get_command, _run_task, calc_horizon
-from core.integrations.plasp import add_switch_to_asp_rule, append_pddl_facts_to_asp, sas_to_asp
+from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
+from core.planning.plan import PlanAction
 
 
 class ClingoIntegrationTests(unittest.TestCase):
+    def test_parse_plan_actions_ignores_other_atoms_and_orders_actions(self):
+        atoms = [
+            'occurs(action(("unload","p0","t0","l1")),3)',
+            "cost(4)",
+            'occurs(action(("load","p0","t0","l0")),1)',
+            'occurs(action("wait"),2)',
+        ]
+
+        self.assertEqual(
+            parse_plan_actions(atoms),
+            (
+                PlanAction("load", ("p0", "t0", "l0"), 1),
+                PlanAction("wait", (), 2),
+                PlanAction("unload", ("p0", "t0", "l1"), 3),
+            ),
+        )
+
     def test_control_receives_the_requested_horizon(self):
         program = "step(1..horizon).\n#show step/1.\n"
         plan = collect_plan(create_control(program, horizon=3))
@@ -97,21 +115,6 @@ class PlaspPostProcessingTests(unittest.TestCase):
                 program = sas_to_asp(str(sas))
 
             self.assertEqual(program, "exact.\nactions.\ntranslated.\n")
-
-    def test_append_pddl_facts_converts_supported_fuel_relations(self):
-        pddl = """
-(connected l0 l1)
-(fuelcost level2 l0 l1)
-(sum level0 level2 level2)
-"""
-        with tempfile.TemporaryDirectory() as directory:
-            pddl_path = Path(directory, "problem.pddl")
-            pddl_path.write_text(pddl, encoding="utf-8")
-            result = append_pddl_facts_to_asp(pddl_path, "base.\n")
-
-        self.assertIn('fuelcost("level2","l0","l1").', result)
-        self.assertIn('sum("level0","level2","level2").', result)
-        self.assertNotIn("connected", result)
 
     def test_switch_guard_is_added_for_both_horizon_encodings(self):
         rules = {

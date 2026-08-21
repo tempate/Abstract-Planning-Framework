@@ -37,9 +37,9 @@ class SymmetrySelectionTests(unittest.TestCase):
         ]
         ranked = rank_symmetry_classes(self.problem, classes)
 
-        self.assertEqual(ranked[0].objects, ("hangar1", "hangar2", "hangar3"))
+        self.assertEqual(ranked[0].abstraction.objects, ("hangar1", "hangar2", "hangar3"))
         self.assertEqual(ranked[0].unary_delete_score, 1)
-        self.assertEqual(ranked[1].objects[0], "beluga_trailer_1")
+        self.assertEqual(ranked[1].abstraction.objects[0], "beluga_trailer_1")
         self.assertEqual(ranked[1].unary_delete_score, 3)
         self.assertEqual(
             [removed.action for removed in ranked[1].removed_deletes], ["unload-beluga", "pick-up-rack", "unstack-rack"]
@@ -64,7 +64,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         source = parse_problem(domain, problem)
         ranked = rank_symmetry_classes(source, [["a1", "a2"], ["b1", "b2", "b3"]])
 
-        self.assertEqual(ranked[0].objects, ("b1", "b2", "b3"))
+        self.assertEqual(ranked[0].abstraction.objects, ("b1", "b2", "b3"))
 
     @patch("core.abstraction.symmetry.find_symmetric_object_sets")
     def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self, find_classes):
@@ -74,11 +74,11 @@ class SymmetrySelectionTests(unittest.TestCase):
             ["beluga_trailer_1", "beluga_trailer_2"],
         ]
 
-        prepared = prepare_abstraction(BELUGA_CONCRETE / "domain.pddl", self.problem_path, bliss_time_limit=17)
+        abstract_problem = prepare_abstraction(BELUGA_CONCRETE / "domain.pddl", self.problem_path, bliss_time_limit=17)
 
         find_classes.assert_called_once_with(BELUGA_CONCRETE / "domain.pddl", self.problem_path, 17)
-        self.assertEqual(prepared.result.objects, ("hangar1", "hangar2", "hangar3"))
-        self.assertEqual(prepared.result.abstract_name, "hangar_abs")
+        self.assertEqual(abstract_problem.abstraction.objects, ("hangar1", "hangar2", "hangar3"))
+        self.assertEqual(abstract_problem.abstraction.name, "hangar_abs")
 
     @patch("core.integrations.pddl_symmetries.subprocess.run")
     def test_extracts_object_sets_from_translator_output(self, run):
@@ -136,7 +136,7 @@ class RealSymmetryIntegrationTests(unittest.TestCase):
                 ("hangar1", "hangar2", "hangar3"),
             },
         )
-        self.assertEqual(ranked[0].objects, ("hangar1", "hangar2", "hangar3"))
+        self.assertEqual(ranked[0].abstraction.objects, ("hangar1", "hangar2", "hangar3"))
 
 
 if __name__ == "__main__":

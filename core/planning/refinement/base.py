@@ -5,11 +5,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pprint import pformat
 
-from core.asp import join_asp
 from core.execution import PhaseTiming, timed_phase
-from core.abstraction.model import AbstractionResult
+from core.abstraction.model import Abstraction
 from core.planning.config import AbstractPlanningConfig
-from core.profiles.base import PlanningProfile
 from core.solvers.decremental import solve_decrementally
 
 
@@ -18,8 +16,7 @@ class RefinementContext:
     """Configuration and run state shared by refinement strategies."""
 
     config: AbstractPlanningConfig
-    abstraction: AbstractionResult
-    profile: PlanningProfile
+    abstraction: Abstraction
     concrete_asp: str
     abstract_asp: str | None
     abstract_task: dict
@@ -46,21 +43,12 @@ class BaseRefinement(ABC):
     def refine(self):
         """Run the refinement strategy and return a planning result."""
 
-    def build_mapping(self, occurrences):
-        """Build and time the domain-specific abstract-to-concrete mapping."""
-        context = self.context
-        with timed_phase(context.logger, "Mapping generation time") as timing:
-            mapping, _ = context.profile.build_mapping(
-                occurrences, context.abstraction.abstract_name, context.abstraction.objects
-            )
-        return mapping, timing.elapsed
-
     def solve_concrete(self, refinement_asp):
         """Run and time the selected concrete solver."""
         context = self.context
         with timed_phase(context.logger, "Concrete solving time") as timing:
             success, plan, operation_count = solve_decrementally(
-                join_asp(context.concrete_asp, refinement_asp), context.horizon
+                "\n".join((context.concrete_asp, refinement_asp)), context.horizon
             )
         self.concrete_solve_time += timing.elapsed
         self.solver_operations += operation_count

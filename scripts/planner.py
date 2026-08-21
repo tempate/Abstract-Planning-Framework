@@ -12,12 +12,10 @@ from core.planning.config import (
     DEFAULT_ENCODING,
     DEFAULT_HORIZON,
     DEFAULT_PLAN_SOURCE,
-    DEFAULT_PROFILE_NAME,
     DEFAULT_TIME_STEP,
     AbstractPlanningConfig,
     PlanningConfig,
 )
-from core.profiles.factory import PROFILE_TYPES
 
 from .utils.arguments import nonnegative_int, positive_int
 from .utils.reporting import print_planning_result
@@ -35,7 +33,7 @@ def main():
     abstraction = result.get("abstraction")
     if abstraction is not None:
         print(
-            f"Collapsed {abstraction['concrete_objects']} into {abstraction['abstract_symbol']} "
+            f"Collapsed {abstraction['objects_to_abstract']} into {abstraction['abstract_symbol']} "
             f"(type={abstraction['object_type']})"
         )
     print_planning_result(result, get_logger())
@@ -56,11 +54,10 @@ def _compute(args):
         return compute_abstract_plan(
             AbstractPlanningConfig(
                 **common,
-                objects=args.objects,
+                objects_to_abstract=args.objects_to_abstract,
                 abstract_name=args.abstract_name,
                 bliss_time_limit=args.bliss_time_limit,
                 plan_source=args.plan_source,
-                profile_name=args.profile,
             )
         )
     raise ValueError(f"Unknown planning mode: {args.mode}")
@@ -83,13 +80,7 @@ def _argument_parser():
 
     # Abstract planning arguments
     abstract = argparse.ArgumentParser(add_help=False)
-    abstract.add_argument(
-        "--profile",
-        choices=sorted(PROFILE_TYPES),
-        default=DEFAULT_PROFILE_NAME,
-        help="Domain-specific mapping and refinement configuration",
-    )
-    abstract.add_argument("--objects", nargs="+", help="Objects to collapse; omit to use PDDL Symmetries")
+    abstract.add_argument("--objects-to-abstract", nargs="+", help="Objects to collapse; omit to use PDDL Symmetries")
     abstract.add_argument("--abstract-name", help="Name of the collapsed object")
     abstract.add_argument(
         "--plan-source",

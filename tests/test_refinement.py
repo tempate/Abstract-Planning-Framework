@@ -1,11 +1,9 @@
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
-from unittest.mock import Mock
 
 from core.planning.abstract import _select_abstract_horizon
-from core.planning.config import AbstractPlanningConfig
+from core.planning.plan import PlanAction
 from core.planning.refinement.clingo import ClingoRefinement
 from core.planning.refinement.fast_downward import FastDownwardRefinement
 from core.planning.refinement.factory import get_refinement_strategy
@@ -31,18 +29,6 @@ class RefinementStrategyTests(unittest.TestCase):
         self.assertIsInstance(get_refinement_strategy("clingo", context), ClingoRefinement)
         self.assertIsInstance(get_refinement_strategy("fd", context), FastDownwardRefinement)
 
-    def test_mapping_receives_resolved_abstraction_values(self):
-        profile = Mock()
-        config = AbstractPlanningConfig("domain.pddl", "problem.pddl")
-        abstraction = SimpleNamespace(abstract_name="hangarabs", objects=("hangar1", "hangar2"))
-        context = SimpleNamespace(config=config, abstraction=abstraction, profile=profile, logger=Mock())
-        profile.build_mapping.return_value = ("mapping.", {})
-
-        mapping, _ = ClingoRefinement(context).build_mapping("occurrences.")
-
-        self.assertEqual(mapping, "mapping.")
-        profile.build_mapping.assert_called_once_with("occurrences.", "hangarabs", ("hangar1", "hangar2"))
-
     def test_fast_downward_plan_conversion_skips_comments_and_numbers_steps(self):
         plan = """
 ; cost = 3
@@ -55,15 +41,15 @@ class RefinementStrategyTests(unittest.TestCase):
             source = Path(directory, "sas_plan")
             source.write_text(plan, encoding="utf-8")
 
-            atoms = FastDownwardRefinement.plan_to_abstract_atoms(object(), source)
+            abstract_plan = FastDownwardRefinement.read_abstract_plan(object(), source)
 
             self.assertEqual(
-                atoms,
-                [
-                    'occurs_abstract(action(("load","p0","t0","l0")), 1).',
-                    'occurs_abstract(action(("drive","t0","l0","l1","level0","level1","level1")), 2).',
-                    'occurs_abstract(action("wait"), 3).',
-                ],
+                abstract_plan,
+                (
+                    PlanAction("load", ("p0", "t0", "l0"), 1),
+                    PlanAction("drive", ("t0", "l0", "l1", "level0", "level1", "level1"), 2),
+                    PlanAction("wait", (), 3),
+                ),
             )
 
 

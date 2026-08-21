@@ -9,7 +9,6 @@ DEFAULT_HORIZON = None
 DEFAULT_ENCODING = "exact"
 DEFAULT_TIME_STEP = False
 DEFAULT_PLAN_SOURCE = "clingo"
-DEFAULT_PROFILE_NAME = "beluga"
 
 
 @dataclass(frozen=True)
@@ -33,12 +32,11 @@ class PlanningConfig:
 class AbstractPlanningConfig(PlanningConfig):
     """Complete input configuration for an abstraction-based planning run."""
 
-    objects: Sequence[str] | None = None
+    objects_to_abstract: Sequence[str] | None = None
     abstract_name: str | None = None
     plan_source: str = DEFAULT_PLAN_SOURCE
-    profile_name: str = DEFAULT_PROFILE_NAME
     bliss_time_limit: int = 300
 
     def __post_init__(self):
-        if self.objects is not None:
-            object.__setattr__(self, "objects", tuple(self.objects))
+        if self.objects_to_abstract is not None:
+            object.__setattr__(self, "objects_to_abstract", tuple(self.objects_to_abstract))

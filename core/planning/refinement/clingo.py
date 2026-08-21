@@ -1,8 +1,8 @@
 """Clingo-guided decremental concrete planning."""
 
-from core.asp import format_abstract_occurrences, join_asp
 from core.execution import timed_phase
-from core.integrations.clingo import run_clingo
+from core.integrations.clingo import parse_plan_actions, run_clingo
+from core.planning.mapping import build_mapping
 from core.planning.refinement.base import BaseRefinement
 
 
@@ -26,12 +26,12 @@ class ClingoRefinement(BaseRefinement):
         for atom in abstract_atoms:
             context.logger.info(f"  {atom}")
 
-        with timed_phase(context.logger, "Abstract occurrence generation time"):
-            occurrences = format_abstract_occurrences(abstract_atoms)
+        with timed_phase(context.logger, "Abstract plan generation time"):
+            abstract_plan = parse_plan_actions(abstract_atoms)
 
-        mapping, _ = self.build_mapping(occurrences)
+        mapping = build_mapping(abstract_plan, context.abstraction)
 
-        success, plan, _ = self.solve_concrete(join_asp(occurrences, mapping))
+        success, plan, _ = self.solve_concrete(mapping)
         if success:
             self.log_success(plan)
         else:

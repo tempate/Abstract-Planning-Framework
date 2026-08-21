@@ -33,7 +33,7 @@ class ModelAbstractionTests(unittest.TestCase):
         result_objects = {item.name for item in result.problem.all_objects}
         self.assertTrue({"hangar1", "hangar2", "hangar3"}.isdisjoint(result_objects))
         self.assertIn("hangarabs", result_objects)
-        self.assertEqual(result.object_type, "hangar")
+        self.assertEqual(result.abstraction.object_type, "hangar")
         self.assertEqual([item.action for item in result.removed_deletes], ["deliver-to-hangar"])
         serialized = write_problem(result.problem)
         for selected in ("hangar1", "hangar2", "hangar3"):
