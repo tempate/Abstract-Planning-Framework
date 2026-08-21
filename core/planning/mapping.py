@@ -1,4 +1,4 @@
-"""Generic mapping from abstract action occurrences to concrete actions."""
+"""Generic mapping from an abstract plan to concrete actions."""
 
 import csv
 import json
@@ -11,14 +11,14 @@ OCCURRENCE_VALIDATION_CONSTRAINT = ":- occurs(Action, T), not action(Action)."
 _TUPLE_ACTION = re.compile(r"^action\(\((.*)\)\)$")
 
 
-def build_mapping(occurrences, abstract_name, objects):
+def build_mapping(abstract_plan, abstract_name, objects):
     """Map an abstract plan to compatible grounded concrete actions.
 
     Arguments equal to ``abstract_name`` become independent variables ranging
     over the selected symmetry class.  The concrete ASP ``action/1`` relation
     then limits the choices to grounded actions that actually exist.
     """
-    abstract_actions = parse_abstract_actions(occurrences)
+    abstract_actions = parse_abstract_actions(abstract_plan)
     mapping_rules = [f"concrete_object({_quote(name)})." for name in objects]
 
     for abstract_action, time_step in abstract_actions:
@@ -39,7 +39,7 @@ def build_mapping(occurrences, abstract_name, objects):
             )
 
     logger = get_logger()
-    logger.info(f"[MAP] Abstract occurrences={len(abstract_actions)}")
+    logger.info(f"[MAP] Abstract plan actions={len(abstract_actions)}")
     logger.info("[MAP] Mapping implementation=grounded-action compatibility")
     return join_asp(*mapping_rules, OCCURRENCE_VALIDATION_CONSTRAINT)
 

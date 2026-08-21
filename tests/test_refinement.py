@@ -38,10 +38,10 @@ class RefinementStrategyTests(unittest.TestCase):
         context = SimpleNamespace(config=config, abstraction=abstraction, logger=Mock())
         build_mapping.return_value = "mapping."
 
-        mapping, _ = ClingoRefinement(context).build_mapping("occurrences.")
+        mapping, _ = ClingoRefinement(context).build_mapping("abstract plan.")
 
         self.assertEqual(mapping, "mapping.")
-        build_mapping.assert_called_once_with("occurrences.", "hangarabs", ("hangar1", "hangar2"))
+        build_mapping.assert_called_once_with("abstract plan.", "hangarabs", ("hangar1", "hangar2"))
 
     def test_fast_downward_plan_conversion_skips_comments_and_numbers_steps(self):
         plan = """

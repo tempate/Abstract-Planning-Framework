@@ -1,6 +1,6 @@
 """Fast Downward abstract-plan refinement strategy."""
 
-from core.asp import format_abstract_occurrences, join_asp
+from core.asp import format_abstract_plan, join_asp
 from core.execution import timed_phase
 from core.planning.refinement.base import BaseRefinement
 
@@ -12,12 +12,12 @@ class FastDownwardRefinement(BaseRefinement):
         context = self.context
         context.logger.info("Using Fast Downward plan")
 
-        with timed_phase(context.logger, "Abstract occurrences from Fast Downward"):
+        with timed_phase(context.logger, "Abstract plan generation time"):
             abstract_atoms = self.plan_to_abstract_atoms(context.abstract_task["planFile"])
-            occurrences = format_abstract_occurrences(abstract_atoms)
+            abstract_plan = format_abstract_plan(abstract_atoms)
 
-        mapping, _ = self.build_mapping(occurrences)
-        success, plan, _ = self.solve_concrete(join_asp(occurrences, mapping))
+        mapping, _ = self.build_mapping(abstract_plan)
+        success, plan, _ = self.solve_concrete(join_asp(abstract_plan, mapping))
 
         if success:
             self.log_success(plan)

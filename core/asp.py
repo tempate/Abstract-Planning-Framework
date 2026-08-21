@@ -16,8 +16,8 @@ def parse_abstract_actions(asp):
     return sorted(actions, key=lambda item: item[1])
 
 
-def format_abstract_occurrences(atoms):
-    """Return abstract occurrence facts for the supplied occurrence atoms."""
+def format_abstract_plan(atoms):
+    """Return an abstract plan for the supplied action atoms."""
     statements = []
     for atom in atoms:
         atom = atom.strip()

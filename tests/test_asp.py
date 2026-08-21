@@ -1,6 +1,6 @@
 import unittest
 
-from core.asp import format_abstract_occurrences, join_asp, parse_abstract_actions
+from core.asp import format_abstract_plan, join_asp, parse_abstract_actions
 
 
 class AbstractProgramTests(unittest.TestCase):
@@ -27,7 +27,7 @@ occurs_abstract(action(("load","p0","t0","l0")), 1).
         asp = 'occurs_abstract(action(("move","a","b")), 7).\n'
         self.assertEqual(list(parse_abstract_actions(asp)), [('action(("move","a","b"))', 7)])
 
-    def test_write_occurrences_normalizes_supported_atoms(self):
+    def test_format_abstract_plan_normalizes_supported_atoms(self):
         atoms = [
             'occurs(action(("load","p0","t0","l0")),1)',
             "cost(4)",
@@ -35,7 +35,7 @@ occurs_abstract(action(("load","p0","t0","l0")), 1).
         ]
 
         self.assertEqual(
-            format_abstract_occurrences(atoms),
+            format_abstract_plan(atoms),
             "\n".join(
                 [
                     'occurs_abstract(action(("load","p0","t0","l0")),1).',
