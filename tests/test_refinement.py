@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 
 from core.planning.abstract import _select_abstract_horizon
+from core.planning.plan import PlanAction
 from core.planning.refinement.clingo import ClingoRefinement
 from core.planning.refinement.fast_downward import FastDownwardRefinement
 from core.planning.refinement.factory import get_refinement_strategy
@@ -40,15 +41,15 @@ class RefinementStrategyTests(unittest.TestCase):
             source = Path(directory, "sas_plan")
             source.write_text(plan, encoding="utf-8")
 
-            atoms = FastDownwardRefinement.plan_to_abstract_atoms(object(), source)
+            abstract_plan = FastDownwardRefinement.read_abstract_plan(object(), source)
 
             self.assertEqual(
-                atoms,
-                [
-                    'occurs_abstract(action(("load","p0","t0","l0")), 1).',
-                    'occurs_abstract(action(("drive","t0","l0","l1","level0","level1","level1")), 2).',
-                    'occurs_abstract(action("wait"), 3).',
-                ],
+                abstract_plan,
+                (
+                    PlanAction("load", ("p0", "t0", "l0"), 1),
+                    PlanAction("drive", ("t0", "l0", "l1", "level0", "level1", "level1"), 2),
+                    PlanAction("wait", (), 3),
+                ),
             )
 
 

@@ -5,12 +5,30 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from core.integrations.clingo import collect_plan, create_control
+from core.integrations.clingo import collect_plan, create_control, parse_plan_actions
 from core.integrations.fast_downward import _get_command, _run_task, calc_horizon
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
+from core.planning.plan import PlanAction
 
 
 class ClingoIntegrationTests(unittest.TestCase):
+    def test_parse_plan_actions_ignores_other_atoms_and_orders_actions(self):
+        atoms = [
+            'occurs(action(("unload","p0","t0","l1")),3)',
+            "cost(4)",
+            'occurs(action(("load","p0","t0","l0")),1)',
+            'occurs(action("wait"),2)',
+        ]
+
+        self.assertEqual(
+            parse_plan_actions(atoms),
+            (
+                PlanAction("load", ("p0", "t0", "l0"), 1),
+                PlanAction("wait", (), 2),
+                PlanAction("unload", ("p0", "t0", "l1"), 3),
+            ),
+        )
+
     def test_control_receives_the_requested_horizon(self):
         program = "step(1..horizon).\n#show step/1.\n"
         plan = collect_plan(create_control(program, horizon=3))
