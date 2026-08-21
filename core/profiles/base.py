@@ -8,7 +8,7 @@ from core.execution import get_logger
 OCCURRENCE_VALIDATION_CONSTRAINT = ":- occurs(Action, T), not action(Action)."
 
 
-class BasePlanner(ABC):
+class PlanningProfile(ABC):
     """Base class for domain-specific abstraction mapping and refinement."""
 
     profile_name = ""
@@ -22,7 +22,7 @@ class BasePlanner(ABC):
             raise ValueError(f"An abstract object mapping is required by the {self.profile_name} profile")
 
     @abstractmethod
-    def build_mapping(self, occurrences, abstract_symbol, concrete_objects):
+    def build_mapping(self, occurrences, abstract_name, objects):
         """Return the concrete mapping for an abstract occurrence sequence."""
 
     @staticmethod

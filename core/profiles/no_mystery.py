@@ -1,17 +1,17 @@
 import re
 
 from core.asp import parse_abstract_actions
-from core.planners.BasePlanner import BasePlanner
+from core.profiles.base import PlanningProfile
 
 
-class NoMysteryPlanner(BasePlanner):
+class NoMysteryProfile(PlanningProfile):
     """NoMystery's fuel-aware mapping and drive-action refinement."""
 
     profile_name = "no_mystery"
     run_directory = "noMystery"
     append_concrete_pddl_facts = True
 
-    def build_mapping(self, occurrences, abstract_symbol, concrete_objects):
+    def build_mapping(self, occurrences, abstract_name, objects):
         abstract_actions = parse_abstract_actions(occurrences)
 
         mapping_rules = []
@@ -35,10 +35,10 @@ class NoMysteryPlanner(BasePlanner):
 }} 1 :-
     occurs_abstract({abstract_action},{time_step}), {switch}.""")
                 is_abstract = True
-            elif abstract_symbol and abstract_symbol in abstract_action:
+            elif abstract_name and abstract_name in abstract_action:
                 choices = [
-                    f"occurs({abstract_action.replace(abstract_symbol, concrete_object)}, {time_step})"
-                    for concrete_object in concrete_objects or []
+                    f"occurs({abstract_action.replace(abstract_name, concrete_object)}, {time_step})"
+                    for concrete_object in objects or []
                 ]
                 mapping_rules.append(
                     f"1 {{ {'; '.join(choices)} }} 1 :- occurs_abstract({abstract_action},{time_step}), {switch}."

@@ -5,7 +5,7 @@ import argparse
 from core.execution import get_logger
 from core.integrations.pddl_symmetries import PddlSymmetriesError
 from core.integrations.unified_planning import PddlError
-from core.model_abstraction import AbstractionError
+from core.abstraction.model import AbstractionError
 from core.planning.abstract import compute_abstract_plan
 from core.planning.concrete import compute_concrete_plan
 from core.planning.config import (
@@ -17,7 +17,7 @@ from core.planning.config import (
     AbstractPlanningConfig,
     PlanningConfig,
 )
-from core.planners.factory import PLANNER_TYPES
+from core.profiles.factory import PROFILE_TYPES
 
 from .utils.arguments import nonnegative_int, positive_int
 from .utils.reporting import print_planning_result
@@ -77,15 +77,29 @@ def _argument_parser():
         help="Planning horizon; omit to infer it with Fast Downward",
     )
     shared.add_argument("--encoding", default=DEFAULT_ENCODING, help="ASP encoding type")
-    shared.add_argument("--time-step", action="store_true", default=DEFAULT_TIME_STEP, help="Use time-step encoding")
+    shared.add_argument(
+        "--time-step", action="store_true", default=DEFAULT_TIME_STEP, help="Enable time-step based encoding"
+    )
 
     # Abstract planning arguments
     abstract = argparse.ArgumentParser(add_help=False)
-    abstract.add_argument("--profile", choices=sorted(PLANNER_TYPES), default=DEFAULT_PROFILE_NAME)
+    abstract.add_argument(
+        "--profile",
+        choices=sorted(PROFILE_TYPES),
+        default=DEFAULT_PROFILE_NAME,
+        help="Domain-specific mapping and refinement configuration",
+    )
     abstract.add_argument("--objects", nargs="+", help="Objects to collapse; omit to use PDDL Symmetries")
     abstract.add_argument("--abstract-name", help="Name of the collapsed object")
-    abstract.add_argument("--plan-source", choices=["fd", "clingo"], default=DEFAULT_PLAN_SOURCE)
-    abstract.add_argument("--bliss-time-limit", type=positive_int, default=300)
+    abstract.add_argument(
+        "--plan-source",
+        choices=["fd", "clingo"],
+        default=DEFAULT_PLAN_SOURCE,
+        help="Use a Fast Downward plan directly or compute one with Clingo",
+    )
+    abstract.add_argument(
+        "--bliss-time-limit", type=positive_int, default=300, help="PDDL Symmetries search limit in seconds"
+    )
 
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_subparsers(dest="mode", required=True, title="planning modes")

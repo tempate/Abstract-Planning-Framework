@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 from core.integrations.pddl_symmetries import PddlSymmetriesError, find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.model_abstraction import rank_symmetry_classes
-from core.planning.abstraction import prepare_abstraction
+from core.abstraction.model import rank_symmetry_classes
+from core.abstraction.symmetry import prepare_abstraction
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BELUGA_CONCRETE = PROJECT_ROOT / "data" / "beluga" / "concrete" / "standard"
@@ -66,7 +66,7 @@ class SymmetrySelectionTests(unittest.TestCase):
 
         self.assertEqual(ranked[0].objects, ("b1", "b2", "b3"))
 
-    @patch("core.planning.abstraction.find_symmetric_object_sets")
+    @patch("core.abstraction.symmetry.find_symmetric_object_sets")
     def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self, find_classes):
         find_classes.return_value = [
             ["factory_trailer_1", "factory_trailer_2"],

@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import read_problem
-from core.model_abstraction import (
+from core.abstraction.model import (
     AbstractionError,
     AbstractionResult,
     RankedSymmetryClass,
