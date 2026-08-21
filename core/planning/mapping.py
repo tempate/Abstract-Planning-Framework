@@ -2,7 +2,6 @@
 
 import json
 
-from core.asp import join_asp
 from core.execution import get_logger
 
 
@@ -33,7 +32,7 @@ def build_mapping(abstract_plan, abstraction):
     logger = get_logger()
     logger.info(f"[MAP] Abstract plan actions={len(abstract_plan)}")
     logger.info("[MAP] Mapping implementation=grounded-action compatibility")
-    return join_asp(*mapping_rules)
+    return "\n".join(mapping_rules)
 
 
 def _action_pattern(action, abstraction):

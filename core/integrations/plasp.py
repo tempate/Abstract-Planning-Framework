@@ -3,7 +3,6 @@
 import os
 import subprocess
 
-from core.asp import join_asp
 from core.paths import (
     ABSTRACT_TIME_STEPS_ENCODING,
     ACTION_PER_TIME_STEP_ENCODING,
@@ -40,7 +39,8 @@ def sas_to_asp(sas_path, encoding_type="exact", abstract_time_steps=False):
 
     if completed_process.returncode != 0:
         raise RuntimeError(f"plasp failed:\n{completed_process.stderr}")
-    return join_asp(encoding, time_encoding, completed_process.stdout)
+    fragments = (encoding, time_encoding, completed_process.stdout)
+    return "\n".join(fragment.rstrip("\n") for fragment in fragments) + "\n"
 
 
 def add_switch_to_asp_rule(asp, encoding_type="exact"):

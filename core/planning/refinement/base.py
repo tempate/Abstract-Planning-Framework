@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pprint import pformat
 
-from core.asp import join_asp
 from core.execution import PhaseTiming, timed_phase
 from core.abstraction.model import Abstraction
 from core.planning.config import AbstractPlanningConfig
@@ -49,7 +48,7 @@ class BaseRefinement(ABC):
         context = self.context
         with timed_phase(context.logger, "Concrete solving time") as timing:
             success, plan, operation_count = solve_decrementally(
-                join_asp(context.concrete_asp, refinement_asp), context.horizon
+                "\n".join((context.concrete_asp, refinement_asp)), context.horizon
             )
         self.concrete_solve_time += timing.elapsed
         self.solver_operations += operation_count
