@@ -9,16 +9,16 @@ python_bin="${PYTHON_BIN:-python}"
 run_no_mystery() {
     "$python_bin" -m scripts.planner concrete \
         --domain data/no_mystery/concrete/domain.pddl \
-        --problem data/no_mystery/concrete/p01.pddl \
-        --bliss-time-limit 300 \
-        --horizon 11 \
+        --problem data/no_mystery/concrete/p03.pddl \
+        --horizon 15 \
         --encoding exact
 
     "$python_bin" -m scripts.planner abstract \
         --profile no_mystery \
         --domain data/no_mystery/concrete/domain.pddl \
-        --problem data/no_mystery/concrete/p01.pddl \
-        --horizon 11 \
+        --problem data/no_mystery/concrete/p03.pddl \
+        --bliss-time-limit 300 \
+        --horizon 15 \
         --encoding exact \
         --plan-source clingo
 }

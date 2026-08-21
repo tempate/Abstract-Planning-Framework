@@ -46,10 +46,7 @@ class ExampleWorkflowTests(unittest.TestCase):
         self.assertIn("Collapsed [", result.stdout)
 
     def test_no_mystery_refinement_uses_the_single_problem_workflow(self):
-        result = self._run("refinement", "no_mystery")
-
-        self._assert_success(result, expected_plans=2)
-        self.assertIn("Collapsed [", result.stdout)
+        self._assert_refinement(self._run("refinement", "no_mystery"))
 
     def test_beluga_concrete_example_finds_a_plan(self):
         self._assert_success(self._run("concrete", "beluga"))
@@ -61,8 +58,11 @@ class ExampleWorkflowTests(unittest.TestCase):
         self.assertIn("Collapsed ['hangar1', 'hangar2', 'hangar3'] into hangar_abs", result.stdout)
         self.assertIn("Decrements: 0", result.stdout)
 
-    def test_beluga_trailer_refinement_relaxes_the_abstract_plan(self):
-        self._assert_refinement(self._run("refinement", "beluga"))
+    def test_beluga_trailer_abstraction_is_realizable_without_relaxation(self):
+        result = self._run("refinement", "beluga")
+
+        self._assert_success(result, expected_plans=2)
+        self.assertIn("Decrements: 0", result.stdout)
 
 
 if __name__ == "__main__":

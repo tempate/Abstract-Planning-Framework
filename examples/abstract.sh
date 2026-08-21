@@ -10,9 +10,9 @@ run_no_mystery() {
     "$python_bin" -m scripts.planner abstract \
         --profile no_mystery \
         --domain data/no_mystery/concrete/domain.pddl \
-        --problem data/no_mystery/concrete/p02.pddl \
+        --problem data/no_mystery/concrete/p03.pddl \
         --bliss-time-limit 300 \
-        --horizon 14 \
+        --horizon 15 \
         --encoding exact \
         --plan-source clingo
 }
