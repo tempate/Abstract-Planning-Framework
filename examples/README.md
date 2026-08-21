@@ -31,5 +31,5 @@ Omit `--objects` to let PDDL Symmetries discover and rank the object classes,
 as the NoMystery examples do. Automatic selection requires the pybliss setup
 described in the main README.
 
-All examples use explicit horizons. Pass `--help` to the underlying Python
-modules in `scripts/` for the complete CLI reference.
+All examples use explicit horizons. Run `python -m scripts.planner --help` for
+the two planning modes and their complete CLI reference.

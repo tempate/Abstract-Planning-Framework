@@ -2,12 +2,13 @@ import os
 import subprocess
 import unittest
 from argparse import Namespace
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from scripts import abstract_planner, concrete_planner
-from scripts.abstract_planner import _argument_parser as abstract_argument_parser
-from scripts.concrete_planner import _argument_parser as concrete_argument_parser
+from scripts import planner
+from scripts.planner import _argument_parser
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -49,7 +50,7 @@ class ShellExampleTests(unittest.TestCase):
         result = self._run("abstract", "beluga", "/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("-m scripts.abstract_planner", result.stdout)
+        self.assertIn("-m scripts.planner abstract", result.stdout)
         self.assertIn("--domain data/beluga/concrete/standard/domain.pddl", result.stdout)
         self.assertIn("--bliss-time-limit 300", result.stdout)
         self.assertNotIn("--objects", result.stdout)
@@ -58,7 +59,7 @@ class ShellExampleTests(unittest.TestCase):
         result = self._run("refinement", "beluga", "/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("-m scripts.abstract_planner", result.stdout)
+        self.assertIn("-m scripts.planner abstract", result.stdout)
         self.assertIn("--objects beluga_trailer_1 beluga_trailer_2", result.stdout)
 
     def test_no_mystery_performance_uses_the_same_p04_problem(self):
@@ -79,28 +80,40 @@ class ShellExampleTests(unittest.TestCase):
 
 
 class PlannerHelpTests(unittest.TestCase):
+    def _help(self, mode):
+        output = StringIO()
+        with self.assertRaises(SystemExit), redirect_stdout(output):
+            _argument_parser().parse_args([mode, "--help"])
+        return output.getvalue()
+
+    def test_top_level_help_lists_both_planning_modes(self):
+        help_text = _argument_parser().format_help()
+
+        self.assertIn("concrete", help_text)
+        self.assertIn("abstract", help_text)
+
     def test_concrete_help_displays_shared_defaults(self):
-        help_text = concrete_argument_parser().format_help()
+        help_text = self._help("concrete")
 
         self.assertIn("ASP encoding type (default: exact)", help_text)
         self.assertIn("time-step based encoding (default: False)", help_text)
 
     def test_abstract_help_displays_abstract_defaults(self):
-        help_text = abstract_argument_parser().format_help()
+        help_text = self._help("abstract")
 
         self.assertIn("(default: beluga)", help_text)
         self.assertIn("(default: clingo)", help_text)
 
-    def test_abstract_planner_accepts_one_concrete_task_for_automatic_abstraction(self):
-        args = abstract_argument_parser().parse_args(["--domain", "domain.pddl", "--problem", "problem.pddl"])
+    def test_abstract_mode_accepts_one_concrete_task_for_automatic_abstraction(self):
+        args = _argument_parser().parse_args(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(args.domain, "domain.pddl")
         self.assertEqual(args.problem, "problem.pddl")
         self.assertIsNone(args.objects)
 
-    def test_abstract_planner_accepts_explicit_objects(self):
-        args = abstract_argument_parser().parse_args(
-            ["--domain", "domain.pddl", "--problem", "problem.pddl", "--objects", "a", "b"]
+    def test_abstract_mode_accepts_explicit_objects(self):
+        args = _argument_parser().parse_args(
+            ["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl", "--objects", "a", "b"]
         )
 
         self.assertEqual(args.objects, ["a", "b"])
@@ -110,21 +123,22 @@ class PlannerExitStatusTests(unittest.TestCase):
     def test_concrete_cli_returns_failure_when_no_plan_is_found(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
-            domain="domain.pddl", problem="problem.pddl", horizon=1, encoding="exact", time_step=False
+            mode="concrete", domain="domain.pddl", problem="problem.pddl", horizon=1, encoding="exact", time_step=False
         )
         with (
-            patch.object(concrete_planner, "_argument_parser", return_value=parser),
-            patch.object(concrete_planner, "compute_concrete_plan", return_value={"success": False}),
-            patch.object(concrete_planner, "print_planning_result"),
-            patch.object(concrete_planner, "get_logger"),
+            patch.object(planner, "_argument_parser", return_value=parser),
+            patch.object(planner, "compute_concrete_plan", return_value={"success": False}),
+            patch.object(planner, "print_planning_result"),
+            patch.object(planner, "get_logger"),
         ):
-            status = concrete_planner.main()
+            status = planner.main()
 
         self.assertEqual(status, 1)
 
     def test_abstract_cli_returns_failure_when_no_plan_is_found(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
+            mode="abstract",
             profile="no_mystery",
             domain="domain.pddl",
             problem="problem.pddl",
@@ -137,18 +151,19 @@ class PlannerExitStatusTests(unittest.TestCase):
             plan_source="clingo",
         )
         with (
-            patch.object(abstract_planner, "_argument_parser", return_value=parser),
-            patch.object(abstract_planner, "compute_abstract_plan", return_value={"success": False}),
-            patch.object(abstract_planner, "print_planning_result"),
-            patch.object(abstract_planner, "get_logger"),
+            patch.object(planner, "_argument_parser", return_value=parser),
+            patch.object(planner, "compute_abstract_plan", return_value={"success": False}),
+            patch.object(planner, "print_planning_result"),
+            patch.object(planner, "get_logger"),
         ):
-            status = abstract_planner.main()
+            status = planner.main()
 
         self.assertEqual(status, 1)
 
     def test_abstract_cli_passes_explicit_selection_to_the_planning_pipeline(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
+            mode="abstract",
             profile="beluga",
             domain="domain.pddl",
             problem="problem.pddl",
@@ -161,12 +176,12 @@ class PlannerExitStatusTests(unittest.TestCase):
             plan_source="clingo",
         )
         with (
-            patch.object(abstract_planner, "_argument_parser", return_value=parser),
-            patch.object(abstract_planner, "compute_abstract_plan", return_value={"success": True}) as compute,
-            patch.object(abstract_planner, "print_planning_result"),
-            patch.object(abstract_planner, "get_logger"),
+            patch.object(planner, "_argument_parser", return_value=parser),
+            patch.object(planner, "compute_abstract_plan", return_value={"success": True}) as compute,
+            patch.object(planner, "print_planning_result"),
+            patch.object(planner, "get_logger"),
         ):
-            status = abstract_planner.main()
+            status = planner.main()
 
         self.assertEqual(status, 0)
         config = compute.call_args.args[0]

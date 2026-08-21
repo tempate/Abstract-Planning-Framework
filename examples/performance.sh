@@ -7,14 +7,14 @@ cd "$repo_root"
 python_bin="${PYTHON_BIN:-python}"
 
 run_no_mystery() {
-    "$python_bin" -m scripts.concrete_planner \
+    "$python_bin" -m scripts.planner concrete \
         --domain data/no_mystery/concrete/domain.pddl \
         --problem data/no_mystery/concrete/p04.pddl \
         --bliss-time-limit 300 \
         --horizon 19 \
         --encoding exact
 
-    "$python_bin" -m scripts.abstract_planner \
+    "$python_bin" -m scripts.planner abstract \
         --profile no_mystery \
         --domain data/no_mystery/concrete/domain.pddl \
         --problem data/no_mystery/concrete/p04.pddl \
@@ -26,13 +26,13 @@ run_no_mystery() {
 run_beluga() {
     local problem="problem_38_s81_j5_r2_oc31_f4"
 
-    "$python_bin" -m scripts.concrete_planner \
+    "$python_bin" -m scripts.planner concrete \
         --domain data/beluga/concrete/standard/domain.pddl \
         --problem "data/beluga/concrete/standard/${problem}.pddl" \
         --horizon 26 \
         --encoding exact
 
-    "$python_bin" -m scripts.abstract_planner \
+    "$python_bin" -m scripts.planner abstract \
         --profile beluga \
         --domain data/beluga/concrete/standard/domain.pddl \
         --problem "data/beluga/concrete/standard/${problem}.pddl" \

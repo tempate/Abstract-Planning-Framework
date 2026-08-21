@@ -60,19 +60,20 @@ abstraction examples.
 ## Command-line tools
 
 ```bash
-python -m scripts.concrete_planner --help
-python -m scripts.abstract_planner --help
+python -m scripts.planner --help
 ```
 
-- `concrete_planner` solves a concrete PDDL task.
-- `abstract_planner` generates an object abstraction from one concrete task,
-  plans abstractly, and realizes the result concretely.
+The planner has two modes:
+
+- `concrete` solves the concrete PDDL task directly.
+- `abstract` generates an object abstraction, solves it, and uses its plan to
+  guide the concrete search.
 
 For example, generate the abstraction automatically and use it to guide the
 concrete search:
 
 ```bash
-python -m scripts.abstract_planner \
+python -m scripts.planner abstract \
     --profile beluga \
     --domain data/beluga/concrete/standard/domain.pddl \
     --problem data/beluga/concrete/standard/problem_3_s45_j3_r2_oc44_f3.pddl \
