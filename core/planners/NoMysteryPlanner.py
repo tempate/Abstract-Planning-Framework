@@ -1,6 +1,6 @@
 import re
 
-from core.asp import read_abstract_actions
+from core.asp import parse_abstract_actions
 from core.planners.BasePlanner import BasePlanner
 
 
@@ -11,8 +11,8 @@ class NoMysteryPlanner(BasePlanner):
     run_directory = "noMystery"
     append_concrete_pddl_facts = True
 
-    def build_mapping(self, occurs_path, map_path, abstract_symbol, concrete_objects):
-        abstract_actions = read_abstract_actions(occurs_path)
+    def build_mapping(self, occurrences, abstract_symbol, concrete_objects):
+        abstract_actions = parse_abstract_actions(occurrences)
 
         mapping_rules = []
         switch_map = {}
@@ -54,4 +54,4 @@ class NoMysteryPlanner(BasePlanner):
                 "atom": f"occurs_abstract({abstract_action},{time_step})",
                 "is_abstract": is_abstract,
             }
-        return self._write_mapping(map_path, mapping_rules, switch_map, "no_mystery")
+        return self._build_mapping(mapping_rules, switch_map, "no_mystery")

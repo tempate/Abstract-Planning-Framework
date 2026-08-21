@@ -4,11 +4,11 @@ from core.execution import get_logger, timed_phase
 from core.integrations.clingo import collect_plan, create_control
 
 
-def solve_decrementally(asp_files, horizon):
+def solve_decrementally(asp, horizon):
     """Relax plan constraints in reverse until a concrete plan is found."""
     logger = get_logger()
     with timed_phase(logger, "[DEC] Runtime"):
-        control = create_control(asp_files, horizon)
+        control = create_control(asp, horizon)
 
         # Collect switches
         switches = []

@@ -1,17 +1,11 @@
-import tempfile
 import unittest
-from pathlib import Path
 
 from core.solvers.decremental import solve_decrementally
 
 
 class DecrementalSolverTests(unittest.TestCase):
     def _solve(self, program):
-        directory = tempfile.TemporaryDirectory()
-        self.addCleanup(directory.cleanup)
-        path = Path(directory.name, "problem.lp")
-        path.write_text(program, encoding="utf-8")
-        return solve_decrementally([str(path)], horizon=1)
+        return solve_decrementally(program, horizon=1)
 
     def test_returns_the_full_plan_without_relaxation_when_it_is_satisfiable(self):
         success, plan, decrements = self._solve("""

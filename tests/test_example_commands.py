@@ -158,8 +158,6 @@ class PlannerExitStatusTests(unittest.TestCase):
         with (
             patch.object(abstract_planner, "_argument_parser", return_value=parser),
             patch.object(abstract_planner, "get_planner", return_value=planner),
-            patch.object(abstract_planner, "get_plan_log_path", return_value=("plan-log.json", "hash")),
-            patch.object(abstract_planner, "initialize_plan_log"),
             patch.object(abstract_planner, "compute_abstract_plan", return_value={"success": False}),
             patch.object(abstract_planner, "print_planning_result"),
             patch.object(abstract_planner, "get_logger"),

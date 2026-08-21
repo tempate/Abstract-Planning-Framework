@@ -2,22 +2,26 @@
 
 import os
 
-from core.execution import create_run_dir, setup_debug_logger, timed_phase
+from core.execution import get_logger, temp_run_dir, timed_phase
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import add_switch_to_asp_rule, append_pddl_facts_to_asp, sas_to_asp
 from core.planning.config import AbstractPlanningConfig
-from core.planning.refinement.BaseRefinement import PlanningPaths, RefinementContext
+from core.planning.refinement.BaseRefinement import RefinementContext
 from core.planning.refinement.factory import get_refinement_strategy
 from core.planners.factory import get_planner
 
 
-def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=None):
+def compute_abstract_plan(config: AbstractPlanningConfig):
     """Prepare an abstract planning run and dispatch its refinement strategy."""
     planner = get_planner(config.profile_name)
     planner.validate_configuration(config.abstract_symbol, config.concrete_objects)
 
-    base_dir, run_id = create_run_dir(planner.run_directory)
-    logger, debug_dir = setup_debug_logger(base_dir)
+    with temp_run_dir(planner.run_directory) as (base_dir, run_id):
+        return _compute_abstract_plan(config, planner, base_dir, run_id)
+
+
+def _compute_abstract_plan(config, planner, base_dir, run_id):
+    logger = get_logger()
 
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
@@ -28,24 +32,28 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
     logger.info(f"Run ID: {run_id}")
     logger.info(f"Base dir: {base_dir}")
 
-    print("Directory:", base_dir)
-
     with timed_phase() as run_timing:
         with timed_phase(logger, "Fast Downward time") as fd_total:
             # Translate the concrete problem into SAS.
-            with open(config.concrete_domain_path, "rb") as domain, open(config.concrete_problem_path, "rb") as problem:
-                concrete_task, concrete_time = run_fast_downward(
-                    os.path.join(base_dir, "concrete"), domain.read(), problem.read(), "concrete", "translate"
-                )
+            concrete_task, concrete_time = run_fast_downward(
+                os.path.join(base_dir, "concrete"),
+                config.concrete_domain_path,
+                config.concrete_problem_path,
+                "concrete",
+                "translate",
+            )
 
             # A Fast Downward plan is needed only when it is the selected plan
             # source or when its length is being used as an automatic horizon.
             fd_task = "plan" if config.plan_source == "fd" or config.horizon is None else "translate"
 
-            with open(config.abstract_domain_path, "rb") as domain, open(config.abstract_problem_path, "rb") as problem:
-                abstract_task, abstract_time = run_fast_downward(
-                    os.path.join(base_dir, "abstract"), domain.read(), problem.read(), "abstract", fd_task
-                )
+            abstract_task, abstract_time = run_fast_downward(
+                os.path.join(base_dir, "abstract"),
+                config.abstract_domain_path,
+                config.abstract_problem_path,
+                "abstract",
+                fd_task,
+            )
 
         fd_timings = {
             "fd_concrete_time": concrete_time,
@@ -56,29 +64,29 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
         horizon = _select_abstract_horizon(config.horizon, abstract_task.get("horizon", 0), config.plan_source)
         logger.info(f"Effective horizon: {horizon}")
 
-        paths = _get_planning_paths(base_dir)
-
         with timed_phase(logger, "Total ASP generation") as asp_total_timing:
 
             # Generate the ASP representation of the concrete problem.
             with timed_phase(logger, "Concrete ASP generation") as concrete_timing:
-                sas_to_asp(concrete_task["sasFile"], paths.concrete_asp, config.encoding, config.time_step)
+                concrete_asp = sas_to_asp(concrete_task["sasFile"], config.encoding, config.time_step)
 
-                add_switch_to_asp_rule(paths.concrete_asp, config.encoding)
+                concrete_asp = add_switch_to_asp_rule(concrete_asp, config.encoding)
                 if planner.append_concrete_pddl_facts:
-                    append_pddl_facts_to_asp(config.concrete_problem_path, paths.concrete_asp)
+                    concrete_asp = append_pddl_facts_to_asp(config.concrete_problem_path, concrete_asp)
 
             # Generate the ASP representation of the abstract problem.
             abstract_time = 0.0
+            abstract_asp = None
             if config.plan_source == "clingo":
                 with timed_phase(logger, "Abstract ASP generation") as abstract_timing:
-                    sas_to_asp(abstract_task["sasFile"], paths.abstract_asp, config.encoding, config.time_step)
+                    abstract_asp = sas_to_asp(abstract_task["sasFile"], config.encoding, config.time_step)
                 abstract_time = abstract_timing.elapsed
 
         context = RefinementContext(
             config=config,
             planner=planner,
-            paths=paths,
+            concrete_asp=concrete_asp,
+            abstract_asp=abstract_asp,
             abstract_task=abstract_task,
             horizon=horizon,
             fd_timings=fd_timings,
@@ -86,27 +94,10 @@ def compute_abstract_plan(config: AbstractPlanningConfig, *, attempt_recorder=No
             abstract_asp_time=abstract_time,
             asp_total_time=asp_total_timing.elapsed,
             total_timing=run_timing,
-            base_dir=base_dir,
-            debug_dir=debug_dir,
+            run_id=run_id,
             logger=logger,
-            attempt_recorder=attempt_recorder,
         )
         return get_refinement_strategy(config.plan_source, context).refine()
-
-
-def _get_planning_paths(base_dir):
-    clingo_directory = os.path.join(base_dir, "clingo")
-
-    # Create the directory for the task if it doesn't exist
-    os.makedirs(clingo_directory, exist_ok=True)
-
-    # Define the paths for the input and output files
-    return PlanningPaths(
-        concrete_asp=os.path.join(base_dir, "output_c.lp"),
-        abstract_asp=os.path.join(base_dir, "abstract", "output_a.lp"),
-        occurrences=os.path.join(clingo_directory, "occurs_abs.lp"),
-        mapping=os.path.join(clingo_directory, "map.lp"),
-    )
 
 
 def _select_abstract_horizon(requested_horizon, plan_horizon, plan_source):

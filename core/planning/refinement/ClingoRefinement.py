@@ -1,7 +1,7 @@
 """Clingo-guided decremental concrete planning."""
 
-from core.asp import write_abstract_occurrences
-from core.execution import copy_iteration_file, save_json_iteration_file, timed_phase
+from core.asp import format_abstract_occurrences, join_asp
+from core.execution import timed_phase
 from core.integrations.clingo import run_clingo
 from core.planning.refinement.BaseRefinement import BaseRefinement
 
@@ -14,7 +14,7 @@ class ClingoRefinement(BaseRefinement):
         context.logger.info("Abstract plan search")
 
         with timed_phase(context.logger, "Abstract solving time") as timing:
-            abstract_atoms = run_clingo([context.paths.abstract_asp], context.horizon)
+            abstract_atoms = run_clingo(context.abstract_asp, context.horizon)
         self.abstract_solve_time = timing.elapsed
 
         if abstract_atoms is None:
@@ -27,19 +27,15 @@ class ClingoRefinement(BaseRefinement):
             context.logger.info(f"  {atom}")
 
         with timed_phase(context.logger, "Abstract occurrence generation time"):
-            write_abstract_occurrences(abstract_atoms, context.paths.occurrences)
-        copy_iteration_file(context.debug_dir, 1, context.paths.occurrences)
+            occurrences = format_abstract_occurrences(abstract_atoms)
 
-        self.build_mapping()
-        copy_iteration_file(context.debug_dir, 1, context.paths.mapping)
+        mapping, _ = self.build_mapping(occurrences)
 
-        success, plan, _ = self.solve_concrete()
+        success, plan, _ = self.solve_concrete(join_asp(occurrences, mapping))
         if success:
             self.log_success(plan)
-            save_json_iteration_file(context.debug_dir, 1, "concrete_plans.json", plan)
         else:
             context.logger.info("No concrete plan found at the selected horizon.")
             context.logger.info("FAILED")
 
-        self.record_attempt(abstract_atoms, success=success, bad_actions=[])
         return self.build_result(success=success, plan=plan)

@@ -13,13 +13,13 @@ _PLAN_FOUND = {0, 1, 2, 3}
 _UNSOLVABLE = {10, 11}
 
 
-def run_fast_downward(base_dir, domain, problem, label, task):
+def run_fast_downward(base_dir, domain_path, problem_path, label, task):
     """Run concrete planning and, when provided, abstract planning."""
     logger = get_logger()
     logger.info("=" * 65)
     logger.info("[FD] Fast Downward started")
 
-    task_result, elapsed_time = _run_task(label, base_dir, domain, problem, task, logger)
+    task_result, elapsed_time = _run_task(label, base_dir, domain_path, problem_path, task, logger)
 
     logger.info(f"[FD] SUMMARY | {elapsed_time:.3f}s")
     logger.info("[FD] Fast Downward finished")
@@ -27,23 +27,17 @@ def run_fast_downward(base_dir, domain, problem, label, task):
     return task_result, elapsed_time
 
 
-def _run_task(label, task_directory, domain, problem, task, logger):
+def _run_task(label, task_directory, domain_path, problem_path, task, logger):
     # Create the directory for the task
     os.makedirs(task_directory, exist_ok=True)
 
     # Define the paths for the input and output files
     paths = {
-        "domain": os.path.join(task_directory, "domain.pddl"),
-        "problem": os.path.join(task_directory, "problem.pddl"),
+        "domain": os.fspath(domain_path),
+        "problem": os.fspath(problem_path),
         "sas": os.path.join(task_directory, "output.sas"),
         "plan": os.path.join(task_directory, "sas_plan"),
     }
-
-    # Write input files to the temporary directory
-    with open(paths["domain"], "wb") as domain_file:
-        domain_file.write(domain)
-    with open(paths["problem"], "wb") as problem_file:
-        problem_file.write(problem)
 
     # Run Fast Downward for the task
     logger.info(f"[FD] Running {label} planner")

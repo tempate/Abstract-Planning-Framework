@@ -1,6 +1,4 @@
-import tempfile
 import unittest
-from pathlib import Path
 
 from core.planners.BelugaPlanner import BelugaPlanner
 from core.planners.NoMysteryPlanner import NoMysteryPlanner
@@ -30,13 +28,7 @@ class PlannerFactoryTests(unittest.TestCase):
 
 class MappingTests(unittest.TestCase):
     def _build(self, planner, occurrences, symbol=None, objects=None):
-        directory = tempfile.TemporaryDirectory()
-        self.addCleanup(directory.cleanup)
-        occurs_path = Path(directory.name, "occurrences.lp")
-        mapping_path = Path(directory.name, "mapping.lp")
-        occurs_path.write_text(occurrences, encoding="utf-8")
-        switch_map = planner.build_mapping(occurs_path, mapping_path, symbol, objects)
-        return mapping_path.read_text(encoding="utf-8"), switch_map
+        return planner.build_mapping(occurrences, symbol, objects)
 
     def test_beluga_maps_concrete_actions_directly_and_abstract_objects_by_choice(self):
         occurrences = """\

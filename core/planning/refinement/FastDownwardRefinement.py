@@ -1,5 +1,6 @@
 """Fast Downward abstract-plan refinement strategy."""
 
+from core.asp import format_abstract_occurrences, join_asp
 from core.execution import timed_phase
 from core.planning.refinement.BaseRefinement import BaseRefinement
 
@@ -12,10 +13,11 @@ class FastDownwardRefinement(BaseRefinement):
         context.logger.info("Using Fast Downward plan")
 
         with timed_phase(context.logger, "Abstract occurrences from Fast Downward"):
-            abstract_atoms = self.plan_to_abstract_atoms(context.abstract_task["planFile"], context.paths.occurrences)
+            abstract_atoms = self.plan_to_abstract_atoms(context.abstract_task["planFile"])
+            occurrences = format_abstract_occurrences(abstract_atoms)
 
-        self.build_mapping()
-        success, plan, _ = self.solve_concrete()
+        mapping, _ = self.build_mapping(occurrences)
+        success, plan, _ = self.solve_concrete(join_asp(occurrences, mapping))
 
         if success:
             self.log_success(plan)
@@ -23,10 +25,9 @@ class FastDownwardRefinement(BaseRefinement):
             context.logger.info("No concrete plan found at the selected horizon.")
             context.logger.info("FAILED")
 
-        self.record_attempt(abstract_atoms, success=success, bad_actions=[])
         return self.build_result(success=success, plan=plan)
 
-    def plan_to_abstract_atoms(self, plan_file_path, output_path):
+    def plan_to_abstract_atoms(self, plan_file_path):
         """Convert a Fast Downward plan into ``occurs_abstract`` facts."""
         abstract_atoms = []
         with open(plan_file_path, "r") as plan_file:
@@ -44,6 +45,4 @@ class FastDownwardRefinement(BaseRefinement):
                 abstract_atoms.append(f"occurs_abstract({action}, {time_step}).")
                 time_step += 1
 
-        with open(output_path, "w") as output_file:
-            output_file.write("\n".join(abstract_atoms))
         return abstract_atoms

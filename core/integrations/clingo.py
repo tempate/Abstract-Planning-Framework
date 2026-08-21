@@ -9,27 +9,25 @@ from core.execution import get_logger, timed_phase
 THREADS = os.cpu_count() or 1
 
 
-def run_clingo(asp_files, horizon):
-    """Solve a collection of ASP files and return their shown atoms."""
+def run_clingo(asp, horizon):
+    """Solve an in-memory ASP program and return its shown atoms."""
     logger = get_logger()
     logger.info("[CLINGO] Starting solve")
     logger.info(f"[CLINGO] Horizon={horizon}")
     logger.info(f"[CLINGO] Threads={THREADS}")
-    logger.info(f"[CLINGO] Files={asp_files}")
 
     with timed_phase(logger, "[CLINGO] Solve runtime"):
-        plan = collect_plan(create_control(asp_files, horizon))
+        plan = collect_plan(create_control(asp, horizon))
     logger.info(f"[CLINGO] Plan found={plan is not None}")
     return plan
 
 
-def create_control(asp_files, horizon):
-    """Load and ground ASP files in a configured Clingo control."""
+def create_control(asp, horizon):
+    """Add an ASP program and return a grounded Clingo control."""
     arguments = ["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"]
     control = clingo.Control(arguments)
     control.configuration.solve.models = 1
-    for asp_file in asp_files:
-        control.load(asp_file)
+    control.add("base", [], asp)
     control.ground([("base", [])])
     return control
 
