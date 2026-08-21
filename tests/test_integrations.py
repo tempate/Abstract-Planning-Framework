@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 
 from core.integrations.clingo import collect_plan, create_control
 from core.integrations.fast_downward import _get_command, _run_task, calc_horizon
-from core.integrations.plasp import add_switch_to_asp_rule, append_pddl_facts_to_asp, sas_to_asp
+from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 
 
 class ClingoIntegrationTests(unittest.TestCase):
@@ -97,21 +97,6 @@ class PlaspPostProcessingTests(unittest.TestCase):
                 program = sas_to_asp(str(sas))
 
             self.assertEqual(program, "exact.\nactions.\ntranslated.\n")
-
-    def test_append_pddl_facts_converts_supported_fuel_relations(self):
-        pddl = """
-(connected l0 l1)
-(fuelcost level2 l0 l1)
-(sum level0 level2 level2)
-"""
-        with tempfile.TemporaryDirectory() as directory:
-            pddl_path = Path(directory, "problem.pddl")
-            pddl_path.write_text(pddl, encoding="utf-8")
-            result = append_pddl_facts_to_asp(pddl_path, "base.\n")
-
-        self.assertIn('fuelcost("level2","l0","l1").', result)
-        self.assertIn('sum("level0","level2","level2").', result)
-        self.assertNotIn("connected", result)
 
     def test_switch_guard_is_added_for_both_horizon_encodings(self):
         rules = {

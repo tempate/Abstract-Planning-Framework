@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from core.planning.abstract import _select_abstract_horizon
 from core.planning.config import AbstractPlanningConfig
@@ -31,17 +31,17 @@ class RefinementStrategyTests(unittest.TestCase):
         self.assertIsInstance(get_refinement_strategy("clingo", context), ClingoRefinement)
         self.assertIsInstance(get_refinement_strategy("fd", context), FastDownwardRefinement)
 
-    def test_mapping_receives_resolved_abstraction_values(self):
-        profile = Mock()
+    @patch("core.planning.refinement.base.build_mapping")
+    def test_mapping_receives_resolved_abstraction_values(self, build_mapping):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl")
         abstraction = SimpleNamespace(abstract_name="hangarabs", objects=("hangar1", "hangar2"))
-        context = SimpleNamespace(config=config, abstraction=abstraction, profile=profile, logger=Mock())
-        profile.build_mapping.return_value = ("mapping.", {})
+        context = SimpleNamespace(config=config, abstraction=abstraction, logger=Mock())
+        build_mapping.return_value = "mapping."
 
         mapping, _ = ClingoRefinement(context).build_mapping("occurrences.")
 
         self.assertEqual(mapping, "mapping.")
-        profile.build_mapping.assert_called_once_with("occurrences.", "hangarabs", ("hangar1", "hangar2"))
+        build_mapping.assert_called_once_with("occurrences.", "hangarabs", ("hangar1", "hangar2"))
 
     def test_fast_downward_plan_conversion_skips_comments_and_numbers_steps(self):
         plan = """

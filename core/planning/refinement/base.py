@@ -9,7 +9,7 @@ from core.asp import join_asp
 from core.execution import PhaseTiming, timed_phase
 from core.abstraction.model import AbstractionResult
 from core.planning.config import AbstractPlanningConfig
-from core.profiles.base import PlanningProfile
+from core.planning.mapping import build_mapping
 from core.solvers.decremental import solve_decrementally
 
 
@@ -19,7 +19,6 @@ class RefinementContext:
 
     config: AbstractPlanningConfig
     abstraction: AbstractionResult
-    profile: PlanningProfile
     concrete_asp: str
     abstract_asp: str | None
     abstract_task: dict
@@ -47,12 +46,10 @@ class BaseRefinement(ABC):
         """Run the refinement strategy and return a planning result."""
 
     def build_mapping(self, occurrences):
-        """Build and time the domain-specific abstract-to-concrete mapping."""
+        """Build and time the abstract-to-concrete action mapping."""
         context = self.context
         with timed_phase(context.logger, "Mapping generation time") as timing:
-            mapping, _ = context.profile.build_mapping(
-                occurrences, context.abstraction.abstract_name, context.abstraction.objects
-            )
+            mapping = build_mapping(occurrences, context.abstraction.abstract_name, context.abstraction.objects)
         return mapping, timing.elapsed
 
     def solve_concrete(self, refinement_asp):

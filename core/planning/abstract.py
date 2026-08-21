@@ -6,22 +6,18 @@ from pathlib import Path
 from core.execution import get_logger, temp_run_dir, timed_phase
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.unified_planning import write_problem
-from core.integrations.plasp import add_switch_to_asp_rule, append_pddl_facts_to_asp, sas_to_asp
+from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.abstraction.symmetry import prepare_abstraction
 from core.planning.config import AbstractPlanningConfig
 from core.planning.refinement.base import RefinementContext
 from core.planning.refinement.factory import get_refinement_strategy
-from core.profiles.factory import get_profile
 
 
 def compute_abstract_plan(config: AbstractPlanningConfig):
     """Abstract one concrete task and dispatch its plan-refinement workflow."""
-    profile = get_profile(config.profile_name)
-
-    with temp_run_dir(profile.run_directory) as (base_dir, run_id):
+    with temp_run_dir("abstract") as (base_dir, run_id):
         abstraction, domain_path, problem_path = _resolve_abstraction(config, base_dir)
-        profile.validate_configuration(abstraction.abstract_name, abstraction.objects)
-        result = _compute_abstract_plan(config, profile, abstraction, base_dir, run_id, domain_path, problem_path)
+        result = _compute_abstract_plan(config, abstraction, base_dir, run_id, domain_path, problem_path)
         result["abstraction"] = {
             "abstract_symbol": abstraction.abstract_name,
             "concrete_objects": list(abstraction.objects),
@@ -50,7 +46,7 @@ def _resolve_abstraction(config, base_dir):
     return prepared.result, domain_path, problem_path
 
 
-def _compute_abstract_plan(config, profile, abstraction, base_dir, run_id, abstract_domain_path, abstract_problem_path):
+def _compute_abstract_plan(config, abstraction, base_dir, run_id, abstract_domain_path, abstract_problem_path):
     logger = get_logger()
 
     logger.info("=" * 70)
@@ -58,7 +54,6 @@ def _compute_abstract_plan(config, profile, abstraction, base_dir, run_id, abstr
     logger.info(f"Configuration: {config.as_dict()}")
     logger.info(f"Requested horizon: {config.horizon if config.horizon is not None else 'auto'}")
     logger.info(f"Encoding: {config.encoding}")
-    logger.info(f"Profile: {config.profile_name}")
     logger.info(f"Run ID: {run_id}")
     logger.info(f"Base dir: {base_dir}")
 
@@ -93,9 +88,6 @@ def _compute_abstract_plan(config, profile, abstraction, base_dir, run_id, abstr
                 concrete_asp = sas_to_asp(concrete_task["sasFile"], config.encoding, config.time_step)
 
                 concrete_asp = add_switch_to_asp_rule(concrete_asp, config.encoding)
-                if profile.append_concrete_pddl_facts:
-                    concrete_asp = append_pddl_facts_to_asp(config.problem_path, concrete_asp)
-
             # Generate the ASP representation of the abstract problem.
             abstract_time = 0.0
             abstract_asp = None
@@ -107,7 +99,6 @@ def _compute_abstract_plan(config, profile, abstraction, base_dir, run_id, abstr
         context = RefinementContext(
             config=config,
             abstraction=abstraction,
-            profile=profile,
             concrete_asp=concrete_asp,
             abstract_asp=abstract_asp,
             abstract_task=abstract_task,

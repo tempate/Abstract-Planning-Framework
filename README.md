@@ -1,8 +1,8 @@
 # Abstract Planning Framework
 
 An experimental framework for comparing classical planning with abstraction
-and decremental refinement. It supports Beluga hangar/trailer abstractions and
-NoMystery fuel abstraction using Fast Downward, Clingo, and PlanPilot.
+and decremental refinement across classical-planning benchmarks using Fast
+Downward, Clingo, and PlanPilot.
 
 The abstract workflow builds a symmetric-object abstraction directly from one
 concrete PDDL task, solves it, maps its plan to the concrete task, and relaxes
@@ -74,7 +74,6 @@ concrete search:
 
 ```bash
 python -m scripts.planner abstract \
-    --profile beluga \
     --domain data/beluga/concrete/standard/domain.pddl \
     --problem data/beluga/concrete/standard/problem_3_s45_j3_r2_oc44_f3.pddl \
     --horizon 17

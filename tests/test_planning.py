@@ -77,7 +77,6 @@ class PlanningConfigurationTests(unittest.TestCase):
         self.assertIsInstance(abstract, PlanningConfig)
         self.assertEqual(abstract.encoding, concrete.encoding)
         self.assertEqual(abstract.plan_source, "clingo")
-        self.assertEqual(abstract.profile_name, "beluga")
         self.assertIsNone(abstract.abstract_name)
         self.assertIsNone(abstract.objects)
 

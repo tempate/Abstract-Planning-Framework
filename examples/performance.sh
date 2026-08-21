@@ -15,7 +15,6 @@ run_no_mystery() {
         --encoding exact
 
     "$python_bin" -m scripts.planner abstract \
-        --profile no_mystery \
         --domain data/no_mystery/concrete/domain.pddl \
         --problem data/no_mystery/concrete/p04.pddl \
         --horizon 19 \
@@ -33,7 +32,6 @@ run_beluga() {
         --encoding exact
 
     "$python_bin" -m scripts.planner abstract \
-        --profile beluga \
         --domain data/beluga/concrete/standard/domain.pddl \
         --problem "data/beluga/concrete/standard/${problem}.pddl" \
         --objects hangar1 hangar2 hangar3 \

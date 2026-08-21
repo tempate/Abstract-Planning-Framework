@@ -101,7 +101,6 @@ class PlannerHelpTests(unittest.TestCase):
     def test_abstract_help_displays_abstract_defaults(self):
         help_text = self._help("abstract")
 
-        self.assertIn("(default: beluga)", help_text)
         self.assertIn("(default: clingo)", help_text)
 
     def test_abstract_mode_accepts_one_concrete_task_for_automatic_abstraction(self):
@@ -139,7 +138,6 @@ class PlannerExitStatusTests(unittest.TestCase):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
             mode="abstract",
-            profile="no_mystery",
             domain="domain.pddl",
             problem="problem.pddl",
             horizon=1,
@@ -164,7 +162,6 @@ class PlannerExitStatusTests(unittest.TestCase):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
             mode="abstract",
-            profile="beluga",
             domain="domain.pddl",
             problem="problem.pddl",
             horizon=4,
