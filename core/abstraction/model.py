@@ -46,44 +46,14 @@ class AbstractProblem:
         return len(self.removed_deletes)
 
 
-@dataclass(frozen=True)
-class _Selection:
-    objects_to_abstract: tuple[Object, ...]
-    abstract_object: Object
-
-    @property
-    def object_type(self):
-        return self.objects_to_abstract[0].type
-
-    @property
-    def substitutions(self):
-        return {item: self.abstract_object for item in self.objects_to_abstract}
-
-
-@dataclass(frozen=True)
-class _DeleteCandidate:
-    action: InstantaneousAction
-    fluent: object
-    argument: object
-    metadata: RelaxedDelete
-
-    @property
-    def key(self):
-        return self.action.name.casefold(), self.fluent.name.casefold(), self.metadata.variable.casefold()
-
-
 def abstract_problem(problem: Problem, objects_to_abstract, abstract_name=None):
     """Collapse same-typed objects in a fresh model and relax applicable unary deletes."""
     _validate_supported_problem(problem)
-    selection = _prepare_selection(problem, objects_to_abstract, abstract_name)
-    candidates = _applicable_deletes(problem, selection.object_type, selection.objects_to_abstract)
-    allowed_deletes = {item.key for item in candidates}
-    target, removed = _copy_problem(problem, selection, allowed_deletes)
-    abstraction = Abstraction(
-        name=selection.abstract_object.name,
-        objects=tuple(item.name for item in selection.objects_to_abstract),
-        object_type=selection.object_type.name,
-    )
+    abstraction = _prepare_abstraction(problem, objects_to_abstract, abstract_name)
+    selected_objects = tuple(problem.object(name) for name in abstraction.objects)
+    candidates = _applicable_deletes(problem, selected_objects[0].type, selected_objects)
+    allowed_deletes = {_delete_key(item) for item in candidates}
+    target, removed = _copy_problem(problem, abstraction, selected_objects, allowed_deletes)
     return AbstractProblem(abstraction=abstraction, problem=target, removed_deletes=tuple(removed))
 
 
@@ -101,9 +71,7 @@ def rank_symmetry_classes(problem: Problem, classes):
             objects=tuple(item.name for item in selected),
             object_type=selected[0].type.name,
         )
-        ranked.append(
-            RankedSymmetryClass(abstraction=abstraction, removed_deletes=tuple(item.metadata for item in removed))
-        )
+        ranked.append(RankedSymmetryClass(abstraction=abstraction, removed_deletes=removed))
 
     ranked.sort(
         key=lambda item: (
@@ -142,7 +110,7 @@ def _validate_supported_problem(problem):
         raise AbstractionError("Unsupported PDDL feature: non-instantaneous actions")
 
 
-def _prepare_selection(problem, objects_to_abstract, abstract_name):
+def _prepare_abstraction(problem, objects_to_abstract, abstract_name):
     known = {item.name.casefold(): item for item in problem.all_objects}
     requested = tuple(dict.fromkeys(str(name).casefold() for name in objects_to_abstract))
     if len(requested) < 2:
@@ -156,21 +124,22 @@ def _prepare_selection(problem, objects_to_abstract, abstract_name):
         raise AbstractionError("Selected objects must have the same declared type")
 
     chosen_name = abstract_name or f"{selected[0].type.name}_abs"
-    return _Selection(
-        objects_to_abstract=selected, abstract_object=Object(chosen_name, selected[0].type, problem.environment)
+    return Abstraction(
+        name=chosen_name, objects=tuple(item.name for item in selected), object_type=selected[0].type.name
     )
 
 
-def _copy_problem(source, selection, allowed_deletes):
+def _copy_problem(source, abstraction, selected_objects, allowed_deletes):
     target = Problem(source.name, environment=source.environment, initial_defaults=source.initial_defaults)
-    substitutions = selection.substitutions
+    abstract_object = Object(abstraction.name, selected_objects[0].type, source.environment)
+    substitutions = {item: abstract_object for item in selected_objects}
 
     for fluent in source.fluents:
         target.add_fluent(fluent, default_initial_value=source.fluents_defaults.get(fluent))
     for item in source.all_objects:
-        if item not in selection.objects_to_abstract:
+        if item not in selected_objects:
             target.add_object(item)
-    target.add_object(selection.abstract_object)
+    target.add_object(abstract_object)
 
     action_map = {}
     removed = []
@@ -181,10 +150,12 @@ def _copy_problem(source, selection, allowed_deletes):
             copied.add_precondition(_substitute(precondition, substitutions))
         copied.clear_effects()
         for effect in action.effects:
-            candidate = _delete_candidate(action, effect, selection.object_type)
-            if candidate is not None and candidate.key in allowed_deletes:
-                removed.append(candidate.metadata)
-                continue
+            candidate = _relaxed_delete(action, effect, selected_objects[0].type)
+            if candidate is not None:
+                _, relaxed_delete = candidate
+                if _delete_key(relaxed_delete) in allowed_deletes:
+                    removed.append(relaxed_delete)
+                    continue
             fluent = _substitute(effect.fluent, substitutions)
             value = _substitute(effect.value, substitutions)
             condition = _substitute(effect.condition, substitutions)
@@ -246,15 +217,15 @@ def _applicable_deletes(problem, object_type, objects_to_abstract):
     result = []
     for action in problem.actions:
         for effect in action.effects:
-            candidate = _delete_candidate(action, effect, object_type)
-            if candidate is not None and _action_possible(
-                action, candidate.argument, objects_to_abstract, static_fluents, positive_initial
-            ):
-                result.append(candidate)
+            candidate = _relaxed_delete(action, effect, object_type)
+            if candidate is not None:
+                argument, relaxed_delete = candidate
+                if _action_possible(action, argument, objects_to_abstract, static_fluents, positive_initial):
+                    result.append(relaxed_delete)
     return tuple(result)
 
 
-def _delete_candidate(action, effect, object_type):
+def _relaxed_delete(action, effect, object_type):
     if not effect.is_assignment() or not effect.value.is_false() or not effect.fluent.type.is_bool_type():
         return None
     if not effect.fluent.is_fluent_exp() or len(effect.fluent.args) != 1:
@@ -268,13 +239,17 @@ def _delete_candidate(action, effect, object_type):
         return None
     if not object_type.is_subtype(variable.type):
         return None
-    metadata = RelaxedDelete(
+    relaxed_delete = RelaxedDelete(
         action=action.name,
         predicate=effect.fluent.fluent().name,
         variable=f"?{variable.name}",
         parameter_type=variable.type.name,
     )
-    return _DeleteCandidate(action, effect.fluent.fluent(), argument, metadata)
+    return argument, relaxed_delete
+
+
+def _delete_key(relaxed_delete):
+    return (relaxed_delete.action.casefold(), relaxed_delete.predicate.casefold(), relaxed_delete.variable.casefold())
 
 
 def _action_possible(action, variable, objects_to_abstract, static_fluents, positive_initial):
