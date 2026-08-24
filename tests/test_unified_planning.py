@@ -4,13 +4,37 @@ from pathlib import Path
 
 from core.integrations.unified_planning import PddlError, parse_problem, read_problem, write_problem
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BELUGA = PROJECT_ROOT / "data" / "beluga" / "concrete" / "standard"
+ROUND_TRIP_DOMAIN = """
+(define (domain travel)
+  (:requirements :strips :typing :action-costs)
+  (:types location)
+  (:predicates (at ?x - location) (connected ?from ?to - location))
+  (:functions (total-cost))
+  (:action move
+    :parameters (?from ?to - location)
+    :precondition (and (at ?from) (connected ?from ?to))
+    :effect (and
+      (not (at ?from))
+      (at ?to)
+      (increase (total-cost) 1))))
+"""
+
+ROUND_TRIP_PROBLEM = """
+(define (problem travel-task)
+  (:domain travel)
+  (:objects start destination - location)
+  (:init
+    (at start)
+    (connected start destination)
+    (= (total-cost) 0))
+  (:goal (at destination))
+  (:metric minimize (total-cost)))
+"""
 
 
 class UnifiedPlanningCodecTests(unittest.TestCase):
-    def test_reads_and_round_trips_a_beluga_task(self):
-        source = read_problem(BELUGA / "domain.pddl", BELUGA / "problem_3_s45_j3_r2_oc44_f3.pddl")
+    def test_round_trips_a_task_with_action_costs(self):
+        source = parse_problem(ROUND_TRIP_DOMAIN, ROUND_TRIP_PROBLEM)
 
         serialized = write_problem(source)
         reparsed = parse_problem(serialized.domain, serialized.problem)
