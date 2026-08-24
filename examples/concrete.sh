@@ -6,43 +6,25 @@ cd "$repo_root"
 
 python_bin="${PYTHON_BIN:-python}"
 
-run_no_mystery() {
-    "$python_bin" -m scripts.planner concrete \
-        --domain data/no_mystery/concrete/domain.pddl \
-        --problem data/no_mystery/concrete/p02.pddl \
-        --horizon 14 \
-        --encoding exact
-}
-
-run_beluga() {
-    "$python_bin" -m scripts.planner concrete \
-        --domain data/beluga/concrete/standard/domain.pddl \
-        --problem data/beluga/concrete/standard/problem_3_s45_j3_r2_oc44_f3.pddl \
-        --horizon 17 \
-        --encoding exact
-}
-
 usage() {
-    echo "Usage: $0 [no_mystery|beluga|all]"
+    echo "Usage: $0"
 }
 
-domain="${1:-beluga}"
-case "$domain" in
-    no_mystery)
-        run_no_mystery
-        ;;
-    beluga)
-        run_beluga
-        ;;
-    all)
-        run_no_mystery
-        run_beluga
-        ;;
-    -h|--help)
-        usage
-        ;;
-    *)
-        usage >&2
-        exit 2
-        ;;
-esac
+if (( $# > 0 )); then
+    case "$1" in
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            usage >&2
+            exit 2
+            ;;
+    esac
+fi
+
+"$python_bin" -m scripts.planner concrete \
+    --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
+    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl \
+    --horizon 11 \
+    --encoding exact

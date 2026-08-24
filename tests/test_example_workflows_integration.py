@@ -12,13 +12,13 @@ RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
 
 @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
 class ExampleWorkflowTests(unittest.TestCase):
-    def _run(self, example, workflow):
+    def _run(self, example):
         environment = os.environ.copy()
         environment["PYTHON_BIN"] = sys.executable
         with tempfile.TemporaryDirectory(prefix="apf-example-") as directory:
             environment["APF_TEMP_DIR"] = directory
             return subprocess.run(
-                [f"examples/{example}.sh", workflow],
+                [f"examples/{example}.sh"],
                 cwd=PROJECT_ROOT,
                 env=environment,
                 capture_output=True,
@@ -36,33 +36,21 @@ class ExampleWorkflowTests(unittest.TestCase):
         self.assertTrue(decrements, result.stdout)
         self.assertGreater(decrements[-1], 0, result.stdout)
 
-    def test_no_mystery_concrete_example_finds_a_plan(self):
-        self._assert_success(self._run("concrete", "no_mystery"))
+    def test_gripper_concrete_example_finds_a_plan(self):
+        self._assert_success(self._run("concrete"))
 
-    def test_no_mystery_abstract_example_generates_and_solves_an_abstraction(self):
-        result = self._run("abstract", "no_mystery")
-
-        self._assert_success(result)
-        self.assertIn("Collapsed [", result.stdout)
-
-    def test_no_mystery_refinement_uses_the_single_problem_workflow(self):
-        self._assert_refinement(self._run("refinement", "no_mystery"))
-
-    def test_beluga_concrete_example_finds_a_plan(self):
-        self._assert_success(self._run("concrete", "beluga"))
-
-    def test_beluga_hangar_abstraction_is_fully_realizable(self):
-        result = self._run("abstract", "beluga")
+    def test_gripper_abstract_example_generates_and_refines_an_abstraction(self):
+        result = self._run("abstract")
 
         self._assert_success(result)
-        self.assertIn("Collapsed ['hangar1', 'hangar2', 'hangar3'] into hangar_abs", result.stdout)
-        self.assertIn("Decrements: 0", result.stdout)
+        self.assertIn("Collapsed ['ball1', 'ball2', 'ball3', 'ball4'] into ball_abs", result.stdout)
+        self.assertIn("Decrements: 10", result.stdout)
 
-    def test_beluga_trailer_abstraction_is_realizable_without_relaxation(self):
-        result = self._run("refinement", "beluga")
+    def test_gripper_refinement_compares_concrete_and_abstract_planning(self):
+        result = self._run("refinement")
 
-        self._assert_success(result, expected_plans=2)
-        self.assertIn("Decrements: 0", result.stdout)
+        self._assert_refinement(result)
+        self.assertIn("Collapsed ['ball1', 'ball2', 'ball3', 'ball4'] into ball_abs", result.stdout)
 
 
 if __name__ == "__main__":
