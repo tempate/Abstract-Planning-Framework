@@ -5,9 +5,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
 
-from core.abstraction.model import Abstraction
+from core.abstraction.model import Abstraction, AbstractionError
+from core.abstraction.symmetry import prepare_abstraction
 from core.integrations.unified_planning import read_problem
-from core.planning.abstract import _compute_abstract_plan, _resolve_abstraction, compute_abstract_plan
+from core.planning.abstract import _compute_abstract_plan, _write_abstract_problem, compute_abstract_plan
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.concrete import compute_concrete_plan
 from scripts.utils.arguments import nonnegative_int, positive_int
@@ -57,20 +58,26 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
 class AbstractPlanningOrchestrationTests(unittest.TestCase):
     def test_top_level_result_describes_the_generated_abstraction(self):
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
-        generated = SimpleNamespace(abstraction=abstraction, unary_delete_score=2)
+        abstract_problem = Mock()
+        generated = SimpleNamespace(problem=abstract_problem, abstraction=abstraction, unary_delete_score=2)
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl")
 
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch("core.planning.abstract.prepare_abstraction", return_value=generated) as prepare,
             patch(
-                "core.planning.abstract._resolve_abstraction",
-                return_value=(generated, "abstract-domain.pddl", "abstract-problem.pddl"),
-            ),
+                "core.planning.abstract._write_abstract_problem",
+                return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
+            ) as write,
             patch("core.planning.abstract._compute_abstract_plan", return_value={"success": True}) as compute,
         ):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             result = compute_abstract_plan(config)
 
+        prepare.assert_called_once_with(
+            "domain.pddl", "problem.pddl", objects_to_abstract=None, abstract_name=None, symmetry_time_limit=300
+        )
+        write.assert_called_once_with(abstract_problem, "run-dir")
         compute.assert_called_once_with(
             config, abstraction, "run-dir", "run-123", "abstract-domain.pddl", "abstract-problem.pddl"
         )
@@ -83,6 +90,41 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 "relaxed_unary_deletes": 2,
             },
         )
+
+    def test_falls_back_to_concrete_planning_when_no_symmetry_class_exists(self):
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", horizon=4, encoding="exact", time_step=True)
+        concrete_result = {"success": True, "plan": ["occurs(action,1)"]}
+
+        with (
+            patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch("core.planning.abstract.prepare_abstraction", return_value=None),
+            patch("core.planning.abstract.compute_concrete_plan", return_value=concrete_result) as concrete,
+        ):
+            temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
+            result = compute_abstract_plan(config)
+
+        concrete.assert_called_once_with(config)
+        self.assertIs(result, concrete_result)
+        self.assertEqual(
+            result["fallback"], {"mode": "concrete", "reason": "PDDL Symmetries found no abstractable object classes"}
+        )
+
+    def test_does_not_hide_other_abstraction_errors_with_a_fallback(self):
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", objects_to_abstract=("a", "b"))
+
+        with (
+            patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch(
+                "core.planning.abstract.prepare_abstraction",
+                side_effect=AbstractionError("Selected objects must have the same declared type"),
+            ),
+            patch("core.planning.abstract.compute_concrete_plan") as concrete,
+        ):
+            temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
+            with self.assertRaisesRegex(AbstractionError, "same declared type"):
+                compute_abstract_plan(config)
+
+        concrete.assert_not_called()
 
     def test_clingo_source_translates_both_tasks_and_receives_abstract_asp(self):
         config = AbstractPlanningConfig(
@@ -210,7 +252,14 @@ class GeneratedAbstractionTests(unittest.TestCase):
             problem.write_text(problem_text, encoding="utf-8")
             config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"], abstract_name="combined")
 
-            abstract_problem, abstract_domain, abstract_problem_path = _resolve_abstraction(config, root / "run")
+            abstract_problem = prepare_abstraction(
+                config.domain_path,
+                config.problem_path,
+                objects_to_abstract=config.objects_to_abstract,
+                abstract_name=config.abstract_name,
+                symmetry_time_limit=config.symmetry_time_limit,
+            )
+            abstract_domain, abstract_problem_path = _write_abstract_problem(abstract_problem.problem, root / "run")
             generated = read_problem(abstract_domain, abstract_problem_path)
 
         self.assertEqual(abstract_problem.abstraction.name, "combined")
@@ -221,17 +270,24 @@ class GeneratedAbstractionTests(unittest.TestCase):
     @patch("core.planning.abstract.prepare_abstraction")
     def test_automatic_selection_is_delegated_to_symmetry_abstraction(self, prepare_abstraction):
         problem = Mock()
-        abstraction = Mock(name="item_abs", objects=("a", "b"))
-        prepare_abstraction.return_value = Mock(problem=problem, abstraction=abstraction)
-        with tempfile.TemporaryDirectory() as directory:
-            config = AbstractPlanningConfig("domain.pddl", "problem.pddl", symmetry_time_limit=17)
-            with patch("core.planning.abstract.write_problem", return_value=Mock(domain="d", problem="p")):
-                selected, _, _ = _resolve_abstraction(config, directory)
+        abstraction = Abstraction("item_abs", ("a", "b"), "item")
+        prepare_abstraction.return_value = Mock(problem=problem, abstraction=abstraction, unary_delete_score=0)
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", symmetry_time_limit=17)
+        with (
+            patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch(
+                "core.planning.abstract._write_abstract_problem",
+                return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
+            ),
+            patch("core.planning.abstract._compute_abstract_plan", return_value={"success": True}),
+        ):
+            temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
+            compute_abstract_plan(config)
 
         prepare_abstraction.assert_called_once_with(
             "domain.pddl", "problem.pddl", objects_to_abstract=None, abstract_name=None, symmetry_time_limit=17
         )
-        self.assertEqual(selected.abstraction.objects, ("a", "b"))
+        self.assertEqual(prepare_abstraction.return_value.abstraction.objects, ("a", "b"))
         self.assertIsNone(config.objects_to_abstract)
         self.assertIsNone(config.abstract_name)
 

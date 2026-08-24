@@ -117,6 +117,17 @@ class SymmetrySelectionTests(unittest.TestCase):
         self.assertEqual(result.abstraction.objects, ("vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"))
         self.assertEqual(result.abstraction.name, "vehicle_abs")
 
+    def test_reports_when_pddl_symmetries_finds_no_object_class(self):
+        with (
+            patch("core.abstraction.symmetry.read_problem", return_value=self.problem),
+            patch("core.abstraction.symmetry.find_symmetric_object_sets", return_value=[]),
+            patch("core.abstraction.symmetry.rank_symmetry_classes") as rank,
+        ):
+            result = prepare_abstraction("domain.pddl", "problem.pddl")
+
+        self.assertIsNone(result)
+        rank.assert_not_called()
+
     def test_accepts_domain_constants_reported_by_pddl_symmetries(self):
         domain = """
 (define (domain constants)

@@ -143,6 +143,37 @@ class PlannerExitStatusTests(unittest.TestCase):
 
         self.assertEqual(status, 1)
 
+    def test_abstract_cli_reports_concrete_fallback(self):
+        parser = Mock()
+        parser.parse_args.return_value = Namespace(
+            mode="abstract",
+            domain="domain.pddl",
+            problem="problem.pddl",
+            horizon=1,
+            encoding="bounded",
+            time_step=False,
+            abstract_name=None,
+            objects_to_abstract=None,
+            symmetry_time_limit=300,
+            plan_source="clingo",
+        )
+        result = {
+            "success": True,
+            "fallback": {"mode": "concrete", "reason": "PDDL Symmetries found no abstractable object classes"},
+        }
+        output = StringIO()
+        with (
+            patch.object(planner, "_argument_parser", return_value=parser),
+            patch.object(planner, "compute_abstract_plan", return_value=result),
+            patch.object(planner, "print_planning_result"),
+            patch.object(planner, "get_logger"),
+            redirect_stdout(output),
+        ):
+            status = planner.main()
+
+        self.assertEqual(status, 0)
+        self.assertIn("No symmetry class found; used the concrete pipeline", output.getvalue())
+
     def test_abstract_cli_passes_explicit_selection_to_the_planning_pipeline(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
