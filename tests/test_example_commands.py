@@ -24,7 +24,7 @@ class ShellExampleTests(unittest.TestCase):
         return subprocess.run(command, cwd=PROJECT_ROOT, env=environment, capture_output=True, text=True, check=False)
 
     def test_examples_support_help(self):
-        for example in ("concrete", "abstract", "refinement", "performance"):
+        for example in ("concrete", "abstract", "performance"):
             with self.subTest(example=example):
                 result = self._run(example, "--help")
 
@@ -32,7 +32,7 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.stdout.strip(), f"Usage: examples/{example}.sh")
 
     def test_examples_reject_positional_arguments(self):
-        for example in ("concrete", "abstract", "refinement", "performance"):
+        for example in ("concrete", "abstract", "performance"):
             with self.subTest(example=example):
                 result = self._run(example, "unexpected", "/bin/echo")
 
@@ -40,17 +40,17 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertIn("Usage:", result.stderr)
 
     def test_quick_examples_use_gripper_prob01(self):
-        for example, command_count in (("concrete", 1), ("abstract", 1), ("refinement", 2)):
+        for example in ("concrete", "abstract"):
             with self.subTest(example=example):
                 result = self._run(example, python_bin="/bin/echo")
 
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual(result.stdout.count("lib/downward-benchmarks/gripper/domain.pddl"), command_count)
-                self.assertEqual(result.stdout.count("gripper/prob01.pddl"), command_count)
-                self.assertEqual(result.stdout.count("--horizon 11"), command_count)
+                self.assertEqual(result.stdout.count("lib/downward-benchmarks/gripper/domain.pddl"), 1)
+                self.assertEqual(result.stdout.count("gripper/prob01.pddl"), 1)
+                self.assertEqual(result.stdout.count("--horizon 11"), 1)
 
     def test_abstract_examples_use_automatic_symmetry_selection(self):
-        for example in ("abstract", "refinement", "performance"):
+        for example in ("abstract", "performance"):
             with self.subTest(example=example):
                 result = self._run(example, python_bin="/bin/echo")
 

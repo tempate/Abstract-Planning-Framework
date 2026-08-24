@@ -8,7 +8,6 @@ Run them from the repository root after initializing the submodules.
 | --- | --- | --- |
 | `concrete.sh` | `gripper/prob01.pddl` | Solve the concrete task directly |
 | `abstract.sh` | `gripper/prob01.pddl` | Discover and solve an object abstraction |
-| `refinement.sh` | `gripper/prob01.pddl` | Compare concrete and abstraction-guided planning |
 | `performance.sh` | `gripper/prob02.pddl` | Run the same comparison on a larger task |
 
 ## Planning
@@ -16,15 +15,13 @@ Run them from the repository root after initializing the submodules.
 ```bash
 ./examples/concrete.sh
 ./examples/abstract.sh
-./examples/refinement.sh
 ./examples/performance.sh
 ```
 
-`abstract.sh` and `refinement.sh` ask PDDL Symmetries to discover the
-symmetric object classes. The selected ball class is collapsed into a
-temporary abstract object, the abstraction is solved, and its plan guides the
-concrete search. Automatic selection requires the pybliss setup described in
-the main README.
+`abstract.sh` asks PDDL Symmetries to discover the symmetric object classes.
+The selected ball class is collapsed into a temporary abstract object, the
+abstraction is solved, and its plan guides the concrete search. Automatic
+selection requires the pybliss setup described in the main README.
 
 The example paths are deliberately ordinary `--domain` and `--problem`
 arguments. The framework does not otherwise depend on the benchmark layout;

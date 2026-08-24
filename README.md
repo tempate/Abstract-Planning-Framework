@@ -44,7 +44,6 @@ the Downward benchmark collection.
 ```bash
 ./examples/concrete.sh
 ./examples/abstract.sh
-./examples/refinement.sh
 ```
 
 Run the larger comparison on Gripper `prob02` with:

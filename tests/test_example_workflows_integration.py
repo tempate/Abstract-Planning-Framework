@@ -1,5 +1,4 @@
 import os
-import re
 import subprocess
 import sys
 import tempfile
@@ -30,12 +29,6 @@ class ExampleWorkflowTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.count("Plan found: yes"), expected_plans, result.stdout)
 
-    def _assert_refinement(self, result):
-        self._assert_success(result, expected_plans=2)
-        decrements = [int(value) for value in re.findall(r"^Decrements: (\d+)$", result.stdout, flags=re.MULTILINE)]
-        self.assertTrue(decrements, result.stdout)
-        self.assertGreater(decrements[-1], 0, result.stdout)
-
     def test_gripper_concrete_example_finds_a_plan(self):
         self._assert_success(self._run("concrete"))
 
@@ -45,12 +38,6 @@ class ExampleWorkflowTests(unittest.TestCase):
         self._assert_success(result)
         self.assertIn("Collapsed ['ball1', 'ball2', 'ball3', 'ball4'] into ball_abs", result.stdout)
         self.assertIn("Decrements: 10", result.stdout)
-
-    def test_gripper_refinement_compares_concrete_and_abstract_planning(self):
-        result = self._run("refinement")
-
-        self._assert_refinement(result)
-        self.assertIn("Collapsed ['ball1', 'ball2', 'ball3', 'ball4'] into ball_abs", result.stdout)
 
 
 if __name__ == "__main__":
