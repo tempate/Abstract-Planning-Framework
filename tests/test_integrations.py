@@ -127,6 +127,8 @@ class PlaspPostProcessingTests(unittest.TestCase):
                 result = add_switch_to_asp_rule(f"before.\n{rule}\nafter.\n", encoding)
 
                 self.assertIn("time(T), not switch(T), T > 0.", result)
+                self.assertNotIn(rule, result)
+                self.assertEqual(result.count("not switch(T)"), 1)
                 self.assertIn("before.\n", result)
                 self.assertIn("after.\n", result)
 

@@ -9,6 +9,7 @@ from unified_planning.shortcuts import (
     IntType,
     MaximizeExpressionOnFinalState,
     MinimizeActionCosts,
+    MinimizeSequentialPlanLength,
     Problem,
     UserType,
     Variable,
@@ -160,6 +161,24 @@ class ModelAbstractionTests(unittest.TestCase):
             with self.subTest(objects=objects), self.assertRaisesRegex(AbstractionError, message):
                 abstract_problem(problem, objects)
 
+    def test_rejects_abstract_names_that_collide_with_model_symbols(self):
+        problem = Problem("name-collision")
+        item = UserType("collision_item")
+        ready = Fluent("ready", BoolType())
+        use = InstantaneousAction("use")
+        problem.add_fluent(ready)
+        problem.add_action(use)
+        problem.add_object("a", item)
+        problem.add_object("b", item)
+        problem.add_object("taken", item)
+
+        for name in ("taken", "ready", "use", "collision_item"):
+            with self.subTest(name=name), self.assertRaisesRegex(AbstractionError, "already used"):
+                abstract_problem(problem, ["a", "b"], name)
+
+        result = abstract_problem(problem, ["a", "b"], "a")
+        self.assertEqual({item.name for item in result.problem.all_objects}, {"a", "taken"})
+
     def test_rejects_model_features_the_copier_does_not_support(self):
         temporal = Problem("temporal")
         temporal_item = UserType("temporal_item")
@@ -183,7 +202,7 @@ class ModelAbstractionTests(unittest.TestCase):
         with self.assertRaisesRegex(AbstractionError, "quality metric"):
             abstract_problem(optimized, ["a", "b"])
 
-    def test_rewrites_every_supported_expression_location(self):
+    def test_rewrites_conditions_goals_constraints_and_action_costs(self):
         problem = Problem("expressions")
         item = UserType("expression_item")
         a = problem.add_object("a", item)
@@ -214,6 +233,33 @@ class ModelAbstractionTests(unittest.TestCase):
         self.assertEqual(result.problem.goals, [marked(abstract_object)])
         self.assertEqual(result.problem.trajectory_constraints[0].arg(0), marked(abstract_object))
         self.assertEqual(metric.costs[copied_action], cost(abstract_object))
+
+    def test_preserves_numeric_effects_and_plan_length_metric(self):
+        problem = Problem("numeric-effects")
+        item = UserType("numeric_item")
+        a = problem.add_object("a", item)
+        b = problem.add_object("b", item)
+        level = Fluent("level", IntType(), target=item)
+        problem.add_fluent(level, default_initial_value=0)
+
+        increase = InstantaneousAction("increase")
+        increase.add_increase_effect(level(a), 1)
+        problem.add_action(increase)
+        decrease = InstantaneousAction("decrease")
+        decrease.add_decrease_effect(level(b), 1)
+        problem.add_action(decrease)
+        problem.add_quality_metric(MinimizeSequentialPlanLength())
+
+        result = abstract_problem(problem, ["a", "b"])
+        abstract_object = result.problem.object("numeric_item_abs")
+        increased = result.problem.action("increase").effects[0]
+        decreased = result.problem.action("decrease").effects[0]
+
+        self.assertTrue(increased.is_increase())
+        self.assertEqual(increased.fluent, level(abstract_object))
+        self.assertTrue(decreased.is_decrease())
+        self.assertEqual(decreased.fluent, level(abstract_object))
+        self.assertIsInstance(result.problem.quality_metrics[0], MinimizeSequentialPlanLength)
 
 
 if __name__ == "__main__":

@@ -2,10 +2,12 @@ import argparse
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from types import SimpleNamespace
+from unittest.mock import Mock, call, patch
 
+from core.abstraction.model import Abstraction
 from core.integrations.unified_planning import read_problem
-from core.planning.abstract import _resolve_abstraction
+from core.planning.abstract import _compute_abstract_plan, _resolve_abstraction, compute_abstract_plan
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.concrete import compute_concrete_plan
 from scripts.utils.arguments import nonnegative_int, positive_int
@@ -52,6 +54,111 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         run_clingo.assert_called_once_with("asp program", 3)
 
 
+class AbstractPlanningOrchestrationTests(unittest.TestCase):
+    def test_top_level_result_describes_the_generated_abstraction(self):
+        abstraction = Abstraction("item_abs", ("a", "b"), "item")
+        generated = SimpleNamespace(abstraction=abstraction, unary_delete_score=2)
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl")
+
+        with (
+            patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch(
+                "core.planning.abstract._resolve_abstraction",
+                return_value=(generated, "abstract-domain.pddl", "abstract-problem.pddl"),
+            ),
+            patch("core.planning.abstract._compute_abstract_plan", return_value={"success": True}) as compute,
+        ):
+            temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
+            result = compute_abstract_plan(config)
+
+        compute.assert_called_once_with(
+            config, abstraction, "run-dir", "run-123", "abstract-domain.pddl", "abstract-problem.pddl"
+        )
+        self.assertEqual(
+            result["abstraction"],
+            {
+                "abstract_symbol": "item_abs",
+                "objects_to_abstract": ["a", "b"],
+                "object_type": "item",
+                "relaxed_unary_deletes": 2,
+            },
+        )
+
+    def test_clingo_source_translates_both_tasks_and_receives_abstract_asp(self):
+        config = AbstractPlanningConfig(
+            "domain.pddl", "problem.pddl", horizon=4, encoding="bounded", time_step=True, plan_source="clingo"
+        )
+        abstraction = Abstraction("item_abs", ("a", "b"), "item")
+        concrete_task = {"sasFile": "concrete.sas"}
+        abstract_task = {"sasFile": "abstract.sas", "horizon": 0}
+        strategy = Mock()
+        strategy.refine.return_value = {"success": True}
+
+        with (
+            patch(
+                "core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
+            ) as run,
+            patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]) as sas_to_asp,
+            patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp") as add_switch,
+            patch("core.planning.abstract.get_refinement_strategy", return_value=strategy) as get_strategy,
+        ):
+            result = _compute_abstract_plan(
+                config, abstraction, "run-dir", "run-123", "abstract-domain.pddl", "abstract-problem.pddl"
+            )
+
+        self.assertEqual(result, {"success": True})
+        self.assertEqual(
+            run.call_args_list,
+            [
+                call("run-dir/concrete", "domain.pddl", "problem.pddl", "concrete", "translate"),
+                call("run-dir/abstract", "abstract-domain.pddl", "abstract-problem.pddl", "abstract", "translate"),
+            ],
+        )
+        self.assertEqual(
+            sas_to_asp.call_args_list, [call("concrete.sas", "bounded", True), call("abstract.sas", "bounded", True)]
+        )
+        add_switch.assert_called_once_with("concrete asp", "bounded")
+        context = get_strategy.call_args.args[1]
+        self.assertEqual(get_strategy.call_args.args[0], "clingo")
+        self.assertEqual(context.concrete_asp, "guarded concrete asp")
+        self.assertEqual(context.abstract_asp, "abstract asp")
+        self.assertEqual(context.abstract_task, abstract_task)
+        self.assertEqual(context.horizon, 4)
+        self.assertEqual(context.fd_timings["fd_concrete_time"], 1.0)
+        self.assertEqual(context.fd_timings["fd_abstract_time"], 2.0)
+        strategy.refine.assert_called_once_with()
+
+    def test_fd_source_uses_its_plan_and_skips_abstract_asp_generation(self):
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", plan_source="fd")
+        abstraction = Abstraction("item_abs", ("a", "b"), "item")
+        concrete_task = {"sasFile": "concrete.sas"}
+        abstract_task = {"sasFile": "abstract.sas", "planFile": "sas_plan", "horizon": 6}
+        strategy = Mock()
+        strategy.refine.return_value = {"success": True}
+
+        with (
+            patch(
+                "core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
+            ) as run,
+            patch("core.planning.abstract.sas_to_asp", return_value="concrete asp") as sas_to_asp,
+            patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
+            patch("core.planning.abstract.get_refinement_strategy", return_value=strategy) as get_strategy,
+        ):
+            result = _compute_abstract_plan(
+                config, abstraction, "run-dir", "run-123", "abstract-domain.pddl", "abstract-problem.pddl"
+            )
+
+        self.assertEqual(result, {"success": True})
+        self.assertEqual(run.call_args_list[1].args[-1], "plan")
+        sas_to_asp.assert_called_once_with("concrete.sas", "exact", False)
+        context = get_strategy.call_args.args[1]
+        self.assertEqual(get_strategy.call_args.args[0], "fd")
+        self.assertIsNone(context.abstract_asp)
+        self.assertEqual(context.abstract_task, abstract_task)
+        self.assertEqual(context.horizon, 6)
+        strategy.refine.assert_called_once_with()
+
+
 class ArgumentTests(unittest.TestCase):
     def test_nonnegative_integer_accepts_zero(self):
         self.assertEqual(nonnegative_int("0"), 0)
@@ -89,7 +196,7 @@ class PlanningConfigurationTests(unittest.TestCase):
 
 
 class GeneratedAbstractionTests(unittest.TestCase):
-    def test_explicit_objects_create_temporary_planner_inputs_and_mapping(self):
+    def test_explicit_objects_create_temporary_planner_inputs(self):
         domain_text = "(define (domain d) (:types item) (:predicates (ready ?x - item)))"
         problem_text = """
 (define (problem p) (:domain d)
