@@ -47,15 +47,15 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout.count("lib/downward-benchmarks/gripper/domain.pddl"), 1)
                 self.assertEqual(result.stdout.count("gripper/prob01.pddl"), 1)
-                self.assertNotIn("--horizon", result.stdout)
+                self.assertEqual(result.stdout.count("--horizon 11"), 1)
 
     def test_abstract_examples_use_automatic_symmetry_selection(self):
         result = self._run("abstract", python_bin="/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("-m scripts.planner abstract", result.stdout)
-        self.assertNotIn("--abstract-name", result.stdout)
-        self.assertIn("--symmetry-time-limit 300", result.stdout)
+        self.assertIn("--abstract-name ball_abs", result.stdout)
+        self.assertNotIn("--symmetry-time-limit", result.stdout)
         self.assertNotIn("--objects-to-abstract", result.stdout)
 
 

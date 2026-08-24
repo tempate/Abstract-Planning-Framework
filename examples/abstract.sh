@@ -28,6 +28,4 @@ fi
     --problem lib/downward-benchmarks/gripper/prob01.pddl \
     --abstract-name ball_abs \
     --horizon 11 \
-    --encoding bounded \
-    --symmetry-time-limit 300 \
     --plan-source clingo
