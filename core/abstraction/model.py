@@ -59,18 +59,13 @@ def abstract_problem(problem: Problem, objects_to_abstract, abstract_name=None):
 
 def rank_symmetry_classes(problem: Problem, classes):
     """Rank abstractable symmetry classes by delete score, size, and names."""
-    known = {item.name.casefold(): item for item in problem.all_objects}
     ranked = []
 
     for symmetry_class in classes:
         requested = tuple(sorted(str(name).casefold() for name in symmetry_class))
-        selected = tuple(known[name] for name in requested)
+        abstraction = _prepare_abstraction(problem, requested, None)
+        selected = tuple(problem.object(name) for name in abstraction.objects)
         removed = _applicable_deletes(problem, selected[0].type, selected)
-        abstraction = Abstraction(
-            name=f"{selected[0].type.name}_abs",
-            objects=tuple(item.name for item in selected),
-            object_type=selected[0].type.name,
-        )
         ranked.append(RankedSymmetryClass(abstraction=abstraction, removed_deletes=removed))
 
     ranked.sort(
