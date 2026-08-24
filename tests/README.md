@@ -23,5 +23,4 @@ RUN_PLANNER_INTEGRATION=1 \
 ```
 
 The integration tests execute the public Bash examples in temporary output
-directories. Performance examples are intentionally excluded because they can
-take a minute or longer.
+directories.

@@ -8,14 +8,12 @@ Run them from the repository root after initializing the submodules.
 | --- | --- | --- |
 | `concrete.sh` | `gripper/prob01.pddl` | Solve the concrete task directly |
 | `abstract.sh` | `gripper/prob01.pddl` | Discover and solve an object abstraction |
-| `performance.sh` | `gripper/prob02.pddl` | Run the same comparison on a larger task |
 
 ## Planning
 
 ```bash
 ./examples/concrete.sh
 ./examples/abstract.sh
-./examples/performance.sh
 ```
 
 `abstract.sh` asks PDDL Symmetries to discover the symmetric object classes.

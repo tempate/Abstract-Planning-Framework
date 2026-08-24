@@ -46,12 +46,6 @@ the Downward benchmark collection.
 ./examples/abstract.sh
 ```
 
-Run the larger comparison on Gripper `prob02` with:
-
-```bash
-./examples/performance.sh
-```
-
 See [examples/README.md](examples/README.md) for the workflow and object
 abstraction examples.
 

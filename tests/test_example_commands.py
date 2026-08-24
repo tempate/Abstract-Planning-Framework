@@ -24,7 +24,7 @@ class ShellExampleTests(unittest.TestCase):
         return subprocess.run(command, cwd=PROJECT_ROOT, env=environment, capture_output=True, text=True, check=False)
 
     def test_examples_support_help(self):
-        for example in ("concrete", "abstract", "performance"):
+        for example in ("concrete", "abstract"):
             with self.subTest(example=example):
                 result = self._run(example, "--help")
 
@@ -32,7 +32,7 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.stdout.strip(), f"Usage: examples/{example}.sh")
 
     def test_examples_reject_positional_arguments(self):
-        for example in ("concrete", "abstract", "performance"):
+        for example in ("concrete", "abstract"):
             with self.subTest(example=example):
                 result = self._run(example, "unexpected", "/bin/echo")
 
@@ -50,22 +50,13 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.stdout.count("--horizon 11"), 1)
 
     def test_abstract_examples_use_automatic_symmetry_selection(self):
-        for example in ("abstract", "performance"):
-            with self.subTest(example=example):
-                result = self._run(example, python_bin="/bin/echo")
-
-                self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("-m scripts.planner abstract", result.stdout)
-                self.assertIn("--abstract-name ball_abs", result.stdout)
-                self.assertIn("--bliss-time-limit 300", result.stdout)
-                self.assertNotIn("--objects-to-abstract", result.stdout)
-
-    def test_performance_example_uses_gripper_prob02(self):
-        result = self._run("performance", python_bin="/bin/echo")
+        result = self._run("abstract", python_bin="/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.count("gripper/prob02.pddl"), 2)
-        self.assertEqual(result.stdout.count("--horizon 17"), 2)
+        self.assertIn("-m scripts.planner abstract", result.stdout)
+        self.assertIn("--abstract-name ball_abs", result.stdout)
+        self.assertIn("--bliss-time-limit 300", result.stdout)
+        self.assertNotIn("--objects-to-abstract", result.stdout)
 
 
 class PlannerHelpTests(unittest.TestCase):
