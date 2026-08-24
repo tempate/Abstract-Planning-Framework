@@ -10,6 +10,9 @@ abstract-plan constraints in reverse order until it finds a concrete plan.
 
 ## Setup
 
+The planner toolchain and benchmark collection are Git submodules. Initialize
+them together with the repository:
+
 ```bash
 git submodule update --init --recursive
 python -m venv venv
@@ -35,23 +38,19 @@ pre-commit install
 
 ## Try it
 
-The examples contain complete, copyable CLI commands. Beluga is the default;
-pass `no_mystery`, `beluga`, or `all` to choose the workflow.
+The examples contain complete, copyable CLI commands using Gripper tasks from
+the Downward benchmark collection.
 
 ```bash
 ./examples/concrete.sh
 ./examples/abstract.sh
 ./examples/refinement.sh
-
-./examples/concrete.sh no_mystery
-./examples/abstract.sh no_mystery
 ```
 
-Performance comparisons can take a minute or longer:
+Run the larger comparison on Gripper `prob02` with:
 
 ```bash
 ./examples/performance.sh
-./examples/performance.sh no_mystery
 ```
 
 See [examples/README.md](examples/README.md) for the workflow and object
@@ -74,9 +73,10 @@ concrete search:
 
 ```bash
 python -m scripts.planner abstract \
-    --domain data/beluga/concrete/standard/domain.pddl \
-    --problem data/beluga/concrete/standard/problem_3_s45_j3_r2_oc44_f3.pddl \
-    --horizon 17
+    --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
+    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl \
+    --abstract-name ball_abs \
+    --horizon 11
 ```
 
 The planner asks PDDL Symmetries to discover an object class by default. Use
@@ -105,4 +105,4 @@ See [tests/README.md](tests/README.md) for the test layers.
 ## More information
 
 - [Example commands](examples/README.md)
-- [Data layout](data/README.md)
+- [Downward benchmark collection](https://github.com/aibasel/downward-benchmarks)

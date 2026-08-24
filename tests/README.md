@@ -1,7 +1,8 @@
 # Tests
 
-The default suite uses test doubles for external planners. Real workflow and
-PDDL Symmetries tests are opt-in.
+The default suite uses inline PDDL models and test doubles for external
+planners. Real workflow and PDDL Symmetries tests are opt-in and use Gripper
+tasks from the Downward benchmark submodule.
 
 ```bash
 # Fast/default suite
