@@ -39,9 +39,21 @@ class UnifiedPlanningCodecTests(unittest.TestCase):
         serialized = write_problem(source)
         reparsed = parse_problem(serialized.domain, serialized.problem)
 
-        self.assertEqual(len(reparsed.actions), len(source.actions))
-        self.assertEqual(len(list(reparsed.all_objects)), len(list(source.all_objects)))
+        self.assertEqual([action.name for action in reparsed.actions], ["move"])
+        move = reparsed.action("move")
+        self.assertEqual([parameter.name for parameter in move.parameters], ["from", "to"])
+        self.assertEqual(len(move.preconditions), 1)
+        self.assertEqual(len(move.effects), 2)
+
+        self.assertEqual({item.name for item in reparsed.all_objects}, {"start", "destination"})
+        at = reparsed.fluent("at")
+        self.assertTrue(reparsed.initial_value(at(reparsed.object("start"))).is_true())
+        self.assertEqual(reparsed.goals, [at(reparsed.object("destination"))])
+
         self.assertEqual([type(metric).__name__ for metric in reparsed.quality_metrics], ["MinimizeActionCosts"])
+        metric = reparsed.quality_metrics[0]
+        self.assertEqual(metric.costs[move].constant_value(), 1)
+        self.assertEqual(metric.default.constant_value(), 0)
 
     def test_wraps_reader_failures(self):
         domain = "(define (domain d) (:predicates (ready))"

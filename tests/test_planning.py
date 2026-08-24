@@ -89,7 +89,7 @@ class PlanningConfigurationTests(unittest.TestCase):
 
 
 class GeneratedAbstractionTests(unittest.TestCase):
-    def test_explicit_objects_create_temporary_planner_inputs_and_mapping(self):
+    def test_explicit_objects_create_temporary_planner_inputs(self):
         domain_text = "(define (domain d) (:types item) (:predicates (ready ?x - item)))"
         problem_text = """
 (define (problem p) (:domain d)
