@@ -47,15 +47,15 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout.count("lib/downward-benchmarks/gripper/domain.pddl"), 1)
                 self.assertEqual(result.stdout.count("gripper/prob01.pddl"), 1)
-                self.assertEqual(result.stdout.count("--horizon 11"), 1)
+                self.assertNotIn("--horizon", result.stdout)
 
     def test_abstract_examples_use_automatic_symmetry_selection(self):
         result = self._run("abstract", python_bin="/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("-m scripts.planner abstract", result.stdout)
-        self.assertIn("--abstract-name ball_abs", result.stdout)
-        self.assertIn("--bliss-time-limit 300", result.stdout)
+        self.assertNotIn("--abstract-name", result.stdout)
+        self.assertIn("--symmetry-time-limit 300", result.stdout)
         self.assertNotIn("--objects-to-abstract", result.stdout)
 
 
@@ -130,7 +130,7 @@ class PlannerExitStatusTests(unittest.TestCase):
             time_step=False,
             abstract_name=None,
             objects_to_abstract=None,
-            bliss_time_limit=300,
+            symmetry_time_limit=300,
             plan_source="clingo",
         )
         with (
@@ -154,7 +154,7 @@ class PlannerExitStatusTests(unittest.TestCase):
             time_step=False,
             abstract_name="combined",
             objects_to_abstract=["a", "b"],
-            bliss_time_limit=17,
+            symmetry_time_limit=17,
             plan_source="clingo",
         )
         with (
@@ -171,7 +171,7 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertEqual(config.problem_path, "problem.pddl")
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual(config.abstract_name, "combined")
-        self.assertEqual(config.bliss_time_limit, 17)
+        self.assertEqual(config.symmetry_time_limit, 17)
 
 
 if __name__ == "__main__":

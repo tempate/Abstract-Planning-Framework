@@ -224,12 +224,12 @@ class GeneratedAbstractionTests(unittest.TestCase):
         abstraction = Mock(name="item_abs", objects=("a", "b"))
         prepare_abstraction.return_value = Mock(problem=problem, abstraction=abstraction)
         with tempfile.TemporaryDirectory() as directory:
-            config = AbstractPlanningConfig("domain.pddl", "problem.pddl", bliss_time_limit=17)
+            config = AbstractPlanningConfig("domain.pddl", "problem.pddl", symmetry_time_limit=17)
             with patch("core.planning.abstract.write_problem", return_value=Mock(domain="d", problem="p")):
                 selected, _, _ = _resolve_abstraction(config, directory)
 
         prepare_abstraction.assert_called_once_with(
-            "domain.pddl", "problem.pddl", objects_to_abstract=None, abstract_name=None, bliss_time_limit=17
+            "domain.pddl", "problem.pddl", objects_to_abstract=None, abstract_name=None, symmetry_time_limit=17
         )
         self.assertEqual(selected.abstraction.objects, ("a", "b"))
         self.assertIsNone(config.objects_to_abstract)

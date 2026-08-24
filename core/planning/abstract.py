@@ -35,7 +35,7 @@ def _resolve_abstraction(config, base_dir):
         config.problem_path,
         objects_to_abstract=config.objects_to_abstract,
         abstract_name=config.abstract_name,
-        bliss_time_limit=config.bliss_time_limit,
+        symmetry_time_limit=config.symmetry_time_limit,
     )
     serialized = write_problem(abstract_problem.problem)
     input_directory = Path(base_dir, "generated-abstraction")

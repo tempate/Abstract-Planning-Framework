@@ -56,7 +56,7 @@ def _compute(args):
                 **common,
                 objects_to_abstract=args.objects_to_abstract,
                 abstract_name=args.abstract_name,
-                bliss_time_limit=args.bliss_time_limit,
+                symmetry_time_limit=args.symmetry_time_limit,
                 plan_source=args.plan_source,
             )
         )
@@ -89,7 +89,7 @@ def _argument_parser():
         help="Use a Fast Downward plan directly or compute one with Clingo",
     )
     abstract.add_argument(
-        "--bliss-time-limit", type=positive_int, default=300, help="PDDL Symmetries search limit in seconds"
+        "--symmetry-time-limit", type=positive_int, default=300, help="Symmetry discovery time limit in seconds"
     )
 
     parser = argparse.ArgumentParser(description=__doc__)
