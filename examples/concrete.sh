@@ -27,4 +27,4 @@ fi
     --domain lib/downward-benchmarks/gripper/domain.pddl \
     --problem lib/downward-benchmarks/gripper/prob01.pddl \
     --horizon 11 \
-    --encoding exact
+    --encoding bounded

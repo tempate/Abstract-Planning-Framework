@@ -6,7 +6,7 @@ from os import PathLike
 
 Path = str | PathLike[str]
 DEFAULT_HORIZON = None
-DEFAULT_ENCODING = "exact"
+DEFAULT_ENCODING = "bounded"
 DEFAULT_TIME_STEP = False
 DEFAULT_PLAN_SOURCE = "clingo"
 

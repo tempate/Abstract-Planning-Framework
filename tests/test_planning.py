@@ -150,7 +150,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
 
         self.assertEqual(result, {"success": True})
         self.assertEqual(run.call_args_list[1].args[-1], "plan")
-        sas_to_asp.assert_called_once_with("concrete.sas", "exact", False)
+        sas_to_asp.assert_called_once_with("concrete.sas", "bounded", False)
         context = get_strategy.call_args.args[1]
         self.assertEqual(get_strategy.call_args.args[0], "fd")
         self.assertIsNone(context.abstract_asp)
@@ -179,7 +179,7 @@ class PlanningConfigurationTests(unittest.TestCase):
         abstract = AbstractPlanningConfig("domain.pddl", "problem.pddl")
 
         self.assertIsNone(concrete.horizon)
-        self.assertEqual(concrete.encoding, "exact")
+        self.assertEqual(concrete.encoding, "bounded")
         self.assertFalse(concrete.time_step)
         self.assertIsInstance(abstract, PlanningConfig)
         self.assertEqual(abstract.encoding, concrete.encoding)

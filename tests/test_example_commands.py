@@ -75,7 +75,7 @@ class PlannerHelpTests(unittest.TestCase):
     def test_concrete_help_displays_shared_defaults(self):
         help_text = self._help("concrete")
 
-        self.assertIn("ASP encoding type (default: exact)", help_text)
+        self.assertIn("ASP encoding type (default: bounded)", help_text)
         self.assertIn("time-step based encoding (default: False)", help_text)
 
     def test_abstract_help_displays_abstract_defaults(self):
@@ -102,7 +102,12 @@ class PlannerExitStatusTests(unittest.TestCase):
     def test_concrete_cli_returns_failure_when_no_plan_is_found(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
-            mode="concrete", domain="domain.pddl", problem="problem.pddl", horizon=1, encoding="exact", time_step=False
+            mode="concrete",
+            domain="domain.pddl",
+            problem="problem.pddl",
+            horizon=1,
+            encoding="bounded",
+            time_step=False,
         )
         with (
             patch.object(planner, "_argument_parser", return_value=parser),
@@ -121,7 +126,7 @@ class PlannerExitStatusTests(unittest.TestCase):
             domain="domain.pddl",
             problem="problem.pddl",
             horizon=1,
-            encoding="exact",
+            encoding="bounded",
             time_step=False,
             abstract_name=None,
             objects_to_abstract=None,
@@ -145,7 +150,7 @@ class PlannerExitStatusTests(unittest.TestCase):
             domain="domain.pddl",
             problem="problem.pddl",
             horizon=4,
-            encoding="exact",
+            encoding="bounded",
             time_step=False,
             abstract_name="combined",
             objects_to_abstract=["a", "b"],

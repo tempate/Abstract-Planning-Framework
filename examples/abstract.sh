@@ -29,5 +29,5 @@ fi
     --abstract-name ball_abs \
     --bliss-time-limit 300 \
     --horizon 11 \
-    --encoding exact \
+    --encoding bounded \
     --plan-source clingo
