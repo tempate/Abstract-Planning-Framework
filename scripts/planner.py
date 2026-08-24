@@ -36,6 +36,9 @@ def main():
             f"Collapsed {abstraction['objects_to_abstract']} into {abstraction['abstract_symbol']} "
             f"(type={abstraction['object_type']})"
         )
+    fallback = result.get("fallback")
+    if fallback is not None:
+        print(f"No symmetry class found; used the {fallback['mode']} pipeline ({fallback['reason']})")
     print_planning_result(result, get_logger())
     return 0 if result["success"] else 1
 
