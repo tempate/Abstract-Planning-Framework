@@ -111,7 +111,7 @@ class SymmetrySelectionTests(unittest.TestCase):
             patch("core.abstraction.symmetry.read_problem", return_value=self.problem),
             patch("core.abstraction.symmetry.find_symmetric_object_sets", return_value=classes) as find_classes,
         ):
-            result = prepare_abstraction("domain.pddl", "problem.pddl", bliss_time_limit=17)
+            result = prepare_abstraction("domain.pddl", "problem.pddl", symmetry_time_limit=17)
 
         find_classes.assert_called_once_with("domain.pddl", "problem.pddl", 17)
         self.assertEqual(result.abstraction.objects, ("vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"))

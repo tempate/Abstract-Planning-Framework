@@ -16,7 +16,7 @@ _HORIZON_ENCODINGS = {"exact": EXACT_HORIZON_ENCODING, "bounded": BOUNDED_HORIZO
 _SWITCH_RULE_BOUNDS = {"exact": "1", "bounded": "0"}
 
 
-def sas_to_asp(sas_path, encoding_type="exact", abstract_time_steps=False):
+def sas_to_asp(sas_path, encoding_type="bounded", abstract_time_steps=False):
     """Translate a SAS instance and return an in-memory ASP program."""
     # Encoding files for translation
     encoding_file = _HORIZON_ENCODINGS[encoding_type]
@@ -43,7 +43,7 @@ def sas_to_asp(sas_path, encoding_type="exact", abstract_time_steps=False):
     return "\n".join(fragment.rstrip("\n") for fragment in fragments) + "\n"
 
 
-def add_switch_to_asp_rule(asp, encoding_type="exact"):
+def add_switch_to_asp_rule(asp, encoding_type="bounded"):
     """Return an ASP program with a switch-guarded occurrence constraint."""
 
     # Define the original rule and the modified rule based on the encoding type

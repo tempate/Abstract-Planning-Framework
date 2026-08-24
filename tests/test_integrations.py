@@ -100,21 +100,21 @@ class PlaspPostProcessingTests(unittest.TestCase):
             root = Path(directory)
             binary = root / "plasp"
             sas = root / "output.sas"
-            exact = root / "exact.lp"
+            bounded = root / "bounded.lp"
             actions = root / "actions.lp"
             for path in (binary, sas):
                 path.touch()
-            exact.write_text("exact.\n", encoding="utf-8")
+            bounded.write_text("bounded.\n", encoding="utf-8")
             actions.write_text("actions.\n", encoding="utf-8")
 
             with (
                 patch("core.integrations.plasp.PLASP_BIN", str(binary)),
-                patch("core.integrations.plasp._HORIZON_ENCODINGS", {"exact": str(exact)}),
+                patch("core.integrations.plasp._HORIZON_ENCODINGS", {"bounded": str(bounded)}),
                 patch("core.integrations.plasp.ACTION_PER_TIME_STEP_ENCODING", str(actions)),
             ):
                 program = sas_to_asp(str(sas))
 
-            self.assertEqual(program, "exact.\nactions.\ntranslated.\n")
+            self.assertEqual(program, "bounded.\nactions.\ntranslated.\n")
 
     def test_switch_guard_is_added_for_both_horizon_encodings(self):
         rules = {

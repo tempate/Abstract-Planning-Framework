@@ -27,7 +27,5 @@ fi
     --domain lib/downward-benchmarks/gripper/domain.pddl \
     --problem lib/downward-benchmarks/gripper/prob01.pddl \
     --abstract-name ball_abs \
-    --bliss-time-limit 300 \
     --horizon 11 \
-    --encoding exact \
     --plan-source clingo
