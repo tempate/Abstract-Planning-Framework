@@ -11,7 +11,7 @@ from core.abstraction.model import AbstractionError, rank_symmetry_classes
 from core.abstraction.symmetry import prepare_abstraction
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-GRIPPER = PROJECT_ROOT / "benchmarks" / "downward-benchmarks" / "gripper"
+GRIPPER = PROJECT_ROOT / "lib" / "downward-benchmarks" / "gripper"
 
 SYMMETRY_DOMAIN = """
 (define (domain selection)

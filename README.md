@@ -73,8 +73,8 @@ concrete search:
 
 ```bash
 python -m scripts.planner abstract \
-    --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
-    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl \
+    --domain lib/downward-benchmarks/gripper/domain.pddl \
+    --problem lib/downward-benchmarks/gripper/prob01.pddl \
     --abstract-name ball_abs \
     --horizon 11
 ```

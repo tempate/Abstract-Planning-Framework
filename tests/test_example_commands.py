@@ -45,9 +45,7 @@ class ShellExampleTests(unittest.TestCase):
                 result = self._run(example, python_bin="/bin/echo")
 
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual(
-                    result.stdout.count("benchmarks/downward-benchmarks/gripper/domain.pddl"), command_count
-                )
+                self.assertEqual(result.stdout.count("lib/downward-benchmarks/gripper/domain.pddl"), command_count)
                 self.assertEqual(result.stdout.count("gripper/prob01.pddl"), command_count)
                 self.assertEqual(result.stdout.count("--horizon 11"), command_count)
 

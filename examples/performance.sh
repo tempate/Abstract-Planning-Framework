@@ -24,14 +24,14 @@ if (( $# > 0 )); then
 fi
 
 "$python_bin" -m scripts.planner concrete \
-    --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
-    --problem benchmarks/downward-benchmarks/gripper/prob02.pddl \
+    --domain lib/downward-benchmarks/gripper/domain.pddl \
+    --problem lib/downward-benchmarks/gripper/prob02.pddl \
     --horizon 17 \
     --encoding exact
 
 "$python_bin" -m scripts.planner abstract \
-    --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
-    --problem benchmarks/downward-benchmarks/gripper/prob02.pddl \
+    --domain lib/downward-benchmarks/gripper/domain.pddl \
+    --problem lib/downward-benchmarks/gripper/prob02.pddl \
     --abstract-name ball_abs \
     --bliss-time-limit 300 \
     --horizon 17 \
