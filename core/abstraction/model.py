@@ -119,6 +119,18 @@ def _prepare_abstraction(problem, objects_to_abstract, abstract_name):
         raise AbstractionError("Selected objects must have the same declared type")
 
     chosen_name = abstract_name or f"{selected[0].type.name}_abs"
+    unavailable_names = {
+        item.name.casefold()
+        for collection in (
+            problem.actions,
+            problem.fluents,
+            problem.user_types,
+            (item for item in problem.all_objects if item not in selected),
+        )
+        for item in collection
+    }
+    if chosen_name.casefold() in unavailable_names:
+        raise AbstractionError(f"Abstract object name is already used: {chosen_name}")
     return Abstraction(
         name=chosen_name, objects=tuple(item.name for item in selected), object_type=selected[0].type.name
     )
