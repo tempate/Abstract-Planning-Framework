@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 
 from unified_planning.shortcuts import (
     Always,
@@ -15,54 +14,72 @@ from unified_planning.shortcuts import (
     Variable,
 )
 
-from core.integrations.unified_planning import parse_problem, read_problem, write_problem
+from core.integrations.unified_planning import parse_problem, write_problem
 from core.abstraction.model import AbstractionError, abstract_problem
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BELUGA = PROJECT_ROOT / "data" / "beluga" / "concrete" / "standard"
+ABSTRACTION_DOMAIN = """
+(define (domain inventory)
+  (:requirements :strips :typing)
+  (:types item)
+  (:predicates
+    (available ?x - item)
+    (eligible ?x - item)
+    (reserved ?x - item)
+    (used ?x - item))
+  (:action consume
+    :parameters (?x - item)
+    :precondition (and (available ?x) (eligible ?x))
+    :effect (and (not (available ?x)) (used ?x)))
+  (:action release
+    :parameters (?x - item)
+    :precondition (and (available ?x) (reserved ?x))
+    :effect (not (available ?x))))
+"""
+
+ABSTRACTION_PROBLEM = """
+(define (problem inventory-task)
+  (:domain inventory)
+  (:objects item-a item-b item-c - item)
+  (:init
+    (available item-a)
+    (available item-b)
+    (available item-c)
+    (eligible item-a)
+    (eligible item-b)
+    (reserved item-c))
+  (:goal (and (used item-a) (used item-b))))
+"""
 
 
 class ModelAbstractionTests(unittest.TestCase):
-    def test_collapses_beluga_hangars_without_mutating_source(self):
-        source = read_problem(BELUGA / "domain.pddl", BELUGA / "problem_3_s45_j3_r2_oc44_f3.pddl")
+    def test_collapses_objects_without_mutating_source(self):
+        source = parse_problem(ABSTRACTION_DOMAIN, ABSTRACTION_PROBLEM)
         source_objects = tuple(item.name for item in source.all_objects)
 
-        result = abstract_problem(source, ["hangar1", "hangar2", "hangar3"], "hangarabs")
+        result = abstract_problem(source, ["item-a", "item-b"], "pooled-item")
 
         self.assertEqual(tuple(item.name for item in source.all_objects), source_objects)
         result_objects = {item.name for item in result.problem.all_objects}
-        self.assertTrue({"hangar1", "hangar2", "hangar3"}.isdisjoint(result_objects))
-        self.assertIn("hangarabs", result_objects)
-        self.assertEqual(result.abstraction.object_type, "hangar")
-        self.assertEqual([item.action for item in result.removed_deletes], ["deliver-to-hangar"])
+        self.assertTrue({"item-a", "item-b"}.isdisjoint(result_objects))
+        self.assertEqual(result_objects, {"item-c", "pooled-item"})
+        self.assertEqual(result.abstraction.object_type, "item")
+        self.assertEqual([item.action for item in result.removed_deletes], ["consume"])
         serialized = write_problem(result.problem)
-        for selected in ("hangar1", "hangar2", "hangar3"):
-            self.assertNotIn(selected, serialized.domain)
+        for selected in ("item-a", "item-b"):
             self.assertNotIn(selected, serialized.problem)
         parse_problem(serialized.domain, serialized.problem)
-        expected = read_problem(
-            PROJECT_ROOT / "data" / "beluga" / "abstract" / "hangar" / "domain.pddl",
-            PROJECT_ROOT / "data" / "beluga" / "abstract" / "hangar" / "problem_3_s45_j3_r2_oc44_f3_abs.pddl",
-        )
-        self.assertEqual(result.problem, expected)
 
-    def test_preserves_static_applicability_filter_for_trailers(self):
-        source = read_problem(BELUGA / "domain.pddl", BELUGA / "problem_3_s45_j3_r2_oc44_f3.pddl")
+    def test_preserves_deletes_when_static_facts_make_an_action_inapplicable(self):
+        source = parse_problem(ABSTRACTION_DOMAIN, ABSTRACTION_PROBLEM)
 
-        result = abstract_problem(source, ["beluga_trailer_1", "beluga_trailer_2"], "beluga_abs_trailer")
+        result = abstract_problem(source, ["item-a", "item-b"], "pooled-item")
 
-        self.assertEqual(
-            [item.action for item in result.removed_deletes], ["unload-beluga", "pick-up-rack", "unstack-rack"]
-        )
-        get_from_hangar = result.problem.action("get-from-hangar")
+        self.assertEqual([item.action for item in result.removed_deletes], ["consume"])
+        release = result.problem.action("release")
         self.assertTrue(
             any(
-                effect.fluent.is_fluent_exp()
-                and effect.fluent.fluent().name == "empty"
-                and effect.fluent.arg(0).is_parameter_exp()
-                and effect.fluent.arg(0).parameter().name == "t"
-                and effect.value.is_false()
-                for effect in get_from_hangar.effects
+                effect.fluent.is_fluent_exp() and effect.fluent.fluent().name == "available" and effect.value.is_false()
+                for effect in release.effects
             )
         )
 

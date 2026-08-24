@@ -7,11 +7,52 @@ from unittest.mock import patch
 
 from core.integrations.pddl_symmetries import PddlSymmetriesError, find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.abstraction.model import rank_symmetry_classes
+from core.abstraction.model import AbstractionError, rank_symmetry_classes
 from core.abstraction.symmetry import prepare_abstraction
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BELUGA_CONCRETE = PROJECT_ROOT / "data" / "beluga" / "concrete" / "standard"
+GRIPPER = PROJECT_ROOT / "lib" / "downward-benchmarks" / "gripper"
+
+SYMMETRY_DOMAIN = """
+(define (domain selection)
+  (:requirements :strips :typing)
+  (:types cargo tool vehicle)
+  (:predicates
+    (cargo-ready ?x - cargo)
+    (tool-ready ?x - tool)
+    (tool-free ?x - tool)
+    (parked ?x - vehicle))
+  (:action pack
+    :parameters (?x - cargo)
+    :precondition (cargo-ready ?x)
+    :effect (not (cargo-ready ?x)))
+  (:action equip
+    :parameters (?x - tool)
+    :precondition (and (tool-ready ?x) (tool-free ?x))
+    :effect (and (not (tool-ready ?x)) (not (tool-free ?x)))))
+"""
+
+SYMMETRY_PROBLEM = """
+(define (problem selection-task)
+  (:domain selection)
+  (:objects
+    cargo-a cargo-b cargo-c - cargo
+    tool-a tool-b - tool
+    vehicle-a vehicle-b vehicle-c vehicle-d - vehicle)
+  (:init
+    (cargo-ready cargo-a)
+    (cargo-ready cargo-b)
+    (cargo-ready cargo-c)
+    (tool-ready tool-a)
+    (tool-ready tool-b)
+    (tool-free tool-a)
+    (tool-free tool-b)
+    (parked vehicle-a)
+    (parked vehicle-b)
+    (parked vehicle-c)
+    (parked vehicle-d))
+  (:goal (and)))
+"""
 
 
 def _stub_symmetry_inputs(directory):
@@ -26,28 +67,22 @@ def _stub_symmetry_inputs(directory):
 
 class SymmetrySelectionTests(unittest.TestCase):
     def setUp(self):
-        self.problem_path = BELUGA_CONCRETE / "problem_3_s45_j3_r2_oc44_f3.pddl"
-        self.problem = read_problem(BELUGA_CONCRETE / "domain.pddl", self.problem_path)
+        self.problem = parse_problem(SYMMETRY_DOMAIN, SYMMETRY_PROBLEM)
 
     def test_ranks_by_score_then_size_then_lexical_order(self):
         classes = [
-            ["factory_trailer_1", "factory_trailer_2"],
-            ["hangar1", "hangar2", "hangar3"],
-            ["beluga_trailer_1", "beluga_trailer_2"],
+            ["cargo-c", "cargo-a", "cargo-b"],
+            ["tool-b", "tool-a"],
+            ["vehicle-d", "vehicle-b", "vehicle-c", "vehicle-a"],
         ]
         ranked = rank_symmetry_classes(self.problem, classes)
 
-        self.assertEqual(ranked[0].abstraction.objects, ("hangar1", "hangar2", "hangar3"))
-        self.assertEqual(ranked[0].unary_delete_score, 1)
-        self.assertEqual(ranked[1].abstraction.objects[0], "beluga_trailer_1")
-        self.assertEqual(ranked[1].unary_delete_score, 3)
-        self.assertEqual(
-            [removed.action for removed in ranked[1].removed_deletes], ["unload-beluga", "pick-up-rack", "unstack-rack"]
-        )
-        self.assertEqual(
-            [removed.action for removed in ranked[2].removed_deletes],
-            ["get-from-hangar", "pick-up-rack", "unstack-rack"],
-        )
+        self.assertEqual(ranked[0].abstraction.objects, ("vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"))
+        self.assertEqual(ranked[0].unary_delete_score, 0)
+        self.assertEqual(ranked[1].abstraction.objects, ("cargo-a", "cargo-b", "cargo-c"))
+        self.assertEqual([removed.action for removed in ranked[1].removed_deletes], ["pack"])
+        self.assertEqual(ranked[2].abstraction.objects, ("tool-a", "tool-b"))
+        self.assertEqual([removed.action for removed in ranked[2].removed_deletes], ["equip", "equip"])
 
     def test_equal_scores_prefer_the_largest_class(self):
         domain = """
@@ -66,19 +101,43 @@ class SymmetrySelectionTests(unittest.TestCase):
 
         self.assertEqual(ranked[0].abstraction.objects, ("b1", "b2", "b3"))
 
-    @patch("core.abstraction.symmetry.find_symmetric_object_sets")
-    def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self, find_classes):
-        find_classes.return_value = [
-            ["factory_trailer_1", "factory_trailer_2"],
-            ["hangar1", "hangar2", "hangar3"],
-            ["beluga_trailer_1", "beluga_trailer_2"],
+    def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self):
+        classes = [
+            ["cargo-a", "cargo-b", "cargo-c"],
+            ["tool-a", "tool-b"],
+            ["vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"],
         ]
+        with (
+            patch("core.abstraction.symmetry.read_problem", return_value=self.problem),
+            patch("core.abstraction.symmetry.find_symmetric_object_sets", return_value=classes) as find_classes,
+        ):
+            result = prepare_abstraction("domain.pddl", "problem.pddl", bliss_time_limit=17)
 
-        abstract_problem = prepare_abstraction(BELUGA_CONCRETE / "domain.pddl", self.problem_path, bliss_time_limit=17)
+        find_classes.assert_called_once_with("domain.pddl", "problem.pddl", 17)
+        self.assertEqual(result.abstraction.objects, ("vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"))
+        self.assertEqual(result.abstraction.name, "vehicle_abs")
 
-        find_classes.assert_called_once_with(BELUGA_CONCRETE / "domain.pddl", self.problem_path, 17)
-        self.assertEqual(abstract_problem.abstraction.objects, ("hangar1", "hangar2", "hangar3"))
-        self.assertEqual(abstract_problem.abstraction.name, "hangar_abs")
+    def test_accepts_domain_constants_reported_by_pddl_symmetries(self):
+        domain = """
+(define (domain constants)
+  (:requirements :strips :typing)
+  (:types depot)
+  (:constants depot-a depot-b - depot)
+  (:predicates (open ?x - depot)))
+"""
+        problem = """
+(define (problem constants-task)
+  (:domain constants)
+  (:init (open depot-a) (open depot-b))
+  (:goal (open depot-a)))
+"""
+        ranked = rank_symmetry_classes(parse_problem(domain, problem), [["depot-b", "depot-a"]])
+
+        self.assertEqual(ranked[0].abstraction.objects, ("depot-a", "depot-b"))
+
+    def test_rejects_a_symmetry_class_that_cannot_be_collapsed(self):
+        with self.assertRaisesRegex(AbstractionError, "same declared type"):
+            rank_symmetry_classes(self.problem, [["cargo-a", "tool-a"]])
 
     @patch("core.integrations.pddl_symmetries.subprocess.run")
     def test_extracts_object_sets_from_translator_output(self, run):
@@ -123,20 +182,13 @@ class SymmetrySelectionTests(unittest.TestCase):
     os.environ.get("RUN_PLANNER_INTEGRATION") == "1", "set RUN_PLANNER_INTEGRATION=1 to run PDDL Symmetries"
 )
 class RealSymmetryIntegrationTests(unittest.TestCase):
-    def test_beluga_symmetries_select_hangars(self):
-        problem_path = BELUGA_CONCRETE / "problem_3_s45_j3_r2_oc44_f3.pddl"
-        classes = find_symmetric_object_sets(BELUGA_CONCRETE / "domain.pddl", problem_path)
-        ranked = rank_symmetry_classes(read_problem(BELUGA_CONCRETE / "domain.pddl", problem_path), classes)
+    def test_gripper_symmetries_select_balls(self):
+        problem_path = GRIPPER / "prob01.pddl"
+        classes = find_symmetric_object_sets(GRIPPER / "domain.pddl", problem_path)
+        ranked = rank_symmetry_classes(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
 
-        self.assertEqual(
-            {tuple(group) for group in classes},
-            {
-                ("beluga_trailer_1", "beluga_trailer_2"),
-                ("factory_trailer_1", "factory_trailer_2"),
-                ("hangar1", "hangar2", "hangar3"),
-            },
-        )
-        self.assertEqual(ranked[0].abstraction.objects, ("hangar1", "hangar2", "hangar3"))
+        self.assertEqual({tuple(group) for group in classes}, {("ball1", "ball2", "ball3", "ball4"), ("left", "right")})
+        self.assertEqual(ranked[0].abstraction.objects, ("ball1", "ball2", "ball3", "ball4"))
 
 
 if __name__ == "__main__":

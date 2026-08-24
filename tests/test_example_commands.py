@@ -14,69 +14,49 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 class ShellExampleTests(unittest.TestCase):
-    def _run(self, example, workflow=None, python_bin=None):
+    def _run(self, example, argument=None, python_bin=None):
         environment = os.environ.copy()
         if python_bin is not None:
             environment["PYTHON_BIN"] = python_bin
         command = [f"examples/{example}.sh"]
-        if workflow is not None:
-            command.append(workflow)
+        if argument is not None:
+            command.append(argument)
         return subprocess.run(command, cwd=PROJECT_ROOT, env=environment, capture_output=True, text=True, check=False)
 
-    def test_planning_examples_support_domain_selection(self):
-        for example in ("concrete", "abstract", "refinement"):
+    def test_examples_support_help(self):
+        for example in ("concrete", "abstract"):
             with self.subTest(example=example):
                 result = self._run(example, "--help")
 
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("[no_mystery|beluga|all]", result.stdout)
+                self.assertEqual(result.stdout.strip(), f"Usage: examples/{example}.sh")
 
-    def test_performance_example_supports_domain_selection(self):
-        result = self._run("performance", "--help")
+    def test_examples_reject_positional_arguments(self):
+        for example in ("concrete", "abstract"):
+            with self.subTest(example=example):
+                result = self._run(example, "unexpected", "/bin/echo")
 
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("[no_mystery|beluga|all]", result.stdout)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("Usage:", result.stderr)
 
-    def test_planning_workflows_default_to_beluga(self):
-        for example in ("concrete", "abstract", "refinement", "performance"):
+    def test_quick_examples_use_gripper_prob01(self):
+        for example in ("concrete", "abstract"):
             with self.subTest(example=example):
                 result = self._run(example, python_bin="/bin/echo")
 
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertIn("beluga", result.stdout)
-                self.assertNotIn("no_mystery", result.stdout)
+                self.assertEqual(result.stdout.count("lib/downward-benchmarks/gripper/domain.pddl"), 1)
+                self.assertEqual(result.stdout.count("gripper/prob01.pddl"), 1)
+                self.assertEqual(result.stdout.count("--horizon 11"), 1)
 
-    def test_abstract_example_uses_automatic_symmetry_selection(self):
-        result = self._run("abstract", "beluga", "/bin/echo")
+    def test_abstract_examples_use_automatic_symmetry_selection(self):
+        result = self._run("abstract", python_bin="/bin/echo")
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("-m scripts.planner abstract", result.stdout)
-        self.assertIn("--domain data/beluga/concrete/standard/domain.pddl", result.stdout)
+        self.assertIn("--abstract-name ball_abs", result.stdout)
         self.assertIn("--bliss-time-limit 300", result.stdout)
         self.assertNotIn("--objects-to-abstract", result.stdout)
-
-    def test_refinement_example_selects_two_trailers_explicitly(self):
-        result = self._run("refinement", "beluga", "/bin/echo")
-
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("-m scripts.planner abstract", result.stdout)
-        self.assertIn("--objects-to-abstract beluga_trailer_1 beluga_trailer_2", result.stdout)
-
-    def test_no_mystery_performance_uses_the_same_p04_problem(self):
-        result = self._run("performance", "no_mystery", "/bin/echo")
-
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.count("concrete/p04.pddl"), 2)
-        self.assertEqual(result.stdout.count("--horizon 19"), 2)
-
-    def test_beluga_performance_uses_standard_problem_38(self):
-        result = self._run("performance", "beluga", "/bin/echo")
-
-        self.assertEqual(result.returncode, 0, result.stderr)
-        problem = "standard/problem_38_s81_j5_r2_oc31_f4.pddl"
-        self.assertEqual(result.stdout.count(problem), 2)
-        self.assertEqual(result.stdout.count("--horizon 26"), 2)
-        self.assertIn("--objects-to-abstract hangar1 hangar2 hangar3", result.stdout)
 
 
 class PlannerHelpTests(unittest.TestCase):

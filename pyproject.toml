@@ -4,8 +4,7 @@ target-version = ["py313"]
 skip-magic-trailing-comma = true
 extend-exclude = '''
 /(
-    data
-  | lib
+    lib
   | scripts/utils/temp
 )/
 '''

@@ -1,34 +1,28 @@
 # Examples
 
-Examples are organized by workflow and contain complete CLI commands. Run them
-from the repository root.
+The examples contain complete CLI commands for the Gripper domain from the
+[Downward benchmark collection](https://github.com/aibasel/downward-benchmarks).
+Run them from the repository root after initializing the submodules.
 
-| Script | Default | Choices |
+| Script | Task | Purpose |
 | --- | --- | --- |
-| `concrete.sh` | Beluga | `no_mystery`, `beluga`, `all` |
-| `abstract.sh` | Beluga | `no_mystery`, `beluga`, `all` |
-| `refinement.sh` | Beluga | `no_mystery`, `beluga`, `all` |
-| `performance.sh` | Beluga | `no_mystery`, `beluga`, `all` |
+| `concrete.sh` | `gripper/prob01.pddl` | Solve the concrete task directly |
+| `abstract.sh` | `gripper/prob01.pddl` | Discover and solve an object abstraction |
 
 ## Planning
 
 ```bash
-./examples/concrete.sh [no_mystery|beluga|all]
-./examples/abstract.sh [no_mystery|beluga|all]
-./examples/refinement.sh [no_mystery|beluga|all]
-./examples/performance.sh [no_mystery|beluga|all]
+./examples/concrete.sh
+./examples/abstract.sh
 ```
 
-`refinement.sh` first runs a concrete task and then its abstraction.
-`performance.sh` uses larger matched tasks and can take a minute or longer.
+`abstract.sh` asks PDDL Symmetries to discover the symmetric object classes.
+The selected ball class is collapsed into a temporary abstract object, the
+abstraction is solved, and its plan guides the concrete search. Automatic
+selection requires the pybliss setup described in the main README.
 
-The Beluga workflow in `abstract.sh` demonstrates the integrated path: it
-takes one concrete domain/problem pair, lets PDDL Symmetries select the
-hangars, builds a temporary abstraction, solves it, and uses that plan to guide
-concrete search.
-Omit `--objects-to-abstract` to let PDDL Symmetries discover and rank the object classes,
-as the NoMystery examples do. Automatic selection requires the pybliss setup
-described in the main README.
-
-All examples use explicit horizons. Run `python -m scripts.planner --help` for
-the two planning modes and their complete CLI reference.
+The example paths are deliberately ordinary `--domain` and `--problem`
+arguments. The framework does not otherwise depend on the benchmark layout;
+the same commands accept any compatible PDDL task. All examples use explicit
+horizons. Run `python -m scripts.planner --help` for the two planning modes and
+their complete CLI reference.
