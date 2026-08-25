@@ -188,11 +188,24 @@ class PlannerExitStatusTests(unittest.TestCase):
             symmetry_time_limit=17,
             plan_source="clingo",
         )
+        output = StringIO()
         with (
             patch.object(planner, "_argument_parser", return_value=parser),
-            patch.object(planner, "compute_abstract_plan", return_value={"success": True}) as compute,
+            patch.object(
+                planner,
+                "compute_abstract_plan",
+                return_value={
+                    "success": True,
+                    "abstraction": {
+                        "objects_to_abstract": ["b", "a"],
+                        "abstract_symbol": "combined",
+                        "object_type": "item",
+                    },
+                },
+            ) as compute,
             patch.object(planner, "print_planning_result"),
             patch.object(planner, "get_logger"),
+            redirect_stdout(output),
         ):
             status = planner.main()
 
@@ -203,6 +216,7 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual(config.abstract_name, "combined")
         self.assertEqual(config.symmetry_time_limit, 17)
+        self.assertIn("Collapsed ['a', 'b'] into combined", output.getvalue())
 
 
 if __name__ == "__main__":

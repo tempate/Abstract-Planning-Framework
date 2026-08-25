@@ -1,1 +1,1 @@
-"""Symmetric-object model transformations and selection."""
+"""Symmetric-object abstraction and selection."""

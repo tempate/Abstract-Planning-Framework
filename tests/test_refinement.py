@@ -5,14 +5,11 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from core.abstraction.model import Abstraction
+from core.abstraction.factory import Abstraction
 from core.planning.abstract import _select_abstract_horizon
 from core.planning.config import AbstractPlanningConfig
 from core.planning.plan import PlanAction
-from core.planning.refinement.base import RefinementContext
-from core.planning.refinement.clingo import ClingoRefinement
-from core.planning.refinement.fast_downward import FastDownwardRefinement
-from core.planning.refinement.factory import get_refinement_strategy
+from core.planning.refinement import RefinementContext, read_fast_downward_plan, refine
 
 
 class AbstractPlanningHelperTests(unittest.TestCase):
@@ -28,11 +25,12 @@ class AbstractPlanningHelperTests(unittest.TestCase):
             _select_abstract_horizon(5, 6, "fd")
 
 
-class RefinementStrategyTests(unittest.TestCase):
+class RefinementTests(unittest.TestCase):
     def _context(self, **changes):
         values = {
             "config": AbstractPlanningConfig("domain.pddl", "problem.pddl"),
             "abstraction": Abstraction("item_abs", ("a", "b"), "item"),
+            "relaxed_deletes": (object(), object()),
             "concrete_asp": "concrete asp",
             "abstract_asp": "abstract asp",
             "abstract_task": {"planFile": "sas_plan"},
@@ -48,35 +46,38 @@ class RefinementStrategyTests(unittest.TestCase):
         values.update(changes)
         return RefinementContext(**values)
 
-    def test_factory_selects_the_requested_strategy(self):
-        context = object()
-
-        self.assertIsInstance(get_refinement_strategy("clingo", context), ClingoRefinement)
-        self.assertIsInstance(get_refinement_strategy("fd", context), FastDownwardRefinement)
-
-    @patch("core.planning.refinement.clingo.build_mapping")
-    @patch("core.planning.refinement.clingo.run_clingo", return_value=None)
+    @patch("core.planning.refinement.build_mapping")
+    @patch("core.planning.refinement.run_clingo", return_value=None)
     def test_clingo_stops_when_no_abstract_plan_exists(self, run_clingo, build_mapping):
         context = self._context()
 
-        result = ClingoRefinement(context).refine()
+        result = refine(context)
 
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
         self.assertEqual(result["timings"]["decrements"], 0)
+        self.assertEqual(
+            result["abstraction"],
+            {
+                "abstract_symbol": "item_abs",
+                "objects_to_abstract": ["a", "b"],
+                "object_type": "item",
+                "relaxed_unary_deletes": 2,
+            },
+        )
         run_clingo.assert_called_once_with("abstract asp", 3)
         build_mapping.assert_not_called()
 
-    @patch("core.planning.refinement.base.solve_decrementally", return_value=(True, ["occurs(concrete,1)"], 2))
-    @patch("core.planning.refinement.clingo.build_mapping", return_value="mapping asp")
-    @patch("core.planning.refinement.clingo.parse_plan_actions", return_value=(PlanAction("move", ("item_abs",), 1),))
-    @patch("core.planning.refinement.clingo.run_clingo", return_value=["occurs(abstract,1)"])
+    @patch("core.planning.refinement.solve_decrementally", return_value=(True, ["occurs(concrete,1)"], 2))
+    @patch("core.planning.refinement.build_mapping", return_value="mapping asp")
+    @patch("core.planning.refinement.parse_plan_actions", return_value=(PlanAction("move", ("item_abs",), 1),))
+    @patch("core.planning.refinement.run_clingo", return_value=["occurs(abstract,1)"])
     def test_clingo_maps_the_abstract_plan_and_reports_decrements(
         self, run_clingo, parse_plan_actions, build_mapping, solve_decrementally
     ):
         context = self._context()
 
-        result = ClingoRefinement(context).refine()
+        result = refine(context)
 
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ["occurs(concrete,1)"])
@@ -86,32 +87,35 @@ class RefinementStrategyTests(unittest.TestCase):
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
         solve_decrementally.assert_called_once_with("concrete asp\nmapping asp", 3)
 
-    @patch("core.planning.refinement.base.solve_decrementally", return_value=(False, None, 3))
-    @patch("core.planning.refinement.clingo.build_mapping", return_value="mapping asp")
-    @patch("core.planning.refinement.clingo.parse_plan_actions", return_value=())
-    @patch("core.planning.refinement.clingo.run_clingo", return_value=["abstract atom"])
+    @patch("core.planning.refinement.solve_decrementally", return_value=(False, None, 3))
+    @patch("core.planning.refinement.build_mapping", return_value="mapping asp")
+    @patch("core.planning.refinement.parse_plan_actions", return_value=())
+    @patch("core.planning.refinement.run_clingo", return_value=["abstract atom"])
     def test_clingo_reports_concrete_refinement_failure(
         self, run_clingo, parse_plan_actions, build_mapping, solve_decrementally
     ):
-        result = ClingoRefinement(self._context()).refine()
+        result = refine(self._context())
 
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
         self.assertEqual(result["timings"]["decrements"], 3)
         solve_decrementally.assert_called_once_with("concrete asp\nmapping asp", 3)
 
-    @patch("core.planning.refinement.base.solve_decrementally", return_value=(False, None, 1))
-    @patch("core.planning.refinement.fast_downward.build_mapping", return_value="fd mapping")
-    @patch.object(FastDownwardRefinement, "read_abstract_plan", return_value=(PlanAction("move", ("item_abs",), 1),))
-    def test_fd_source_maps_its_plan_and_reports_failure(self, read_abstract_plan, build_mapping, solve_decrementally):
-        context = self._context(abstract_task={"planFile": "abstract.plan"})
+    @patch("core.planning.refinement.solve_decrementally", return_value=(False, None, 1))
+    @patch("core.planning.refinement.build_mapping", return_value="fd mapping")
+    @patch("core.planning.refinement.read_fast_downward_plan", return_value=(PlanAction("move", ("item_abs",), 1),))
+    def test_fd_source_maps_its_plan_and_reports_failure(self, read_plan, build_mapping, solve_decrementally):
+        context = self._context(
+            config=AbstractPlanningConfig("domain.pddl", "problem.pddl", plan_source="fd"),
+            abstract_task={"planFile": "abstract.plan"},
+        )
 
-        result = FastDownwardRefinement(context).refine()
+        result = refine(context)
 
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
         self.assertEqual(result["timings"]["decrements"], 1)
-        read_abstract_plan.assert_called_once_with("abstract.plan")
+        read_plan.assert_called_once_with("abstract.plan")
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
         solve_decrementally.assert_called_once_with("concrete asp\nfd mapping", 3)
 
@@ -127,7 +131,7 @@ class RefinementStrategyTests(unittest.TestCase):
             source = Path(directory, "sas_plan")
             source.write_text(plan, encoding="utf-8")
 
-            abstract_plan = FastDownwardRefinement.read_abstract_plan(object(), source)
+            abstract_plan = read_fast_downward_plan(source)
 
             self.assertEqual(
                 abstract_plan,
@@ -137,6 +141,12 @@ class RefinementStrategyTests(unittest.TestCase):
                     PlanAction("wait", (), 3),
                 ),
             )
+
+    def test_unknown_plan_source_is_rejected(self):
+        context = self._context(config=AbstractPlanningConfig("domain.pddl", "problem.pddl", plan_source="unknown"))
+
+        with self.assertRaisesRegex(ValueError, "Unknown abstract plan source: unknown"):
+            refine(context)
 
 
 if __name__ == "__main__":

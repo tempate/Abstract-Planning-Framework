@@ -5,10 +5,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
 
-from core.abstraction.model import Abstraction, AbstractionError
-from core.abstraction.symmetry import prepare_abstraction
+from core.abstraction.factory import Abstraction, AbstractionError, build_abstract_problem
 from core.integrations.unified_planning import read_problem
-from core.planning.abstract import _compute_abstract_plan, _write_abstract_problem, compute_abstract_plan
+from core.planning.abstract import _write_abstract_problem, compute_abstract_plan
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.concrete import compute_concrete_plan
 from scripts.utils.arguments import nonnegative_int, positive_int
@@ -56,40 +55,37 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
 
 
 class AbstractPlanningOrchestrationTests(unittest.TestCase):
-    def test_top_level_result_describes_the_generated_abstraction(self):
+    def test_top_level_passes_the_generated_abstraction_to_refinement(self):
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
         abstract_problem = Mock()
-        generated = SimpleNamespace(problem=abstract_problem, abstraction=abstraction, unary_delete_score=2)
+        generated = SimpleNamespace(
+            problem=abstract_problem, abstraction=abstraction, relaxed_deletes=(object(), object())
+        )
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl")
+        concrete_task = {"sasFile": "concrete.sas"}
+        abstract_task = {"sasFile": "abstract.sas", "horizon": 2}
 
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
-            patch("core.planning.abstract.prepare_abstraction", return_value=generated) as prepare,
+            patch("core.planning.abstract.build_abstract_problem", return_value=generated) as build,
             patch(
                 "core.planning.abstract._write_abstract_problem",
                 return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
             ) as write,
-            patch("core.planning.abstract._compute_abstract_plan", return_value={"success": True}) as compute,
+            patch("core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]),
+            patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]),
+            patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
+            patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
         ):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             result = compute_abstract_plan(config)
 
-        prepare.assert_called_once_with(
-            "domain.pddl", "problem.pddl", objects_to_abstract=None, abstract_name=None, symmetry_time_limit=300
-        )
+        build.assert_called_once_with(config)
         write.assert_called_once_with(abstract_problem, "run-dir")
-        compute.assert_called_once_with(
-            config, abstraction, "run-dir", "run-123", "abstract-domain.pddl", "abstract-problem.pddl"
-        )
-        self.assertEqual(
-            result["abstraction"],
-            {
-                "abstract_symbol": "item_abs",
-                "objects_to_abstract": ["a", "b"],
-                "object_type": "item",
-                "relaxed_unary_deletes": 2,
-            },
-        )
+        context = refine.call_args.args[0]
+        self.assertIs(context.abstraction, abstraction)
+        self.assertIs(context.relaxed_deletes, generated.relaxed_deletes)
+        self.assertEqual(result, {"success": True})
 
     def test_falls_back_to_concrete_planning_when_no_symmetry_class_exists(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", horizon=4, encoding="exact", time_step=True)
@@ -97,7 +93,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
 
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
-            patch("core.planning.abstract.prepare_abstraction", return_value=None),
+            patch("core.planning.abstract.build_abstract_problem", return_value=None),
             patch("core.planning.abstract.compute_concrete_plan", return_value=concrete_result) as concrete,
         ):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
@@ -115,7 +111,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
             patch(
-                "core.planning.abstract.prepare_abstraction",
+                "core.planning.abstract.build_abstract_problem",
                 side_effect=AbstractionError("Selected objects must have the same declared type"),
             ),
             patch("core.planning.abstract.compute_concrete_plan") as concrete,
@@ -131,22 +127,25 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             "domain.pddl", "problem.pddl", horizon=4, encoding="bounded", time_step=True, plan_source="clingo"
         )
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
+        generated = SimpleNamespace(problem=Mock(), abstraction=abstraction, relaxed_deletes=())
         concrete_task = {"sasFile": "concrete.sas"}
         abstract_task = {"sasFile": "abstract.sas", "horizon": 0}
-        strategy = Mock()
-        strategy.refine.return_value = {"success": True}
-
         with (
+            patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch("core.planning.abstract.build_abstract_problem", return_value=generated),
+            patch(
+                "core.planning.abstract._write_abstract_problem",
+                return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
+            ),
             patch(
                 "core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
             ) as run,
             patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]) as sas_to_asp,
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp") as add_switch,
-            patch("core.planning.abstract.get_refinement_strategy", return_value=strategy) as get_strategy,
+            patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
         ):
-            result = _compute_abstract_plan(
-                config, abstraction, "run-dir", "run-123", "abstract-domain.pddl", "abstract-problem.pddl"
-            )
+            temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
+            result = compute_abstract_plan(config)
 
         self.assertEqual(result, {"success": True})
         self.assertEqual(
@@ -160,45 +159,46 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             sas_to_asp.call_args_list, [call("concrete.sas", "bounded", True), call("abstract.sas", "bounded", True)]
         )
         add_switch.assert_called_once_with("concrete asp", "bounded")
-        context = get_strategy.call_args.args[1]
-        self.assertEqual(get_strategy.call_args.args[0], "clingo")
+        context = refine.call_args.args[0]
         self.assertEqual(context.concrete_asp, "guarded concrete asp")
         self.assertEqual(context.abstract_asp, "abstract asp")
         self.assertEqual(context.abstract_task, abstract_task)
         self.assertEqual(context.horizon, 4)
         self.assertEqual(context.fd_timings["fd_concrete_time"], 1.0)
         self.assertEqual(context.fd_timings["fd_abstract_time"], 2.0)
-        strategy.refine.assert_called_once_with()
+        refine.assert_called_once_with(context)
 
     def test_fd_source_uses_its_plan_and_skips_abstract_asp_generation(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", plan_source="fd")
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
+        generated = SimpleNamespace(problem=Mock(), abstraction=abstraction, relaxed_deletes=())
         concrete_task = {"sasFile": "concrete.sas"}
         abstract_task = {"sasFile": "abstract.sas", "planFile": "sas_plan", "horizon": 6}
-        strategy = Mock()
-        strategy.refine.return_value = {"success": True}
-
         with (
+            patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch("core.planning.abstract.build_abstract_problem", return_value=generated),
+            patch(
+                "core.planning.abstract._write_abstract_problem",
+                return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
+            ),
             patch(
                 "core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
             ) as run,
             patch("core.planning.abstract.sas_to_asp", return_value="concrete asp") as sas_to_asp,
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
-            patch("core.planning.abstract.get_refinement_strategy", return_value=strategy) as get_strategy,
+            patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
         ):
-            result = _compute_abstract_plan(
-                config, abstraction, "run-dir", "run-123", "abstract-domain.pddl", "abstract-problem.pddl"
-            )
+            temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
+            result = compute_abstract_plan(config)
 
         self.assertEqual(result, {"success": True})
         self.assertEqual(run.call_args_list[1].args[-1], "plan")
         sas_to_asp.assert_called_once_with("concrete.sas", "bounded", False)
-        context = get_strategy.call_args.args[1]
-        self.assertEqual(get_strategy.call_args.args[0], "fd")
+        context = refine.call_args.args[0]
         self.assertIsNone(context.abstract_asp)
         self.assertEqual(context.abstract_task, abstract_task)
         self.assertEqual(context.horizon, 6)
-        strategy.refine.assert_called_once_with()
+        refine.assert_called_once_with(context)
 
 
 class ArgumentTests(unittest.TestCase):
@@ -252,13 +252,7 @@ class GeneratedAbstractionTests(unittest.TestCase):
             problem.write_text(problem_text, encoding="utf-8")
             config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"], abstract_name="combined")
 
-            abstract_problem = prepare_abstraction(
-                config.domain_path,
-                config.problem_path,
-                objects_to_abstract=config.objects_to_abstract,
-                abstract_name=config.abstract_name,
-                symmetry_time_limit=config.symmetry_time_limit,
-            )
+            abstract_problem = build_abstract_problem(config)
             abstract_domain, abstract_problem_path = _write_abstract_problem(abstract_problem.problem, root / "run")
             generated = read_problem(abstract_domain, abstract_problem_path)
 
@@ -267,11 +261,11 @@ class GeneratedAbstractionTests(unittest.TestCase):
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual({item.name for item in generated.all_objects}, {"combined"})
 
-    @patch("core.planning.abstract.prepare_abstraction")
-    def test_automatic_selection_is_delegated_to_symmetry_abstraction(self, prepare_abstraction):
+    @patch("core.planning.abstract.build_abstract_problem")
+    def test_automatic_selection_is_delegated_to_symmetry_abstraction(self, build_abstract_problem):
         problem = Mock()
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
-        prepare_abstraction.return_value = Mock(problem=problem, abstraction=abstraction, unary_delete_score=0)
+        build_abstract_problem.return_value = Mock(problem=problem, abstraction=abstraction, relaxed_deletes=())
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", symmetry_time_limit=17)
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
@@ -279,15 +273,19 @@ class GeneratedAbstractionTests(unittest.TestCase):
                 "core.planning.abstract._write_abstract_problem",
                 return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
             ),
-            patch("core.planning.abstract._compute_abstract_plan", return_value={"success": True}),
+            patch(
+                "core.planning.abstract.run_fast_downward",
+                side_effect=[({"sasFile": "concrete.sas"}, 1.0), ({"sasFile": "abstract.sas", "horizon": 0}, 2.0)],
+            ),
+            patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]),
+            patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
+            patch("core.planning.abstract.refine", return_value={"success": True}),
         ):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             compute_abstract_plan(config)
 
-        prepare_abstraction.assert_called_once_with(
-            "domain.pddl", "problem.pddl", objects_to_abstract=None, abstract_name=None, symmetry_time_limit=17
-        )
-        self.assertEqual(prepare_abstraction.return_value.abstraction.objects, ("a", "b"))
+        build_abstract_problem.assert_called_once_with(config)
+        self.assertEqual(build_abstract_problem.return_value.abstraction.objects, ("a", "b"))
         self.assertIsNone(config.objects_to_abstract)
         self.assertIsNone(config.abstract_name)
 
