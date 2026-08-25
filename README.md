@@ -96,4 +96,3 @@ See [tests/README.md](tests/README.md) for the test layers.
 ## More information
 
 - [Example commands](examples/README.md)
-- [Downward benchmark collection](https://github.com/aibasel/downward-benchmarks)
