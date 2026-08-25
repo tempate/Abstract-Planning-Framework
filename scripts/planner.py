@@ -33,7 +33,7 @@ def main():
     abstraction = result.get("abstraction")
     if abstraction is not None:
         print(
-            f"Collapsed {abstraction['objects_to_abstract']} into {abstraction['abstract_symbol']} "
+            f"Collapsed {sorted(abstraction['objects_to_abstract'])} into {abstraction['abstract_symbol']} "
             f"(type={abstraction['object_type']})"
         )
     fallback = result.get("fallback")
