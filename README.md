@@ -76,6 +76,27 @@ The planner asks PDDL Symmetries to discover a symmetric set of objects by defau
 
 Generated plans, encodings, and logs are written below `scripts/utils/temp/`.
 
+## Benchmark suite
+
+Run the abstraction on every problem in the project suite:
+
+```bash
+python -m scripts.run_benchmarks
+```
+
+Each planner process receives only `--problem` and `--domain`. Results are
+stored below `benchmark-results/`. Problems with an existing result file are
+skipped, so running the command again resumes the suite. Each problem has a
+one-minute timeout by default; use `--timeout SECONDS` to override it.
+
+Collect the result files into a CSV:
+
+```bash
+python -m scripts.collect_benchmarks
+```
+
+This writes `benchmark-results/results.csv`.
+
 ## Tests
 
 Run the normal suite:
