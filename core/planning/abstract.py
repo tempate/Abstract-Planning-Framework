@@ -17,88 +17,99 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
     """Abstract one concrete task and dispatch its plan-refinement workflow."""
     with temp_run_dir("abstract") as (base_dir, run_id):
         abstract_problem = build_abstract_problem(config)
-        if abstract_problem is not None:
-            domain_path, problem_path = _write_abstract_problem(abstract_problem.problem, base_dir)
-            abstraction = abstract_problem.abstraction
-            result = _compute_abstract_plan(config, abstraction, base_dir, run_id, domain_path, problem_path)
-            result["abstraction"] = {
-                "abstract_symbol": abstraction.name,
-                "objects_to_abstract": list(abstraction.objects),
-                "object_type": abstraction.object_type,
-                "relaxed_unary_deletes": len(abstract_problem.relaxed_deletes),
-            }
-        else:
+
+        # There are no abstractable object classes, so we compute a concrete plan.
+        if abstract_problem is None:
             result = compute_concrete_plan(config)
             result["fallback"] = {"mode": "concrete", "reason": "PDDL Symmetries found no abstractable object classes"}
-        return result
+            return result
 
+        logger = get_logger()
+        logger.info("=" * 70)
+        logger.info("NEW PLANNING RUN STARTED")
+        logger.info(f"Configuration: {config.as_dict()}")
+        logger.info(f"Requested horizon: {config.horizon if config.horizon is not None else 'auto'}")
+        logger.info(f"Encoding: {config.encoding}")
+        logger.info(f"Run ID: {run_id}")
+        logger.info(f"Base dir: {base_dir}")
 
-def _compute_abstract_plan(config, abstraction, base_dir, run_id, abstract_domain_path, abstract_problem_path):
-    logger = get_logger()
-
-    logger.info("=" * 70)
-    logger.info("NEW PLANNING RUN STARTED")
-    logger.info(f"Configuration: {config.as_dict()}")
-    logger.info(f"Requested horizon: {config.horizon if config.horizon is not None else 'auto'}")
-    logger.info(f"Encoding: {config.encoding}")
-    logger.info(f"Run ID: {run_id}")
-    logger.info(f"Base dir: {base_dir}")
-
-    with timed_phase() as run_timing:
-        with timed_phase(logger, "Fast Downward time") as fd_total:
-            # Translate the concrete problem into SAS.
-            concrete_task, concrete_time = run_fast_downward(
-                os.path.join(base_dir, "concrete"), config.domain_path, config.problem_path, "concrete", "translate"
+        with timed_phase() as run_timing:
+            context = RefinementContext(
+                config=config,
+                abstraction=abstract_problem.abstraction,
+                relaxed_deletes=abstract_problem.relaxed_deletes,
+                total_timing=run_timing,
+                run_id=run_id,
+                logger=logger,
             )
 
-            # A Fast Downward plan is needed only when it is the selected plan
-            # source or when its length is being used as an automatic horizon.
-            fd_task = "plan" if config.plan_source == "fd" or config.horizon is None else "translate"
+            # Translate the problem to SAS
+            _to_sas(base_dir, abstract_problem.problem, context)
 
-            abstract_task, abstract_time = run_fast_downward(
-                os.path.join(base_dir, "abstract"), abstract_domain_path, abstract_problem_path, "abstract", fd_task
-            )
+            fd_horizon = context.abstract_task.get("horizon", 0)
+            context.horizon = _select_abstract_horizon(config.horizon, fd_horizon, config.plan_source)
+            logger.info(f"Effective horizon: {context.horizon}")
 
-        fd_timings = {
-            "fd_concrete_time": concrete_time,
-            "fd_abstract_time": abstract_time,
-            "fd_total_time": fd_total.elapsed,
-        }
+            # Translate the SAS to ASP
+            _to_asp(context)
 
-        horizon = _select_abstract_horizon(config.horizon, abstract_task.get("horizon", 0), config.plan_source)
-        logger.info(f"Effective horizon: {horizon}")
+            return refine(context)
 
-        with timed_phase(logger, "Total ASP generation") as asp_total_timing:
 
-            # Generate the ASP representation of the concrete problem.
-            with timed_phase(logger, "Concrete ASP generation") as concrete_timing:
-                concrete_asp = sas_to_asp(concrete_task["sasFile"], config.encoding, config.time_step)
+def _to_sas(base_dir, problem, context):
+    config = context.config
+    logger = context.logger
 
-                concrete_asp = add_switch_to_asp_rule(concrete_asp, config.encoding)
-            # Generate the ASP representation of the abstract problem.
-            abstract_time = 0.0
-            abstract_asp = None
-            if config.plan_source == "clingo":
-                with timed_phase(logger, "Abstract ASP generation") as abstract_timing:
-                    abstract_asp = sas_to_asp(abstract_task["sasFile"], config.encoding, config.time_step)
-                abstract_time = abstract_timing.elapsed
-
-        context = RefinementContext(
-            config=config,
-            abstraction=abstraction,
-            concrete_asp=concrete_asp,
-            abstract_asp=abstract_asp,
-            abstract_task=abstract_task,
-            horizon=horizon,
-            fd_timings=fd_timings,
-            concrete_asp_time=concrete_timing.elapsed,
-            abstract_asp_time=abstract_time,
-            asp_total_time=asp_total_timing.elapsed,
-            total_timing=run_timing,
-            run_id=run_id,
-            logger=logger,
+    with timed_phase(logger, "Fast Downward time") as fd_total:
+        # Translate the concrete problem into SAS.
+        dir = os.path.join(base_dir, "concrete")
+        concrete_task, concrete_time = run_fast_downward(
+            dir, config.domain_path, config.problem_path, "concrete", "translate"
         )
-        return refine(context)
+
+        # A Fast Downward plan is needed only when it is the selected plan
+        # source or when its length is being used as an automatic horizon.
+        fd_task = "plan" if config.plan_source == "fd" or config.horizon is None else "translate"
+
+        # Write the temporary problem files
+        domain_path, problem_path = _write_abstract_problem(problem, base_dir)
+
+        dir = os.path.join(base_dir, "abstract")
+        abstract_task, abstract_time = run_fast_downward(dir, domain_path, problem_path, "abstract", fd_task)
+
+    context.concrete_task = concrete_task
+    context.abstract_task = abstract_task
+    context.fd_timings = {
+        "fd_concrete_time": concrete_time,
+        "fd_abstract_time": abstract_time,
+        "fd_total_time": fd_total.elapsed,
+    }
+
+
+def _to_asp(context):
+    config = context.config
+    logger = context.logger
+
+    with timed_phase(logger, "Total ASP generation") as asp_total_timing:
+        # Generate the ASP representation of the concrete problem.
+        with timed_phase(logger, "Concrete ASP generation") as concrete_timing:
+            concrete_asp = sas_to_asp(context.concrete_task["sasFile"], config.encoding, config.time_step)
+
+            concrete_asp = add_switch_to_asp_rule(concrete_asp, config.encoding)
+
+        # Generate the ASP representation of the abstract problem.
+        abstract_time = 0.0
+        abstract_asp = None
+        if config.plan_source == "clingo":
+            with timed_phase(logger, "Abstract ASP generation") as abstract_timing:
+                abstract_asp = sas_to_asp(context.abstract_task["sasFile"], config.encoding, config.time_step)
+            abstract_time = abstract_timing.elapsed
+
+    context.concrete_asp = concrete_asp
+    context.abstract_asp = abstract_asp
+    context.concrete_asp_time = concrete_timing.elapsed
+    context.abstract_asp_time = abstract_time
+    context.asp_total_time = asp_total_timing.elapsed
 
 
 def _select_abstract_horizon(requested_horizon, plan_horizon, plan_source):

@@ -30,6 +30,7 @@ class RefinementTests(unittest.TestCase):
         values = {
             "config": AbstractPlanningConfig("domain.pddl", "problem.pddl"),
             "abstraction": Abstraction("item_abs", ("a", "b"), "item"),
+            "relaxed_deletes": (object(), object()),
             "concrete_asp": "concrete asp",
             "abstract_asp": "abstract asp",
             "abstract_task": {"planFile": "sas_plan"},
@@ -55,6 +56,15 @@ class RefinementTests(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
         self.assertEqual(result["timings"]["decrements"], 0)
+        self.assertEqual(
+            result["abstraction"],
+            {
+                "abstract_symbol": "item_abs",
+                "objects_to_abstract": ["a", "b"],
+                "object_type": "item",
+                "relaxed_unary_deletes": 2,
+            },
+        )
         run_clingo.assert_called_once_with("abstract asp", 3)
         build_mapping.assert_not_called()
 

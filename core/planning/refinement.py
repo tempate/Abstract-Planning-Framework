@@ -1,7 +1,7 @@
 """Realize an abstract plan as a concrete plan."""
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pprint import pformat
 
 from core.abstraction.factory import Abstraction
@@ -13,23 +13,25 @@ from core.planning.plan import PlanAction
 from core.solvers.decremental import solve_decrementally
 
 
-@dataclass(frozen=True)
+@dataclass
 class RefinementContext:
     """Configuration and run state for abstract-plan refinement."""
 
     config: AbstractPlanningConfig
     abstraction: Abstraction
-    concrete_asp: str
-    abstract_asp: str | None
-    abstract_task: dict
-    horizon: int
-    fd_timings: dict
-    concrete_asp_time: float
-    abstract_asp_time: float
-    asp_total_time: float
+    relaxed_deletes: tuple
     total_timing: PhaseTiming
     run_id: str
     logger: logging.Logger
+    concrete_task: dict = field(default_factory=dict)
+    abstract_task: dict = field(default_factory=dict)
+    concrete_asp: str = ""
+    abstract_asp: str | None = None
+    horizon: int = 0
+    fd_timings: dict = field(default_factory=dict)
+    concrete_asp_time: float = 0.0
+    abstract_asp_time: float = 0.0
+    asp_total_time: float = 0.0
 
 
 def refine(context: RefinementContext):
@@ -46,7 +48,10 @@ def refine(context: RefinementContext):
         )
 
     mapping = build_mapping(abstract_plan, context.abstraction)
-    success, plan, solver_operations, concrete_solve_time = _solve_concrete(context, mapping)
+
+    with timed_phase(context.logger, "Concrete solving time") as concrete_timing:
+        asp = "\n".join((context.concrete_asp, mapping))
+        success, plan, solver_operations = solve_decrementally(asp, context.horizon)
 
     if success:
         context.logger.info("SUCCESS: Concrete plan found.")
@@ -62,18 +67,20 @@ def refine(context: RefinementContext):
         plan=plan,
         solver_operations=solver_operations,
         abstract_solve_time=abstract_solve_time,
-        concrete_solve_time=concrete_solve_time,
+        concrete_solve_time=concrete_timing.elapsed,
     )
 
 
 def _get_abstract_plan(context):
     if context.config.plan_source == "clingo":
         return _solve_abstract_plan(context)
+
     if context.config.plan_source == "fd":
         context.logger.info("Using Fast Downward plan")
         with timed_phase(context.logger, "Abstract plan generation time"):
             abstract_plan = read_fast_downward_plan(context.abstract_task["planFile"])
         return abstract_plan, 0.0
+
     raise ValueError(f"Unknown abstract plan source: {context.config.plan_source}")
 
 
@@ -112,18 +119,16 @@ def read_fast_downward_plan(plan_file_path):
     return tuple(abstract_plan)
 
 
-def _solve_concrete(context, refinement_asp):
-    with timed_phase(context.logger, "Concrete solving time") as timing:
-        success, plan, solver_operations = solve_decrementally(
-            "\n".join((context.concrete_asp, refinement_asp)), context.horizon
-        )
-    return success, plan, solver_operations, timing.elapsed
-
-
 def _build_result(context, *, success, plan, solver_operations, abstract_solve_time, concrete_solve_time):
     total_time = context.total_timing.elapsed
     context.logger.info(f"TOTAL TIME: {total_time:.3f}s")
     return {
+        "abstraction": {
+            "abstract_symbol": context.abstraction.name,
+            "objects_to_abstract": list(context.abstraction.objects),
+            "object_type": context.abstraction.object_type,
+            "relaxed_unary_deletes": len(context.relaxed_deletes),
+        },
         "configuration": context.config.as_dict(),
         "horizon": context.horizon,
         "plan": plan if success else None,
