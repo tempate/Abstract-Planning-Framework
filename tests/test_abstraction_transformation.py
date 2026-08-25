@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from unified_planning.shortcuts import (
     Always,
@@ -16,7 +17,8 @@ from unified_planning.shortcuts import (
 )
 
 from core.integrations.unified_planning import parse_problem, write_problem
-from core.abstraction.model import AbstractionError, abstract_problem
+from core.abstraction.factory import AbstractionError, build_abstract_problem
+from core.planning.config import AbstractPlanningConfig
 
 ABSTRACTION_DOMAIN = """
 (define (domain inventory)
@@ -52,19 +54,27 @@ ABSTRACTION_PROBLEM = """
 """
 
 
-class ModelAbstractionTests(unittest.TestCase):
+def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
+    config = AbstractPlanningConfig(
+        "domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract, abstract_name=abstract_name
+    )
+    with patch("core.abstraction.factory.read_problem", return_value=problem):
+        return build_abstract_problem(config)
+
+
+class AbstractionTransformationTests(unittest.TestCase):
     def test_collapses_objects_without_mutating_source(self):
         source = parse_problem(ABSTRACTION_DOMAIN, ABSTRACTION_PROBLEM)
         source_objects = tuple(item.name for item in source.all_objects)
 
-        result = abstract_problem(source, ["item-a", "item-b"], "pooled-item")
+        result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
 
         self.assertEqual(tuple(item.name for item in source.all_objects), source_objects)
         result_objects = {item.name for item in result.problem.all_objects}
         self.assertTrue({"item-a", "item-b"}.isdisjoint(result_objects))
         self.assertEqual(result_objects, {"item-c", "pooled-item"})
         self.assertEqual(result.abstraction.object_type, "item")
-        self.assertEqual([item.action for item in result.removed_deletes], ["consume"])
+        self.assertEqual([item.action for item in result.relaxed_deletes], ["consume"])
         serialized = write_problem(result.problem)
         for selected in ("item-a", "item-b"):
             self.assertNotIn(selected, serialized.problem)
@@ -73,9 +83,9 @@ class ModelAbstractionTests(unittest.TestCase):
     def test_preserves_deletes_when_static_facts_make_an_action_inapplicable(self):
         source = parse_problem(ABSTRACTION_DOMAIN, ABSTRACTION_PROBLEM)
 
-        result = abstract_problem(source, ["item-a", "item-b"], "pooled-item")
+        result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
 
-        self.assertEqual([item.action for item in result.removed_deletes], ["consume"])
+        self.assertEqual([item.action for item in result.relaxed_deletes], ["consume"])
         release = result.problem.action("release")
         self.assertTrue(
             any(
@@ -97,7 +107,7 @@ class ModelAbstractionTests(unittest.TestCase):
 """
 
         source = parse_problem(domain, inequality)
-        result = abstract_problem(source, ["a", "b"])
+        result = _build_from_problem(source, ["a", "b"])
 
         self.assertTrue(result.problem.goals[0].is_false())
 
@@ -112,7 +122,7 @@ class ModelAbstractionTests(unittest.TestCase):
         problem.set_initial_value(value(b, a), 2)
 
         with self.assertRaisesRegex(AbstractionError, "conflicting initial values"):
-            abstract_problem(problem, ["a", "b"])
+            _build_from_problem(problem, ["a", "b"])
 
     def test_deduplicates_equal_initial_values(self):
         problem = Problem("equal-values")
@@ -124,7 +134,7 @@ class ModelAbstractionTests(unittest.TestCase):
         problem.set_initial_value(value(a), 1)
         problem.set_initial_value(value(b), 1)
 
-        result = abstract_problem(problem, ["a", "b"])
+        result = _build_from_problem(problem, ["a", "b"])
         abstract_object = result.problem.object("equal_value_item_abs")
         abstract_value = value(abstract_object)
 
@@ -142,7 +152,7 @@ class ModelAbstractionTests(unittest.TestCase):
         problem.set_initial_value(ready(b), False)
 
         with self.assertRaisesRegex(AbstractionError, "contradictory initial facts"):
-            abstract_problem(problem, ["a", "b"])
+            _build_from_problem(problem, ["a", "b"])
 
     def test_rejects_invalid_manual_selections(self):
         problem = Problem("selection")
@@ -159,7 +169,7 @@ class ModelAbstractionTests(unittest.TestCase):
         )
         for objects, message in cases:
             with self.subTest(objects=objects), self.assertRaisesRegex(AbstractionError, message):
-                abstract_problem(problem, objects)
+                _build_from_problem(problem, objects)
 
     def test_rejects_abstract_names_that_collide_with_model_symbols(self):
         problem = Problem("name-collision")
@@ -174,9 +184,9 @@ class ModelAbstractionTests(unittest.TestCase):
 
         for name in ("taken", "ready", "use", "collision_item"):
             with self.subTest(name=name), self.assertRaisesRegex(AbstractionError, "already used"):
-                abstract_problem(problem, ["a", "b"], name)
+                _build_from_problem(problem, ["a", "b"], name)
 
-        result = abstract_problem(problem, ["a", "b"], "a")
+        result = _build_from_problem(problem, ["a", "b"], "a")
         self.assertEqual({item.name for item in result.problem.all_objects}, {"a", "taken"})
 
     def test_rejects_model_features_the_copier_does_not_support(self):
@@ -189,7 +199,7 @@ class ModelAbstractionTests(unittest.TestCase):
         temporal.add_action(wait)
 
         with self.assertRaisesRegex(AbstractionError, "temporal planning"):
-            abstract_problem(temporal, ["a", "b"])
+            _build_from_problem(temporal, ["a", "b"])
 
         optimized = Problem("unsupported-metric")
         optimized_item = UserType("optimized_item")
@@ -200,7 +210,7 @@ class ModelAbstractionTests(unittest.TestCase):
         optimized.add_quality_metric(MaximizeExpressionOnFinalState(score))
 
         with self.assertRaisesRegex(AbstractionError, "quality metric"):
-            abstract_problem(optimized, ["a", "b"])
+            _build_from_problem(optimized, ["a", "b"])
 
     def test_rewrites_conditions_goals_constraints_and_action_costs(self):
         problem = Problem("expressions")
@@ -221,7 +231,7 @@ class ModelAbstractionTests(unittest.TestCase):
         problem.add_trajectory_constraint(Always(marked(a)))
         problem.add_quality_metric(MinimizeActionCosts({action: cost(a)}))
 
-        result = abstract_problem(problem, ["a", "b"])
+        result = _build_from_problem(problem, ["a", "b"])
         abstract_object = result.problem.object("expression_item_abs")
         copied_action = result.problem.action("act")
         copied_effect = copied_action.effects[0]
@@ -250,7 +260,7 @@ class ModelAbstractionTests(unittest.TestCase):
         problem.add_action(decrease)
         problem.add_quality_metric(MinimizeSequentialPlanLength())
 
-        result = abstract_problem(problem, ["a", "b"])
+        result = _build_from_problem(problem, ["a", "b"])
         abstract_object = result.problem.object("numeric_item_abs")
         increased = result.problem.action("increase").effects[0]
         decreased = result.problem.action("decrease").effects[0]

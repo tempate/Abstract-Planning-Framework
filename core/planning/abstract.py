@@ -7,7 +7,7 @@ from core.execution import get_logger, temp_run_dir, timed_phase
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.unified_planning import write_problem
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
-from core.abstraction.symmetry import prepare_abstraction
+from core.abstraction.factory import build_abstract_problem
 from core.planning.concrete import compute_concrete_plan
 from core.planning.config import AbstractPlanningConfig
 from core.planning.refinement import RefinementContext, refine
@@ -16,13 +16,7 @@ from core.planning.refinement import RefinementContext, refine
 def compute_abstract_plan(config: AbstractPlanningConfig):
     """Abstract one concrete task and dispatch its plan-refinement workflow."""
     with temp_run_dir("abstract") as (base_dir, run_id):
-        abstract_problem = prepare_abstraction(
-            config.domain_path,
-            config.problem_path,
-            objects_to_abstract=config.objects_to_abstract,
-            abstract_name=config.abstract_name,
-            symmetry_time_limit=config.symmetry_time_limit,
-        )
+        abstract_problem = build_abstract_problem(config)
         if abstract_problem is not None:
             domain_path, problem_path = _write_abstract_problem(abstract_problem.problem, base_dir)
             abstraction = abstract_problem.abstraction
@@ -31,24 +25,12 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
                 "abstract_symbol": abstraction.name,
                 "objects_to_abstract": list(abstraction.objects),
                 "object_type": abstraction.object_type,
-                "relaxed_unary_deletes": abstract_problem.unary_delete_score,
+                "relaxed_unary_deletes": len(abstract_problem.relaxed_deletes),
             }
         else:
             result = compute_concrete_plan(config)
             result["fallback"] = {"mode": "concrete", "reason": "PDDL Symmetries found no abstractable object classes"}
         return result
-
-
-def _write_abstract_problem(problem, base_dir):
-    """Write the abstract problem to a temporary directory."""
-    serialized = write_problem(problem)
-    input_directory = Path(base_dir, "generated-abstraction")
-    input_directory.mkdir(parents=True, exist_ok=True)
-    domain_path = input_directory / "domain.pddl"
-    problem_path = input_directory / "problem.pddl"
-    domain_path.write_text(serialized.domain, encoding="utf-8")
-    problem_path.write_text(serialized.problem, encoding="utf-8")
-    return domain_path, problem_path
 
 
 def _compute_abstract_plan(config, abstraction, base_dir, run_id, abstract_domain_path, abstract_problem_path):
@@ -126,3 +108,22 @@ def _select_abstract_horizon(requested_horizon, plan_horizon, plan_source):
     if plan_source == "fd" and requested_horizon < plan_horizon:
         raise ValueError(f"Fast Downward plan length {plan_horizon} exceeds the explicit horizon {requested_horizon}")
     return requested_horizon
+
+
+def _write_abstract_problem(problem, base_dir):
+    """Write the abstract problem to a temporary directory."""
+
+    # Create the temporary directory.
+    input_directory = Path(base_dir, "generated-abstraction")
+    input_directory.mkdir(parents=True, exist_ok=True)
+
+    # Write the abstract domain and problem files.
+    serialized = write_problem(problem)
+
+    domain_path = input_directory / "domain.pddl"
+    domain_path.write_text(serialized.domain, encoding="utf-8")
+
+    problem_path = input_directory / "problem.pddl"
+    problem_path.write_text(serialized.problem, encoding="utf-8")
+
+    return domain_path, problem_path

@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 from core.integrations.pddl_symmetries import PddlSymmetriesError, find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.abstraction.model import AbstractionError, rank_symmetry_classes
-from core.abstraction.symmetry import prepare_abstraction
+from core.abstraction.factory import AbstractionError, _select_abstraction, build_abstract_problem
+from core.planning.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GRIPPER = PROJECT_ROOT / "lib" / "downward-benchmarks" / "gripper"
@@ -69,20 +69,15 @@ class SymmetrySelectionTests(unittest.TestCase):
     def setUp(self):
         self.problem = parse_problem(SYMMETRY_DOMAIN, SYMMETRY_PROBLEM)
 
-    def test_ranks_by_score_then_size_then_lexical_order(self):
+    def test_selects_the_lowest_delete_score(self):
         classes = [
             ["cargo-c", "cargo-a", "cargo-b"],
             ["tool-b", "tool-a"],
             ["vehicle-d", "vehicle-b", "vehicle-c", "vehicle-a"],
         ]
-        ranked = rank_symmetry_classes(self.problem, classes)
+        selected, _ = _select_abstraction(self.problem, classes)
 
-        self.assertEqual(ranked[0].abstraction.objects, ("vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"))
-        self.assertEqual(ranked[0].unary_delete_score, 0)
-        self.assertEqual(ranked[1].abstraction.objects, ("cargo-a", "cargo-b", "cargo-c"))
-        self.assertEqual([removed.action for removed in ranked[1].removed_deletes], ["pack"])
-        self.assertEqual(ranked[2].abstraction.objects, ("tool-a", "tool-b"))
-        self.assertEqual([removed.action for removed in ranked[2].removed_deletes], ["equip", "equip"])
+        self.assertEqual(set(selected.objects), {"vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"})
 
     def test_equal_scores_prefer_the_largest_class(self):
         domain = """
@@ -97,9 +92,9 @@ class SymmetrySelectionTests(unittest.TestCase):
 """
 
         source = parse_problem(domain, problem)
-        ranked = rank_symmetry_classes(source, [["a1", "a2"], ["b1", "b2", "b3"]])
+        selected, _ = _select_abstraction(source, [["a1", "a2"], ["b1", "b2", "b3"]])
 
-        self.assertEqual(ranked[0].abstraction.objects, ("b1", "b2", "b3"))
+        self.assertEqual(set(selected.objects), {"b1", "b2", "b3"})
 
     def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self):
         classes = [
@@ -108,25 +103,27 @@ class SymmetrySelectionTests(unittest.TestCase):
             ["vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"],
         ]
         with (
-            patch("core.abstraction.symmetry.read_problem", return_value=self.problem),
-            patch("core.abstraction.symmetry.find_symmetric_object_sets", return_value=classes) as find_classes,
+            patch("core.abstraction.factory.read_problem", return_value=self.problem),
+            patch("core.abstraction.factory.find_symmetric_object_sets", return_value=classes) as find_classes,
         ):
-            result = prepare_abstraction("domain.pddl", "problem.pddl", symmetry_time_limit=17)
+            result = build_abstract_problem(
+                AbstractPlanningConfig("domain.pddl", "problem.pddl", symmetry_time_limit=17)
+            )
 
         find_classes.assert_called_once_with("domain.pddl", "problem.pddl", 17)
-        self.assertEqual(result.abstraction.objects, ("vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"))
+        self.assertEqual(set(result.abstraction.objects), {"vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"})
         self.assertEqual(result.abstraction.name, "vehicle_abs")
 
     def test_reports_when_pddl_symmetries_finds_no_object_class(self):
         with (
-            patch("core.abstraction.symmetry.read_problem", return_value=self.problem),
-            patch("core.abstraction.symmetry.find_symmetric_object_sets", return_value=[]),
-            patch("core.abstraction.symmetry.rank_symmetry_classes") as rank,
+            patch("core.abstraction.factory.read_problem", return_value=self.problem),
+            patch("core.abstraction.factory.find_symmetric_object_sets", return_value=[]),
+            patch("core.abstraction.factory._select_abstraction") as select,
         ):
-            result = prepare_abstraction("domain.pddl", "problem.pddl")
+            result = build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertIsNone(result)
-        rank.assert_not_called()
+        select.assert_not_called()
 
     def test_accepts_domain_constants_reported_by_pddl_symmetries(self):
         domain = """
@@ -142,13 +139,13 @@ class SymmetrySelectionTests(unittest.TestCase):
   (:init (open depot-a) (open depot-b))
   (:goal (open depot-a)))
 """
-        ranked = rank_symmetry_classes(parse_problem(domain, problem), [["depot-b", "depot-a"]])
+        selected, _ = _select_abstraction(parse_problem(domain, problem), [["depot-b", "depot-a"]])
 
-        self.assertEqual(ranked[0].abstraction.objects, ("depot-a", "depot-b"))
+        self.assertEqual(set(selected.objects), {"depot-a", "depot-b"})
 
     def test_rejects_a_symmetry_class_that_cannot_be_collapsed(self):
         with self.assertRaisesRegex(AbstractionError, "same declared type"):
-            rank_symmetry_classes(self.problem, [["cargo-a", "tool-a"]])
+            _select_abstraction(self.problem, [["cargo-a", "tool-a"]])
 
     @patch("core.integrations.pddl_symmetries.subprocess.run")
     def test_extracts_object_sets_from_translator_output(self, run):
@@ -196,10 +193,10 @@ class RealSymmetryIntegrationTests(unittest.TestCase):
     def test_gripper_symmetries_select_balls(self):
         problem_path = GRIPPER / "prob01.pddl"
         classes = find_symmetric_object_sets(GRIPPER / "domain.pddl", problem_path)
-        ranked = rank_symmetry_classes(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
+        selected, _ = _select_abstraction(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
 
         self.assertEqual({tuple(group) for group in classes}, {("ball1", "ball2", "ball3", "ball4"), ("left", "right")})
-        self.assertEqual(ranked[0].abstraction.objects, ("ball1", "ball2", "ball3", "ball4"))
+        self.assertEqual(set(selected.objects), {"ball1", "ball2", "ball3", "ball4"})
 
 
 if __name__ == "__main__":

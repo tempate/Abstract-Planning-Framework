@@ -5,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from core.abstraction.model import Abstraction
+from core.abstraction.factory import Abstraction
 from core.planning.abstract import _select_abstract_horizon
 from core.planning.config import AbstractPlanningConfig
 from core.planning.plan import PlanAction

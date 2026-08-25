@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from pprint import pformat
 
-from core.abstraction.model import Abstraction
+from core.abstraction.factory import Abstraction
 from core.execution import PhaseTiming, timed_phase
 from core.integrations.clingo import parse_plan_actions, run_clingo
 from core.planning.config import AbstractPlanningConfig
@@ -49,7 +49,9 @@ def refine(context: RefinementContext):
     success, plan, solver_operations, concrete_solve_time = _solve_concrete(context, mapping)
 
     if success:
-        _log_success(context.logger, plan)
+        context.logger.info("SUCCESS: Concrete plan found.")
+        context.logger.info("Plan:")
+        context.logger.info(pformat(plan))
     else:
         context.logger.info("No concrete plan found at the selected horizon.")
         context.logger.info("FAILED")
@@ -141,9 +143,3 @@ def _build_result(context, *, success, plan, solver_operations, abstract_solve_t
             "run_id": context.run_id,
         },
     }
-
-
-def _log_success(logger, plan):
-    logger.info("SUCCESS: Concrete plan found.")
-    logger.info("Plan:")
-    logger.info(pformat(plan))

@@ -5,7 +5,7 @@ import argparse
 from core.execution import get_logger
 from core.integrations.pddl_symmetries import PddlSymmetriesError
 from core.integrations.unified_planning import PddlError
-from core.abstraction.model import AbstractionError
+from core.abstraction.factory import AbstractionError
 from core.planning.abstract import compute_abstract_plan
 from core.planning.concrete import compute_concrete_plan
 from core.planning.config import (
