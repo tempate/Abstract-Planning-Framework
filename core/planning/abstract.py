@@ -10,8 +10,7 @@ from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.abstraction.symmetry import prepare_abstraction
 from core.planning.concrete import compute_concrete_plan
 from core.planning.config import AbstractPlanningConfig
-from core.planning.refinement.base import RefinementContext
-from core.planning.refinement.factory import get_refinement_strategy
+from core.planning.refinement import RefinementContext, refine
 
 
 def compute_abstract_plan(config: AbstractPlanningConfig):
@@ -117,7 +116,7 @@ def _compute_abstract_plan(config, abstraction, base_dir, run_id, abstract_domai
             run_id=run_id,
             logger=logger,
         )
-        return get_refinement_strategy(config.plan_source, context).refine()
+        return refine(context)
 
 
 def _select_abstract_horizon(requested_horizon, plan_horizon, plan_source):

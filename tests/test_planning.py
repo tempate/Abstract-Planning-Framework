@@ -133,16 +133,13 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
         concrete_task = {"sasFile": "concrete.sas"}
         abstract_task = {"sasFile": "abstract.sas", "horizon": 0}
-        strategy = Mock()
-        strategy.refine.return_value = {"success": True}
-
         with (
             patch(
                 "core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
             ) as run,
             patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]) as sas_to_asp,
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp") as add_switch,
-            patch("core.planning.abstract.get_refinement_strategy", return_value=strategy) as get_strategy,
+            patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
         ):
             result = _compute_abstract_plan(
                 config, abstraction, "run-dir", "run-123", "abstract-domain.pddl", "abstract-problem.pddl"
@@ -160,31 +157,27 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             sas_to_asp.call_args_list, [call("concrete.sas", "bounded", True), call("abstract.sas", "bounded", True)]
         )
         add_switch.assert_called_once_with("concrete asp", "bounded")
-        context = get_strategy.call_args.args[1]
-        self.assertEqual(get_strategy.call_args.args[0], "clingo")
+        context = refine.call_args.args[0]
         self.assertEqual(context.concrete_asp, "guarded concrete asp")
         self.assertEqual(context.abstract_asp, "abstract asp")
         self.assertEqual(context.abstract_task, abstract_task)
         self.assertEqual(context.horizon, 4)
         self.assertEqual(context.fd_timings["fd_concrete_time"], 1.0)
         self.assertEqual(context.fd_timings["fd_abstract_time"], 2.0)
-        strategy.refine.assert_called_once_with()
+        refine.assert_called_once_with(context)
 
     def test_fd_source_uses_its_plan_and_skips_abstract_asp_generation(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", plan_source="fd")
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
         concrete_task = {"sasFile": "concrete.sas"}
         abstract_task = {"sasFile": "abstract.sas", "planFile": "sas_plan", "horizon": 6}
-        strategy = Mock()
-        strategy.refine.return_value = {"success": True}
-
         with (
             patch(
                 "core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
             ) as run,
             patch("core.planning.abstract.sas_to_asp", return_value="concrete asp") as sas_to_asp,
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
-            patch("core.planning.abstract.get_refinement_strategy", return_value=strategy) as get_strategy,
+            patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
         ):
             result = _compute_abstract_plan(
                 config, abstraction, "run-dir", "run-123", "abstract-domain.pddl", "abstract-problem.pddl"
@@ -193,12 +186,11 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(result, {"success": True})
         self.assertEqual(run.call_args_list[1].args[-1], "plan")
         sas_to_asp.assert_called_once_with("concrete.sas", "bounded", False)
-        context = get_strategy.call_args.args[1]
-        self.assertEqual(get_strategy.call_args.args[0], "fd")
+        context = refine.call_args.args[0]
         self.assertIsNone(context.abstract_asp)
         self.assertEqual(context.abstract_task, abstract_task)
         self.assertEqual(context.horizon, 6)
-        strategy.refine.assert_called_once_with()
+        refine.assert_called_once_with(context)
 
 
 class ArgumentTests(unittest.TestCase):
