@@ -1,4 +1,4 @@
-"""Run the abstraction planner on every problem in the benchmark suite."""
+"""Run abstract and eligible concrete comparisons across the benchmark suite."""
 
 import argparse
 import json
@@ -22,7 +22,9 @@ def main():
 
     for index, (domain_name, domain, problem) in enumerate(_benchmark_tasks(), 1):
         result = _run_task(domain_name, domain, problem, timeout=args.timeout)
-        status = _human_status(result)
+        status = f"abstract {_human_status(result)}"
+        if "concrete" in result:
+            status += f", concrete {_human_status(result['concrete'])}"
         print(f"[{index}] {domain_name}/{problem.name}: {status}", flush=True)
 
 
@@ -61,10 +63,28 @@ def _find_domain(problem):
 
 def _run_task(domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None):
     result_file = Path(results_dir) / domain_name / f"{problem.stem}.json"
+
+    command = _planner_command(domain, problem, "abstract")
+    result = _run_pipeline(command, timeout)
+    result["domain"] = domain_name
+    result["problem"] = problem.name
+
+    if NO_SYMMETRIES_MESSAGE not in result["output"]:
+        command = _planner_command(domain, problem, "concrete")
+        result["concrete"] = _run_pipeline(command, timeout)
+
+    result_file.parent.mkdir(parents=True, exist_ok=True)
+    temporary = result_file.with_suffix(".tmp")
+    temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(result_file)
+    return result
+
+
+def _run_pipeline(command, timeout):
     started = time.perf_counter()
     try:
         completed = subprocess.run(
-            _planner_command(domain, problem),
+            command,
             cwd=PROJECT_ROOT,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -81,24 +101,16 @@ def _run_task(domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=Non
         if isinstance(output, bytes):
             output = output.decode(errors="replace")
         timed_out = True
-    result = {
-        "domain": domain_name,
-        "problem": problem.name,
+    return {
         "return_code": return_code,
         "timed_out": timed_out,
         "wall_time_seconds": time.perf_counter() - started,
         "output": output,
     }
 
-    result_file.parent.mkdir(parents=True, exist_ok=True)
-    temporary = result_file.with_suffix(".tmp")
-    temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(result_file)
-    return result
 
-
-def _planner_command(domain, problem):
-    return [sys.executable, "-m", "scripts.planner", "abstract", "--problem", str(problem), "--domain", str(domain)]
+def _planner_command(domain, problem, mode):
+    return [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
 
 
 def _human_status(result):

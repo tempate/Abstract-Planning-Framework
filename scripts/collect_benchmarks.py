@@ -20,6 +20,13 @@ FIELDS = (
     "refinement_iterations",
     "decrements",
     "planner_time_seconds",
+    "concrete_status",
+    "concrete_return_code",
+    "concrete_timed_out",
+    "concrete_wall_time_seconds",
+    "concrete_horizon",
+    "concrete_plan_found",
+    "concrete_planner_time_seconds",
 )
 
 
@@ -33,22 +40,38 @@ def collect(results_dir=RESULTS_DIR):
     for result_file in sorted(Path(results_dir).glob("*/*.json")):
         result = json.loads(result_file.read_text(encoding="utf-8"))
         output = result["output"]
-        rows.append(
-            {
-                "domain": result["domain"],
-                "problem": result["problem"],
-                "status": _human_status(result),
-                "return_code": result["return_code"],
-                "timed_out": result.get("timed_out", False),
-                "wall_time_seconds": result["wall_time_seconds"],
-                "horizon": value(output, "Horizon", int),
-                "plan_found": value(output, "Plan found"),
-                "refinement_iterations": value(output, "Refinement iterations", int),
-                "decrements": value(output, "Decrements", int),
-                "planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
-            }
-        )
+        row = {
+            "domain": result["domain"],
+            "problem": result["problem"],
+            "status": _human_status(result),
+            "return_code": result["return_code"],
+            "timed_out": result.get("timed_out", False),
+            "wall_time_seconds": result["wall_time_seconds"],
+            "horizon": value(output, "Horizon", int),
+            "plan_found": value(output, "Plan found"),
+            "refinement_iterations": value(output, "Refinement iterations", int),
+            "decrements": value(output, "Decrements", int),
+            "planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
+            **_concrete_values(result.get("concrete")),
+        }
+        rows.append(row)
     return rows
+
+
+def _concrete_values(result):
+    if result is None:
+        return {field: "" for field in FIELDS if field.startswith("concrete_")}
+
+    output = result["output"]
+    return {
+        "concrete_status": _human_status(result),
+        "concrete_return_code": result["return_code"],
+        "concrete_timed_out": result.get("timed_out", False),
+        "concrete_wall_time_seconds": result["wall_time_seconds"],
+        "concrete_horizon": value(output, "Horizon", int),
+        "concrete_plan_found": value(output, "Plan found"),
+        "concrete_planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
+    }
 
 
 def main():

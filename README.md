@@ -87,7 +87,9 @@ python -m scripts.run_benchmarks
 Each planner process receives only `--problem` and `--domain`. Results are
 stored below `benchmark-results/`. Problems with an existing result file are
 skipped, so running the command again resumes the suite. Each problem has a
-one-minute timeout by default; use `--timeout SECONDS` to override it.
+one-minute timeout per pipeline by default; use `--timeout SECONDS` to override
+it. Unless no symmetries are found, the concrete pipeline also runs for
+comparison.
 
 Collect the result files into a CSV:
 
