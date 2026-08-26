@@ -47,7 +47,9 @@ SUITE = [
     "pathways",
     "pipesworld-tankage",
     "rovers",
-    "storage",
+    # Temporarily excluded: Unified Planning cannot convert standard
+    # ``(either ...)`` parameter types (aiplan4eu/unified-planning#817).
+    # "storage",
     "tpp",
     "trucks-strips",
     # IPC 1998--2004 (no newer satisficing STRIPS formulation)
