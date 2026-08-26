@@ -31,8 +31,29 @@ ROUND_TRIP_PROBLEM = """
   (:metric minimize (total-cost)))
 """
 
+SHARED_NAME_DOMAIN = """
+(define (domain shared-name)
+  (:requirements :strips :typing)
+  (:types cart)
+  (:predicates (parked ?item - cart)))
+"""
+
+SHARED_NAME_PROBLEM = """
+(define (problem shared-name-task)
+  (:domain shared-name)
+  (:objects cart - cart)
+  (:init (parked cart))
+  (:goal (parked cart)))
+"""
+
 
 class UnifiedPlanningCodecTests(unittest.TestCase):
+    def test_allows_different_model_elements_to_share_a_name(self):
+        with self.assertWarnsRegex(UserWarning, "Name cart already defined"):
+            problem = parse_problem(SHARED_NAME_DOMAIN, SHARED_NAME_PROBLEM)
+
+        self.assertEqual(problem.object("cart").type.name, "cart")
+
     def test_round_trips_a_task_with_action_costs(self):
         source = parse_problem(ROUND_TRIP_DOMAIN, ROUND_TRIP_PROBLEM)
 
