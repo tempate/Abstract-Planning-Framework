@@ -21,7 +21,7 @@ def main():
 
     for index, (domain_name, domain, problem) in enumerate(_benchmark_tasks(), 1):
         result = _run_task(domain_name, domain, problem, timeout=args.timeout)
-        status = "timeout" if result["timed_out"] else result["return_code"]
+        status = _human_status(result)
         print(f"[{index}] {domain_name}/{problem.name}: {status}", flush=True)
 
 
@@ -34,7 +34,7 @@ def _argument_parser():
 
 
 def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SUITE, results_dir=RESULTS_DIR):
-    for domain_name in suite:
+    for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
             result_file = Path(results_dir) / domain_name / f"{problem.stem}.json"
@@ -98,6 +98,16 @@ def _run_task(domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=Non
 
 def _planner_command(domain, problem):
     return [sys.executable, "-m", "scripts.planner", "abstract", "--problem", str(problem), "--domain", str(domain)]
+
+
+def _human_status(result):
+    if result["timed_out"]:
+        return "timed out"
+    if result["return_code"] == 0:
+        return "success"
+    if result["return_code"] == 1:
+        return "no plan found"
+    return f"error (exit code {result['return_code']})"
 
 
 if __name__ == "__main__":
