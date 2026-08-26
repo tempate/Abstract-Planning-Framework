@@ -36,7 +36,7 @@ def build_abstract_problem(config: AbstractPlanningConfig):
             config.domain_path, config.problem_path, config.symmetry_time_limit
         )
         if not symmetry_classes:
-            return None
+            raise AbstractionError("PDDL Symmetries found no abstractable object classes")
         abstraction, relaxable_deletes = _select_abstraction(problem, symmetry_classes, config.abstract_name)
     else:
         abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)

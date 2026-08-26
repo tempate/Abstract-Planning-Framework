@@ -72,7 +72,7 @@ python -m scripts.planner abstract \
     --horizon 11
 ```
 
-The planner asks PDDL Symmetries to discover a symmetric set of objects by default. Use `--objects-to-abstract NAME...` to select them explicitly. If PDDL Symmetries does not discover a symmetric set of objects, `abstract` mode solves the task through the concrete pipeline.
+The planner asks PDDL Symmetries to discover a symmetric set of objects by default. Use `--objects-to-abstract NAME...` to select them explicitly. If PDDL Symmetries does not discover a symmetric set of objects, `abstract` mode exits without running a concrete planning pipeline.
 
 Generated plans, encodings, and logs are written below `scripts/utils/temp/`.
 

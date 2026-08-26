@@ -13,6 +13,7 @@ from scripts.utils.arguments import positive_int
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = PROJECT_ROOT / "benchmark-results"
 DEFAULT_TIMEOUT = 60
+NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
 
 
 def main():
@@ -103,6 +104,8 @@ def _planner_command(domain, problem):
 def _human_status(result):
     if result["timed_out"]:
         return "timed out"
+    if NO_SYMMETRIES_MESSAGE in result["output"]:
+        return "no symmetries"
     if result["return_code"] == 0:
         return "success"
     if result["return_code"] == 1:

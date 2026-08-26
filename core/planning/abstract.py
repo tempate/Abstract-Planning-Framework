@@ -8,7 +8,6 @@ from core.integrations.fast_downward import run_fast_downward
 from core.integrations.unified_planning import write_problem
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.abstraction.factory import build_abstract_problem
-from core.planning.concrete import compute_concrete_plan
 from core.planning.config import AbstractPlanningConfig
 from core.planning.refinement import RefinementContext, refine
 
@@ -17,12 +16,6 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
     """Abstract one concrete task and dispatch its plan-refinement workflow."""
     with temp_run_dir("abstract") as (base_dir, run_id):
         abstract_problem = build_abstract_problem(config)
-
-        # There are no abstractable object classes, so we compute a concrete plan.
-        if abstract_problem is None:
-            result = compute_concrete_plan(config)
-            result["fallback"] = {"mode": "concrete", "reason": "PDDL Symmetries found no abstractable object classes"}
-            return result
 
         logger = get_logger()
         logger.info("=" * 70)

@@ -116,15 +116,15 @@ class SymmetrySelectionTests(unittest.TestCase):
         self.assertEqual(set(result.abstraction.objects), {"vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"})
         self.assertEqual(result.abstraction.name, "pooled-vehicles")
 
-    def test_reports_when_pddl_symmetries_finds_no_object_class(self):
+    def test_rejects_tasks_without_a_pddl_symmetries_object_class(self):
         with (
             patch("core.abstraction.factory.read_problem", return_value=self.problem),
             patch("core.abstraction.factory.find_symmetric_object_sets", return_value=[]),
             patch("core.abstraction.factory._select_abstraction") as select,
         ):
-            result = build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            with self.assertRaisesRegex(AbstractionError, "found no abstractable object classes"):
+                build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
-        self.assertIsNone(result)
         select.assert_not_called()
 
     def test_accepts_domain_constants_reported_by_pddl_symmetries(self):

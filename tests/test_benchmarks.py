@@ -6,7 +6,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.collect_benchmarks import collect
-from scripts.run_benchmarks import _argument_parser, _benchmark_tasks, _human_status, _planner_command, _run_task
+from scripts.run_benchmarks import (
+    NO_SYMMETRIES_MESSAGE,
+    _argument_parser,
+    _benchmark_tasks,
+    _human_status,
+    _planner_command,
+    _run_task,
+)
 
 
 class BenchmarkTests(unittest.TestCase):
@@ -56,6 +63,8 @@ class BenchmarkTests(unittest.TestCase):
             stored = json.loads((Path(directory) / "example" / "p01.json").read_text())
 
         self.assertEqual(stored["return_code"], 0)
+        self.assertNotIn("status", stored)
+        self.assertEqual(rows[0]["status"], "success")
         self.assertEqual(rows[0]["horizon"], 4)
         self.assertEqual(rows[0]["decrements"], 2)
         self.assertEqual(rows[0]["planner_time_seconds"], 1.25)
@@ -74,10 +83,22 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(run.call_args.args[0], _planner_command(Path("domain.pddl"), Path("p01.pddl")))
 
     def test_benchmark_status_is_human_readable(self):
-        self.assertEqual(_human_status({"timed_out": False, "return_code": 0}), "success")
-        self.assertEqual(_human_status({"timed_out": False, "return_code": 1}), "no plan found")
-        self.assertEqual(_human_status({"timed_out": False, "return_code": 2}), "error (exit code 2)")
-        self.assertEqual(_human_status({"timed_out": True, "return_code": None}), "timed out")
+        self.assertEqual(_human_status({"timed_out": False, "return_code": 0, "output": ""}), "success")
+        self.assertEqual(_human_status({"timed_out": False, "return_code": 1, "output": ""}), "no plan found")
+        self.assertEqual(_human_status({"timed_out": False, "return_code": 2, "output": ""}), "error (exit code 2)")
+        self.assertEqual(_human_status({"timed_out": True, "return_code": None, "output": ""}), "timed out")
+
+    def test_no_symmetries_is_its_own_run_and_collection_category(self):
+        completed = subprocess.CompletedProcess([], 2, stdout=f"planner.py: error: {NO_SYMMETRIES_MESSAGE}\n")
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch("scripts.run_benchmarks.subprocess.run", return_value=completed),
+        ):
+            result = _run_task("example", Path("domain.pddl"), Path("p01.pddl"), directory)
+            rows = collect(directory)
+
+        self.assertEqual(_human_status(result), "no symmetries")
+        self.assertEqual(rows[0]["status"], "no symmetries")
 
 
 if __name__ == "__main__":

@@ -5,12 +5,13 @@ import json
 import re
 from pathlib import Path
 
-from scripts.run_benchmarks import RESULTS_DIR
+from scripts.run_benchmarks import RESULTS_DIR, _human_status
 
 CSV_FILE = RESULTS_DIR / "results.csv"
 FIELDS = (
     "domain",
     "problem",
+    "status",
     "return_code",
     "timed_out",
     "wall_time_seconds",
@@ -36,6 +37,7 @@ def collect(results_dir=RESULTS_DIR):
             {
                 "domain": result["domain"],
                 "problem": result["problem"],
+                "status": _human_status(result),
                 "return_code": result["return_code"],
                 "timed_out": result.get("timed_out", False),
                 "wall_time_seconds": result["wall_time_seconds"],

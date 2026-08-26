@@ -143,7 +143,7 @@ class PlannerExitStatusTests(unittest.TestCase):
 
         self.assertEqual(status, 1)
 
-    def test_abstract_cli_reports_concrete_fallback(self):
+    def test_abstract_cli_exits_when_no_symmetry_class_exists(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
             mode="abstract",
@@ -157,22 +157,22 @@ class PlannerExitStatusTests(unittest.TestCase):
             symmetry_time_limit=300,
             plan_source="clingo",
         )
-        result = {
-            "success": True,
-            "fallback": {"mode": "concrete", "reason": "PDDL Symmetries found no abstractable object classes"},
-        }
-        output = StringIO()
+        parser.error.side_effect = SystemExit(2)
         with (
             patch.object(planner, "_argument_parser", return_value=parser),
-            patch.object(planner, "compute_abstract_plan", return_value=result),
-            patch.object(planner, "print_planning_result"),
-            patch.object(planner, "get_logger"),
-            redirect_stdout(output),
+            patch.object(
+                planner,
+                "compute_abstract_plan",
+                side_effect=planner.AbstractionError("PDDL Symmetries found no abstractable object classes"),
+            ),
+            patch.object(planner, "print_planning_result") as print_result,
         ):
-            status = planner.main()
+            with self.assertRaises(SystemExit) as raised:
+                planner.main()
 
-        self.assertEqual(status, 0)
-        self.assertIn("No symmetry class found; used the concrete pipeline", output.getvalue())
+        self.assertEqual(raised.exception.code, 2)
+        parser.error.assert_called_once_with("PDDL Symmetries found no abstractable object classes")
+        print_result.assert_not_called()
 
     def test_abstract_cli_passes_explicit_selection_to_the_planning_pipeline(self):
         parser = Mock()
