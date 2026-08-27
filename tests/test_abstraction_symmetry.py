@@ -11,7 +11,7 @@ from core.abstraction.factory import AbstractionError, _select_abstraction, buil
 from core.planning.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-GRIPPER = PROJECT_ROOT / "lib" / "downward-benchmarks" / "gripper"
+GRIPPER = PROJECT_ROOT / "benchmarks" / "downward-benchmarks" / "gripper"
 
 SYMMETRY_DOMAIN = """
 (define (domain selection)
