@@ -66,15 +66,38 @@ concrete search:
 
 ```bash
 python -m scripts.planner abstract \
-    --domain lib/downward-benchmarks/gripper/domain.pddl \
-    --problem lib/downward-benchmarks/gripper/prob01.pddl \
+    --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
+    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl \
     --abstract-name ball_abs \
     --horizon 11
 ```
 
-The planner asks PDDL Symmetries to discover a symmetric set of objects by default. Use `--objects-to-abstract NAME...` to select them explicitly. If PDDL Symmetries does not discover a symmetric set of objects, `abstract` mode solves the task through the concrete pipeline.
+The planner asks PDDL Symmetries to discover a symmetric set of objects by default. Use `--objects-to-abstract NAME...` to select them explicitly. If PDDL Symmetries does not discover a symmetric set of objects, `abstract` mode exits without running a concrete planning pipeline.
 
 Generated plans, encodings, and logs are written below `scripts/utils/temp/`.
+
+## Benchmark suite
+
+Run the abstraction on every problem in the project suite:
+
+```bash
+python -m scripts.run_benchmarks
+```
+
+Each planner process receives only `--problem` and `--domain`. Results are
+stored below `benchmark-results/`. Problems with an existing result file are
+skipped, so running the command again resumes the suite. Each problem has a
+one-minute timeout per pipeline by default; use `--timeout SECONDS` to override
+it. Unless no symmetries are found, the concrete pipeline also runs for
+comparison.
+
+Collect the result files into a CSV:
+
+```bash
+python -m scripts.collect_benchmarks
+```
+
+This writes `benchmark-results/results.csv`.
 
 ## Tests
 
@@ -96,4 +119,3 @@ See [tests/README.md](tests/README.md) for the test layers.
 ## More information
 
 - [Example commands](examples/README.md)
-- [Downward benchmark collection](https://github.com/aibasel/downward-benchmarks)

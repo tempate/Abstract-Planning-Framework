@@ -87,25 +87,24 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         self.assertIs(context.relaxed_deletes, generated.relaxed_deletes)
         self.assertEqual(result, {"success": True})
 
-    def test_falls_back_to_concrete_planning_when_no_symmetry_class_exists(self):
+    def test_exits_abstract_pipeline_when_no_symmetry_class_exists(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", horizon=4, encoding="exact", time_step=True)
-        concrete_result = {"success": True, "plan": ["occurs(action,1)"]}
 
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
-            patch("core.planning.abstract.build_abstract_problem", return_value=None),
-            patch("core.planning.abstract.compute_concrete_plan", return_value=concrete_result) as concrete,
+            patch(
+                "core.planning.abstract.build_abstract_problem",
+                side_effect=AbstractionError("PDDL Symmetries found no abstractable object classes"),
+            ),
+            patch("core.planning.abstract.run_fast_downward") as run_fast_downward,
         ):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
-            result = compute_abstract_plan(config)
+            with self.assertRaisesRegex(AbstractionError, "found no abstractable object classes"):
+                compute_abstract_plan(config)
 
-        concrete.assert_called_once_with(config)
-        self.assertIs(result, concrete_result)
-        self.assertEqual(
-            result["fallback"], {"mode": "concrete", "reason": "PDDL Symmetries found no abstractable object classes"}
-        )
+        run_fast_downward.assert_not_called()
 
-    def test_does_not_hide_other_abstraction_errors_with_a_fallback(self):
+    def test_propagates_other_abstraction_errors_before_planning(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", objects_to_abstract=("a", "b"))
 
         with (
@@ -114,13 +113,13 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 "core.planning.abstract.build_abstract_problem",
                 side_effect=AbstractionError("Selected objects must have the same declared type"),
             ),
-            patch("core.planning.abstract.compute_concrete_plan") as concrete,
+            patch("core.planning.abstract.run_fast_downward") as run_fast_downward,
         ):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             with self.assertRaisesRegex(AbstractionError, "same declared type"):
                 compute_abstract_plan(config)
 
-        concrete.assert_not_called()
+        run_fast_downward.assert_not_called()
 
     def test_clingo_source_translates_both_tasks_and_receives_abstract_asp(self):
         config = AbstractPlanningConfig(

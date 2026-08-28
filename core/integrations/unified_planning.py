@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from unified_planning.environment import get_environment
 from unified_planning.io import PDDLReader, PDDLWriter
 from unified_planning.model import Problem
 
@@ -29,7 +30,9 @@ def read_problem(domain_path, problem_path):
 def parse_problem(domain_text, problem_text):
     """Parse a PDDL pair into a Unified Planning problem."""
     try:
-        return PDDLReader().parse_problem_string(domain_text, problem_text)
+        environment = get_environment()
+        environment.error_used_name = False
+        return PDDLReader(environment).parse_problem_string(domain_text, problem_text)
     except Exception as error:
         raise PddlError(f"Could not parse PDDL task: {error}") from error
 
