@@ -78,20 +78,20 @@ Generated plans, encodings, and logs are written below `scripts/utils/temp/`.
 
 ## Benchmark suite
 
-Run the abstraction on every problem in the project suite:
+On the cluster login node, use the cluster-provided
+[CopperBench](https://github.com/tlyphed/copperbench) installation to submit the
+complete benchmark suite:
 
 ```bash
 python -m scripts.run_benchmarks
 ```
 
-Each planner process receives only `--problem` and `--domain`. Results are
-stored below `benchmark-results/`. Problems with an existing result file are
-skipped, so running the command again resumes the suite. Each problem has a
-one-minute timeout per pipeline by default; use `--timeout SECONDS` to override
-it. Unless no symmetries are found, the concrete pipeline also runs for
-comparison.
+This submits one Slurm array task per PDDL problem. Each task gets 30 minutes
+and 8192 MiB of memory. The abstract and concrete comparisons share the
+30-minute limit. Running the command again submits the complete suite again.
 
-Collect the result files into a CSV:
+JSON results and cluster logs are written below `benchmark-results/`. Collect
+the JSON results into a CSV with:
 
 ```bash
 python -m scripts.collect_benchmarks

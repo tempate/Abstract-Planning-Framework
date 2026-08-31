@@ -1,47 +1,108 @@
-"""Run abstract and eligible concrete comparisons across the benchmark suite."""
+"""Submit the complete benchmark suite to Slurm through CopperBench."""
 
 import argparse
 import json
+import os
+import shlex
 import subprocess
 import sys
-import time
+import tempfile
+from datetime import datetime
 from pathlib import Path
 
 from benchmarks.suite import BENCHMARKS_DIR, SUITE
+from scripts.run_benchmark import DEFAULT_TIMEOUT, PROJECT_ROOT, RESULTS_DIR
 from scripts.utils.arguments import positive_int
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-RESULTS_DIR = PROJECT_ROOT / "benchmark-results"
-DEFAULT_TIMEOUT = 60
-NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
+DEFAULT_MEMORY_LIMIT = 8 * 1024
 
 
 def main():
     args = _argument_parser().parse_args()
-    print("Running benchmarks")
-
-    for index, (domain_name, domain, problem) in enumerate(_benchmark_tasks(), 1):
-        result = _run_task(domain_name, domain, problem, timeout=args.timeout)
-        status = f"abstract {_human_status(result)}"
-        if "concrete" in result:
-            status += f", concrete {_human_status(result['concrete'])}"
-        print(f"[{index}] {domain_name}/{problem.name}: {status}", flush=True)
+    tasks = list(_benchmark_tasks())
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
+        config_file = _write_copperbench_config(
+            tasks,
+            definition_dir=definition_dir,
+            timeout=args.timeout,
+            memory_limit=args.memory_limit,
+            max_parallel_jobs=args.max_parallel_jobs,
+        )
+        print(f"Submitting one cluster job for each of {len(tasks)} benchmark problems")
+        subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
 
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--timeout", type=positive_int, default=DEFAULT_TIMEOUT, help="Maximum seconds for each benchmark"
+        "--timeout",
+        type=positive_int,
+        default=DEFAULT_TIMEOUT,
+        help="Wall-clock limit in seconds for each complete problem",
+    )
+    parser.add_argument(
+        "--memory-limit", type=positive_int, default=DEFAULT_MEMORY_LIMIT, help="Memory limit in MiB for each problem"
+    )
+    parser.add_argument(
+        "--max-parallel-jobs",
+        type=positive_int,
+        help="Maximum number of CopperBench array tasks allowed to run concurrently",
     )
     return parser
 
 
-def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SUITE, results_dir=RESULTS_DIR):
+def _write_copperbench_config(
+    tasks, definition_dir, timeout=DEFAULT_TIMEOUT, memory_limit=DEFAULT_MEMORY_LIMIT, max_parallel_jobs=None
+):
+    """Write the files CopperBench needs to submit one job per problem."""
+    definition_dir = Path(definition_dir)
+    run_name = datetime.now().strftime("run-%Y%m%d-%H%M%S-%f")
+
+    configs_file = definition_dir / "configs.txt"
+    instances_file = definition_dir / "instances.txt"
+    config_file = definition_dir / "copperbench.json"
+
+    worker = [
+        sys.executable,
+        "-m",
+        "scripts.run_benchmark",
+        "--domain-name",
+        "$1",
+        "--domain",
+        "$2",
+        "--problem",
+        "$3",
+        "--timeout",
+        "$timeout",
+    ]
+    configs_file.write_text(shlex.join(worker) + "\n", encoding="utf-8")
+
+    instances = []
+    for domain_name, domain, problem in tasks:
+        instances.append(f"{domain_name} {domain.resolve()} {problem.resolve()}")
+    instances_file.write_text("\n".join(instances) + "\n", encoding="utf-8")
+
+    config = {
+        "name": run_name,
+        "configs": configs_file.name,
+        "instances": instances_file.name,
+        "timeout": timeout,
+        "mem_limit": memory_limit,
+        "request_cpus": 1,
+        "working_dir": os.path.relpath(PROJECT_ROOT, definition_dir),
+        "instances_are_parameters": True,
+        "max_parallel_jobs": max_parallel_jobs,
+    }
+    config_file.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+    return config_file
+
+
+def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SUITE):
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
-            result_file = Path(results_dir) / domain_name / f"{problem.stem}.json"
-            if "domain" not in problem.name and not result_file.exists():
+            if "domain" not in problem.name:
                 yield domain_name, _find_domain(problem), problem
 
 
@@ -59,70 +120,6 @@ def _find_domain(problem):
         if domain.is_file():
             return domain
     raise FileNotFoundError(f"No domain file found for {problem}")
-
-
-def _run_task(domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None):
-    result_file = Path(results_dir) / domain_name / f"{problem.stem}.json"
-
-    command = _planner_command(domain, problem, "abstract")
-    result = _run_pipeline(command, timeout)
-    result["domain"] = domain_name
-    result["problem"] = problem.name
-
-    if NO_SYMMETRIES_MESSAGE not in result["output"]:
-        command = _planner_command(domain, problem, "concrete")
-        result["concrete"] = _run_pipeline(command, timeout)
-
-    result_file.parent.mkdir(parents=True, exist_ok=True)
-    temporary = result_file.with_suffix(".tmp")
-    temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(result_file)
-    return result
-
-
-def _run_pipeline(command, timeout):
-    started = time.perf_counter()
-    try:
-        completed = subprocess.run(
-            command,
-            cwd=PROJECT_ROOT,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            check=False,
-            timeout=timeout,
-        )
-        return_code = completed.returncode
-        output = completed.stdout
-        timed_out = False
-    except subprocess.TimeoutExpired as error:
-        return_code = None
-        output = error.stdout or ""
-        if isinstance(output, bytes):
-            output = output.decode(errors="replace")
-        timed_out = True
-    return {
-        "return_code": return_code,
-        "timed_out": timed_out,
-        "wall_time_seconds": time.perf_counter() - started,
-        "output": output,
-    }
-
-
-def _planner_command(domain, problem, mode):
-    return [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
-
-
-def _human_status(result):
-    if result["timed_out"]:
-        return "timed out"
-    if NO_SYMMETRIES_MESSAGE in result["output"]:
-        return "no symmetries"
-    if result["return_code"] == 0:
-        return "success"
-    if result["return_code"] == 1:
-        return "no plan found"
-    return f"error (exit code {result['return_code']})"
 
 
 if __name__ == "__main__":

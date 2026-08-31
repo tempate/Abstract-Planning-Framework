@@ -5,7 +5,7 @@ import json
 import re
 from pathlib import Path
 
-from scripts.run_benchmarks import RESULTS_DIR, _human_status
+from scripts.run_benchmark import RESULTS_DIR, _human_status
 
 CSV_FILE = RESULTS_DIR / "results.csv"
 FIELDS = (
@@ -38,6 +38,8 @@ def value(output, label, convert=str):
 def collect(results_dir=RESULTS_DIR):
     rows = []
     for result_file in sorted(Path(results_dir).glob("*/*.json")):
+        if result_file.name == "metadata.json":
+            continue
         result = json.loads(result_file.read_text(encoding="utf-8"))
         output = result["output"]
         row = {
