@@ -36,28 +36,54 @@ def value(output, label, convert=str):
 
 
 def collect(results_dir=RESULTS_DIR):
-    rows = []
-    for result_file in sorted(Path(results_dir).glob("*/*.json")):
+    results = {}
+    for result_file in sorted(Path(results_dir).rglob("*.json")):
         if result_file.name == "metadata.json":
             continue
         result = json.loads(result_file.read_text(encoding="utf-8"))
-        output = result["output"]
-        row = {
-            "domain": result["domain"],
-            "problem": result["problem"],
-            "status": _human_status(result),
-            "return_code": result["return_code"],
-            "timed_out": result.get("timed_out", False),
-            "wall_time_seconds": result["wall_time_seconds"],
-            "horizon": value(output, "Horizon", int),
-            "plan_found": value(output, "Plan found"),
-            "refinement_iterations": value(output, "Refinement iterations", int),
-            "decrements": value(output, "Decrements", int),
-            "planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
-            **_concrete_values(result.get("concrete")),
+        if not {"domain", "problem", "output"} <= result.keys():
+            continue
+
+        task = results.setdefault((result["domain"], result["problem"]), {})
+        mode = result.get("mode")
+        if mode in ("abstract", "concrete"):
+            task[mode] = result
+        else:
+            # Results produced before modes became separate jobs stored the
+            # concrete comparison inside the abstract result.
+            task.setdefault("abstract", result)
+            if "concrete" in result:
+                task.setdefault("concrete", result["concrete"])
+
+    return [
+        {
+            "domain": domain,
+            "problem": problem,
+            **_abstract_values(task.get("abstract")),
+            **_concrete_values(task.get("concrete")),
         }
-        rows.append(row)
-    return rows
+        for (domain, problem), task in sorted(results.items())
+    ]
+
+
+def _abstract_values(result):
+    if result is None:
+        return {
+            field: "" for field in FIELDS if field not in ("domain", "problem") and not field.startswith("concrete_")
+        }
+
+    output = result["output"]
+    return {
+        "status": _human_status(result),
+        "return_code": result["return_code"],
+        "timed_out": result.get("timed_out", False),
+        "wall_time_seconds": result["wall_time_seconds"],
+        "horizon": value(output, "Horizon", int),
+        "plan_found": value(output, "Plan found"),
+        "refinement_iterations": value(output, "Refinement iterations", int),
+        "decrements": value(output, "Decrements", int),
+        "planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
+    }
 
 
 def _concrete_values(result):

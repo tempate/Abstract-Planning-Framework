@@ -29,7 +29,7 @@ def main():
             memory_limit=args.memory_limit,
             max_parallel_jobs=args.max_parallel_jobs,
         )
-        print(f"Submitting one cluster job for each of {len(tasks)} benchmark problems")
+        print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
 
 
@@ -67,20 +67,21 @@ def _write_copperbench_config(
         sys.executable,
         "-m",
         "scripts.run_benchmark",
-        "--domain-name",
         "$1",
-        "--domain",
+        "--domain-name",
         "$2",
-        "--problem",
+        "--domain",
         "$3",
+        "--problem",
+        "$4",
         "--timeout",
         "$timeout",
     ]
     configs_file.write_text(shlex.join(worker) + "\n", encoding="utf-8")
 
     instances = []
-    for domain_name, domain, problem in tasks:
-        instances.append(f"{domain_name} {domain.resolve()} {problem.resolve()}")
+    for mode, domain_name, domain, problem in tasks:
+        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()}")
     instances_file.write_text("\n".join(instances) + "\n", encoding="utf-8")
 
     config = {
@@ -103,7 +104,9 @@ def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SUITE):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
             if "domain" not in problem.name:
-                yield domain_name, _find_domain(problem), problem
+                domain = _find_domain(problem)
+                for mode in ("abstract", "concrete"):
+                    yield mode, domain_name, domain, problem
 
 
 def _find_domain(problem):

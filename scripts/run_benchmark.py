@@ -1,4 +1,4 @@
-"""Run one abstract benchmark and its eligible concrete comparison."""
+"""Run one concrete or abstract benchmark."""
 
 import argparse
 import json
@@ -17,55 +17,35 @@ NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
 
 def main():
     args = _argument_parser().parse_args()
-    result = _run_task(args.domain_name, args.domain, args.problem, timeout=args.timeout)
-    print(f"{args.domain_name}/{args.problem.name}: {_task_status(result)}", flush=True)
+    result = _run_task(args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout)
+    print(f"{args.domain_name}/{args.problem.name}: {_task_status(args.mode, result)}", flush=True)
 
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("mode", choices=("concrete", "abstract"), help="Planning pipeline to benchmark")
     parser.add_argument("--domain-name", required=True, help="Benchmark-suite domain name")
     parser.add_argument("--domain", required=True, type=Path, help="Domain PDDL file")
     parser.add_argument("--problem", required=True, type=Path, help="Problem PDDL file")
     parser.add_argument(
-        "--timeout",
-        type=positive_int,
-        default=DEFAULT_TIMEOUT,
-        help="Wall-clock limit in seconds for the complete problem",
+        "--timeout", type=positive_int, default=DEFAULT_TIMEOUT, help="Wall-clock limit in seconds for this pipeline"
     )
     return parser
 
 
-def _run_task(domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None):
-    result_file = Path(results_dir) / domain_name / f"{problem.stem}.json"
-    started = time.perf_counter() if timeout is not None else None
-
-    command = _planner_command(domain, problem, "abstract")
+def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None):
+    result_file = Path(results_dir) / domain_name / problem.stem / f"{mode}.json"
+    command = _planner_command(domain, problem, mode)
     result = _run_pipeline(command, timeout)
+    result["mode"] = mode
     result["domain"] = domain_name
     result["problem"] = problem.name
-
-    if NO_SYMMETRIES_MESSAGE not in result["output"]:
-        remaining = None if timeout is None else timeout - (time.perf_counter() - started)
-        if remaining is not None and remaining <= 0:
-            result["concrete"] = _exhausted_timeout_result()
-        else:
-            command = _planner_command(domain, problem, "concrete")
-            result["concrete"] = _run_pipeline(command, remaining)
 
     result_file.parent.mkdir(parents=True, exist_ok=True)
     temporary = result_file.with_suffix(".tmp")
     temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     temporary.replace(result_file)
     return result
-
-
-def _exhausted_timeout_result():
-    return {
-        "return_code": None,
-        "timed_out": True,
-        "wall_time_seconds": 0.0,
-        "output": "Problem time limit exhausted before the concrete comparison\n",
-    }
 
 
 def _run_pipeline(command, timeout):
@@ -113,11 +93,8 @@ def _human_status(result):
     return f"error (exit code {result['return_code']})"
 
 
-def _task_status(result):
-    status = f"abstract {_human_status(result)}"
-    if "concrete" in result:
-        status += f", concrete {_human_status(result['concrete'])}"
-    return status
+def _task_status(mode, result):
+    return f"{mode} {_human_status(result)}"
 
 
 if __name__ == "__main__":
