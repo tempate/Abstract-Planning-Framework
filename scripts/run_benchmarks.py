@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -20,7 +21,7 @@ DEFAULT_MEMORY_LIMIT = 8 * 1024
 def main():
     args = _argument_parser().parse_args()
     tasks = list(_benchmark_tasks())
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    _reset_results_dir()
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
         config_file = _write_copperbench_config(
             tasks,
@@ -31,6 +32,16 @@ def main():
         )
         print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
+
+
+def _reset_results_dir(results_dir=RESULTS_DIR):
+    """Replace the previous benchmark results with an empty directory."""
+    results_dir = Path(results_dir)
+    if results_dir.is_symlink() or results_dir.is_file():
+        results_dir.unlink()
+    elif results_dir.exists():
+        shutil.rmtree(results_dir)
+    results_dir.mkdir(parents=True)
 
 
 def _argument_parser():

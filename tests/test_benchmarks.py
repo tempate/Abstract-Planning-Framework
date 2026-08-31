@@ -17,7 +17,13 @@ from scripts.run_benchmark import (
     _planner_command,
     _run_task,
 )
-from scripts.run_benchmarks import DEFAULT_MEMORY_LIMIT, _argument_parser, _benchmark_tasks, _write_copperbench_config
+from scripts.run_benchmarks import (
+    DEFAULT_MEMORY_LIMIT,
+    _argument_parser,
+    _benchmark_tasks,
+    _reset_results_dir,
+    _write_copperbench_config,
+)
 
 
 class BenchmarkTests(unittest.TestCase):
@@ -28,6 +34,18 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(args.memory_limit, 8 * 1024)
         self.assertEqual(args.timeout, DEFAULT_TIMEOUT)
         self.assertEqual(args.memory_limit, DEFAULT_MEMORY_LIMIT)
+
+    def test_new_suite_run_removes_previous_results(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "benchmark-results"
+            old_run = results / "old-run" / "result.json"
+            old_run.parent.mkdir(parents=True)
+            old_run.write_text("old result\n", encoding="utf-8")
+
+            _reset_results_dir(results)
+
+            self.assertTrue(results.is_dir())
+            self.assertEqual(list(results.iterdir()), [])
 
     def test_single_benchmark_selects_one_mode(self):
         common = ["--domain-name", "example", "--domain", "domain.pddl", "--problem", "p01.pddl"]

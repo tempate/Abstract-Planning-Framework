@@ -88,7 +88,6 @@ python -m scripts.run_benchmarks
 
 This submits two Slurm array tasks per PDDL problem: one abstract and one
 concrete. Each task gets its own 30-minute limit and 8192 MiB of memory.
-Running the command again submits the complete suite again.
 
 JSON results and cluster logs are written below `benchmark-results/`. Collect
 the JSON results into a CSV with:
