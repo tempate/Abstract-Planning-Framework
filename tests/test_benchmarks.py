@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from benchmarks.suite import NON_SYMMETRIC_DOMAINS, SUITE, SYMMETRIC_DOMAINS
 from scripts.collect_benchmarks import collect
 from scripts.run_benchmark import (
     DEFAULT_TIMEOUT,
@@ -27,6 +28,17 @@ from scripts.run_benchmarks import (
 
 
 class BenchmarkTests(unittest.TestCase):
+    def test_suite_groups_domains_by_confirmed_symmetries(self):
+        self.assertEqual(len(SYMMETRIC_DOMAINS), 26)
+        self.assertEqual(len(NON_SYMMETRIC_DOMAINS), 23)
+        self.assertEqual(SUITE, SYMMETRIC_DOMAINS + NON_SYMMETRIC_DOMAINS)
+        self.assertFalse(set(SYMMETRIC_DOMAINS) & set(NON_SYMMETRIC_DOMAINS))
+        self.assertIn("gripper", SYMMETRIC_DOMAINS)
+        self.assertIn("blocks", NON_SYMMETRIC_DOMAINS)
+
+    def test_benchmark_runner_defaults_to_symmetric_domains(self):
+        self.assertIs(_benchmark_tasks.__defaults__[1], SYMMETRIC_DOMAINS)
+
     def test_cluster_resource_defaults(self):
         args = _argument_parser().parse_args([])
 

@@ -78,9 +78,7 @@ Generated plans, encodings, and logs are written below `scripts/utils/temp/`.
 
 ## Benchmark suite
 
-On the cluster login node, use the cluster-provided
-[CopperBench](https://github.com/tlyphed/copperbench) installation to submit the
-complete benchmark suite:
+Use the cluster-provided [CopperBench](https://github.com/tlyphed/copperbench) installation to submit the suite:
 
 ```bash
 python -m scripts.run_benchmarks

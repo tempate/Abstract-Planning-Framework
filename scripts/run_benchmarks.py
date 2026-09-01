@@ -11,7 +11,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from benchmarks.suite import BENCHMARKS_DIR, SUITE
+from benchmarks.suite import BENCHMARKS_DIR, SYMMETRIC_DOMAINS
 from scripts.run_benchmark import DEFAULT_TIMEOUT, PROJECT_ROOT, RESULTS_DIR
 from scripts.utils.arguments import positive_int
 
@@ -110,7 +110,7 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SUITE):
+def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SYMMETRIC_DOMAINS):
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
