@@ -15,12 +15,12 @@ from scripts.utils.arguments import positive_int
 
 
 class ConcretePlanningOrchestrationTests(unittest.TestCase):
-    @patch("core.planning.concrete.run_clingo")
+    @patch("core.planning.concrete.solve")
     @patch("core.planning.concrete.sas_to_asp")
     @patch("core.planning.concrete.pddl_to_sas")
     @patch("core.planning.concrete.temp_run_dir")
     def test_pipeline_returns_the_discovered_horizon_and_normalized_timings(
-        self, temp_run_dir, pddl_to_sas, sas_to_asp, run_clingo
+        self, temp_run_dir, pddl_to_sas, sas_to_asp, solve
     ):
         with tempfile.TemporaryDirectory() as directory:
             domain = Path(directory, "domain.pddl")
@@ -30,7 +30,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             temp_run_dir.return_value.__enter__.return_value = (directory, "run-123")
             pddl_to_sas.return_value = ({"sasFile": str(Path(directory, "output.sas"))}, 0.1)
             sas_to_asp.return_value = "asp program"
-            run_clingo.return_value = ClingoSolveResult(["occurs(action,3)"], horizon=3, attempts=4)
+            solve.return_value = ClingoSolveResult(["occurs(action,3)"], horizon=3, attempts=4)
 
             config = PlanningConfig(domain_path=domain, problem_path=problem, time_step=True)
             result = compute_concrete_plan(config)
@@ -43,7 +43,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         self.assertIsNone(result["timings"]["iterations"])
         pddl_to_sas.assert_called_once_with(directory, domain, problem, "concrete")
         sas_to_asp.assert_called_once_with(str(Path(directory, "output.sas")), abstract_time_steps=True)
-        run_clingo.assert_called_once_with("asp program")
+        solve.assert_called_once_with("asp program")
 
 
 class AbstractPlanningOrchestrationTests(unittest.TestCase):

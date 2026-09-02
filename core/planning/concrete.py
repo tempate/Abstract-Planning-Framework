@@ -1,7 +1,7 @@
 """Orchestrate concrete planning from PDDL translation through ASP solving."""
 
 from core.execution import get_logger, temp_run_dir, timed_phase
-from core.integrations.clingo import run_clingo
+from core.integrations.clingo import solve
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.planning.config import PlanningConfig
@@ -32,7 +32,7 @@ def _compute_concrete_plan(config, base_dir, run_id):
 
         # Solve the concrete problem using Clingo.
         with timed_phase(logger, "Concrete solving time") as solve_timing:
-            solve_result = run_clingo(asp)
+            solve_result = solve(asp)
 
         plan = solve_result.plan
         effective_horizon = solve_result.horizon

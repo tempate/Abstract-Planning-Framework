@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
-from core.integrations.clingo import collect_plan, create_control, parse_plan_actions, run_clingo
+from core.integrations.clingo import collect_plan, create_control, parse_plan_actions, solve
 from core.integrations.fast_downward import _get_command, _pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.paths import ABSTRACT_TIME_STEPS_ENCODING
@@ -66,7 +66,7 @@ reached(t).
 :- query(t), t < 2.
 """
 
-        result = run_clingo(program)
+        result = solve(program)
 
         self.assertEqual(result.horizon, 2)
         self.assertEqual(result.attempts, 3)
@@ -82,7 +82,7 @@ ready.
 :- query(t), not ready.
 """
 
-        result = run_clingo(program)
+        result = solve(program)
 
         self.assertEqual(result.plan, ["ready"])
         self.assertEqual(result.horizon, 0)

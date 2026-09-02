@@ -6,7 +6,7 @@ from pprint import pformat
 
 from core.abstraction.factory import Abstraction
 from core.execution import PhaseTiming, timed_phase
-from core.integrations.clingo import parse_plan_actions, run_clingo
+from core.integrations.clingo import parse_plan_actions, solve
 from core.planning.config import AbstractPlanningConfig
 from core.planning.mapping import build_mapping
 from core.solvers.decremental import solve_decrementally
@@ -84,7 +84,7 @@ def refine(context: RefinementContext):
 def _solve_abstract_plan(context):
     context.logger.info("Abstract plan search")
     with timed_phase(context.logger, "Abstract solving time") as timing:
-        solve_result = run_clingo(context.abstract_asp)
+        solve_result = solve(context.abstract_asp)
 
     context.horizon = solve_result.horizon
     context.logger.info(f"Effective horizon: {context.horizon}")

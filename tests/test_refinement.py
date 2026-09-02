@@ -35,11 +35,10 @@ class RefinementTests(unittest.TestCase):
     @patch("core.planning.refinement.build_mapping", return_value="mapping asp")
     @patch("core.planning.refinement.parse_plan_actions", return_value=(PlanAction("move", ("item_abs",), 1),))
     @patch(
-        "core.planning.refinement.run_clingo",
-        return_value=ClingoSolveResult(["occurs(abstract,1)"], horizon=2, attempts=3),
+        "core.planning.refinement.solve", return_value=ClingoSolveResult(["occurs(abstract,1)"], horizon=2, attempts=3)
     )
     def test_clingo_maps_the_abstract_plan_and_reports_decrements(
-        self, run_clingo, parse_plan_actions, build_mapping, solve_decrementally
+        self, solve, parse_plan_actions, build_mapping, solve_decrementally
     ):
         context = self._context()
 
@@ -49,7 +48,7 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(result["plan"], ["occurs(concrete,1)"])
         self.assertEqual(result["timings"]["decrements"], 2)
         self.assertEqual(result["horizon"], 2)
-        run_clingo.assert_called_once_with("abstract asp")
+        solve.assert_called_once_with("abstract asp")
         parse_plan_actions.assert_called_once_with(["occurs(abstract,1)"])
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
         solve_decrementally.assert_called_once_with("concrete asp\nmapping asp", 2)
@@ -57,11 +56,9 @@ class RefinementTests(unittest.TestCase):
     @patch("core.planning.refinement.solve_decrementally", return_value=(False, None, 3))
     @patch("core.planning.refinement.build_mapping", return_value="mapping asp")
     @patch("core.planning.refinement.parse_plan_actions", return_value=())
-    @patch(
-        "core.planning.refinement.run_clingo", return_value=ClingoSolveResult(["abstract atom"], horizon=3, attempts=4)
-    )
+    @patch("core.planning.refinement.solve", return_value=ClingoSolveResult(["abstract atom"], horizon=3, attempts=4))
     def test_clingo_reports_concrete_refinement_failure(
-        self, run_clingo, parse_plan_actions, build_mapping, solve_decrementally
+        self, solve, parse_plan_actions, build_mapping, solve_decrementally
     ):
         result = refine(self._context())
 

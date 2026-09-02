@@ -19,7 +19,7 @@ class ClingoSolveResult:
     attempts: int
 
 
-def run_clingo(asp):
+def solve(asp):
     """Incrementally solve an ASP program until a plan is found."""
     logger = get_logger()
     logger.info("[CLINGO] Starting incremental solve")
