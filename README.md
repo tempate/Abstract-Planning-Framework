@@ -4,11 +4,12 @@ An experimental framework for comparing classical planning with abstraction
 and decremental refinement across classical-planning benchmarks using Fast
 Downward, Clingo, and PlanPilot.
 
+Fast Downward translates PDDL tasks to SAS. Clingo then searches for a plan by
+incrementally increasing the horizon while reusing the same solver instance.
+
 The abstract workflow builds a symmetric-object abstraction directly from one
 concrete PDDL task, solves it, maps its plan to the concrete task, and relaxes
-abstract-plan constraints in reverse order until it finds a concrete plan. If
-the concrete task remains unsatisfiable after every constraint is relaxed, the
-planner continues unconstrained concrete search above the abstract horizon.
+abstract-plan constraints in reverse order until it finds a concrete plan.
 
 ## Setup
 
@@ -69,8 +70,13 @@ concrete search:
 ```bash
 python -m scripts.planner abstract \
     --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
-    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl
+    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl \
+    --abstract-name ball_abs
 ```
+
+By default the incremental search is unbounded. Pass `--horizon N` to stop
+after testing horizon `N`; the first plan found at or below that maximum is
+returned.
 
 The planner asks PDDL Symmetries to discover a symmetric set of objects by default. Use `--objects-to-abstract NAME...` to select them explicitly. If PDDL Symmetries does not discover a symmetric set of objects, `abstract` mode exits without running a concrete planning pipeline.
 
@@ -89,10 +95,7 @@ concrete. Each task gets its own 30-minute limit and 8192 MiB of memory.
 
 JSON results and cluster logs are written below `benchmark-results/`. Each JSON
 result contains a machine-readable `status`, and the submission manifest records
-every expected result. A `running` result is created when each worker starts and
-is updated atomically after every completed planning phase and refinement step,
-preserving partial timings and counters if the worker is interrupted. Collect
-the JSON results into a CSV with:
+every expected result. Collect the JSON results into a CSV with:
 
 ```bash
 python -m scripts.collect_benchmarks

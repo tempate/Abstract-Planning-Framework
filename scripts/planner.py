@@ -83,7 +83,6 @@ def _argument_parser():
     abstract = argparse.ArgumentParser(add_help=False)
     abstract.add_argument("--objects-to-abstract", nargs="+", help="Objects to collapse; omit to use PDDL Symmetries")
     abstract.add_argument("--abstract-name", help="Name of the collapsed object")
-    abstract.add_argument("--plan-source", choices=["clingo"], default="clingo", help=argparse.SUPPRESS)
     abstract.add_argument(
         "--symmetry-time-limit", type=positive_int, default=300, help="Symmetry discovery time limit in seconds"
     )
