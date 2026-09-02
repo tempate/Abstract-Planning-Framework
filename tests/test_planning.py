@@ -11,7 +11,7 @@ from core.integrations.unified_planning import read_problem
 from core.planning.abstract import _write_abstract_problem, compute_abstract_plan
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.concrete import compute_concrete_plan
-from scripts.utils.arguments import nonnegative_int, positive_int
+from scripts.utils.arguments import positive_int
 
 
 class ConcretePlanningOrchestrationTests(unittest.TestCase):
@@ -19,7 +19,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.concrete.sas_to_asp")
     @patch("core.planning.concrete.run_fast_downward")
     @patch("core.planning.concrete.temp_run_dir")
-    def test_pipeline_uses_an_explicit_horizon_and_returns_normalized_timings(
+    def test_pipeline_returns_the_discovered_horizon_and_normalized_timings(
         self, temp_run_dir, run_fast_downward, sas_to_asp, run_clingo
     ):
         with tempfile.TemporaryDirectory() as directory:
@@ -32,9 +32,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             sas_to_asp.return_value = "asp program"
             run_clingo.return_value = ClingoSolveResult(["occurs(action,3)"], horizon=3, attempts=4)
 
-            config = PlanningConfig(
-                domain_path=domain, problem_path=problem, horizon=3, encoding="bounded", time_step=True
-            )
+            config = PlanningConfig(domain_path=domain, problem_path=problem, encoding="bounded", time_step=True)
             result = compute_concrete_plan(config)
 
         self.assertTrue(result["success"])
@@ -45,7 +43,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         self.assertIsNone(result["timings"]["iterations"])
         run_fast_downward.assert_called_once_with(directory, domain, problem, "concrete")
         sas_to_asp.assert_called_once_with(str(Path(directory, "output.sas")), "bounded", True)
-        run_clingo.assert_called_once_with("asp program", 3)
+        run_clingo.assert_called_once_with("asp program")
 
 
 class AbstractPlanningOrchestrationTests(unittest.TestCase):
@@ -82,7 +80,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(result, {"success": True})
 
     def test_exits_abstract_pipeline_when_no_symmetry_class_exists(self):
-        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", horizon=4, encoding="exact", time_step=True)
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", encoding="exact", time_step=True)
 
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
@@ -116,7 +114,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         run_fast_downward.assert_not_called()
 
     def test_clingo_source_translates_both_tasks_and_receives_abstract_asp(self):
-        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", horizon=4, encoding="bounded", time_step=True)
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", encoding="bounded", time_step=True)
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
         generated = SimpleNamespace(problem=Mock(), abstraction=abstraction, relaxed_deletes=())
         concrete_task = {"sasFile": "concrete.sas"}
@@ -154,13 +152,12 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(context.concrete_asp, "guarded concrete asp")
         self.assertEqual(context.abstract_asp, "abstract asp")
         self.assertEqual(context.abstract_task, abstract_task)
-        self.assertEqual(context.config.horizon, 4)
         self.assertEqual(context.horizon, 0)
         self.assertEqual(context.fd_timings["fd_concrete_time"], 1.0)
         self.assertEqual(context.fd_timings["fd_abstract_time"], 2.0)
         refine.assert_called_once_with(context)
 
-    def test_automatic_horizon_still_translates_both_tasks_and_generates_both_programs(self):
+    def test_incremental_search_translates_both_tasks_and_generates_both_programs(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl")
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
         generated = SimpleNamespace(problem=Mock(), abstraction=abstraction, relaxed_deletes=())
@@ -202,14 +199,6 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
 
 
 class ArgumentTests(unittest.TestCase):
-    def test_nonnegative_integer_accepts_zero(self):
-        self.assertEqual(nonnegative_int("0"), 0)
-        self.assertEqual(nonnegative_int("12"), 12)
-
-    def test_nonnegative_integer_rejects_negative_values(self):
-        with self.assertRaisesRegex(Exception, "must be nonnegative"):
-            nonnegative_int("-1")
-
     def test_positive_integer_rejects_zero(self):
         with self.assertRaises(argparse.ArgumentTypeError):
             positive_int("0")
@@ -220,7 +209,7 @@ class PlanningConfigurationTests(unittest.TestCase):
         concrete = PlanningConfig("domain.pddl", "problem.pddl")
         abstract = AbstractPlanningConfig("domain.pddl", "problem.pddl")
 
-        self.assertIsNone(concrete.horizon)
+        self.assertFalse(hasattr(concrete, "horizon"))
         self.assertEqual(concrete.encoding, "bounded")
         self.assertFalse(concrete.time_step)
         self.assertIsInstance(abstract, PlanningConfig)

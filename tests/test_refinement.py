@@ -13,7 +13,7 @@ from core.planning.refinement import RefinementContext, refine
 class RefinementTests(unittest.TestCase):
     def _context(self, **changes):
         values = {
-            "config": AbstractPlanningConfig("domain.pddl", "problem.pddl", horizon=3),
+            "config": AbstractPlanningConfig("domain.pddl", "problem.pddl"),
             "abstraction": Abstraction("item_abs", ("a", "b"), "item"),
             "relaxed_deletes": (object(), object()),
             "concrete_asp": "concrete asp",
@@ -30,28 +30,6 @@ class RefinementTests(unittest.TestCase):
         }
         values.update(changes)
         return RefinementContext(**values)
-
-    @patch("core.planning.refinement.build_mapping")
-    @patch("core.planning.refinement.run_clingo", return_value=ClingoSolveResult(None, horizon=3, attempts=4))
-    def test_clingo_stops_when_no_abstract_plan_exists(self, run_clingo, build_mapping):
-        context = self._context()
-
-        result = refine(context)
-
-        self.assertFalse(result["success"])
-        self.assertIsNone(result["plan"])
-        self.assertEqual(result["timings"]["decrements"], 0)
-        self.assertEqual(
-            result["abstraction"],
-            {
-                "abstract_symbol": "item_abs",
-                "objects_to_abstract": ["a", "b"],
-                "object_type": "item",
-                "relaxed_unary_deletes": 2,
-            },
-        )
-        run_clingo.assert_called_once_with("abstract asp", 3)
-        build_mapping.assert_not_called()
 
     @patch("core.planning.refinement.solve_decrementally", return_value=(True, ["occurs(concrete,1)"], 2))
     @patch("core.planning.refinement.build_mapping", return_value="mapping asp")
@@ -71,7 +49,7 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(result["plan"], ["occurs(concrete,1)"])
         self.assertEqual(result["timings"]["decrements"], 2)
         self.assertEqual(result["horizon"], 2)
-        run_clingo.assert_called_once_with("abstract asp", 3)
+        run_clingo.assert_called_once_with("abstract asp")
         parse_plan_actions.assert_called_once_with(["occurs(abstract,1)"])
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
         solve_decrementally.assert_called_once_with("concrete asp\nmapping asp", 2)

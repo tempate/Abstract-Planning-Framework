@@ -21,7 +21,6 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
         logger.info("=" * 70)
         logger.info("NEW PLANNING RUN STARTED")
         logger.info(f"Configuration: {config.as_dict()}")
-        logger.info(f"Maximum horizon: {config.horizon if config.horizon is not None else 'unbounded'}")
         logger.info(f"Encoding: {config.encoding}")
         logger.info(f"Run ID: {run_id}")
         logger.info(f"Base dir: {base_dir}")

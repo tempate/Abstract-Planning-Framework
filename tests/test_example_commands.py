@@ -2,7 +2,7 @@ import os
 import subprocess
 import unittest
 from argparse import Namespace
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -105,14 +105,19 @@ class PlannerHelpTests(unittest.TestCase):
 
         self.assertIn("ASP encoding type (default: bounded)", help_text)
         self.assertIn("time-step based encoding (default: False)", help_text)
+        self.assertNotIn("--horizon", help_text)
 
-    def test_help_describes_incremental_horizon_limit(self):
+    def test_abstract_help_has_no_horizon_or_plan_source_options(self):
         help_text = self._help("abstract")
 
-        self.assertIn("Maximum planning horizon", help_text)
-        self.assertIn("unbounded", help_text)
-        self.assertIn("incremental search", help_text)
+        self.assertNotIn("--horizon", help_text)
         self.assertNotIn("--plan-source", help_text)
+
+    def test_horizon_option_is_rejected(self):
+        with self.assertRaises(SystemExit), redirect_stderr(StringIO()):
+            _argument_parser().parse_args(
+                ["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl", "--horizon", "4"]
+            )
 
     def test_abstract_mode_accepts_one_concrete_task_for_automatic_abstraction(self):
         args = _argument_parser().parse_args(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
@@ -148,12 +153,7 @@ class PlannerExitStatusTests(unittest.TestCase):
     def test_concrete_cli_returns_failure_when_no_plan_is_found(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(
-            mode="concrete",
-            domain="domain.pddl",
-            problem="problem.pddl",
-            horizon=1,
-            encoding="bounded",
-            time_step=False,
+            mode="concrete", domain="domain.pddl", problem="problem.pddl", encoding="bounded", time_step=False
         )
         with (
             patch.object(planner, "_argument_parser", return_value=parser),
@@ -170,7 +170,6 @@ class PlannerExitStatusTests(unittest.TestCase):
             mode="abstract",
             domain="domain.pddl",
             problem="problem.pddl",
-            horizon=1,
             encoding="bounded",
             time_step=False,
             abstract_name=None,
@@ -192,7 +191,6 @@ class PlannerExitStatusTests(unittest.TestCase):
             mode="abstract",
             domain="domain.pddl",
             problem="problem.pddl",
-            horizon=1,
             encoding="bounded",
             time_step=False,
             abstract_name=None,
@@ -222,7 +220,6 @@ class PlannerExitStatusTests(unittest.TestCase):
             mode="abstract",
             domain="domain.pddl",
             problem="problem.pddl",
-            horizon=4,
             encoding="bounded",
             time_step=False,
             abstract_name="combined",

@@ -19,7 +19,6 @@ def _compute_concrete_plan(config, base_dir, run_id):
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
     logger.info(f"Configuration: {config.as_dict()}")
-    logger.info(f"Maximum horizon: {config.horizon if config.horizon is not None else 'unbounded'}")
     logger.info(f"Encoding: {config.encoding}")
     logger.info(f"Run ID: {run_id}")
     logger.info(f"Base dir: {base_dir}")
@@ -34,7 +33,7 @@ def _compute_concrete_plan(config, base_dir, run_id):
 
         # Solve the concrete problem using Clingo.
         with timed_phase(logger, "Concrete solving time") as solve_timing:
-            solve_result = run_clingo(asp, config.horizon)
+            solve_result = run_clingo(asp)
 
         plan = solve_result.plan
         effective_horizon = solve_result.horizon

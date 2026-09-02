@@ -5,7 +5,6 @@ from dataclasses import asdict, dataclass
 from os import PathLike
 
 Path = str | PathLike[str]
-DEFAULT_HORIZON = None
 DEFAULT_ENCODING = "bounded"
 DEFAULT_TIME_STEP = False
 
@@ -16,7 +15,6 @@ class PlanningConfig:
 
     domain_path: Path
     problem_path: Path
-    horizon: int | None = DEFAULT_HORIZON
     encoding: str = DEFAULT_ENCODING
     time_step: bool = DEFAULT_TIME_STEP
 

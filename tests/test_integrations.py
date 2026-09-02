@@ -66,7 +66,7 @@ reached(t).
 :- query(t), t < 2.
 """
 
-        result = run_clingo(program, max_horizon=4)
+        result = run_clingo(program)
 
         self.assertEqual(result.horizon, 2)
         self.assertEqual(result.attempts, 3)
@@ -82,24 +82,11 @@ ready.
 :- query(t), not ready.
 """
 
-        result = run_clingo(program, max_horizon=4)
+        result = run_clingo(program)
 
         self.assertEqual(result.plan, ["ready"])
         self.assertEqual(result.horizon, 0)
         self.assertEqual(result.attempts, 1)
-
-    def test_incremental_search_honors_an_inclusive_maximum(self):
-        program = """
-#program check(t).
-#external query(t).
-:- query(t), t < 2.
-"""
-
-        result = run_clingo(program, max_horizon=1)
-
-        self.assertIsNone(result.plan)
-        self.assertEqual(result.horizon, 1)
-        self.assertEqual(result.attempts, 2)
 
     def test_abstract_time_shows_can_be_grounded_at_multiple_steps(self):
         time_encoding = Path(ABSTRACT_TIME_STEPS_ENCODING).read_text(encoding="utf-8")

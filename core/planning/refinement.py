@@ -36,16 +36,6 @@ class RefinementContext:
 def refine(context: RefinementContext):
     """Obtain an abstract plan and use it to guide concrete search."""
     abstract_plan, abstract_solve_time = _get_abstract_plan(context)
-    if abstract_plan is None:
-        return _build_result(
-            context,
-            success=False,
-            plan=None,
-            solver_operations=0,
-            abstract_solve_time=abstract_solve_time,
-            concrete_solve_time=0.0,
-        )
-
     mapping = build_mapping(abstract_plan, context.abstraction)
 
     with timed_phase(context.logger, "Concrete solving time") as concrete_timing:
@@ -77,16 +67,11 @@ def _get_abstract_plan(context):
 def _solve_abstract_plan(context):
     context.logger.info("Abstract plan search")
     with timed_phase(context.logger, "Abstract solving time") as timing:
-        solve_result = run_clingo(context.abstract_asp, context.config.horizon)
+        solve_result = run_clingo(context.abstract_asp)
 
     context.horizon = solve_result.horizon
     context.logger.info(f"Effective horizon: {context.horizon}")
     abstract_atoms = solve_result.plan
-
-    if abstract_atoms is None:
-        context.logger.info("No abstract plan found within the selected horizon.")
-        context.logger.info("FAILED")
-        return None, timing.elapsed
 
     context.logger.info("Abstract plan:")
     for atom in abstract_atoms:

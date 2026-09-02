@@ -14,19 +14,15 @@ THREADS = 1
 class ClingoSolveResult:
     """Result of an incremental horizon search."""
 
-    plan: list[str] | None
+    plan: list[str]
     horizon: int
     attempts: int
 
 
-def run_clingo(asp, max_horizon=None):
-    """Incrementally solve an ASP program up to an optional horizon."""
-    if max_horizon is not None and max_horizon < 0:
-        raise ValueError("Maximum horizon must be nonnegative")
-
+def run_clingo(asp):
+    """Incrementally solve an ASP program until a plan is found."""
     logger = get_logger()
     logger.info("[CLINGO] Starting incremental solve")
-    logger.info(f"[CLINGO] Maximum horizon={max_horizon if max_horizon is not None else 'unbounded'}")
     logger.info(f"[CLINGO] Threads={THREADS}")
 
     with timed_phase(logger, "[CLINGO] Solve runtime"):
@@ -35,7 +31,7 @@ def run_clingo(asp, max_horizon=None):
         horizon = 0
         attempts = 0
 
-        while max_horizon is None or horizon <= max_horizon:
+        while True:
             if previous_query is not None:
                 control.release_external(previous_query)
             if horizon > 0:
@@ -54,9 +50,6 @@ def run_clingo(asp, max_horizon=None):
 
             previous_query = query
             horizon += 1
-
-    logger.info("[CLINGO] Plan found=False")
-    return ClingoSolveResult(None, max_horizon, attempts)
 
 
 def create_control(asp, horizon):

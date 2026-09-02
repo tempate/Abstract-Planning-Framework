@@ -7,16 +7,10 @@ from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
 from core.planning.abstract import compute_abstract_plan
 from core.planning.concrete import compute_concrete_plan
-from core.planning.config import (
-    DEFAULT_ENCODING,
-    DEFAULT_HORIZON,
-    DEFAULT_TIME_STEP,
-    AbstractPlanningConfig,
-    PlanningConfig,
-)
+from core.planning.config import DEFAULT_ENCODING, DEFAULT_TIME_STEP, AbstractPlanningConfig, PlanningConfig
 from core.planning.outcomes import PlanningOutcomeError
 
-from .utils.arguments import nonnegative_int, positive_int
+from .utils.arguments import positive_int
 from .utils.reporting import print_planning_result
 
 
@@ -46,7 +40,6 @@ def _compute(args):
     common = {
         "domain_path": args.domain,
         "problem_path": args.problem,
-        "horizon": args.horizon,
         "encoding": args.encoding,
         "time_step": args.time_step,
     }
@@ -68,12 +61,6 @@ def _argument_parser():
     shared = argparse.ArgumentParser(add_help=False)
     shared.add_argument("--domain", required=True, default=argparse.SUPPRESS, help="Concrete domain PDDL")
     shared.add_argument("--problem", required=True, default=argparse.SUPPRESS, help="Concrete problem PDDL")
-    shared.add_argument(
-        "--horizon",
-        type=nonnegative_int,
-        default=DEFAULT_HORIZON,
-        help="Maximum planning horizon; omit for unbounded incremental search",
-    )
     shared.add_argument("--encoding", default=DEFAULT_ENCODING, help="ASP encoding type")
     shared.add_argument(
         "--time-step", action="store_true", default=DEFAULT_TIME_STEP, help="Enable time-step based encoding"
