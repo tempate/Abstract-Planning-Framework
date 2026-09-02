@@ -1,4 +1,5 @@
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 from unified_planning.shortcuts import (
@@ -10,6 +11,7 @@ from unified_planning.shortcuts import (
     IntType,
     MaximizeExpressionOnFinalState,
     MinimizeActionCosts,
+    MinimizeExpressionOnFinalState,
     MinimizeSequentialPlanLength,
     Problem,
     UserType,
@@ -243,6 +245,33 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertEqual(result.problem.goals, [marked(abstract_object)])
         self.assertEqual(result.problem.trajectory_constraints[0].arg(0), marked(abstract_object))
         self.assertEqual(metric.costs[copied_action], cost(abstract_object))
+
+    def test_rewrites_a_final_state_minimization_expression(self):
+        problem = Problem("final-state-metric")
+        item = UserType("metric_item")
+        a = problem.add_object("a", item)
+        b = problem.add_object("b", item)
+        cost = Fluent("cost", IntType(), target=item)
+        problem.add_fluent(cost, default_initial_value=0)
+        problem.add_quality_metric(MinimizeExpressionOnFinalState(cost(a) + cost(b)))
+
+        result = _build_from_problem(problem, ["a", "b"])
+        abstract_object = result.problem.object("metric_item_abs")
+        metric = result.problem.quality_metrics[0]
+
+        self.assertIsInstance(metric, MinimizeExpressionOnFinalState)
+        self.assertEqual(metric.expression, (cost(abstract_object) + cost(abstract_object)).simplify())
+
+    def test_parses_and_abstracts_an_agricola_final_state_metric(self):
+        root = Path(__file__).resolve().parents[1] / "benchmarks" / "downward-benchmarks" / "agricola-sat18-strips"
+        result = build_abstract_problem(
+            AbstractPlanningConfig(root / "domain.pddl", root / "p01.pddl", objects_to_abstract=("num0", "num1"))
+        )
+
+        self.assertIsInstance(result.problem.quality_metrics[0], MinimizeExpressionOnFinalState)
+        serialized = write_problem(result.problem)
+        self.assertIn("(:metric minimize (total-cost))", serialized.problem)
+        parse_problem(serialized.domain, serialized.problem)
 
     def test_preserves_numeric_effects_and_plan_length_metric(self):
         problem = Problem("numeric-effects")

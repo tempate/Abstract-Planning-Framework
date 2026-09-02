@@ -1,7 +1,11 @@
 """Collapse concrete objects in a Unified Planning problem."""
 
 from unified_planning.model import InstantaneousAction, Object, Problem
-from unified_planning.model.metrics import MinimizeActionCosts, MinimizeSequentialPlanLength
+from unified_planning.model.metrics import (
+    MinimizeActionCosts,
+    MinimizeExpressionOnFinalState,
+    MinimizeSequentialPlanLength,
+)
 
 from core.abstraction.relaxation import match_relaxable_delete
 
@@ -61,7 +65,7 @@ def _validate_supported_problem(problem):
     if len(problem.quality_metrics) > 1:
         raise AbstractionError("Unsupported PDDL feature: multiple quality metrics")
     if problem.quality_metrics and not isinstance(
-        problem.quality_metrics[0], (MinimizeActionCosts, MinimizeSequentialPlanLength)
+        problem.quality_metrics[0], (MinimizeActionCosts, MinimizeExpressionOnFinalState, MinimizeSequentialPlanLength)
     ):
         raise AbstractionError(f"Unsupported quality metric: {type(problem.quality_metrics[0]).__name__}")
     if any(not isinstance(action, InstantaneousAction) for action in problem.actions):
@@ -145,5 +149,9 @@ def _copy_quality_metric(problem, collapsed_problem, collapsed_actions, rewrite)
         collapsed_problem.add_quality_metric(
             MinimizeActionCosts(action_costs, default=default_cost, environment=problem.environment)
         )
-    else:
+    elif isinstance(metric, MinimizeExpressionOnFinalState):
+        collapsed_problem.add_quality_metric(
+            MinimizeExpressionOnFinalState(rewrite(metric.expression), environment=problem.environment)
+        )
+    elif isinstance(metric, MinimizeSequentialPlanLength):
         collapsed_problem.add_quality_metric(MinimizeSequentialPlanLength(environment=problem.environment))
