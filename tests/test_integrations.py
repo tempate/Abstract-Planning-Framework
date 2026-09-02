@@ -129,43 +129,38 @@ class FastDownwardHelperTests(unittest.TestCase):
 
 class PlaspPostProcessingTests(unittest.TestCase):
     @patch("core.integrations.plasp.subprocess.run")
-    def test_program_combines_selected_encodings_with_translator_output(self, run):
+    def test_program_combines_exact_encoding_with_translator_output(self, run):
         run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="translated.\n", stderr="")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             binary = root / "plasp"
             sas = root / "output.sas"
-            bounded = root / "bounded.lp"
+            exact = root / "exact.lp"
             actions = root / "actions.lp"
             for path in (binary, sas):
                 path.touch()
-            bounded.write_text("bounded.\n", encoding="utf-8")
+            exact.write_text("exact.\n", encoding="utf-8")
             actions.write_text("actions.\n", encoding="utf-8")
 
             with (
                 patch("core.integrations.plasp.PLASP_BIN", str(binary)),
-                patch("core.integrations.plasp._HORIZON_ENCODINGS", {"bounded": str(bounded)}),
+                patch("core.integrations.plasp.EXACT_HORIZON_ENCODING", str(exact)),
                 patch("core.integrations.plasp.ACTION_PER_TIME_STEP_ENCODING", str(actions)),
             ):
                 program = sas_to_asp(str(sas))
 
-            self.assertEqual(program, "bounded.\nactions.\ntranslated.\n")
+            self.assertEqual(program, "exact.\nactions.\ntranslated.\n")
 
-    def test_switch_guard_is_added_for_both_horizon_encodings(self):
-        rules = {
-            "exact": "1 {occurs(Action, t) : action(Action)} 1.",
-            "bounded": "0 {occurs(Action, t) : action(Action)} 1.",
-        }
+    def test_switch_guard_is_added_to_exact_occurrence_rule(self):
+        rule = "1 {occurs(Action, t) : action(Action)} 1."
 
-        for encoding, rule in rules.items():
-            with self.subTest(encoding=encoding):
-                result = add_switch_to_asp_rule(f"before.\n{rule}\nafter.\n", encoding)
+        result = add_switch_to_asp_rule(f"before.\n{rule}\nafter.\n")
 
-                self.assertIn("not switch(t).", result)
-                self.assertNotIn(rule, result)
-                self.assertEqual(result.count("not switch(t)"), 1)
-                self.assertIn("before.\n", result)
-                self.assertIn("after.\n", result)
+        self.assertIn("not switch(t).", result)
+        self.assertNotIn(rule, result)
+        self.assertEqual(result.count("not switch(t)"), 1)
+        self.assertIn("before.\n", result)
+        self.assertIn("after.\n", result)
 
     def test_switch_guard_rejects_an_encoding_without_the_occurrence_rule(self):
         with self.assertRaisesRegex(IntegrationError, "No occurrence rule"):

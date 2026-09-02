@@ -32,7 +32,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             sas_to_asp.return_value = "asp program"
             run_clingo.return_value = ClingoSolveResult(["occurs(action,3)"], horizon=3, attempts=4)
 
-            config = PlanningConfig(domain_path=domain, problem_path=problem, encoding="bounded", time_step=True)
+            config = PlanningConfig(domain_path=domain, problem_path=problem, time_step=True)
             result = compute_concrete_plan(config)
 
         self.assertTrue(result["success"])
@@ -42,7 +42,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(result["configuration"], config.as_dict())
         self.assertIsNone(result["timings"]["iterations"])
         run_fast_downward.assert_called_once_with(directory, domain, problem, "concrete")
-        sas_to_asp.assert_called_once_with(str(Path(directory, "output.sas")), "bounded", True)
+        sas_to_asp.assert_called_once_with(str(Path(directory, "output.sas")), abstract_time_steps=True)
         run_clingo.assert_called_once_with("asp program")
 
 
@@ -80,7 +80,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(result, {"success": True})
 
     def test_exits_abstract_pipeline_when_no_symmetry_class_exists(self):
-        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", encoding="exact", time_step=True)
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", time_step=True)
 
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
@@ -114,7 +114,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         run_fast_downward.assert_not_called()
 
     def test_clingo_source_translates_both_tasks_and_receives_abstract_asp(self):
-        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", encoding="bounded", time_step=True)
+        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", time_step=True)
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
         generated = SimpleNamespace(problem=Mock(), abstraction=abstraction, relaxed_deletes=())
         concrete_task = {"sasFile": "concrete.sas"}
@@ -145,9 +145,10 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            sas_to_asp.call_args_list, [call("concrete.sas", "bounded", True), call("abstract.sas", "bounded", True)]
+            sas_to_asp.call_args_list,
+            [call("concrete.sas", abstract_time_steps=True), call("abstract.sas", abstract_time_steps=True)],
         )
-        add_switch.assert_called_once_with("concrete asp", "bounded")
+        add_switch.assert_called_once_with("concrete asp")
         context = refine.call_args.args[0]
         self.assertEqual(context.concrete_asp, "guarded concrete asp")
         self.assertEqual(context.abstract_asp, "abstract asp")
@@ -189,7 +190,8 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             ],
         )
         self.assertEqual(
-            sas_to_asp.call_args_list, [call("concrete.sas", "bounded", False), call("abstract.sas", "bounded", False)]
+            sas_to_asp.call_args_list,
+            [call("concrete.sas", abstract_time_steps=False), call("abstract.sas", abstract_time_steps=False)],
         )
         context = refine.call_args.args[0]
         self.assertEqual(context.abstract_asp, "abstract asp")
@@ -210,10 +212,9 @@ class PlanningConfigurationTests(unittest.TestCase):
         abstract = AbstractPlanningConfig("domain.pddl", "problem.pddl")
 
         self.assertFalse(hasattr(concrete, "horizon"))
-        self.assertEqual(concrete.encoding, "bounded")
+        self.assertFalse(hasattr(concrete, "encoding"))
         self.assertFalse(concrete.time_step)
         self.assertIsInstance(abstract, PlanningConfig)
-        self.assertEqual(abstract.encoding, concrete.encoding)
         self.assertIsNone(abstract.abstract_name)
         self.assertIsNone(abstract.objects_to_abstract)
 

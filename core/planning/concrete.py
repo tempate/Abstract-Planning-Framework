@@ -19,7 +19,6 @@ def _compute_concrete_plan(config, base_dir, run_id):
     logger.info("=" * 70)
     logger.info("NEW PLANNING RUN STARTED")
     logger.info(f"Configuration: {config.as_dict()}")
-    logger.info(f"Encoding: {config.encoding}")
     logger.info(f"Run ID: {run_id}")
     logger.info(f"Base dir: {base_dir}")
 
@@ -29,7 +28,7 @@ def _compute_concrete_plan(config, base_dir, run_id):
 
         # Generate the ASP representation of the concrete problem.
         with timed_phase(logger, "ASP generation time") as asp_timing:
-            asp = sas_to_asp(task["sasFile"], config.encoding, config.time_step)
+            asp = sas_to_asp(task["sasFile"], abstract_time_steps=config.time_step)
 
         # Solve the concrete problem using Clingo.
         with timed_phase(logger, "Concrete solving time") as solve_timing:

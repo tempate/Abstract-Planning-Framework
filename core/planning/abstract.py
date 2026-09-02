@@ -21,7 +21,6 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
         logger.info("=" * 70)
         logger.info("NEW PLANNING RUN STARTED")
         logger.info(f"Configuration: {config.as_dict()}")
-        logger.info(f"Encoding: {config.encoding}")
         logger.info(f"Run ID: {run_id}")
         logger.info(f"Base dir: {base_dir}")
 
@@ -75,13 +74,13 @@ def _to_asp(context):
     with timed_phase(logger, "Total ASP generation") as asp_total_timing:
         # Generate the ASP representation of the concrete problem.
         with timed_phase(logger, "Concrete ASP generation") as concrete_timing:
-            concrete_asp = sas_to_asp(context.concrete_task["sasFile"], config.encoding, config.time_step)
+            concrete_asp = sas_to_asp(context.concrete_task["sasFile"], abstract_time_steps=config.time_step)
 
-            concrete_asp = add_switch_to_asp_rule(concrete_asp, config.encoding)
+            concrete_asp = add_switch_to_asp_rule(concrete_asp)
 
         # Generate the ASP representation of the abstract problem.
         with timed_phase(logger, "Abstract ASP generation") as abstract_timing:
-            abstract_asp = sas_to_asp(context.abstract_task["sasFile"], config.encoding, config.time_step)
+            abstract_asp = sas_to_asp(context.abstract_task["sasFile"], abstract_time_steps=config.time_step)
 
     context.concrete_asp = concrete_asp
     context.abstract_asp = abstract_asp

@@ -74,8 +74,9 @@ python -m scripts.planner abstract \
     --abstract-name ball_abs
 ```
 
-The incremental search increases the horizon until it finds a plan. Benchmark
-and process timeouts bound searches for tasks without a reachable plan.
+The incremental search requires exactly one action at each step and increases
+the horizon until it finds a plan. Benchmark and process timeouts bound
+searches for tasks without a reachable plan.
 
 The planner asks PDDL Symmetries to discover a symmetric set of objects by default. Use `--objects-to-abstract NAME...` to select them explicitly. If PDDL Symmetries does not discover a symmetric set of objects, `abstract` mode exits without running a concrete planning pipeline.
 
