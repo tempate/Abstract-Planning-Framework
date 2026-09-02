@@ -12,6 +12,12 @@ from core.planning.plan import PlanAction
 
 
 class ClingoIntegrationTests(unittest.TestCase):
+    @patch("core.integrations.clingo.clingo.Control")
+    def test_control_always_uses_one_thread(self, control):
+        create_control("", horizon=3)
+
+        control.assert_called_once_with(["-c", "horizon=3", "-t", "1", "--warn=none"])
+
     def test_parse_plan_actions_ignores_other_atoms_and_orders_actions(self):
         atoms = [
             'occurs(action(("unload","p0","t0","l1")),3)',
