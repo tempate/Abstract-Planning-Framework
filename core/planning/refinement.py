@@ -35,7 +35,7 @@ class RefinementContext:
 
 def refine(context: RefinementContext):
     """Obtain an abstract plan and use it to guide concrete search."""
-    abstract_plan, abstract_solve_time = _get_abstract_plan(context)
+    abstract_plan, abstract_solve_time = _solve_abstract_plan(context)
     mapping = build_mapping(abstract_plan, context.abstraction)
 
     with timed_phase(context.logger, "Concrete solving time") as concrete_timing:
@@ -50,41 +50,9 @@ def refine(context: RefinementContext):
         context.logger.info("No concrete plan found at the selected horizon.")
         context.logger.info("FAILED")
 
-    return _build_result(
-        context,
-        success=success,
-        plan=plan,
-        solver_operations=solver_operations,
-        abstract_solve_time=abstract_solve_time,
-        concrete_solve_time=concrete_timing.elapsed,
-    )
-
-
-def _get_abstract_plan(context):
-    return _solve_abstract_plan(context)
-
-
-def _solve_abstract_plan(context):
-    context.logger.info("Abstract plan search")
-    with timed_phase(context.logger, "Abstract solving time") as timing:
-        solve_result = run_clingo(context.abstract_asp)
-
-    context.horizon = solve_result.horizon
-    context.logger.info(f"Effective horizon: {context.horizon}")
-    abstract_atoms = solve_result.plan
-
-    context.logger.info("Abstract plan:")
-    for atom in abstract_atoms:
-        context.logger.info(f"  {atom}")
-
-    with timed_phase(context.logger, "Abstract plan generation time"):
-        abstract_plan = parse_plan_actions(abstract_atoms)
-    return abstract_plan, timing.elapsed
-
-
-def _build_result(context, *, success, plan, solver_operations, abstract_solve_time, concrete_solve_time):
     total_time = context.total_timing.elapsed
     context.logger.info(f"TOTAL TIME: {total_time:.3f}s")
+
     return {
         "abstraction": {
             "abstract_symbol": context.abstraction.name,
@@ -106,8 +74,26 @@ def _build_result(context, *, success, plan, solver_operations, abstract_solve_t
             "asp_abstract_time": context.abstract_asp_time,
             "asp_total_time": context.asp_total_time,
             "abstract_solve_time": abstract_solve_time,
-            "concrete_solve_time": concrete_solve_time,
+            "concrete_solve_time": concrete_timing.elapsed,
             "total_time": total_time,
             "run_id": context.run_id,
         },
     }
+
+
+def _solve_abstract_plan(context):
+    context.logger.info("Abstract plan search")
+    with timed_phase(context.logger, "Abstract solving time") as timing:
+        solve_result = run_clingo(context.abstract_asp)
+
+    context.horizon = solve_result.horizon
+    context.logger.info(f"Effective horizon: {context.horizon}")
+    abstract_atoms = solve_result.plan
+
+    context.logger.info("Abstract plan:")
+    for atom in abstract_atoms:
+        context.logger.info(f"  {atom}")
+
+    with timed_phase(context.logger, "Abstract plan generation time"):
+        abstract_plan = parse_plan_actions(abstract_atoms)
+    return abstract_plan, timing.elapsed
