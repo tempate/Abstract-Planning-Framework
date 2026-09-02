@@ -50,8 +50,8 @@ def add_switch_to_asp_rule(asp, encoding_type="bounded"):
 
     # Define the original rule and the modified rule based on the encoding type
     bound = _SWITCH_RULE_BOUNDS[encoding_type]
-    rule_to_modify = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), T > 0."
-    modified_rule = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), not switch(T), T > 0."
+    rule_to_modify = f"{bound} {{occurs(Action, t) : action(Action)}} 1."
+    modified_rule = f"{bound} {{occurs(Action, t) : action(Action)}} 1 :- not switch(t)."
 
     lines = []
     guarded = 0

@@ -1,4 +1,4 @@
-"""Clingo integration for finding the first plan."""
+"""Clingo multi-shot integration for finding the first plan."""
 
 from dataclasses import dataclass
 
@@ -20,28 +20,39 @@ class ClingoSolveResult:
 
 
 def run_clingo(asp, max_horizon=None):
-    """Search increasing horizons up to an optional maximum."""
+    """Incrementally solve an ASP program up to an optional horizon."""
     if max_horizon is not None and max_horizon < 0:
         raise ValueError("Maximum horizon must be nonnegative")
 
     logger = get_logger()
-    logger.info("[CLINGO] Starting horizon search")
+    logger.info("[CLINGO] Starting incremental solve")
     logger.info(f"[CLINGO] Maximum horizon={max_horizon if max_horizon is not None else 'unbounded'}")
     logger.info(f"[CLINGO] Threads={THREADS}")
 
     with timed_phase(logger, "[CLINGO] Solve runtime"):
+        control = _create_base_control(asp)
+        previous_query = None
         horizon = 0
         attempts = 0
 
         while max_horizon is None or horizon <= max_horizon:
+            if previous_query is not None:
+                control.release_external(previous_query)
+            if horizon > 0:
+                control.ground([("step", [clingo.Number(horizon)])])
+
+            control.ground([("check", [clingo.Number(horizon)])])
+            query = _query(horizon)
+            control.assign_external(query, True)
             attempts += 1
             logger.info(f"[CLINGO] Solving horizon={horizon}")
 
-            plan = collect_plan(create_control(asp, horizon))
+            plan = collect_plan(control)
             if plan is not None:
                 logger.info(f"[CLINGO] Plan found=True at horizon={horizon}")
                 return ClingoSolveResult(plan, horizon, attempts)
 
+            previous_query = query
             horizon += 1
 
     logger.info("[CLINGO] Plan found=False")
@@ -49,16 +60,30 @@ def run_clingo(asp, max_horizon=None):
 
 
 def create_control(asp, horizon):
-    """Add an ASP program and return a grounded Clingo control."""
+    """Return a control grounded for one fixed horizon."""
     if horizon < 0:
         raise ValueError("Horizon must be nonnegative")
 
-    arguments = ["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"]
+    control = _create_base_control(asp)
+    for time_step in range(1, horizon + 1):
+        control.ground([("step", [clingo.Number(time_step)])])
+    control.ground([("check", [clingo.Number(horizon)])])
+    control.assign_external(_query(horizon), True)
+    return control
+
+
+def _create_base_control(asp):
+    """Add an ASP program and ground its static program part."""
+    arguments = ["-t", str(THREADS), "--warn=none"]
     control = clingo.Control(arguments)
     control.configuration.solve.models = 1
     control.add("base", [], asp)
     control.ground([("base", [])])
     return control
+
+
+def _query(horizon):
+    return clingo.Function("query", [clingo.Number(horizon)])
 
 
 def collect_plan(control, assumptions=None):

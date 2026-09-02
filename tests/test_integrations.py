@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 from core.integrations.clingo import collect_plan, create_control, parse_plan_actions, run_clingo
 from core.integrations.fast_downward import _get_command, _run_task
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
+from core.paths import ABSTRACT_TIME_STEPS_ENCODING
 from core.planning.outcomes import IntegrationError
 from core.planning.plan import PlanAction
 
@@ -17,7 +18,7 @@ class ClingoIntegrationTests(unittest.TestCase):
     def test_control_always_uses_one_thread(self, control):
         create_control("", horizon=3)
 
-        control.assert_called_once_with(["-c", "horizon=3", "-t", "1", "--warn=none"])
+        control.assert_called_once_with(["-t", "1", "--warn=none"])
 
     def test_parse_plan_actions_ignores_other_atoms_and_orders_actions(self):
         atoms = [
@@ -36,23 +37,33 @@ class ClingoIntegrationTests(unittest.TestCase):
             ),
         )
 
-    def test_control_receives_the_requested_horizon(self):
-        program = "step(1..horizon).\n#show step/1.\n"
+    def test_control_is_grounded_through_the_requested_horizon(self):
+        program = """
+#program base.
+step(0).
+#show step/1.
+#program step(t).
+step(t).
+"""
         plan = collect_plan(create_control(program, horizon=3))
 
-        self.assertEqual(set(plan), {"step(1)", "step(2)", "step(3)"})
+        self.assertEqual(set(plan), {"step(0)", "step(1)", "step(2)", "step(3)"})
 
     def test_unsatisfiable_program_has_no_plan(self):
         plan = collect_plan(create_control(":-.\n", horizon=0))
 
         self.assertIsNone(plan)
 
-    def test_horizon_search_returns_the_first_satisfiable_horizon(self):
+    def test_incremental_search_returns_the_first_satisfiable_horizon(self):
         program = """
-#const horizon=0.
-reached(0..horizon).
+#program base.
+reached(0).
 #show reached/1.
-:- horizon < 2.
+#program step(t).
+reached(t).
+#program check(t).
+#external query(t).
+:- query(t), t < 2.
 """
 
         result = run_clingo(program, max_horizon=4)
@@ -61,11 +72,14 @@ reached(0..horizon).
         self.assertEqual(result.attempts, 3)
         self.assertEqual(set(result.plan), {"reached(0)", "reached(1)", "reached(2)"})
 
-    def test_horizon_search_checks_horizon_zero(self):
+    def test_incremental_search_checks_horizon_zero(self):
         program = """
+#program base.
 ready.
 #show ready/0.
-:- not ready.
+#program check(t).
+#external query(t).
+:- query(t), not ready.
 """
 
         result = run_clingo(program, max_horizon=4)
@@ -74,10 +88,11 @@ ready.
         self.assertEqual(result.horizon, 0)
         self.assertEqual(result.attempts, 1)
 
-    def test_horizon_search_honors_an_inclusive_maximum(self):
+    def test_incremental_search_honors_an_inclusive_maximum(self):
         program = """
-#const horizon=0.
-:- horizon < 2.
+#program check(t).
+#external query(t).
+:- query(t), t < 2.
 """
 
         result = run_clingo(program, max_horizon=1)
@@ -85,6 +100,14 @@ ready.
         self.assertIsNone(result.plan)
         self.assertEqual(result.horizon, 1)
         self.assertEqual(result.attempts, 2)
+
+    def test_abstract_time_shows_can_be_grounded_at_multiple_steps(self):
+        time_encoding = Path(ABSTRACT_TIME_STEPS_ENCODING).read_text(encoding="utf-8")
+        program = "#program step(t).\noccurs(a,t).\n" + time_encoding + "\n#program base.\naction(a).\n"
+
+        plan = collect_plan(create_control(program, horizon=2))
+
+        self.assertEqual(set(plan), {"occurs(a,1)", "occurs(a,2)", "occurs_sometime(a)"})
 
 
 class FastDownwardHelperTests(unittest.TestCase):
@@ -143,17 +166,17 @@ class PlaspPostProcessingTests(unittest.TestCase):
 
     def test_switch_guard_is_added_for_both_horizon_encodings(self):
         rules = {
-            "exact": "1 {occurs(Action, T) : action(Action)} 1 :- time(T), T > 0.",
-            "bounded": "0 {occurs(Action, T) : action(Action)} 1 :- time(T), T > 0.",
+            "exact": "1 {occurs(Action, t) : action(Action)} 1.",
+            "bounded": "0 {occurs(Action, t) : action(Action)} 1.",
         }
 
         for encoding, rule in rules.items():
             with self.subTest(encoding=encoding):
                 result = add_switch_to_asp_rule(f"before.\n{rule}\nafter.\n", encoding)
 
-                self.assertIn("time(T), not switch(T), T > 0.", result)
+                self.assertIn("not switch(t).", result)
                 self.assertNotIn(rule, result)
-                self.assertEqual(result.count("not switch(T)"), 1)
+                self.assertEqual(result.count("not switch(t)"), 1)
                 self.assertIn("before.\n", result)
                 self.assertIn("after.\n", result)
 
