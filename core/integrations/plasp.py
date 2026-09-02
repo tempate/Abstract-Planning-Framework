@@ -3,6 +3,8 @@
 import os
 import subprocess
 
+from core.planning.outcomes import IntegrationError
+
 from core.paths import (
     ABSTRACT_TIME_STEPS_ENCODING,
     ACTION_PER_TIME_STEP_ENCODING,
@@ -38,7 +40,7 @@ def sas_to_asp(sas_path, encoding_type="bounded", abstract_time_steps=False):
     completed_process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
     if completed_process.returncode != 0:
-        raise RuntimeError(f"plasp failed:\n{completed_process.stderr}")
+        raise IntegrationError(f"plasp failed:\n{completed_process.stderr}")
     fragments = (encoding, time_encoding, completed_process.stdout)
     return "\n".join(fragment.rstrip("\n") for fragment in fragments) + "\n"
 

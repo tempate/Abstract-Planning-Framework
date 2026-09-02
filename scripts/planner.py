@@ -3,7 +3,6 @@
 import argparse
 
 from core.execution import get_logger
-from core.integrations.pddl_symmetries import PddlSymmetriesError
 from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
 from core.planning.abstract import compute_abstract_plan
@@ -16,6 +15,7 @@ from core.planning.config import (
     AbstractPlanningConfig,
     PlanningConfig,
 )
+from core.planning.outcomes import PlanningOutcomeError
 
 from .utils.arguments import nonnegative_int, positive_int
 from .utils.reporting import print_planning_result
@@ -27,7 +27,10 @@ def main():
     try:
         print("Starting")
         result = _compute(args)
-    except (AbstractionError, PddlError, PddlSymmetriesError, OSError, UnicodeError, ValueError) as error:
+    except PlanningOutcomeError as error:
+        print(f"{error.label}: {error}")
+        return error.exit_code
+    except (AbstractionError, PddlError, OSError, UnicodeError, ValueError) as error:
         parser.error(str(error))
 
     abstraction = result.get("abstraction")

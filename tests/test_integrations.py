@@ -9,6 +9,7 @@ from core.integrations.clingo import collect_plan, create_control, parse_plan_ac
 from core.integrations.fast_downward import _get_command, _run_task, calc_horizon
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.planning.plan import PlanAction
+from core.planning.outcomes import UnsolvableTaskError
 
 
 class ClingoIntegrationTests(unittest.TestCase):
@@ -84,18 +85,18 @@ class FastDownwardHelperTests(unittest.TestCase):
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_run_task_classifies_unsolvable_problems(self, run):
-        run.return_value = subprocess.CompletedProcess(args=[], returncode=11, stdout="", stderr="")
-
-        with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaisesRegex(RuntimeError, "problem is unsolvable"):
-                _run_task(
-                    "abstract",
-                    directory,
-                    Path(directory, "domain.pddl"),
-                    Path(directory, "problem.pddl"),
-                    "translate",
-                    Mock(),
-                )
+        for return_code in (10, 11):
+            with self.subTest(return_code=return_code), tempfile.TemporaryDirectory() as directory:
+                run.return_value = subprocess.CompletedProcess(args=[], returncode=return_code, stdout="", stderr="")
+                with self.assertRaisesRegex(UnsolvableTaskError, "problem is unsolvable"):
+                    _run_task(
+                        "abstract",
+                        directory,
+                        Path(directory, "domain.pddl"),
+                        Path(directory, "problem.pddl"),
+                        "translate",
+                        Mock(),
+                    )
 
 
 class PlaspPostProcessingTests(unittest.TestCase):

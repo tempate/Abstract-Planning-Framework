@@ -5,9 +5,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.integrations.pddl_symmetries import PddlSymmetriesError, find_symmetric_object_sets
+from core.integrations.pddl_symmetries import PddlSymmetriesError, PddlSymmetriesTimeout, find_symmetric_object_sets
+from core.planning.outcomes import UnsolvableTaskError
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.abstraction.factory import AbstractionError, _select_abstraction, build_abstract_problem
+from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
 from core.planning.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -122,7 +123,7 @@ class SymmetrySelectionTests(unittest.TestCase):
             patch("core.abstraction.factory.find_symmetric_object_sets", return_value=[]),
             patch("core.abstraction.factory._select_abstraction") as select,
         ):
-            with self.assertRaisesRegex(AbstractionError, "found no abstractable object classes"):
+            with self.assertRaisesRegex(NoSymmetriesError, "found no abstractable object classes"):
                 build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         select.assert_not_called()
@@ -175,6 +176,26 @@ class SymmetrySelectionTests(unittest.TestCase):
             with self.assertRaisesRegex(PddlSymmetriesError, "bliss is not built"):
                 find_symmetric_object_sets(domain, problem, 10, translator)
 
+    @patch("core.integrations.pddl_symmetries.subprocess.run")
+    def test_reports_an_unsolvable_translation(self, run):
+        run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="Translator phase\nNo relaxed solution!\n", stderr=""
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            translator, domain, problem = _stub_symmetry_inputs(directory)
+            with self.assertRaisesRegex(UnsolvableTaskError, "no relaxed solution"):
+                find_symmetric_object_sets(domain, problem, 10, translator)
+
+    @patch("core.integrations.pddl_symmetries.subprocess.run")
+    def test_rejects_malformed_object_sets(self, run):
+        run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="Non-trivial symmetric object sets: [not valid\n", stderr=""
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            translator, domain, problem = _stub_symmetry_inputs(directory)
+            with self.assertRaisesRegex(PddlSymmetriesError, "malformed"):
+                find_symmetric_object_sets(domain, problem, 10, translator)
+
     def test_rejects_nonpositive_symmetry_time_limit(self):
         with self.assertRaisesRegex(ValueError, "positive"):
             find_symmetric_object_sets("d.pddl", "p.pddl", 0)
@@ -184,7 +205,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         run.side_effect = subprocess.TimeoutExpired("translate.py", 10)
         with tempfile.TemporaryDirectory() as directory:
             translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(PddlSymmetriesError, "exceeded"):
+            with self.assertRaisesRegex(PddlSymmetriesTimeout, "exceeded"):
                 find_symmetric_object_sets(domain, problem, 10, translator)
 
 

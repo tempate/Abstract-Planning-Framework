@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 
 from scripts import planner
 from scripts.planner import _argument_parser
+from core.planning.outcomes import UnsolvableTaskError
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -99,6 +100,21 @@ class PlannerHelpTests(unittest.TestCase):
 
 
 class PlannerExitStatusTests(unittest.TestCase):
+    def test_cli_reports_planner_detected_unsolvability_without_a_traceback(self):
+        parser = Mock()
+        parser.parse_args.return_value = Namespace(mode="concrete")
+        output = StringIO()
+        with (
+            patch.object(planner, "_argument_parser", return_value=parser),
+            patch.object(planner, "_compute", side_effect=UnsolvableTaskError("task is unsolvable")),
+            redirect_stdout(output),
+        ):
+            status = planner.main()
+
+        self.assertEqual(status, 1)
+        self.assertEqual(output.getvalue(), "Starting\nNo plan: task is unsolvable\n")
+        self.assertNotIn("Traceback", output.getvalue())
+
     def test_concrete_cli_returns_failure_when_no_plan_is_found(self):
         parser = Mock()
         parser.parse_args.return_value = Namespace(

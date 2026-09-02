@@ -7,12 +7,15 @@ import sys
 import time
 from pathlib import Path
 
+from core.planning.outcomes import STATUS_BY_EXIT_CODE
 from scripts.utils.arguments import positive_int
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = PROJECT_ROOT / "benchmark-results"
 DEFAULT_TIMEOUT = 30 * 60
+MANIFEST_NAME = "manifest.json"
 NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
+SYMMETRY_TIMEOUT_MESSAGE = "PDDL Symmetries exceeded its"
 
 
 def main():
@@ -61,7 +64,7 @@ def _run_pipeline(command, timeout):
             timeout=timeout,
         )
         return_code = completed.returncode
-        output = completed.stdout
+        output = completed.stdout or ""
         timed_out = False
     except subprocess.TimeoutExpired as error:
         return_code = None
@@ -69,12 +72,31 @@ def _run_pipeline(command, timeout):
         if isinstance(output, bytes):
             output = output.decode(errors="replace")
         timed_out = True
-    return {
+    status = _machine_status(return_code, timed_out, output)
+    result = {
+        "status": status,
         "return_code": return_code,
         "timed_out": timed_out,
         "wall_time_seconds": time.perf_counter() - started,
         "output": output,
     }
+    if status == "killed":
+        result["signal"] = -return_code
+    return result
+
+
+def _machine_status(return_code, timed_out, output):
+    if timed_out:
+        return "timed_out"
+    if return_code is not None and return_code < 0:
+        return "killed"
+    # These message checks classify results produced by an older planner CLI
+    # during a rolling update of cluster workers.
+    if NO_SYMMETRIES_MESSAGE in output:
+        return "no_symmetries"
+    if SYMMETRY_TIMEOUT_MESSAGE in output:
+        return "symmetry_timeout"
+    return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
 def _planner_command(domain, problem, mode):
@@ -82,15 +104,25 @@ def _planner_command(domain, problem, mode):
 
 
 def _human_status(result):
-    if result["timed_out"]:
-        return "timed out"
-    if NO_SYMMETRIES_MESSAGE in result["output"]:
-        return "no symmetries"
-    if result["return_code"] == 0:
-        return "success"
-    if result["return_code"] == 1:
-        return "no plan found"
-    return f"error (exit code {result['return_code']})"
+    status = result.get("status") or _machine_status(
+        result.get("return_code"), result.get("timed_out", False), result.get("output", "")
+    )
+    labels = {
+        "success": "success",
+        "no_plan": "no plan found",
+        "no_symmetries": "no symmetries",
+        "symmetry_timeout": "symmetry timeout",
+        "timed_out": "timed out",
+        "missing": "missing",
+    }
+    if status in labels:
+        return labels[status]
+    if status == "killed":
+        signal_number = result.get("signal")
+        if signal_number is None and result.get("return_code", 0) < 0:
+            signal_number = -result["return_code"]
+        return f"killed (signal {signal_number})"
+    return f"error (exit code {result.get('return_code')})"
 
 
 def _task_status(mode, result):
