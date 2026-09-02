@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from benchmarks.suite import NON_SYMMETRIC_DOMAINS, SUITE, SYMMETRIC_DOMAINS
-from scripts.collect_benchmarks import collect
+from scripts.collect_benchmarks import FIELDS, collect
 from scripts.run_benchmark import (
     DEFAULT_TIMEOUT,
     NO_SYMMETRIES_MESSAGE,
@@ -178,9 +178,16 @@ class BenchmarkTests(unittest.TestCase):
 
             self.assertEqual(collect(directory), [])
 
-    def test_separate_mode_runs_are_collected_as_one_comparison(self):
-        abstract_output = "Horizon: 4\nPlan found: yes\nRefinement iterations: 1\nDecrements: 2\nTotal time: 1.250s\n"
-        concrete_output = "Horizon: 6\nPlan found: yes\nTotal time: 2.500s\n"
+    def test_separate_mode_runs_are_collected_as_separate_rows(self):
+        abstract_output = (
+            "Collapsed ['package1', 'package2'] into package_abs (type=package)\n"
+            "Horizon: 4\nPlan found: yes\nDecrements: 2\nTotal time: 1.250s\n"
+            "Plan:\n  occurs(action(abstract),1)\n  occurs(action(refine),2)\n"
+        )
+        concrete_output = (
+            "Horizon: 6\nPlan found: yes\nTotal time: 2.500s\n"
+            "Plan:\n  occurs(action(first),1)\n  occurs(action(second),1)\n  occurs(action(third),2)\n"
+        )
         completed = [
             subprocess.CompletedProcess([], 0, stdout=abstract_output),
             subprocess.CompletedProcess([], 0, stdout=concrete_output),
@@ -200,13 +207,39 @@ class BenchmarkTests(unittest.TestCase):
         self.assertNotIn("concrete", abstract)
         self.assertEqual(concrete["mode"], "concrete")
         self.assertEqual(concrete["return_code"], 0)
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(
+            FIELDS,
+            (
+                "domain",
+                "problem",
+                "mode",
+                "status",
+                "wall_time_seconds",
+                "planner_time_seconds",
+                "horizon",
+                "plan_length",
+                "decrements",
+                "abstracted_object_count",
+                "abstracted_object_type",
+                "error_message",
+            ),
+        )
+        self.assertEqual(rows[0]["mode"], "abstract")
         self.assertEqual(rows[0]["status"], "success")
         self.assertEqual(rows[0]["horizon"], 4)
+        self.assertEqual(rows[0]["plan_length"], 2)
         self.assertEqual(rows[0]["decrements"], 2)
+        self.assertEqual(rows[0]["abstracted_object_count"], 2)
+        self.assertEqual(rows[0]["abstracted_object_type"], "package")
         self.assertEqual(rows[0]["planner_time_seconds"], 1.25)
-        self.assertEqual(rows[0]["concrete_status"], "success")
-        self.assertEqual(rows[0]["concrete_horizon"], 6)
-        self.assertEqual(rows[0]["concrete_planner_time_seconds"], 2.5)
+        self.assertEqual(rows[1]["mode"], "concrete")
+        self.assertEqual(rows[1]["status"], "success")
+        self.assertEqual(rows[1]["horizon"], 6)
+        self.assertEqual(rows[1]["plan_length"], 3)
+        self.assertEqual(rows[1]["abstracted_object_count"], "")
+        self.assertEqual(rows[1]["abstracted_object_type"], "")
+        self.assertEqual(rows[1]["planner_time_seconds"], 2.5)
         self.assertEqual(run.call_count, 2)
         self.assertEqual(
             run.call_args_list[0].args[0], _planner_command(Path("domain.pddl"), Path("p01.pddl"), "abstract")
@@ -214,6 +247,20 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(
             run.call_args_list[1].args[0], _planner_command(Path("domain.pddl"), Path("p01.pddl"), "concrete")
         )
+
+    def test_collector_preserves_concise_error_message(self):
+        failed = subprocess.CompletedProcess(
+            [], 2, stdout="usage: planner.py [-h]\nplanner.py: error: Unsupported quality metric\nStarting\n"
+        )
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch("scripts.run_benchmark.subprocess.run", return_value=failed),
+        ):
+            _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
+            rows = collect(directory)
+
+        self.assertEqual(rows[0]["status"], "error (exit code 2)")
+        self.assertEqual(rows[0]["error_message"], "Unsupported quality metric")
 
     def test_each_mode_receives_the_complete_timeout(self):
         timeouts = [
@@ -255,7 +302,7 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(_human_status(abstract), "no symmetries")
         self.assertEqual(_human_status(concrete), "success")
         self.assertEqual(rows[0]["status"], "no symmetries")
-        self.assertEqual(rows[0]["concrete_status"], "success")
+        self.assertEqual(rows[1]["status"], "success")
         self.assertEqual(run.call_count, 2)
 
     def test_collector_reads_legacy_combined_result(self):
@@ -280,8 +327,11 @@ class BenchmarkTests(unittest.TestCase):
 
             rows = collect(directory)
 
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(rows[0]["mode"], "abstract")
         self.assertEqual(rows[0]["horizon"], 4)
-        self.assertEqual(rows[0]["concrete_horizon"], 6)
+        self.assertEqual(rows[1]["mode"], "concrete")
+        self.assertEqual(rows[1]["horizon"], 6)
 
 
 if __name__ == "__main__":

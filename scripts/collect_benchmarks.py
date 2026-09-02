@@ -1,5 +1,6 @@
 """Collect benchmark result files into one CSV file."""
 
+import ast
 import csv
 import json
 import re
@@ -11,22 +12,16 @@ CSV_FILE = RESULTS_DIR / "results.csv"
 FIELDS = (
     "domain",
     "problem",
+    "mode",
     "status",
-    "return_code",
-    "timed_out",
     "wall_time_seconds",
-    "horizon",
-    "plan_found",
-    "refinement_iterations",
-    "decrements",
     "planner_time_seconds",
-    "concrete_status",
-    "concrete_return_code",
-    "concrete_timed_out",
-    "concrete_wall_time_seconds",
-    "concrete_horizon",
-    "concrete_plan_found",
-    "concrete_planner_time_seconds",
+    "horizon",
+    "plan_length",
+    "decrements",
+    "abstracted_object_count",
+    "abstracted_object_type",
+    "error_message",
 )
 
 
@@ -44,62 +39,65 @@ def collect(results_dir=RESULTS_DIR):
         if not {"domain", "problem", "output"} <= result.keys():
             continue
 
-        task = results.setdefault((result["domain"], result["problem"]), {})
         mode = result.get("mode")
         if mode in ("abstract", "concrete"):
-            task[mode] = result
+            results[(result["domain"], result["problem"], mode)] = result
         else:
             # Results produced before modes became separate jobs stored the
             # concrete comparison inside the abstract result.
-            task.setdefault("abstract", result)
+            results.setdefault((result["domain"], result["problem"], "abstract"), result)
             if "concrete" in result:
-                task.setdefault("concrete", result["concrete"])
+                results.setdefault((result["domain"], result["problem"], "concrete"), result["concrete"])
 
     return [
-        {
-            "domain": domain,
-            "problem": problem,
-            **_abstract_values(task.get("abstract")),
-            **_concrete_values(task.get("concrete")),
-        }
-        for (domain, problem), task in sorted(results.items())
+        {"domain": domain, "problem": problem, "mode": mode, **_values(result)}
+        for (domain, problem, mode), result in sorted(results.items())
     ]
 
 
-def _abstract_values(result):
-    if result is None:
-        return {
-            field: "" for field in FIELDS if field not in ("domain", "problem") and not field.startswith("concrete_")
-        }
-
+def _values(result):
     output = result["output"]
     return {
         "status": _human_status(result),
-        "return_code": result["return_code"],
-        "timed_out": result.get("timed_out", False),
         "wall_time_seconds": result["wall_time_seconds"],
-        "horizon": value(output, "Horizon", int),
-        "plan_found": value(output, "Plan found"),
-        "refinement_iterations": value(output, "Refinement iterations", int),
-        "decrements": value(output, "Decrements", int),
         "planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
+        "horizon": value(output, "Horizon", int),
+        "plan_length": _plan_length(output),
+        "decrements": value(output, "Decrements", int),
+        **_abstraction_values(output),
+        "error_message": _error_message(result),
     }
 
 
-def _concrete_values(result):
-    if result is None:
-        return {field: "" for field in FIELDS if field.startswith("concrete_")}
+def _plan_length(output):
+    if value(output, "Plan found") != "yes":
+        return ""
+    return len(re.findall(r"^[ \t]+occurs\(", output, re.MULTILINE))
+
+
+def _abstraction_values(output):
+    match = re.search(r"^Collapsed (\[.*\]) into \S+ \(type=([^)]+)\)$", output, re.MULTILINE)
+    if match is None:
+        return {"abstracted_object_count": "", "abstracted_object_type": ""}
+
+    try:
+        object_count = len(ast.literal_eval(match.group(1)))
+    except (SyntaxError, ValueError):
+        object_count = ""
+    return {"abstracted_object_count": object_count, "abstracted_object_type": match.group(2)}
+
+
+def _error_message(result):
+    if not _human_status(result).startswith("error"):
+        return ""
 
     output = result["output"]
-    return {
-        "concrete_status": _human_status(result),
-        "concrete_return_code": result["return_code"],
-        "concrete_timed_out": result.get("timed_out", False),
-        "concrete_wall_time_seconds": result["wall_time_seconds"],
-        "concrete_horizon": value(output, "Horizon", int),
-        "concrete_plan_found": value(output, "Plan found"),
-        "concrete_planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
-    }
+    match = re.search(r"^.*error: (.+)$", output, re.MULTILINE)
+    if match is not None:
+        return match.group(1)
+
+    lines = [line.strip() for line in output.splitlines() if line.strip() and line.strip() != "Starting"]
+    return lines[-1] if lines else ""
 
 
 def main():
