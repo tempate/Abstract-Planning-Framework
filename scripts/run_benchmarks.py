@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 
 from benchmarks.suite import BENCHMARKS_DIR, SYMMETRIC_DOMAINS
-from scripts.run_benchmark import DEFAULT_TIMEOUT, PROJECT_ROOT, RESULTS_DIR
+from scripts.run_benchmark import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR
 from scripts.utils.arguments import positive_int
 
 DEFAULT_MEMORY_LIMIT = 8 * 1024
@@ -22,6 +22,7 @@ def main():
     args = _argument_parser().parse_args()
     tasks = list(_benchmark_tasks())
     _reset_results_dir()
+    _write_manifest(tasks)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
         config_file = _write_copperbench_config(
             tasks,
@@ -42,6 +43,17 @@ def _reset_results_dir(results_dir=RESULTS_DIR):
     elif results_dir.exists():
         shutil.rmtree(results_dir)
     results_dir.mkdir(parents=True)
+
+
+def _write_manifest(tasks, results_dir=RESULTS_DIR):
+    """Record every result expected from a submitted benchmark run."""
+    expected_results = [
+        {"domain": domain_name, "problem": problem.name, "mode": mode} for mode, domain_name, _domain, problem in tasks
+    ]
+    manifest = {"version": 1, "expected_results": expected_results}
+    path = Path(results_dir) / MANIFEST_NAME
+    path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    return path
 
 
 def _argument_parser():

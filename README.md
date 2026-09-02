@@ -87,14 +87,17 @@ python -m scripts.run_benchmarks
 This submits two Slurm array tasks per PDDL problem: one abstract and one
 concrete. Each task gets its own 30-minute limit and 8192 MiB of memory.
 
-JSON results and cluster logs are written below `benchmark-results/`. Collect
-the JSON results into a CSV with:
+JSON results and cluster logs are written below `benchmark-results/`. Each JSON
+result contains a machine-readable `status`, and the submission manifest records
+every expected result. Collect the JSON results into a CSV with:
 
 ```bash
 python -m scripts.collect_benchmarks
 ```
 
-This writes `benchmark-results/results.csv`.
+This writes `benchmark-results/results.csv`. If cluster jobs did not produce a
+result, the collector reports the incomplete run and writes `missing` rows for
+the affected modes.
 
 ## Tests
 

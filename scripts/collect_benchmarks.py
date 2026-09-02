@@ -1,12 +1,13 @@
 """Collect benchmark result files into one CSV file."""
 
 import ast
+from collections import Counter
 import csv
 import json
 import re
 from pathlib import Path
 
-from scripts.run_benchmark import RESULTS_DIR, _human_status
+from scripts.run_benchmark import MANIFEST_NAME, RESULTS_DIR, _human_status
 
 CSV_FILE = RESULTS_DIR / "results.csv"
 FIELDS = (
@@ -31,9 +32,10 @@ def value(output, label, convert=str):
 
 
 def collect(results_dir=RESULTS_DIR):
+    results_dir = Path(results_dir)
     results = {}
-    for result_file in sorted(Path(results_dir).rglob("*.json")):
-        if result_file.name == "metadata.json":
+    for result_file in sorted(results_dir.rglob("*.json")):
+        if result_file.name in ("metadata.json", MANIFEST_NAME):
             continue
         result = json.loads(result_file.read_text(encoding="utf-8"))
         if not {"domain", "problem", "output"} <= result.keys():
@@ -49,10 +51,30 @@ def collect(results_dir=RESULTS_DIR):
             if "concrete" in result:
                 results.setdefault((result["domain"], result["problem"], "concrete"), result["concrete"])
 
-    return [
-        {"domain": domain, "problem": problem, "mode": mode, **_values(result)}
-        for (domain, problem, mode), result in sorted(results.items())
-    ]
+    keys = set(results)
+    manifest = results_dir / MANIFEST_NAME
+    if manifest.is_file():
+        keys.update(_manifest_keys(manifest))
+
+    rows = []
+    for domain, problem, mode in sorted(keys):
+        result = results.get((domain, problem, mode))
+        values = _missing_values() if result is None else _values(result)
+        rows.append({"domain": domain, "problem": problem, "mode": mode, **values})
+    return rows
+
+
+def _manifest_keys(manifest):
+    entries = json.loads(manifest.read_text(encoding="utf-8"))["expected_results"]
+    return {
+        (entry["domain"], entry["problem"], entry["mode"])
+        for entry in entries
+        if entry["mode"] in ("abstract", "concrete")
+    }
+
+
+def _missing_values():
+    return {field: "" for field in FIELDS[4:]} | {"status": "missing"}
 
 
 def _values(result):
@@ -107,6 +129,10 @@ def main():
         writer = csv.DictWriter(stream, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(rows)
+    missing = Counter(row["mode"] for row in rows if row["status"] == "missing")
+    if missing:
+        details = ", ".join(f"{mode}: {count}" for mode, count in sorted(missing.items()))
+        print(f"Incomplete benchmark run: {sum(missing.values())} expected results are missing ({details})")
     print(f"Collected {len(rows)} results in {CSV_FILE}")
 
 

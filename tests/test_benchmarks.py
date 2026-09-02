@@ -16,18 +16,37 @@ from scripts.run_benchmark import (
     _argument_parser as _benchmark_argument_parser,
     _human_status,
     _planner_command,
+    _run_pipeline,
     _run_task,
 )
 from scripts.run_benchmarks import (
     DEFAULT_MEMORY_LIMIT,
+    MANIFEST_NAME,
     _argument_parser,
     _benchmark_tasks,
     _reset_results_dir,
     _write_copperbench_config,
+    _write_manifest,
 )
 
 
 class BenchmarkTests(unittest.TestCase):
+    @staticmethod
+    def _write_result(directory, mode, status="success"):
+        result = {
+            "domain": "example",
+            "problem": "p01.pddl",
+            "mode": mode,
+            "status": status,
+            "return_code": 0,
+            "timed_out": False,
+            "wall_time_seconds": 1.0,
+            "output": "Plan found: yes\n",
+        }
+        path = Path(directory) / "example" / "p01" / f"{mode}.json"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(result), encoding="utf-8")
+
     def test_suite_groups_domains_by_confirmed_symmetries(self):
         self.assertEqual(len(SYMMETRIC_DOMAINS), 26)
         self.assertEqual(len(NON_SYMMETRIC_DOMAINS), 23)
@@ -203,6 +222,7 @@ class BenchmarkTests(unittest.TestCase):
             concrete = json.loads((Path(directory) / "example" / "p01" / "concrete.json").read_text())
 
         self.assertEqual(abstract["mode"], "abstract")
+        self.assertEqual(abstract["status"], "success")
         self.assertEqual(abstract["return_code"], 0)
         self.assertNotIn("concrete", abstract)
         self.assertEqual(concrete["mode"], "concrete")
@@ -287,6 +307,29 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(_human_status({"timed_out": False, "return_code": 1, "output": ""}), "no plan found")
         self.assertEqual(_human_status({"timed_out": False, "return_code": 2, "output": ""}), "error (exit code 2)")
         self.assertEqual(_human_status({"timed_out": True, "return_code": None, "output": ""}), "timed out")
+        self.assertEqual(_human_status({"status": "symmetry_timeout"}), "symmetry timeout")
+        self.assertEqual(_human_status({"status": "killed", "signal": 9}), "killed (signal 9)")
+
+    def test_pipeline_records_every_machine_readable_outcome(self):
+        completed = [
+            subprocess.CompletedProcess([], 0, stdout=""),
+            subprocess.CompletedProcess([], 1, stdout=""),
+            subprocess.CompletedProcess([], 4, stdout=""),
+            subprocess.CompletedProcess([], 3, stdout=""),
+            subprocess.CompletedProcess([], -9, stdout=""),
+            subprocess.CompletedProcess([], 2, stdout=""),
+            subprocess.TimeoutExpired([], 10, output="partial output"),
+        ]
+        with patch("scripts.run_benchmark.subprocess.run", side_effect=completed):
+            results = [_run_pipeline([], 10) for _ in completed]
+
+        self.assertEqual(
+            [result["status"] for result in results],
+            ["success", "no_plan", "no_symmetries", "symmetry_timeout", "killed", "error", "timed_out"],
+        )
+        self.assertEqual(results[4]["return_code"], -9)
+        self.assertEqual(results[4]["signal"], 9)
+        self.assertNotIn("signal", results[5])
 
     def test_no_symmetries_does_not_prevent_the_separate_concrete_run(self):
         no_symmetries = subprocess.CompletedProcess([], 2, stdout=f"planner.py: error: {NO_SYMMETRIES_MESSAGE}\n")
@@ -332,6 +375,52 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[0]["horizon"], 4)
         self.assertEqual(rows[1]["mode"], "concrete")
         self.assertEqual(rows[1]["horizon"], 6)
+
+    def test_manifest_marks_one_missing_mode(self):
+        with tempfile.TemporaryDirectory() as directory:
+            problem = Path("p01.pddl")
+            tasks = [
+                ("abstract", "example", Path("domain.pddl"), problem),
+                ("concrete", "example", Path("domain.pddl"), problem),
+            ]
+            _write_manifest(tasks, directory)
+            self._write_result(directory, "abstract")
+
+            rows = collect(directory)
+
+        self.assertEqual(
+            [(row["mode"], row["status"]) for row in rows], [("abstract", "success"), ("concrete", "missing")]
+        )
+
+    def test_manifest_marks_both_modes_missing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            problem = Path("p01.pddl")
+            tasks = [
+                ("abstract", "example", Path("domain.pddl"), problem),
+                ("concrete", "example", Path("domain.pddl"), problem),
+            ]
+            manifest = _write_manifest(tasks, directory)
+
+            rows = collect(directory)
+
+        self.assertEqual(manifest.name, MANIFEST_NAME)
+        self.assertEqual([row["status"] for row in rows], ["missing", "missing"])
+
+    def test_complete_manifest_has_no_missing_rows(self):
+        with tempfile.TemporaryDirectory() as directory:
+            problem = Path("p01.pddl")
+            tasks = [
+                ("abstract", "example", Path("domain.pddl"), problem),
+                ("concrete", "example", Path("domain.pddl"), problem),
+            ]
+            _write_manifest(tasks, directory)
+            self._write_result(directory, "abstract")
+            self._write_result(directory, "concrete")
+
+            rows = collect(directory)
+
+        self.assertEqual(len(rows), 2)
+        self.assertNotIn("missing", {row["status"] for row in rows})
 
 
 if __name__ == "__main__":
