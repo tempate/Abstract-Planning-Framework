@@ -32,12 +32,14 @@ class ExampleWorkflowTests(unittest.TestCase):
     def test_gripper_concrete_example_finds_a_plan(self):
         self._assert_success(self._run("concrete"))
 
-    def test_gripper_abstract_example_runs_the_refinement_pipeline(self):
+    def test_gripper_abstract_example_stops_after_the_first_refinement_attempt(self):
         result = self._run("abstract")
 
-        self._assert_success(result)
-        self.assertIn("Collapsed ['ball1', 'ball2', 'ball3', 'ball4'] into object_abs", result.stdout)
-        self.assertRegex(result.stdout, r"(?m)^    Refinement decrements +\d+$")
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn("Collapsed ['ball1', 'ball2', 'ball3', 'ball4'] into ball_abs", result.stdout)
+        self.assertIn("Horizon: 3", result.stdout)
+        self.assertIn("Plan found: no", result.stdout)
+        self.assertIn("Decrements:", result.stdout)
 
 
 if __name__ == "__main__":

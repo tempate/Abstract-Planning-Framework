@@ -1,45 +1,70 @@
 """Orchestrate concrete planning from PDDL translation through ASP solving."""
 
-from core.execution import temp_run_dir
+from core.execution import get_logger, temp_run_dir, timed_phase
 from core.integrations.clingo import run_clingo
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import sas_to_asp
-from core.metrics import PlanningMetrics
 from core.planning.config import PlanningConfig
 
 
-def compute_concrete_plan(config: PlanningConfig, on_update=None):
+def compute_concrete_plan(config: PlanningConfig):
     """Translate and solve one concrete PDDL planning problem."""
-    metrics = PlanningMetrics(on_update=on_update)
-    with metrics.measure("total"):
-        with temp_run_dir() as (base_dir, run_id):
-            result = _compute_concrete_plan(config, base_dir, run_id, metrics)
-    result["metrics"] = metrics.as_dict()
-    return result
+    with temp_run_dir() as (base_dir, run_id):
+        return _compute_concrete_plan(config, base_dir, run_id)
 
 
-def _compute_concrete_plan(config, base_dir, run_id, metrics):
-    # Translate the concrete problem into SAS. With no requested horizon,
-    # Fast Downward also finds a plan whose length supplies the horizon.
-    fd_task = "plan" if config.horizon is None else "translate"
-    with metrics.measure("concrete_fd"):
-        task = run_fast_downward(base_dir, config.domain_path, config.problem_path, "concrete", fd_task)
+def _compute_concrete_plan(config, base_dir, run_id):
+    logger = get_logger()
 
-    effective_horizon = task["horizon"] if config.horizon is None else config.horizon
-    # Generate the ASP representation of the concrete problem.
-    with metrics.measure("concrete_asp"):
-        asp = sas_to_asp(task["sasFile"], config.encoding, config.time_step)
+    logger.info("=" * 70)
+    logger.info("NEW PLANNING RUN STARTED")
+    logger.info(f"Configuration: {config.as_dict()}")
+    logger.info(f"Maximum horizon: {config.horizon if config.horizon is not None else 'unbounded'}")
+    logger.info(f"Encoding: {config.encoding}")
+    logger.info(f"Run ID: {run_id}")
+    logger.info(f"Base dir: {base_dir}")
 
-    # Solve the concrete problem using Clingo.
-    metrics.set_counter("final_horizon", effective_horizon)
-    metrics.set_counter("concrete_solve_calls", 1)
-    with metrics.measure("guided_concrete_solving"):
-        plan = run_clingo(asp, effective_horizon)
+    with timed_phase() as total_timing:
+        with timed_phase(logger, "Fast Downward time") as downward_timing:
+            task, _ = run_fast_downward(base_dir, config.domain_path, config.problem_path, "concrete")
+
+        # Generate the ASP representation of the concrete problem.
+        with timed_phase(logger, "ASP generation time") as asp_timing:
+            asp = sas_to_asp(task["sasFile"], config.encoding, config.time_step)
+
+        # Solve the concrete problem using Clingo.
+        with timed_phase(logger, "Concrete solving time") as solve_timing:
+            solve_result = run_clingo(asp, config.horizon)
+
+        plan = solve_result.plan
+        effective_horizon = solve_result.horizon
+        logger.info(f"Effective horizon: {effective_horizon}")
+
+    downward_time = downward_timing.elapsed
+    asp_time = asp_timing.elapsed
+    solve_time = solve_timing.elapsed
+    total_time = total_timing.elapsed
+
+    logger.info(f"Plan found: {plan is not None}")
+    logger.info(f"Total runtime: {total_time:.3f}s")
+    logger.info("=" * 70)
 
     return {
         "configuration": config.as_dict(),
         "horizon": effective_horizon,
         "plan": plan,
         "success": plan is not None,
-        "run_id": run_id,
+        "timings": {
+            "iterations": None,
+            "fd_conc": downward_time,
+            "fd_abs": None,
+            "fd_total": downward_time,
+            "asp_concrete_time": asp_time,
+            "asp_abstract_time": None,
+            "asp_total_time": asp_time,
+            "abstract_solve_time": None,
+            "concrete_solve_time": solve_time,
+            "total_time": total_time,
+            "run_id": run_id,
+        },
     }

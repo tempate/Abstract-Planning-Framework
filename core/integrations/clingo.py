@@ -1,19 +1,58 @@
 """Clingo integration for finding the first plan."""
 
+from dataclasses import dataclass
+
 import clingo
 
+from core.execution import get_logger, timed_phase
 from core.planning.plan import PlanAction
 
 THREADS = 1
 
 
-def run_clingo(asp, horizon):
-    """Solve an in-memory ASP program and return its shown atoms."""
-    return collect_plan(create_control(asp, horizon))
+@dataclass(frozen=True)
+class ClingoSolveResult:
+    """Result of an incremental horizon search."""
+
+    plan: list[str] | None
+    horizon: int
+    attempts: int
+
+
+def run_clingo(asp, max_horizon=None):
+    """Search increasing horizons up to an optional maximum."""
+    if max_horizon is not None and max_horizon < 0:
+        raise ValueError("Maximum horizon must be nonnegative")
+
+    logger = get_logger()
+    logger.info("[CLINGO] Starting horizon search")
+    logger.info(f"[CLINGO] Maximum horizon={max_horizon if max_horizon is not None else 'unbounded'}")
+    logger.info(f"[CLINGO] Threads={THREADS}")
+
+    with timed_phase(logger, "[CLINGO] Solve runtime"):
+        horizon = 0
+        attempts = 0
+
+        while max_horizon is None or horizon <= max_horizon:
+            attempts += 1
+            logger.info(f"[CLINGO] Solving horizon={horizon}")
+
+            plan = collect_plan(create_control(asp, horizon))
+            if plan is not None:
+                logger.info(f"[CLINGO] Plan found=True at horizon={horizon}")
+                return ClingoSolveResult(plan, horizon, attempts)
+
+            horizon += 1
+
+    logger.info("[CLINGO] Plan found=False")
+    return ClingoSolveResult(None, max_horizon, attempts)
 
 
 def create_control(asp, horizon):
     """Add an ASP program and return a grounded Clingo control."""
+    if horizon < 0:
+        raise ValueError("Horizon must be nonnegative")
+
     arguments = ["-c", f"horizon={horizon}", "-t", str(THREADS), "--warn=none"]
     control = clingo.Control(arguments)
     control.configuration.solve.models = 1

@@ -106,10 +106,13 @@ class PlannerHelpTests(unittest.TestCase):
         self.assertIn("ASP encoding type (default: bounded)", help_text)
         self.assertIn("time-step based encoding (default: False)", help_text)
 
-    def test_abstract_help_displays_abstract_defaults(self):
+    def test_help_describes_incremental_horizon_limit(self):
         help_text = self._help("abstract")
 
-        self.assertIn("(default: clingo)", help_text)
+        self.assertIn("Maximum planning horizon", help_text)
+        self.assertIn("unbounded", help_text)
+        self.assertIn("incremental search", help_text)
+        self.assertNotIn("--plan-source", help_text)
 
     def test_abstract_mode_accepts_one_concrete_task_for_automatic_abstraction(self):
         args = _argument_parser().parse_args(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
@@ -173,7 +176,6 @@ class PlannerExitStatusTests(unittest.TestCase):
             abstract_name=None,
             objects_to_abstract=None,
             symmetry_time_limit=300,
-            plan_source="clingo",
         )
         with (
             patch.object(planner, "_argument_parser", return_value=parser),
@@ -196,7 +198,6 @@ class PlannerExitStatusTests(unittest.TestCase):
             abstract_name=None,
             objects_to_abstract=None,
             symmetry_time_limit=300,
-            plan_source="clingo",
         )
         parser.error.side_effect = SystemExit(2)
         with (
@@ -227,7 +228,6 @@ class PlannerExitStatusTests(unittest.TestCase):
             abstract_name="combined",
             objects_to_abstract=["a", "b"],
             symmetry_time_limit=17,
-            plan_source="clingo",
         )
         output = StringIO()
         with (

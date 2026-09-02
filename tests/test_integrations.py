@@ -3,14 +3,13 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
-from core.integrations.clingo import collect_plan, create_control, parse_plan_actions
-from core.integrations.fast_downward import _get_command, calc_horizon, run_fast_downward
+from core.integrations.clingo import collect_plan, create_control, parse_plan_actions, run_clingo
+from core.integrations.fast_downward import _get_command, _run_task
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.planning.outcomes import IntegrationError
 from core.planning.plan import PlanAction
-from core.planning.outcomes import UnsolvableTaskError
 
 
 class ClingoIntegrationTests(unittest.TestCase):
@@ -48,26 +47,59 @@ class ClingoIntegrationTests(unittest.TestCase):
 
         self.assertIsNone(plan)
 
+    def test_horizon_search_returns_the_first_satisfiable_horizon(self):
+        program = """
+#const horizon=0.
+reached(0..horizon).
+#show reached/1.
+:- horizon < 2.
+"""
+
+        result = run_clingo(program, max_horizon=4)
+
+        self.assertEqual(result.horizon, 2)
+        self.assertEqual(result.attempts, 3)
+        self.assertEqual(set(result.plan), {"reached(0)", "reached(1)", "reached(2)"})
+
+    def test_horizon_search_checks_horizon_zero(self):
+        program = """
+ready.
+#show ready/0.
+:- not ready.
+"""
+
+        result = run_clingo(program, max_horizon=4)
+
+        self.assertEqual(result.plan, ["ready"])
+        self.assertEqual(result.horizon, 0)
+        self.assertEqual(result.attempts, 1)
+
+    def test_horizon_search_honors_an_inclusive_maximum(self):
+        program = """
+#const horizon=0.
+:- horizon < 2.
+"""
+
+        result = run_clingo(program, max_horizon=1)
+
+        self.assertIsNone(result.plan)
+        self.assertEqual(result.horizon, 1)
+        self.assertEqual(result.attempts, 2)
+
 
 class FastDownwardHelperTests(unittest.TestCase):
-    def test_calc_horizon_counts_only_actions(self):
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory, "sas_plan")
-            path.write_text("; cost = 2\n\n(move a b)\n  ; planner note\n(load p t l)\n", encoding="utf-8")
+    def test_translation_command_uses_the_active_python_interpreter(self):
+        paths = {"domain": "domain.pddl", "problem": "problem.pddl", "sas": "output.sas"}
 
-            self.assertEqual(calc_horizon(path), 2)
-
-    def test_plan_command_uses_the_active_python_interpreter(self):
-        paths = {"domain": "domain.pddl", "problem": "problem.pddl", "sas": "output.sas", "plan": "sas_plan"}
-
-        command = _get_command(paths, "plan")
+        command = _get_command(paths)
 
         self.assertEqual(command[0], sys.executable)
-        self.assertIn("--plan-file", command)
-        self.assertIn("astar(lmcut())", command)
+        self.assertIn("--translate", command)
+        self.assertNotIn("--plan-file", command)
+        self.assertNotIn("--search", command)
 
     @patch("core.integrations.fast_downward.subprocess.run")
-    def test_run_fast_downward_surfaces_external_tool_diagnostics(self, run):
+    def test_run_task_surfaces_external_tool_diagnostics(self, run):
         run.return_value = subprocess.CompletedProcess(
             args=[], returncode=20, stdout="translator output", stderr="search failed"
         )
@@ -76,27 +108,13 @@ class FastDownwardHelperTests(unittest.TestCase):
             domain = Path(directory, "source-domain.pddl")
             problem = Path(directory, "source-problem.pddl")
             with self.assertRaisesRegex(RuntimeError, "translator output"):
-                run_fast_downward(directory, domain, problem, "concrete", "translate")
+                _run_task("concrete", directory, domain, problem, Mock())
 
             command = run.call_args.args[0]
             self.assertIn(str(domain), command)
             self.assertIn(str(problem), command)
             self.assertFalse(Path(directory, "domain.pddl").exists())
             self.assertFalse(Path(directory, "problem.pddl").exists())
-
-    @patch("core.integrations.fast_downward.subprocess.run")
-    def test_run_fast_downward_classifies_unsolvable_problems(self, run):
-        for return_code in (10, 11):
-            with self.subTest(return_code=return_code), tempfile.TemporaryDirectory() as directory:
-                run.return_value = subprocess.CompletedProcess(args=[], returncode=return_code, stdout="", stderr="")
-                with self.assertRaisesRegex(UnsolvableTaskError, "problem is unsolvable"):
-                    run_fast_downward(
-                        directory,
-                        Path(directory, "domain.pddl"),
-                        Path(directory, "problem.pddl"),
-                        "abstract",
-                        "translate",
-                    )
 
 
 class PlaspPostProcessingTests(unittest.TestCase):

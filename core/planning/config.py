@@ -8,7 +8,6 @@ Path = str | PathLike[str]
 DEFAULT_HORIZON = None
 DEFAULT_ENCODING = "bounded"
 DEFAULT_TIME_STEP = False
-DEFAULT_PLAN_SOURCE = "clingo"
 
 
 @dataclass(frozen=True)
@@ -34,7 +33,6 @@ class AbstractPlanningConfig(PlanningConfig):
 
     objects_to_abstract: Sequence[str] | None = None
     abstract_name: str | None = None
-    plan_source: str = DEFAULT_PLAN_SOURCE
     symmetry_time_limit: int = 300
 
     def __post_init__(self):
