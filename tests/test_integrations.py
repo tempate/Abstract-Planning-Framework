@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 from core.integrations.clingo import collect_plan, create_control, parse_plan_actions, run_clingo
-from core.integrations.fast_downward import _get_command, _run_task
+from core.integrations.fast_downward import _get_command, _pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.paths import ABSTRACT_TIME_STEPS_ENCODING
 from core.planning.outcomes import IntegrationError
@@ -109,7 +109,7 @@ class FastDownwardHelperTests(unittest.TestCase):
         self.assertNotIn("--search", command)
 
     @patch("core.integrations.fast_downward.subprocess.run")
-    def test_run_task_surfaces_external_tool_diagnostics(self, run):
+    def test_pddl_to_sas_surfaces_external_tool_diagnostics(self, run):
         run.return_value = subprocess.CompletedProcess(
             args=[], returncode=20, stdout="translator output", stderr="search failed"
         )
@@ -118,7 +118,7 @@ class FastDownwardHelperTests(unittest.TestCase):
             domain = Path(directory, "source-domain.pddl")
             problem = Path(directory, "source-problem.pddl")
             with self.assertRaisesRegex(RuntimeError, "translator output"):
-                _run_task("concrete", directory, domain, problem, Mock())
+                _pddl_to_sas("concrete", directory, domain, problem, Mock())
 
             command = run.call_args.args[0]
             self.assertIn(str(domain), command)

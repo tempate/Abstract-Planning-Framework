@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from core.execution import get_logger, temp_run_dir, timed_phase
-from core.integrations.fast_downward import run_fast_downward
+from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.unified_planning import write_problem
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.abstraction.factory import build_abstract_problem
@@ -50,13 +50,13 @@ def _to_sas(base_dir, problem, context):
     with timed_phase(logger, "Fast Downward time") as fd_total:
         # Translate the concrete problem into SAS.
         dir = os.path.join(base_dir, "concrete")
-        concrete_task, concrete_time = run_fast_downward(dir, config.domain_path, config.problem_path, "concrete")
+        concrete_task, concrete_time = pddl_to_sas(dir, config.domain_path, config.problem_path, "concrete")
 
         # Write the temporary problem files
         domain_path, problem_path = _write_abstract_problem(problem, base_dir)
 
         dir = os.path.join(base_dir, "abstract")
-        abstract_task, abstract_time = run_fast_downward(dir, domain_path, problem_path, "abstract")
+        abstract_task, abstract_time = pddl_to_sas(dir, domain_path, problem_path, "abstract")
 
     context.concrete_task = concrete_task
     context.abstract_task = abstract_task

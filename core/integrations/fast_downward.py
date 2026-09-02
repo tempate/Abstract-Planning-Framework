@@ -11,13 +11,13 @@ from core.planning.outcomes import IntegrationError
 _SUCCESS = 0
 
 
-def run_fast_downward(base_dir, domain_path, problem_path, label):
+def pddl_to_sas(base_dir, domain_path, problem_path, label):
     """Translate a concrete or abstract PDDL task to SAS."""
     logger = get_logger()
     logger.info("=" * 65)
     logger.info("[FD] Fast Downward started")
 
-    task_result, elapsed_time = _run_task(label, base_dir, domain_path, problem_path, logger)
+    task_result, elapsed_time = _pddl_to_sas(label, base_dir, domain_path, problem_path, logger)
 
     logger.info(f"[FD] SUMMARY | {elapsed_time:.3f}s")
     logger.info("[FD] Fast Downward finished")
@@ -25,7 +25,7 @@ def run_fast_downward(base_dir, domain_path, problem_path, label):
     return task_result, elapsed_time
 
 
-def _run_task(label, task_directory, domain_path, problem_path, logger):
+def _pddl_to_sas(label, task_directory, domain_path, problem_path, logger):
     # Create the directory for the task
     os.makedirs(task_directory, exist_ok=True)
 

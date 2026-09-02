@@ -17,10 +17,10 @@ from scripts.utils.arguments import positive_int
 class ConcretePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.concrete.run_clingo")
     @patch("core.planning.concrete.sas_to_asp")
-    @patch("core.planning.concrete.run_fast_downward")
+    @patch("core.planning.concrete.pddl_to_sas")
     @patch("core.planning.concrete.temp_run_dir")
     def test_pipeline_returns_the_discovered_horizon_and_normalized_timings(
-        self, temp_run_dir, run_fast_downward, sas_to_asp, run_clingo
+        self, temp_run_dir, pddl_to_sas, sas_to_asp, run_clingo
     ):
         with tempfile.TemporaryDirectory() as directory:
             domain = Path(directory, "domain.pddl")
@@ -28,7 +28,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             domain.write_bytes(b"domain")
             problem.write_bytes(b"problem")
             temp_run_dir.return_value.__enter__.return_value = (directory, "run-123")
-            run_fast_downward.return_value = ({"sasFile": str(Path(directory, "output.sas"))}, 0.1)
+            pddl_to_sas.return_value = ({"sasFile": str(Path(directory, "output.sas"))}, 0.1)
             sas_to_asp.return_value = "asp program"
             run_clingo.return_value = ClingoSolveResult(["occurs(action,3)"], horizon=3, attempts=4)
 
@@ -41,7 +41,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(result["timings"]["run_id"], "run-123")
         self.assertEqual(result["configuration"], config.as_dict())
         self.assertIsNone(result["timings"]["iterations"])
-        run_fast_downward.assert_called_once_with(directory, domain, problem, "concrete")
+        pddl_to_sas.assert_called_once_with(directory, domain, problem, "concrete")
         sas_to_asp.assert_called_once_with(str(Path(directory, "output.sas")), abstract_time_steps=True)
         run_clingo.assert_called_once_with("asp program")
 
@@ -64,7 +64,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 "core.planning.abstract._write_abstract_problem",
                 return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
             ) as write,
-            patch("core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]),
+            patch("core.planning.abstract.pddl_to_sas", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]),
             patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]),
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
             patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
@@ -88,13 +88,13 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 "core.planning.abstract.build_abstract_problem",
                 side_effect=AbstractionError("PDDL Symmetries found no abstractable object classes"),
             ),
-            patch("core.planning.abstract.run_fast_downward") as run_fast_downward,
+            patch("core.planning.abstract.pddl_to_sas") as pddl_to_sas,
         ):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             with self.assertRaisesRegex(AbstractionError, "found no abstractable object classes"):
                 compute_abstract_plan(config)
 
-        run_fast_downward.assert_not_called()
+        pddl_to_sas.assert_not_called()
 
     def test_propagates_other_abstraction_errors_before_planning(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", objects_to_abstract=("a", "b"))
@@ -105,13 +105,13 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 "core.planning.abstract.build_abstract_problem",
                 side_effect=AbstractionError("Selected objects must have the same declared type"),
             ),
-            patch("core.planning.abstract.run_fast_downward") as run_fast_downward,
+            patch("core.planning.abstract.pddl_to_sas") as pddl_to_sas,
         ):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             with self.assertRaisesRegex(AbstractionError, "same declared type"):
                 compute_abstract_plan(config)
 
-        run_fast_downward.assert_not_called()
+        pddl_to_sas.assert_not_called()
 
     def test_clingo_source_translates_both_tasks_and_receives_abstract_asp(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", time_step=True)
@@ -127,7 +127,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
             ),
             patch(
-                "core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
+                "core.planning.abstract.pddl_to_sas", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
             ) as run,
             patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]) as sas_to_asp,
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp") as add_switch,
@@ -172,7 +172,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
             ),
             patch(
-                "core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
+                "core.planning.abstract.pddl_to_sas", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
             ) as run,
             patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]) as sas_to_asp,
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
@@ -263,7 +263,7 @@ class GeneratedAbstractionTests(unittest.TestCase):
                 return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
             ),
             patch(
-                "core.planning.abstract.run_fast_downward",
+                "core.planning.abstract.pddl_to_sas",
                 side_effect=[({"sasFile": "concrete.sas"}, 1.0), ({"sasFile": "abstract.sas"}, 2.0)],
             ),
             patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]),

@@ -2,7 +2,7 @@
 
 from core.execution import get_logger, temp_run_dir, timed_phase
 from core.integrations.clingo import run_clingo
-from core.integrations.fast_downward import run_fast_downward
+from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.planning.config import PlanningConfig
 
@@ -24,7 +24,7 @@ def _compute_concrete_plan(config, base_dir, run_id):
 
     with timed_phase() as total_timing:
         with timed_phase(logger, "Fast Downward time") as downward_timing:
-            task, _ = run_fast_downward(base_dir, config.domain_path, config.problem_path, "concrete")
+            task, _ = pddl_to_sas(base_dir, config.domain_path, config.problem_path, "concrete")
 
         # Generate the ASP representation of the concrete problem.
         with timed_phase(logger, "ASP generation time") as asp_timing:
