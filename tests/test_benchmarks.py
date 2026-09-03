@@ -200,7 +200,7 @@ class BenchmarkTests(unittest.TestCase):
     def test_separate_mode_runs_are_collected_as_separate_rows(self):
         abstract_output = (
             "Collapsed ['package1', 'package2'] into package_abs (type=package)\n"
-            "Horizon: 4\nPlan found: yes\nDecrements: 2\nTotal time: 1.250s\n"
+            "Horizon: 4\nPlan found: yes\nDecrements: 2\nIncrements: 1\nTotal time: 1.250s\n"
             "Plan:\n  occurs(action(abstract),1)\n  occurs(action(refine),2)\n"
         )
         concrete_output = (
@@ -240,6 +240,7 @@ class BenchmarkTests(unittest.TestCase):
                 "horizon",
                 "plan_length",
                 "decrements",
+                "increments",
                 "abstracted_object_count",
                 "abstracted_object_type",
                 "error_message",
@@ -250,6 +251,7 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[0]["horizon"], 4)
         self.assertEqual(rows[0]["plan_length"], 2)
         self.assertEqual(rows[0]["decrements"], 2)
+        self.assertEqual(rows[0]["increments"], 1)
         self.assertEqual(rows[0]["abstracted_object_count"], 2)
         self.assertEqual(rows[0]["abstracted_object_type"], "package")
         self.assertEqual(rows[0]["planner_time_seconds"], 1.25)

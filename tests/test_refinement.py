@@ -3,13 +3,13 @@ import tempfile
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 from core.abstraction.factory import Abstraction
 from core.planning.abstract import _select_abstract_horizon
 from core.planning.config import AbstractPlanningConfig
 from core.planning.plan import PlanAction
-from core.planning.refinement import RefinementContext, read_fast_downward_plan, refine
+from core.planning.refinement import RefinementContext, _extend_concrete_search, read_fast_downward_plan, refine
 
 
 class AbstractPlanningHelperTests(unittest.TestCase):
@@ -56,6 +56,7 @@ class RefinementTests(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
         self.assertEqual(result["timings"]["decrements"], 0)
+        self.assertEqual(result["timings"]["increments"], 0)
         self.assertEqual(
             result["abstraction"],
             {
@@ -82,29 +83,44 @@ class RefinementTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ["occurs(concrete,1)"])
         self.assertEqual(result["timings"]["decrements"], 2)
+        self.assertEqual(result["timings"]["increments"], 0)
         run_clingo.assert_called_once_with("abstract asp", 3)
         parse_plan_actions.assert_called_once_with(["occurs(abstract,1)"])
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
         solve_decrementally.assert_called_once_with("concrete asp\nmapping asp", 3)
 
+    @patch("core.planning.refinement._extend_concrete_search")
     @patch("core.planning.refinement.solve_decrementally", return_value=(False, None, 3))
     @patch("core.planning.refinement.build_mapping", return_value="mapping asp")
     @patch("core.planning.refinement.parse_plan_actions", return_value=())
     @patch("core.planning.refinement.run_clingo", return_value=["abstract atom"])
-    def test_clingo_reports_concrete_refinement_failure(
-        self, run_clingo, parse_plan_actions, build_mapping, solve_decrementally
+    def test_clingo_extends_concrete_search_after_refinement_failure(
+        self, run_clingo, parse_plan_actions, build_mapping, solve_decrementally, extend_search
     ):
-        result = refine(self._context())
+        context = self._context()
 
-        self.assertFalse(result["success"])
-        self.assertIsNone(result["plan"])
+        def extended(_context):
+            _context.horizon = 5
+            return ["occurs(extended,5)"], 2
+
+        extend_search.side_effect = extended
+        result = refine(context)
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["plan"], ["occurs(extended,5)"])
+        self.assertEqual(result["horizon"], 5)
         self.assertEqual(result["timings"]["decrements"], 3)
+        self.assertEqual(result["timings"]["increments"], 2)
         solve_decrementally.assert_called_once_with("concrete asp\nmapping asp", 3)
+        extend_search.assert_called_once_with(context)
 
+    @patch("core.planning.refinement._extend_concrete_search", return_value=(["occurs(extended,4)"], 1))
     @patch("core.planning.refinement.solve_decrementally", return_value=(False, None, 1))
     @patch("core.planning.refinement.build_mapping", return_value="fd mapping")
     @patch("core.planning.refinement.read_fast_downward_plan", return_value=(PlanAction("move", ("item_abs",), 1),))
-    def test_fd_source_maps_its_plan_and_reports_failure(self, read_plan, build_mapping, solve_decrementally):
+    def test_fd_source_extends_search_after_refinement_failure(
+        self, read_plan, build_mapping, solve_decrementally, extend_search
+    ):
         context = self._context(
             config=AbstractPlanningConfig("domain.pddl", "problem.pddl", plan_source="fd"),
             abstract_task={"planFile": "abstract.plan"},
@@ -112,12 +128,36 @@ class RefinementTests(unittest.TestCase):
 
         result = refine(context)
 
-        self.assertFalse(result["success"])
-        self.assertIsNone(result["plan"])
+        self.assertTrue(result["success"])
+        self.assertEqual(result["plan"], ["occurs(extended,4)"])
         self.assertEqual(result["timings"]["decrements"], 1)
+        self.assertEqual(result["timings"]["increments"], 1)
         read_plan.assert_called_once_with("abstract.plan")
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
         solve_decrementally.assert_called_once_with("concrete asp\nfd mapping", 3)
+        extend_search.assert_called_once_with(context)
+
+    @patch("core.planning.refinement.run_clingo", side_effect=[None, None, ["occurs(concrete,6)"]])
+    def test_extended_search_starts_above_abstract_horizon(self, run_clingo):
+        context = self._context(horizon=3)
+
+        plan, increments = _extend_concrete_search(context)
+
+        self.assertEqual(plan, ["occurs(concrete,6)"])
+        self.assertEqual(increments, 3)
+        self.assertEqual(context.horizon, 6)
+        self.assertEqual(
+            run_clingo.call_args_list, [call("concrete asp", 4), call("concrete asp", 5), call("concrete asp", 6)]
+        )
+
+    def test_extended_search_finds_a_plan_at_a_larger_fixed_horizon(self):
+        context = self._context(horizon=1, concrete_asp=":- horizon < 3.\nselected(horizon).\n#show selected/1.\n")
+
+        plan, increments = _extend_concrete_search(context)
+
+        self.assertEqual(plan, ["selected(3)"])
+        self.assertEqual(increments, 2)
+        self.assertEqual(context.horizon, 3)
 
     def test_fast_downward_plan_conversion_skips_comments_and_numbers_steps(self):
         plan = """

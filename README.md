@@ -6,7 +6,9 @@ Downward, Clingo, and PlanPilot.
 
 The abstract workflow builds a symmetric-object abstraction directly from one
 concrete PDDL task, solves it, maps its plan to the concrete task, and relaxes
-abstract-plan constraints in reverse order until it finds a concrete plan.
+abstract-plan constraints in reverse order until it finds a concrete plan. If
+the concrete task remains unsatisfiable after every constraint is relaxed, the
+planner continues unconstrained concrete search above the abstract horizon.
 
 ## Setup
 
@@ -67,9 +69,7 @@ concrete search:
 ```bash
 python -m scripts.planner abstract \
     --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
-    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl \
-    --abstract-name ball_abs \
-    --horizon 11
+    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl
 ```
 
 The planner asks PDDL Symmetries to discover a symmetric set of objects by default. Use `--objects-to-abstract NAME...` to select them explicitly. If PDDL Symmetries does not discover a symmetric set of objects, `abstract` mode exits without running a concrete planning pipeline.

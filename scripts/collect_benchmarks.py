@@ -20,6 +20,7 @@ FIELDS = (
     "horizon",
     "plan_length",
     "decrements",
+    "increments",
     "abstracted_object_count",
     "abstracted_object_type",
     "error_message",
@@ -86,6 +87,7 @@ def _values(result):
         "horizon": value(output, "Horizon", int),
         "plan_length": _plan_length(output),
         "decrements": value(output, "Decrements", int),
+        "increments": value(output, "Increments", int),
         **_abstraction_values(output),
         "error_message": _error_message(result),
     }
