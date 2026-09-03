@@ -10,6 +10,7 @@ from unittest.mock import patch
 from benchmarks.suite import NON_SYMMETRIC_DOMAINS, SUITE, SYMMETRIC_DOMAINS
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from scripts.collect_benchmarks import FIELDS, collect
+from scripts.planner import _write_progress
 from scripts.run_benchmark import (
     DEFAULT_TIMEOUT,
     NO_SYMMETRIES_MESSAGE,
@@ -255,6 +256,7 @@ class BenchmarkTests(unittest.TestCase):
                 "mode",
                 "status",
                 "wall_time_seconds",
+                "last_completed_phase",
                 *(f"{name}_seconds" for name in DURATION_LABELS),
                 "horizon",
                 "plan_length",
@@ -285,12 +287,37 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[1]["abstracted_object_count"], "")
         self.assertEqual(rows[1]["abstracted_object_type"], "")
         self.assertEqual(run.call_count, 2)
+        result_directory = Path(directory) / "example" / "p01"
         self.assertEqual(
-            run.call_args_list[0].args[0], _planner_command(Path("domain.pddl"), Path("p01.pddl"), "abstract")
+            run.call_args_list[0].args[0],
+            _planner_command(Path("domain.pddl"), Path("p01.pddl"), "abstract", result_directory / "abstract.json"),
         )
         self.assertEqual(
-            run.call_args_list[1].args[0], _planner_command(Path("domain.pddl"), Path("p01.pddl"), "concrete")
+            run.call_args_list[1].args[0],
+            _planner_command(Path("domain.pddl"), Path("p01.pddl"), "concrete", result_directory / "concrete.json"),
         )
+
+    def test_worker_preserves_phase_progress_in_the_result(self):
+        metrics = {"durations": {"concrete_fd": 2.5}, "counters": {}}
+
+        def complete(command, **_kwargs):
+            progress_file = Path(command[-1])
+            running = json.loads(progress_file.read_text(encoding="utf-8"))
+            self.assertEqual(running["status"], "running")
+            self.assertIsNone(running["progress"]["last_completed_phase"])
+            _write_progress(progress_file, "concrete_fd", metrics)
+            return subprocess.CompletedProcess(command, 2, stdout="planner failed before final metrics\n")
+
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch("scripts.run_benchmark.subprocess.run", side_effect=complete),
+        ):
+            result = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
+            rows = collect(directory)
+
+        self.assertEqual(result["progress"]["last_completed_phase"], "concrete_fd")
+        self.assertEqual(rows[0]["concrete_fd_seconds"], 2.5)
+        self.assertEqual(rows[0]["last_completed_phase"], "concrete_fd")
 
     def test_collector_preserves_concise_error_message(self):
         failed = subprocess.CompletedProcess(
@@ -333,6 +360,7 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(_human_status({"timed_out": True, "return_code": None, "output": ""}), "timed out")
         self.assertEqual(_human_status({"status": "symmetry_timeout"}), "symmetry timeout")
         self.assertEqual(_human_status({"status": "killed", "signal": 9}), "killed (signal 9)")
+        self.assertEqual(_human_status({"status": "running"}), "running")
 
     def test_pipeline_records_every_machine_readable_outcome(self):
         completed = [

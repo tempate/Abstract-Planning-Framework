@@ -5,6 +5,7 @@ import json
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from core.planning.outcomes import STATUS_BY_EXIT_CODE
@@ -38,17 +39,51 @@ def _argument_parser():
 
 def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None):
     result_file = Path(results_dir) / domain_name / problem.stem / f"{mode}.json"
-    command = _planner_command(domain, problem, mode)
-    result = _run_pipeline(command, timeout)
-    result["mode"] = mode
-    result["domain"] = domain_name
-    result["problem"] = problem.name
-
     result_file.parent.mkdir(parents=True, exist_ok=True)
+    started_at = datetime.now(timezone.utc).isoformat()
+    initial = {
+        "status": "running",
+        "return_code": None,
+        "timed_out": False,
+        "wall_time_seconds": 0.0,
+        "output": "",
+        "mode": mode,
+        "domain": domain_name,
+        "problem": problem.name,
+        "started_at": started_at,
+        "progress": {"last_completed_phase": None, "metrics": {}},
+    }
+    _write_result(result_file, initial)
+
+    command = _planner_command(domain, problem, mode, result_file)
+    result = _run_pipeline(command, timeout)
+    progress = _read_progress(result_file)
+    result.update(
+        {
+            "mode": mode,
+            "domain": domain_name,
+            "problem": problem.name,
+            "started_at": started_at,
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "progress": progress,
+        }
+    )
+
+    _write_result(result_file, result)
+    return result
+
+
+def _write_result(result_file, result):
     temporary = result_file.with_suffix(".tmp")
     temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     temporary.replace(result_file)
-    return result
+
+
+def _read_progress(result_file):
+    try:
+        return json.loads(result_file.read_text(encoding="utf-8")).get("progress", {})
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
 def _run_pipeline(command, timeout):
@@ -99,8 +134,11 @@ def _machine_status(return_code, timed_out, output):
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
-def _planner_command(domain, problem, mode):
-    return [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
+def _planner_command(domain, problem, mode, progress_file=None):
+    command = [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
+    if progress_file is not None:
+        command.extend(("--progress-file", str(progress_file)))
+    return command
 
 
 def _human_status(result):
@@ -113,6 +151,7 @@ def _human_status(result):
         "no_symmetries": "no symmetries",
         "symmetry_timeout": "symmetry timeout",
         "timed_out": "timed out",
+        "running": "running",
         "missing": "missing",
     }
     if status in labels:

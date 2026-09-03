@@ -37,6 +37,7 @@ class PlanningMetrics:
     durations: dict[str, float] = field(default_factory=dict)
     counters: dict[str, int] = field(default_factory=dict)
     _clock: Callable[[], float] = field(default=time.perf_counter, repr=False)
+    on_phase_complete: Callable[[str, dict], None] | None = field(default=None, repr=False)
 
     @contextmanager
     def measure(self, name: str) -> Iterator[None]:
@@ -44,11 +45,15 @@ class PlanningMetrics:
         if name not in DURATION_LABELS:
             raise ValueError(f"Unknown duration metric: {name}")
         started_at = self._clock()
+        completed = False
         try:
             yield
+            completed = True
         finally:
             elapsed = self._clock() - started_at
             self.durations[name] = self.durations.get(name, 0.0) + elapsed
+            if completed and self.on_phase_complete is not None:
+                self.on_phase_complete(name, self.as_dict())
 
     def set_counter(self, name: str, value: int) -> None:
         """Set a named integer counter."""

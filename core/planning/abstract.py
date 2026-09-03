@@ -13,9 +13,9 @@ from core.planning.config import AbstractPlanningConfig
 from core.planning.refinement import RefinementContext, refine
 
 
-def compute_abstract_plan(config: AbstractPlanningConfig):
+def compute_abstract_plan(config: AbstractPlanningConfig, on_phase_complete=None):
     """Abstract one concrete task and dispatch its plan-refinement workflow."""
-    metrics = PlanningMetrics()
+    metrics = PlanningMetrics(on_phase_complete=on_phase_complete)
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
             result = _compute_abstract_plan(config, base_dir, run_id, metrics)

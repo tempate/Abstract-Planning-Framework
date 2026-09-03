@@ -8,9 +8,9 @@ from core.metrics import PlanningMetrics
 from core.planning.config import PlanningConfig
 
 
-def compute_concrete_plan(config: PlanningConfig):
+def compute_concrete_plan(config: PlanningConfig, on_phase_complete=None):
     """Translate and solve one concrete PDDL planning problem."""
-    metrics = PlanningMetrics()
+    metrics = PlanningMetrics(on_phase_complete=on_phase_complete)
     with metrics.measure("total"):
         with temp_run_dir() as (base_dir, run_id):
             result = _compute_concrete_plan(config, base_dir, run_id, metrics)

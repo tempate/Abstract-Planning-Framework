@@ -1,6 +1,8 @@
 """Solve one PDDL task concretely or through an automatically generated abstraction."""
 
 import argparse
+import json
+from pathlib import Path
 
 from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
@@ -43,6 +45,7 @@ def main():
 
 
 def _compute(args):
+    on_phase_complete = _progress_callback(getattr(args, "progress_file", None))
     common = {
         "domain_path": args.domain,
         "problem_path": args.problem,
@@ -51,7 +54,7 @@ def _compute(args):
         "time_step": args.time_step,
     }
     if args.mode == "concrete":
-        return compute_concrete_plan(PlanningConfig(**common))
+        return compute_concrete_plan(PlanningConfig(**common), on_phase_complete)
     if args.mode == "abstract":
         return compute_abstract_plan(
             AbstractPlanningConfig(
@@ -60,9 +63,35 @@ def _compute(args):
                 abstract_name=args.abstract_name,
                 symmetry_time_limit=args.symmetry_time_limit,
                 plan_source=args.plan_source,
-            )
+            ),
+            on_phase_complete,
         )
     raise ValueError(f"Unknown planning mode: {args.mode}")
+
+
+def _progress_callback(progress_file):
+    if progress_file is None:
+        return None
+
+    def report(phase, metrics):
+        _write_progress(progress_file, phase, metrics)
+
+    return report
+
+
+def _write_progress(progress_file, phase, metrics):
+    """Atomically store the latest completed phase in a benchmark result."""
+    progress_file = Path(progress_file)
+    try:
+        result = json.loads(progress_file.read_text(encoding="utf-8"))
+        result["progress"] = {"last_completed_phase": phase, "metrics": metrics}
+        temporary = progress_file.with_suffix(".progress.tmp")
+        temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        temporary.replace(progress_file)
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        # Progress reporting must never turn a successful planning run into a
+        # failure. The benchmark wrapper will still write the final result.
+        return
 
 
 def print_planning_result(result):
@@ -114,6 +143,7 @@ def _argument_parser():
     shared.add_argument(
         "--time-step", action="store_true", default=DEFAULT_TIME_STEP, help="Enable time-step based encoding"
     )
+    shared.add_argument("--progress-file", type=Path, help=argparse.SUPPRESS)
 
     # Abstract planning arguments
     abstract = argparse.ArgumentParser(add_help=False)
