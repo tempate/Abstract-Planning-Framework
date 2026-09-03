@@ -25,5 +25,4 @@ fi
 
 "$python_bin" -m scripts.planner concrete \
     --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
-    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl \
-    --horizon 11
+    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl

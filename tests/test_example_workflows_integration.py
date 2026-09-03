@@ -36,7 +36,7 @@ class ExampleWorkflowTests(unittest.TestCase):
         result = self._run("abstract")
 
         self._assert_success(result)
-        self.assertIn("Collapsed ['ball1', 'ball2', 'ball3', 'ball4'] into ball_abs", result.stdout)
+        self.assertIn("Collapsed ['ball1', 'ball2', 'ball3', 'ball4'] into object_abs", result.stdout)
         self.assertIn("Decrements:", result.stdout)
 
 
