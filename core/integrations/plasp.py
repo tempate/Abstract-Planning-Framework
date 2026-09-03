@@ -1,4 +1,4 @@
-"""PlanPilot integration for translating planning instances to ASP."""
+"""plasp integration for translating planning instances to ASP."""
 
 import os
 import subprocess
@@ -16,7 +16,7 @@ def sas_to_asp(sas_path, abstract_time_steps=False):
         time_file = ACTION_PER_TIME_STEP_ENCODING
 
     if not os.path.exists(PLASP_BIN):
-        raise FileNotFoundError(f"plasp binary not found: {PLASP_BIN}")
+        raise FileNotFoundError(f"plasp binary not found: {PLASP_BIN}; run `python scripts/install_plasp.py`")
 
     with open(EXACT_HORIZON_ENCODING, "r", encoding="utf-8") as encoding_source:
         encoding = encoding_source.read()
