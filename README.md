@@ -89,7 +89,10 @@ concrete. Each task gets its own 30-minute limit and 8192 MiB of memory.
 
 JSON results and cluster logs are written below `benchmark-results/`. Each JSON
 result contains a machine-readable `status`, and the submission manifest records
-every expected result. Collect the JSON results into a CSV with:
+every expected result. A `running` result is created when each worker starts and
+is updated atomically after every completed planning phase and refinement step,
+preserving partial timings and counters if the worker is interrupted. Collect
+the JSON results into a CSV with:
 
 ```bash
 python -m scripts.collect_benchmarks

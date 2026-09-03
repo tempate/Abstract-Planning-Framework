@@ -3,10 +3,10 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from core.integrations.clingo import collect_plan, create_control, parse_plan_actions
-from core.integrations.fast_downward import _get_command, _run_task, calc_horizon
+from core.integrations.fast_downward import _get_command, calc_horizon, run_fast_downward
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.planning.plan import PlanAction
 from core.planning.outcomes import UnsolvableTaskError
@@ -66,7 +66,7 @@ class FastDownwardHelperTests(unittest.TestCase):
         self.assertIn("astar(lmcut())", command)
 
     @patch("core.integrations.fast_downward.subprocess.run")
-    def test_run_task_surfaces_external_tool_diagnostics(self, run):
+    def test_run_fast_downward_surfaces_external_tool_diagnostics(self, run):
         run.return_value = subprocess.CompletedProcess(
             args=[], returncode=20, stdout="translator output", stderr="search failed"
         )
@@ -75,7 +75,7 @@ class FastDownwardHelperTests(unittest.TestCase):
             domain = Path(directory, "source-domain.pddl")
             problem = Path(directory, "source-problem.pddl")
             with self.assertRaisesRegex(RuntimeError, "translator output"):
-                _run_task("concrete", directory, domain, problem, "translate", Mock())
+                run_fast_downward(directory, domain, problem, "concrete", "translate")
 
             command = run.call_args.args[0]
             self.assertIn(str(domain), command)
@@ -84,18 +84,17 @@ class FastDownwardHelperTests(unittest.TestCase):
             self.assertFalse(Path(directory, "problem.pddl").exists())
 
     @patch("core.integrations.fast_downward.subprocess.run")
-    def test_run_task_classifies_unsolvable_problems(self, run):
+    def test_run_fast_downward_classifies_unsolvable_problems(self, run):
         for return_code in (10, 11):
             with self.subTest(return_code=return_code), tempfile.TemporaryDirectory() as directory:
                 run.return_value = subprocess.CompletedProcess(args=[], returncode=return_code, stdout="", stderr="")
                 with self.assertRaisesRegex(UnsolvableTaskError, "problem is unsolvable"):
-                    _run_task(
-                        "abstract",
+                    run_fast_downward(
                         directory,
                         Path(directory, "domain.pddl"),
                         Path(directory, "problem.pddl"),
+                        "abstract",
                         "translate",
-                        Mock(),
                     )
 
 

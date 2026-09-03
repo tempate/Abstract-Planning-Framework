@@ -37,6 +37,7 @@ class PlanningMetrics:
     durations: dict[str, float] = field(default_factory=dict)
     counters: dict[str, int] = field(default_factory=dict)
     _clock: Callable[[], float] = field(default=time.perf_counter, repr=False)
+    on_update: Callable[[dict, dict], None] | None = field(default=None, repr=False)
 
     @contextmanager
     def measure(self, name: str) -> Iterator[None]:
@@ -44,20 +45,29 @@ class PlanningMetrics:
         if name not in DURATION_LABELS:
             raise ValueError(f"Unknown duration metric: {name}")
         started_at = self._clock()
+        completed = False
         try:
             yield
+            completed = True
         finally:
             elapsed = self._clock() - started_at
             self.durations[name] = self.durations.get(name, 0.0) + elapsed
+            if completed:
+                self._report({"kind": "phase_completed", "phase": name})
 
     def set_counter(self, name: str, value: int) -> None:
         """Set a named integer counter."""
         if name not in COUNTER_LABELS:
             raise ValueError(f"Unknown counter metric: {name}")
         self.counters[name] = value
+        self._report({"kind": "counter_updated", "counter": name})
 
     def as_dict(self) -> dict:
         """Return a JSON-serializable snapshot in a stable order."""
         durations = {name: self.durations[name] for name in DURATION_LABELS if name in self.durations}
         counters = {name: self.counters[name] for name in COUNTER_LABELS if name in self.counters}
         return {"durations": durations, "counters": counters}
+
+    def _report(self, event: dict) -> None:
+        if self.on_update is not None:
+            self.on_update(event, self.as_dict())

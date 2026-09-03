@@ -2,8 +2,6 @@
 
 import json
 
-from core.execution import get_logger
-
 
 def build_mapping(abstract_plan, abstraction):
     """Map an abstract plan to compatible grounded concrete actions.
@@ -29,9 +27,6 @@ def build_mapping(abstract_plan, abstraction):
         rule = f"1 {{ occurs({action_str},{action.time_step}) : {conds_str} }} 1 :- {switch}."
         mapping_rules.append(rule)
 
-    logger = get_logger()
-    logger.info(f"[MAP] Abstract plan actions={len(abstract_plan)}")
-    logger.info("[MAP] Mapping implementation=grounded-action compatibility")
     return "\n".join(mapping_rules)
 
 

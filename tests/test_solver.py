@@ -55,6 +55,24 @@ selected(ten_disabled) :- not switch(10).
         self.assertEqual(plan, ["selected(ten_disabled)"])
         self.assertEqual(decrements, 1)
 
+    def test_reports_every_solver_attempt_and_decrement(self):
+        attempts = []
+        success, _plan, _decrements = solve_decrementally(
+            """
+{ switch(1) }.
+{ switch(2) }.
+:- switch(1).
+:- switch(2).
+selected(done) :- not switch(1), not switch(2).
+#show selected/1.
+""",
+            horizon=1,
+            on_attempt=lambda decrements, calls: attempts.append((decrements, calls)),
+        )
+
+        self.assertTrue(success)
+        self.assertEqual(attempts, [(0, 1), (1, 2), (2, 3)])
+
 
 if __name__ == "__main__":
     unittest.main()

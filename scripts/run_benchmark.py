@@ -2,9 +2,11 @@
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 from core.planning.outcomes import STATUS_BY_EXIT_CODE
@@ -38,20 +40,56 @@ def _argument_parser():
 
 def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None):
     result_file = Path(results_dir) / domain_name / problem.stem / f"{mode}.json"
-    command = _planner_command(domain, problem, mode)
-    result = _run_pipeline(command, timeout)
-    result["mode"] = mode
-    result["domain"] = domain_name
-    result["problem"] = problem.name
-
     result_file.parent.mkdir(parents=True, exist_ok=True)
-    temporary = result_file.with_suffix(".tmp")
-    temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    temporary.replace(result_file)
+    started_at = datetime.now(timezone.utc).isoformat()
+    initial = {
+        "status": "running",
+        "return_code": None,
+        "timed_out": False,
+        "wall_time_seconds": 0.0,
+        "output": "",
+        "mode": mode,
+        "domain": domain_name,
+        "problem": problem.name,
+        "started_at": started_at,
+        "progress": {"last_completed_phase": None, "last_update": None, "metrics": {}},
+    }
+    _write_result(result_file, initial)
+
+    environment = os.environ.copy()
+    environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
+    command = _planner_command(domain, problem, mode)
+    result = _run_pipeline(command, timeout, environment)
+    progress = _read_progress(result_file)
+    result.update(
+        {
+            "mode": mode,
+            "domain": domain_name,
+            "problem": problem.name,
+            "started_at": started_at,
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+            "progress": progress,
+        }
+    )
+
+    _write_result(result_file, result)
     return result
 
 
-def _run_pipeline(command, timeout):
+def _write_result(result_file, result):
+    temporary = result_file.with_suffix(".tmp")
+    temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(result_file)
+
+
+def _read_progress(result_file):
+    try:
+        return json.loads(result_file.read_text(encoding="utf-8")).get("progress", {})
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _run_pipeline(command, timeout, environment=None):
     started = time.perf_counter()
     try:
         completed = subprocess.run(
@@ -62,6 +100,7 @@ def _run_pipeline(command, timeout):
             text=True,
             check=False,
             timeout=timeout,
+            env=environment,
         )
         return_code = completed.returncode
         output = completed.stdout or ""
@@ -113,6 +152,7 @@ def _human_status(result):
         "no_symmetries": "no symmetries",
         "symmetry_timeout": "symmetry timeout",
         "timed_out": "timed out",
+        "running": "running",
         "missing": "missing",
     }
     if status in labels:

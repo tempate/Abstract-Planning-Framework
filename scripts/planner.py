@@ -1,8 +1,11 @@
 """Solve one PDDL task concretely or through an automatically generated abstraction."""
 
 import argparse
+import json
+import os
+from functools import partial
+from pathlib import Path
 
-from core.execution import get_logger
 from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
@@ -39,11 +42,13 @@ def main():
             f"Collapsed {sorted(abstraction['objects_to_abstract'])} into {abstraction['abstract_symbol']} "
             f"(type={abstraction['object_type']})"
         )
-    print_planning_result(result, get_logger())
+    print_planning_result(result)
     return 0 if result["success"] else 1
 
 
 def _compute(args):
+    result_file = os.environ.get("APF_BENCHMARK_RESULT_FILE")
+    on_update = partial(_update_result_progress, result_file) if result_file else None
     common = {
         "domain_path": args.domain,
         "problem_path": args.problem,
@@ -52,7 +57,7 @@ def _compute(args):
         "time_step": args.time_step,
     }
     if args.mode == "concrete":
-        return compute_concrete_plan(PlanningConfig(**common))
+        return compute_concrete_plan(PlanningConfig(**common), on_update)
     if args.mode == "abstract":
         return compute_abstract_plan(
             AbstractPlanningConfig(
@@ -61,20 +66,37 @@ def _compute(args):
                 abstract_name=args.abstract_name,
                 symmetry_time_limit=args.symmetry_time_limit,
                 plan_source=args.plan_source,
-            )
+            ),
+            on_update,
         )
     raise ValueError(f"Unknown planning mode: {args.mode}")
 
 
-def print_planning_result(result, logger):
-    """Print a result and log its high-level outcome."""
+def _update_result_progress(result_file, event, metrics):
+    """Atomically store the latest planning progress in a benchmark result."""
+    result_file = Path(result_file)
+    try:
+        result = json.loads(result_file.read_text(encoding="utf-8"))
+        progress = result["progress"]
+        if event["kind"] == "phase_completed":
+            progress["last_completed_phase"] = event["phase"]
+        progress["last_update"] = event
+        progress["metrics"] = metrics
+        temporary = result_file.with_suffix(".tmp")
+        temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        temporary.replace(result_file)
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        # Progress reporting must never turn a successful planning run into a
+        # failure. The benchmark wrapper will still write the final result.
+        return
+
+
+def print_planning_result(result):
+    """Print a planning result."""
     print("\n=== RESULT ===")
     print(f"Horizon: {result['horizon']}")
     print(f"Plan found: {'yes' if result['plan'] is not None else 'no'}")
     _print_metrics(result["metrics"])
-
-    logger.info(f"Success: {result['success']}")
-    logger.info(f"Plan found: {result['plan'] is not None}")
 
     if result["plan"] is not None:
         print("\nPlan:")
@@ -118,7 +140,6 @@ def _argument_parser():
     shared.add_argument(
         "--time-step", action="store_true", default=DEFAULT_TIME_STEP, help="Enable time-step based encoding"
     )
-
     # Abstract planning arguments
     abstract = argparse.ArgumentParser(add_help=False)
     abstract.add_argument("--objects-to-abstract", nargs="+", help="Objects to collapse; omit to use PDDL Symmetries")

@@ -18,6 +18,7 @@ FIELDS = (
     "mode",
     "status",
     "wall_time_seconds",
+    "last_completed_phase",
     *DURATION_FIELDS,
     "horizon",
     "plan_length",
@@ -81,12 +82,14 @@ def _missing_values():
 
 def _values(result):
     output = result["output"]
-    metrics = _metrics(output)
+    progress = result.get("progress", {})
+    metrics = _metrics(output, progress)
     durations = metrics.get("durations", {})
     counters = metrics.get("counters", {})
     return {
         "status": _human_status(result),
         "wall_time_seconds": result["wall_time_seconds"],
+        "last_completed_phase": progress.get("last_completed_phase", ""),
         **{f"{name}_seconds": durations.get(name, "") for name in DURATION_LABELS},
         "horizon": value(output, "Horizon", int),
         "plan_length": _plan_length(output),
@@ -99,7 +102,7 @@ def _values(result):
     }
 
 
-def _metrics(output):
+def _metrics(output, progress=None):
     # Read the compact JSON emitted by the first structured-metrics version.
     match = re.search(r"^Metrics: (\{.*\})$", output, re.MULTILINE)
     if match is not None:
@@ -111,10 +114,15 @@ def _metrics(output):
             if isinstance(metrics, dict):
                 return metrics
 
-    return {
+    metrics = {
         "durations": _metric_group(output, DURATION_LABELS, float),
         "counters": _metric_group(output, COUNTER_LABELS, int),
     }
+    if metrics["durations"] or metrics["counters"]:
+        return metrics
+    if progress and isinstance(progress.get("metrics"), dict):
+        return progress["metrics"]
+    return metrics
 
 
 def _metric_group(output, labels, conversion):

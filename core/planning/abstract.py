@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-from core.execution import get_logger, temp_run_dir
+from core.execution import temp_run_dir
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.unified_planning import write_problem
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
@@ -13,9 +13,9 @@ from core.planning.config import AbstractPlanningConfig
 from core.planning.refinement import RefinementContext, refine
 
 
-def compute_abstract_plan(config: AbstractPlanningConfig):
+def compute_abstract_plan(config: AbstractPlanningConfig, on_update=None):
     """Abstract one concrete task and dispatch its plan-refinement workflow."""
-    metrics = PlanningMetrics()
+    metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
             result = _compute_abstract_plan(config, base_dir, run_id, metrics)
@@ -26,21 +26,11 @@ def compute_abstract_plan(config: AbstractPlanningConfig):
 def _compute_abstract_plan(config, base_dir, run_id, metrics):
     abstract_problem = build_abstract_problem(config, metrics)
 
-    logger = get_logger()
-    logger.info("=" * 70)
-    logger.info("NEW PLANNING RUN STARTED")
-    logger.info(f"Configuration: {config.as_dict()}")
-    logger.info(f"Requested horizon: {config.horizon if config.horizon is not None else 'auto'}")
-    logger.info(f"Encoding: {config.encoding}")
-    logger.info(f"Run ID: {run_id}")
-    logger.info(f"Base dir: {base_dir}")
-
     context = RefinementContext(
         config=config,
         abstraction=abstract_problem.abstraction,
         relaxed_deletes=abstract_problem.relaxed_deletes,
         run_id=run_id,
-        logger=logger,
         metrics=metrics,
     )
 
@@ -50,8 +40,6 @@ def _compute_abstract_plan(config, base_dir, run_id, metrics):
     fd_horizon = context.abstract_task.get("horizon", 0)
     context.horizon = _select_abstract_horizon(config.horizon, fd_horizon, config.plan_source)
     metrics.set_counter("abstract_horizon", context.horizon)
-    logger.info(f"Effective horizon: {context.horizon}")
-
     # Translate the SAS to ASP
     _to_asp(context)
 
