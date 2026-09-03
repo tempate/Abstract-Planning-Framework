@@ -2,7 +2,7 @@
 
 An experimental framework for comparing classical planning with abstraction
 and decremental refinement across classical-planning benchmarks using Fast
-Downward, Clingo, and PlanPilot.
+Downward, plasp, and Clingo.
 
 The abstract workflow builds a symmetric-object abstraction directly from one
 concrete PDDL task, solves it, maps its plan to the concrete task, and relaxes
@@ -12,11 +12,12 @@ planner continues unconstrained concrete search above the abstract horizon.
 
 ## Setup
 
-The planner toolchain and benchmark collection are Git submodules. Initialize
-them together with the repository:
+Fast Downward, PDDL Symmetries, and the benchmark collection are Git
+submodules. Initialize them and install the pinned official plasp release:
 
 ```bash
 git submodule update --init --recursive
+python scripts/install_plasp.py
 python -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
