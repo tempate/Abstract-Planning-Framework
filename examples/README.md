@@ -21,10 +21,6 @@ The selected ball class is collapsed into a temporary abstract object, the
 abstraction is solved, and its plan guides the concrete search. Automatic
 selection requires the pybliss setup described in the main README.
 
-Abstract mode stops after trying to refine the first abstract plan. Because an
-abstraction can have a shorter plan than the concrete problem, this example can
-report that no concrete plan exists at the discovered abstract horizon.
-
 The example paths are deliberately ordinary `--domain` and `--problem`
 arguments. The framework does not otherwise depend on the benchmark layout;
 the same commands accept any compatible PDDL task. The examples let Clingo

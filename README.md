@@ -10,7 +10,9 @@ Clingo increases the horizon while reusing the same solver instance.
 
 The abstract workflow builds a symmetric-object abstraction directly from one
 concrete PDDL task, solves it, maps its plan to the concrete task, and relaxes
-abstract-plan constraints in reverse order until it finds a concrete plan.
+abstract-plan constraints in reverse order until it finds a concrete plan. If
+the concrete task remains unsatisfiable after every constraint is relaxed, the
+planner continues unconstrained concrete search above the abstract horizon.
 
 ## Setup
 
@@ -73,8 +75,7 @@ concrete search:
 ```bash
 python -m scripts.planner abstract \
     --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
-    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl \
-    --abstract-name ball_abs
+    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl
 ```
 
 The incremental search requires exactly one action at each step and increases
@@ -98,7 +99,10 @@ concrete. Each task gets its own 30-minute limit and 8192 MiB of memory.
 
 JSON results and cluster logs are written below `benchmark-results/`. Each JSON
 result contains a machine-readable `status`, and the submission manifest records
-every expected result. Collect the JSON results into a CSV with:
+every expected result. A `running` result is created when each worker starts and
+is updated atomically after every completed planning phase and refinement step,
+preserving partial timings and counters if the worker is interrupted. Collect
+the JSON results into a CSV with:
 
 ```bash
 python -m scripts.collect_benchmarks

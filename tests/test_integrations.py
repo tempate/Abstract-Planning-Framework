@@ -3,10 +3,10 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from core.integrations.clingo import collect_plan, create_control, parse_plan_actions, solve
-from core.integrations.fast_downward import _get_command, _pddl_to_sas
+from core.integrations.fast_downward import _get_command, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.paths import ABSTRACT_TIME_STEPS_ENCODING
 from core.planning.outcomes import IntegrationError
@@ -88,6 +88,26 @@ ready.
         self.assertEqual(result.horizon, 0)
         self.assertEqual(result.attempts, 1)
 
+    def test_incremental_search_can_start_above_zero_and_report_attempts(self):
+        program = """
+#program base.
+reached(0).
+#show reached/1.
+#program step(t).
+reached(t).
+#program check(t).
+#external query(t).
+:- query(t), t < 3.
+"""
+        attempts = []
+
+        result = solve(program, start_horizon=2, on_attempt=lambda horizon, calls: attempts.append((horizon, calls)))
+
+        self.assertEqual(result.horizon, 3)
+        self.assertEqual(result.attempts, 2)
+        self.assertEqual(attempts, [(2, 1), (3, 2)])
+        self.assertEqual(set(result.plan), {"reached(0)", "reached(1)", "reached(2)", "reached(3)"})
+
     def test_abstract_time_shows_can_be_grounded_at_multiple_steps(self):
         time_encoding = Path(ABSTRACT_TIME_STEPS_ENCODING).read_text(encoding="utf-8")
         program = "#program step(t).\noccurs(a,t).\n" + time_encoding + "\n#program base.\naction(a).\n"
@@ -118,7 +138,7 @@ class FastDownwardHelperTests(unittest.TestCase):
             domain = Path(directory, "source-domain.pddl")
             problem = Path(directory, "source-problem.pddl")
             with self.assertRaisesRegex(RuntimeError, "translator output"):
-                _pddl_to_sas("concrete", directory, domain, problem, Mock())
+                pddl_to_sas(directory, domain, problem, "concrete")
 
             command = run.call_args.args[0]
             self.assertIn(str(domain), command)

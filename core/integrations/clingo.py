@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 import clingo
 
-from core.execution import get_logger, timed_phase
 from core.planning.plan import PlanAction
 
 THREADS = 1
@@ -19,37 +18,42 @@ class ClingoSolveResult:
     attempts: int
 
 
-def solve(asp):
-    """Incrementally solve an ASP program until a plan is found."""
-    logger = get_logger()
-    logger.info("[CLINGO] Starting incremental solve")
-    logger.info(f"[CLINGO] Threads={THREADS}")
+def solve(asp, start_horizon=0, on_attempt=None):
+    """Incrementally solve an ASP program until a plan is found.
 
-    with timed_phase(logger, "[CLINGO] Solve runtime"):
-        control = _create_base_control(asp)
-        previous_query = None
-        horizon = 0
-        attempts = 0
+    The search starts at ``start_horizon`` and reuses one solver instance.
+    ``on_attempt`` receives the horizon being tried and the number of solver
+    calls made so far, so callers can report progress while the search runs.
+    """
+    if start_horizon < 0:
+        raise ValueError("Horizon must be nonnegative")
 
-        while True:
-            if previous_query is not None:
-                control.release_external(previous_query)
-            if horizon > 0:
-                control.ground([("step", [clingo.Number(horizon)])])
+    control = _create_base_control(asp)
+    for time_step in range(1, start_horizon + 1):
+        control.ground([("step", [clingo.Number(time_step)])])
 
-            control.ground([("check", [clingo.Number(horizon)])])
-            query = _query(horizon)
-            control.assign_external(query, True)
-            attempts += 1
-            logger.info(f"[CLINGO] Solving horizon={horizon}")
+    previous_query = None
+    horizon = start_horizon
+    attempts = 0
 
-            plan = collect_plan(control)
-            if plan is not None:
-                logger.info(f"[CLINGO] Plan found=True at horizon={horizon}")
-                return ClingoSolveResult(plan, horizon, attempts)
+    while True:
+        if previous_query is not None:
+            control.release_external(previous_query)
+            control.ground([("step", [clingo.Number(horizon)])])
 
-            previous_query = query
-            horizon += 1
+        control.ground([("check", [clingo.Number(horizon)])])
+        query = _query(horizon)
+        control.assign_external(query, True)
+        attempts += 1
+        if on_attempt is not None:
+            on_attempt(horizon, attempts)
+
+        plan = collect_plan(control)
+        if plan is not None:
+            return ClingoSolveResult(plan, horizon, attempts)
+
+        previous_query = query
+        horizon += 1
 
 
 def create_control(asp, horizon):

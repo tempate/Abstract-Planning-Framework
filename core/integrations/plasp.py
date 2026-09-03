@@ -49,6 +49,6 @@ def add_switch_to_asp_rule(asp):
     # Without the guard the switches never suppress the rule, so the abstract
     # plan would silently stop constraining the concrete search.
     if guarded == 0:
-        raise IntegrationError(f"No occurrence rule to guard with switches in the {encoding_type} encoding")
+        raise IntegrationError("No occurrence rule to guard with switches in the exact encoding")
 
     return "\n".join(lines) + ("\n" if asp.endswith("\n") else "")
