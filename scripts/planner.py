@@ -46,7 +46,7 @@ def main():
 
 
 def _compute(args):
-    on_phase_complete = _progress_callback(os.environ.get("APF_BENCHMARK_RESULT_FILE"))
+    on_update = _progress_callback(os.environ.get("APF_BENCHMARK_RESULT_FILE"))
     common = {
         "domain_path": args.domain,
         "problem_path": args.problem,
@@ -55,7 +55,7 @@ def _compute(args):
         "time_step": args.time_step,
     }
     if args.mode == "concrete":
-        return compute_concrete_plan(PlanningConfig(**common), on_phase_complete)
+        return compute_concrete_plan(PlanningConfig(**common), on_update)
     if args.mode == "abstract":
         return compute_abstract_plan(
             AbstractPlanningConfig(
@@ -65,7 +65,7 @@ def _compute(args):
                 symmetry_time_limit=args.symmetry_time_limit,
                 plan_source=args.plan_source,
             ),
-            on_phase_complete,
+            on_update,
         )
     raise ValueError(f"Unknown planning mode: {args.mode}")
 
@@ -74,18 +74,22 @@ def _progress_callback(result_file):
     if result_file is None:
         return None
 
-    def report(phase, metrics):
-        _update_result_progress(result_file, phase, metrics)
+    def report(event, metrics):
+        _update_result_progress(result_file, event, metrics)
 
     return report
 
 
-def _update_result_progress(result_file, phase, metrics):
-    """Atomically store the latest completed phase in a benchmark result."""
+def _update_result_progress(result_file, event, metrics):
+    """Atomically store the latest planning progress in a benchmark result."""
     result_file = Path(result_file)
     try:
         result = json.loads(result_file.read_text(encoding="utf-8"))
-        result["progress"] = {"last_completed_phase": phase, "metrics": metrics}
+        progress = result["progress"]
+        if event["kind"] == "phase_completed":
+            progress["last_completed_phase"] = event["phase"]
+        progress["last_update"] = event
+        progress["metrics"] = metrics
         temporary = result_file.with_suffix(".tmp")
         temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         temporary.replace(result_file)

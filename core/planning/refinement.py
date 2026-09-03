@@ -40,8 +40,20 @@ def refine(context: RefinementContext):
     mapping = build_mapping(abstract_plan, context.abstraction)
 
     asp = "\n".join((context.concrete_asp, mapping))
+    context.metrics.set_counter("decrements", 0)
+    context.metrics.set_counter("increments", 0)
+    context.metrics.set_counter("final_horizon", context.horizon)
+    context.metrics.set_counter("concrete_solve_calls", 0)
+
+    def record_attempt(decrements, solve_calls):
+        context.metrics.set_counter("decrements", decrements)
+        context.metrics.set_counter("concrete_solve_calls", solve_calls)
+
     with context.metrics.measure("guided_concrete_solving"):
-        success, plan, solver_operations = solve_decrementally(asp, context.horizon)
+        success, plan, solver_operations = solve_decrementally(asp, context.horizon, record_attempt)
+
+    context.metrics.set_counter("decrements", solver_operations)
+    context.metrics.set_counter("concrete_solve_calls", solver_operations + 1)
 
     increments = 0
     if not success:
@@ -84,9 +96,13 @@ def _extend_concrete_search(context):
     initial_horizon = context.horizon
     while True:
         context.horizon += 1
+        increments = context.horizon - initial_horizon
+        solve_calls = context.metrics.counters.get("concrete_solve_calls", 0) + 1
+        context.metrics.set_counter("increments", increments)
+        context.metrics.set_counter("final_horizon", context.horizon)
+        context.metrics.set_counter("concrete_solve_calls", solve_calls)
         plan = run_clingo(context.concrete_asp, context.horizon)
         if plan is not None:
-            increments = context.horizon - initial_horizon
             return plan, increments
 
 

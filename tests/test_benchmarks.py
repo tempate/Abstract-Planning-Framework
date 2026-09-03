@@ -302,7 +302,7 @@ class BenchmarkTests(unittest.TestCase):
             running = json.loads(result_file.read_text(encoding="utf-8"))
             self.assertEqual(running["status"], "running")
             self.assertIsNone(running["progress"]["last_completed_phase"])
-            _update_result_progress(result_file, "concrete_fd", metrics)
+            _update_result_progress(result_file, {"kind": "phase_completed", "phase": "concrete_fd"}, metrics)
             return subprocess.CompletedProcess(command, 2, stdout="planner failed before final metrics\n")
 
         with (
@@ -313,6 +313,7 @@ class BenchmarkTests(unittest.TestCase):
             rows = collect(directory)
 
         self.assertEqual(result["progress"]["last_completed_phase"], "concrete_fd")
+        self.assertEqual(result["progress"]["last_update"]["kind"], "phase_completed")
         self.assertEqual(rows[0]["concrete_fd_seconds"], 2.5)
         self.assertEqual(rows[0]["last_completed_phase"], "concrete_fd")
 

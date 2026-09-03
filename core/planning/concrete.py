@@ -8,9 +8,9 @@ from core.metrics import PlanningMetrics
 from core.planning.config import PlanningConfig
 
 
-def compute_concrete_plan(config: PlanningConfig, on_phase_complete=None):
+def compute_concrete_plan(config: PlanningConfig, on_update=None):
     """Translate and solve one concrete PDDL planning problem."""
-    metrics = PlanningMetrics(on_phase_complete=on_phase_complete)
+    metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir() as (base_dir, run_id):
             result = _compute_concrete_plan(config, base_dir, run_id, metrics)
@@ -31,11 +31,10 @@ def _compute_concrete_plan(config, base_dir, run_id, metrics):
         asp = sas_to_asp(task["sasFile"], config.encoding, config.time_step)
 
     # Solve the concrete problem using Clingo.
-    with metrics.measure("guided_concrete_solving"):
-        plan = run_clingo(asp, effective_horizon)
-
     metrics.set_counter("final_horizon", effective_horizon)
     metrics.set_counter("concrete_solve_calls", 1)
+    with metrics.measure("guided_concrete_solving"):
+        plan = run_clingo(asp, effective_horizon)
 
     return {
         "configuration": config.as_dict(),

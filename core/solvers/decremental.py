@@ -3,7 +3,7 @@
 from core.integrations.clingo import collect_plan, create_control
 
 
-def solve_decrementally(asp, horizon):
+def solve_decrementally(asp, horizon, on_attempt=None):
     """Relax plan constraints in reverse until a concrete plan is found."""
     control = create_control(asp, horizon)
 
@@ -17,6 +17,8 @@ def solve_decrementally(asp, horizon):
 
     # Try the full abstract plan
     assumptions = {symbol: True for _, symbol in switches}
+    if on_attempt is not None:
+        on_attempt(0, 1)
     plan = collect_plan(control, list(assumptions.items()))
 
     if plan is not None:
@@ -30,6 +32,8 @@ def solve_decrementally(asp, horizon):
         assumptions[symbol] = False
 
         # Find a concrete plan with the current assumptions
+        if on_attempt is not None:
+            on_attempt(decs, decs + 1)
         plan = collect_plan(control, list(assumptions.items()))
         if plan is not None:
             return True, plan, decs

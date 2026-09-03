@@ -81,7 +81,8 @@ class RefinementTests(unittest.TestCase):
         run_clingo.assert_called_once_with("abstract asp", 3)
         parse_plan_actions.assert_called_once_with(["occurs(abstract,1)"])
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
-        solve_decrementally.assert_called_once_with("concrete asp\nmapping asp", 3)
+        self.assertEqual(solve_decrementally.call_args.args[:2], ("concrete asp\nmapping asp", 3))
+        self.assertTrue(callable(solve_decrementally.call_args.args[2]))
 
     @patch("core.planning.refinement._extend_concrete_search")
     @patch("core.planning.refinement.solve_decrementally", return_value=(False, None, 3))
@@ -105,7 +106,8 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(result["horizon"], 5)
         self.assertEqual(context.metrics.counters["decrements"], 3)
         self.assertEqual(context.metrics.counters["increments"], 2)
-        solve_decrementally.assert_called_once_with("concrete asp\nmapping asp", 3)
+        self.assertEqual(solve_decrementally.call_args.args[:2], ("concrete asp\nmapping asp", 3))
+        self.assertTrue(callable(solve_decrementally.call_args.args[2]))
         extend_search.assert_called_once_with(context)
 
     @patch("core.planning.refinement._extend_concrete_search", return_value=(["occurs(extended,4)"], 1))
@@ -128,7 +130,8 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(context.metrics.counters["increments"], 1)
         read_plan.assert_called_once_with("abstract.plan")
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
-        solve_decrementally.assert_called_once_with("concrete asp\nfd mapping", 3)
+        self.assertEqual(solve_decrementally.call_args.args[:2], ("concrete asp\nfd mapping", 3))
+        self.assertTrue(callable(solve_decrementally.call_args.args[2]))
         extend_search.assert_called_once_with(context)
 
     @patch("core.planning.refinement.run_clingo", side_effect=[None, None, ["occurs(concrete,6)"]])

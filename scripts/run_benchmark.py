@@ -52,7 +52,7 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
         "domain": domain_name,
         "problem": problem.name,
         "started_at": started_at,
-        "progress": {"last_completed_phase": None, "metrics": {}},
+        "progress": {"last_completed_phase": None, "last_update": None, "metrics": {}},
     }
     _write_result(result_file, initial)
 

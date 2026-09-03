@@ -30,18 +30,28 @@ class PlanningMetricsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Unknown counter metric"):
             metrics.set_counter("typo", 1)
 
-    def test_reports_only_completed_phases(self):
-        events = []
-        metrics = PlanningMetrics(on_phase_complete=lambda *event: events.append(event))
+    def test_reports_completed_phases_and_counter_updates(self):
+        updates = []
+        metrics = PlanningMetrics(on_update=lambda *update: updates.append(update))
 
         with metrics.measure("concrete_fd"):
             pass
         with self.assertRaisesRegex(RuntimeError, "stopped"):
             with metrics.measure("concrete_asp"):
                 raise RuntimeError("stopped")
+        metrics.set_counter("decrements", 1)
+        metrics.set_counter("concrete_solve_calls", 2)
 
-        self.assertEqual([phase for phase, _snapshot in events], ["concrete_fd"])
-        self.assertIn("concrete_fd", events[0][1]["durations"])
+        self.assertEqual(
+            [event for event, _snapshot in updates],
+            [
+                {"kind": "phase_completed", "phase": "concrete_fd"},
+                {"kind": "counter_updated", "counter": "decrements"},
+                {"kind": "counter_updated", "counter": "concrete_solve_calls"},
+            ],
+        )
+        self.assertIn("concrete_fd", updates[0][1]["durations"])
+        self.assertEqual(updates[1][1]["counters"]["decrements"], 1)
 
 
 if __name__ == "__main__":
