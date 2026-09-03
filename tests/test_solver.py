@@ -31,7 +31,7 @@ selected(fallback) :- not switch(2).
         self.assertEqual(plan, ["selected(fallback)"])
         self.assertEqual(decrements, 1)
 
-    def test_reports_failure_after_all_switches_are_disabled(self):
+    def test_stops_without_relaxing_when_the_conflict_does_not_involve_switches(self):
         success, plan, decrements = self._solve("""
 { switch(1) }.
 :-.
@@ -40,6 +40,20 @@ selected(fallback) :- not switch(2).
 
         self.assertFalse(success)
         self.assertIsNone(plan)
+        self.assertEqual(decrements, 0)
+
+    def test_uses_the_unsat_core_to_skip_switches_that_do_not_conflict(self):
+        success, plan, decrements = self._solve("""
+{ switch(1) }.
+{ switch(2) }.
+{ switch(3) }.
+:- switch(2).
+selected(middle_disabled) :- not switch(2).
+#show selected/1.
+""")
+
+        self.assertTrue(success)
+        self.assertEqual(plan, ["selected(middle_disabled)"])
         self.assertEqual(decrements, 1)
 
     def test_numeric_switch_order_is_used_instead_of_lexical_order(self):
