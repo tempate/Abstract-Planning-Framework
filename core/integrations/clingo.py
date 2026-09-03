@@ -1,13 +1,11 @@
 """Clingo integration for finding the first plan."""
 
-import os
-
 import clingo
 
 from core.execution import get_logger, timed_phase
 from core.planning.plan import PlanAction
 
-THREADS = os.cpu_count() or 1
+THREADS = 1
 
 
 def run_clingo(asp, horizon):

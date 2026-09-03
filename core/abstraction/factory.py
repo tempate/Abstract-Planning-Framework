@@ -9,8 +9,9 @@ from core.abstraction.relaxation import find_relaxable_deletes
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import read_problem
 from core.planning.config import AbstractPlanningConfig
+from core.planning.outcomes import NoSymmetriesError
 
-__all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "build_abstract_problem"]
+__all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "NoSymmetriesError", "build_abstract_problem"]
 
 
 @dataclass(frozen=True)
@@ -36,7 +37,7 @@ def build_abstract_problem(config: AbstractPlanningConfig):
             config.domain_path, config.problem_path, config.symmetry_time_limit
         )
         if not symmetry_classes:
-            raise AbstractionError("PDDL Symmetries found no abstractable object classes")
+            raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")
         abstraction, relaxable_deletes = _select_abstraction(problem, symmetry_classes, config.abstract_name)
     else:
         abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)

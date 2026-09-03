@@ -1,32 +1,28 @@
 """Collect benchmark result files into one CSV file."""
 
+import ast
+from collections import Counter
 import csv
 import json
 import re
 from pathlib import Path
 
-from scripts.run_benchmarks import RESULTS_DIR, _human_status
+from scripts.run_benchmark import MANIFEST_NAME, RESULTS_DIR, _human_status
 
 CSV_FILE = RESULTS_DIR / "results.csv"
 FIELDS = (
     "domain",
     "problem",
+    "mode",
     "status",
-    "return_code",
-    "timed_out",
     "wall_time_seconds",
-    "horizon",
-    "plan_found",
-    "refinement_iterations",
-    "decrements",
     "planner_time_seconds",
-    "concrete_status",
-    "concrete_return_code",
-    "concrete_timed_out",
-    "concrete_wall_time_seconds",
-    "concrete_horizon",
-    "concrete_plan_found",
-    "concrete_planner_time_seconds",
+    "horizon",
+    "plan_length",
+    "decrements",
+    "abstracted_object_count",
+    "abstracted_object_type",
+    "error_message",
 )
 
 
@@ -36,42 +32,94 @@ def value(output, label, convert=str):
 
 
 def collect(results_dir=RESULTS_DIR):
-    rows = []
-    for result_file in sorted(Path(results_dir).glob("*/*.json")):
+    results_dir = Path(results_dir)
+    results = {}
+    for result_file in sorted(results_dir.rglob("*.json")):
+        if result_file.name in ("metadata.json", MANIFEST_NAME):
+            continue
         result = json.loads(result_file.read_text(encoding="utf-8"))
-        output = result["output"]
-        row = {
-            "domain": result["domain"],
-            "problem": result["problem"],
-            "status": _human_status(result),
-            "return_code": result["return_code"],
-            "timed_out": result.get("timed_out", False),
-            "wall_time_seconds": result["wall_time_seconds"],
-            "horizon": value(output, "Horizon", int),
-            "plan_found": value(output, "Plan found"),
-            "refinement_iterations": value(output, "Refinement iterations", int),
-            "decrements": value(output, "Decrements", int),
-            "planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
-            **_concrete_values(result.get("concrete")),
-        }
-        rows.append(row)
+        if not {"domain", "problem", "output"} <= result.keys():
+            continue
+
+        mode = result.get("mode")
+        if mode in ("abstract", "concrete"):
+            results[(result["domain"], result["problem"], mode)] = result
+        else:
+            # Results produced before modes became separate jobs stored the
+            # concrete comparison inside the abstract result.
+            results.setdefault((result["domain"], result["problem"], "abstract"), result)
+            if "concrete" in result:
+                results.setdefault((result["domain"], result["problem"], "concrete"), result["concrete"])
+
+    keys = set(results)
+    manifest = results_dir / MANIFEST_NAME
+    if manifest.is_file():
+        keys.update(_manifest_keys(manifest))
+
+    rows = []
+    for domain, problem, mode in sorted(keys):
+        result = results.get((domain, problem, mode))
+        values = _missing_values() if result is None else _values(result)
+        rows.append({"domain": domain, "problem": problem, "mode": mode, **values})
     return rows
 
 
-def _concrete_values(result):
-    if result is None:
-        return {field: "" for field in FIELDS if field.startswith("concrete_")}
+def _manifest_keys(manifest):
+    entries = json.loads(manifest.read_text(encoding="utf-8"))["expected_results"]
+    return {
+        (entry["domain"], entry["problem"], entry["mode"])
+        for entry in entries
+        if entry["mode"] in ("abstract", "concrete")
+    }
 
+
+def _missing_values():
+    return {field: "" for field in FIELDS[4:]} | {"status": "missing"}
+
+
+def _values(result):
     output = result["output"]
     return {
-        "concrete_status": _human_status(result),
-        "concrete_return_code": result["return_code"],
-        "concrete_timed_out": result.get("timed_out", False),
-        "concrete_wall_time_seconds": result["wall_time_seconds"],
-        "concrete_horizon": value(output, "Horizon", int),
-        "concrete_plan_found": value(output, "Plan found"),
-        "concrete_planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
+        "status": _human_status(result),
+        "wall_time_seconds": result["wall_time_seconds"],
+        "planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
+        "horizon": value(output, "Horizon", int),
+        "plan_length": _plan_length(output),
+        "decrements": value(output, "Decrements", int),
+        **_abstraction_values(output),
+        "error_message": _error_message(result),
     }
+
+
+def _plan_length(output):
+    if value(output, "Plan found") != "yes":
+        return ""
+    return len(re.findall(r"^[ \t]+occurs\(", output, re.MULTILINE))
+
+
+def _abstraction_values(output):
+    match = re.search(r"^Collapsed (\[.*\]) into \S+ \(type=([^)]+)\)$", output, re.MULTILINE)
+    if match is None:
+        return {"abstracted_object_count": "", "abstracted_object_type": ""}
+
+    try:
+        object_count = len(ast.literal_eval(match.group(1)))
+    except (SyntaxError, ValueError):
+        object_count = ""
+    return {"abstracted_object_count": object_count, "abstracted_object_type": match.group(2)}
+
+
+def _error_message(result):
+    if not _human_status(result).startswith("error"):
+        return ""
+
+    output = result["output"]
+    match = re.search(r"^.*error: (.+)$", output, re.MULTILINE)
+    if match is not None:
+        return match.group(1)
+
+    lines = [line.strip() for line in output.splitlines() if line.strip() and line.strip() != "Starting"]
+    return lines[-1] if lines else ""
 
 
 def main():
@@ -81,6 +129,10 @@ def main():
         writer = csv.DictWriter(stream, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(rows)
+    missing = Counter(row["mode"] for row in rows if row["status"] == "missing")
+    if missing:
+        details = ", ".join(f"{mode}: {count}" for mode, count in sorted(missing.items()))
+        print(f"Incomplete benchmark run: {sum(missing.values())} expected results are missing ({details})")
     print(f"Collected {len(rows)} results in {CSV_FILE}")
 
 

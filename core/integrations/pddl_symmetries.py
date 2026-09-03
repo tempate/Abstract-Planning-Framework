@@ -8,10 +8,12 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from core.paths import PDDL_SYMMETRIES_TRANSLATOR
+from core.planning.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 
-
-class PddlSymmetriesError(RuntimeError):
-    """Raised when PDDL Symmetries cannot produce object classes."""
+# Preserve the integration's existing public exception names without adding
+# another exception hierarchy.
+PddlSymmetriesError = IntegrationError
+PddlSymmetriesTimeout = SymmetryTimeoutError
 
 
 def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, translator_path=PDDL_SYMMETRIES_TRANSLATOR):
@@ -52,11 +54,13 @@ def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, transl
                 timeout=time_limit + 30,
             )
     except subprocess.TimeoutExpired as error:
-        raise PddlSymmetriesError(f"PDDL Symmetries exceeded its {time_limit}-second limit") from error
+        raise PddlSymmetriesTimeout(f"PDDL Symmetries exceeded its {time_limit}-second limit") from error
     except OSError as error:
         raise PddlSymmetriesError(f"Could not run PDDL Symmetries: {error}") from error
+    diagnostics = "\n".join(value.strip() for value in (result.stdout, result.stderr) if value.strip())
+    if "No relaxed solution" in diagnostics:
+        raise UnsolvableTaskError("PDDL Symmetries reports that the task has no relaxed solution")
     if result.returncode != 0:
-        diagnostics = "\n".join(value.strip() for value in (result.stdout, result.stderr) if value.strip())
         suffix = f":\n{diagnostics}" if diagnostics else ""
         raise PddlSymmetriesError(f"PDDL Symmetries failed with exit code {result.returncode}{suffix}")
 

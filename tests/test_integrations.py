@@ -9,9 +9,16 @@ from core.integrations.clingo import collect_plan, create_control, parse_plan_ac
 from core.integrations.fast_downward import _get_command, _run_task, calc_horizon
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.planning.plan import PlanAction
+from core.planning.outcomes import UnsolvableTaskError
 
 
 class ClingoIntegrationTests(unittest.TestCase):
+    @patch("core.integrations.clingo.clingo.Control")
+    def test_control_always_uses_one_thread(self, control):
+        create_control("", horizon=3)
+
+        control.assert_called_once_with(["-c", "horizon=3", "-t", "1", "--warn=none"])
+
     def test_parse_plan_actions_ignores_other_atoms_and_orders_actions(self):
         atoms = [
             'occurs(action(("unload","p0","t0","l1")),3)',
@@ -78,18 +85,18 @@ class FastDownwardHelperTests(unittest.TestCase):
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_run_task_classifies_unsolvable_problems(self, run):
-        run.return_value = subprocess.CompletedProcess(args=[], returncode=11, stdout="", stderr="")
-
-        with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaisesRegex(RuntimeError, "problem is unsolvable"):
-                _run_task(
-                    "abstract",
-                    directory,
-                    Path(directory, "domain.pddl"),
-                    Path(directory, "problem.pddl"),
-                    "translate",
-                    Mock(),
-                )
+        for return_code in (10, 11):
+            with self.subTest(return_code=return_code), tempfile.TemporaryDirectory() as directory:
+                run.return_value = subprocess.CompletedProcess(args=[], returncode=return_code, stdout="", stderr="")
+                with self.assertRaisesRegex(UnsolvableTaskError, "problem is unsolvable"):
+                    _run_task(
+                        "abstract",
+                        directory,
+                        Path(directory, "domain.pddl"),
+                        Path(directory, "problem.pddl"),
+                        "translate",
+                        Mock(),
+                    )
 
 
 class PlaspPostProcessingTests(unittest.TestCase):

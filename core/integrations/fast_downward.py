@@ -7,6 +7,7 @@ import sys
 
 from core.execution import get_logger, timed_phase
 from core.paths import FAST_DOWNWARD_SCRIPT
+from core.planning.outcomes import IntegrationError, UnsolvableTaskError
 
 # Fast Downward exit codes
 _PLAN_FOUND = {0, 1, 2, 3}
@@ -45,7 +46,7 @@ def _run_task(label, task_directory, domain_path, problem_path, task, logger):
         completed_process = subprocess.run(_get_command(paths, task), capture_output=True, text=True)
 
     if completed_process.returncode in _UNSOLVABLE:
-        raise RuntimeError(f"Fast Downward ({label}): problem is unsolvable")
+        raise UnsolvableTaskError(f"Fast Downward ({label}) reports that the problem is unsolvable")
 
     if completed_process.returncode not in _PLAN_FOUND:
         diagnostics = "\n".join(
@@ -53,7 +54,7 @@ def _run_task(label, task_directory, domain_path, problem_path, task, logger):
         )
         logger.error(f"[FD] {label.title()} planner FAILED")
         logger.error(diagnostics)
-        raise RuntimeError(
+        raise IntegrationError(
             f"Fast Downward ({label}) failed with exit code {completed_process.returncode}:\n{diagnostics}"
         )
 
