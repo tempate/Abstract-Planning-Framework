@@ -6,14 +6,12 @@ def print_planning_result(result, logger):
     print("\n=== RESULT ===")
     print(f"Horizon: {result['horizon']}")
     print(f"Plan found: {'yes' if result['plan'] is not None else 'no'}")
-    timings = result["timings"]
-    if timings.get("iterations") is not None:
-        print(f"Refinement iterations: {timings['iterations']}")
-    if timings.get("decrements") is not None:
-        print(f"Decrements: {timings['decrements']}")
-    if timings.get("increments") is not None:
-        print(f"Increments: {timings['increments']}")
-    print(f"Total time: {result['timings']['total_time']:.3f}s")
+    if result.get("iterations") is not None:
+        print(f"Refinement iterations: {result['iterations']}")
+    if result.get("decrements") is not None:
+        print(f"Decrements: {result['decrements']}")
+    if result.get("increments") is not None:
+        print(f"Increments: {result['increments']}")
 
     logger.info(f"Success: {result['success']}")
     logger.info(f"Plan found: {result['plan'] is not None}")

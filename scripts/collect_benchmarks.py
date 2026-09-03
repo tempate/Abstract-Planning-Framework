@@ -16,7 +16,6 @@ FIELDS = (
     "mode",
     "status",
     "wall_time_seconds",
-    "planner_time_seconds",
     "horizon",
     "plan_length",
     "decrements",
@@ -83,7 +82,6 @@ def _values(result):
     return {
         "status": _human_status(result),
         "wall_time_seconds": result["wall_time_seconds"],
-        "planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
         "horizon": value(output, "Horizon", int),
         "plan_length": _plan_length(output),
         "decrements": value(output, "Decrements", int),

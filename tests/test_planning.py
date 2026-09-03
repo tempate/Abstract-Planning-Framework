@@ -18,7 +18,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.concrete.sas_to_asp")
     @patch("core.planning.concrete.run_fast_downward")
     @patch("core.planning.concrete.temp_run_dir")
-    def test_pipeline_uses_an_explicit_horizon_and_returns_normalized_timings(
+    def test_pipeline_uses_an_explicit_horizon_and_returns_normalized_result(
         self, temp_run_dir, run_fast_downward, sas_to_asp, run_clingo
     ):
         with tempfile.TemporaryDirectory() as directory:
@@ -27,14 +27,11 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
             domain.write_bytes(b"domain")
             problem.write_bytes(b"problem")
             temp_run_dir.return_value.__enter__.return_value = (directory, "run-123")
-            run_fast_downward.return_value = (
-                {
-                    "horizon": 8,
-                    "sasFile": str(Path(directory, "output.sas")),
-                    "planFile": str(Path(directory, "sas_plan")),
-                },
-                0.1,
-            )
+            run_fast_downward.return_value = {
+                "horizon": 8,
+                "sasFile": str(Path(directory, "output.sas")),
+                "planFile": str(Path(directory, "sas_plan")),
+            }
             sas_to_asp.return_value = "asp program"
             run_clingo.return_value = ["occurs(action,3)"]
 
@@ -46,9 +43,9 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(result["horizon"], 3)
         self.assertEqual(result["plan"], ["occurs(action,3)"])
-        self.assertEqual(result["timings"]["run_id"], "run-123")
+        self.assertEqual(result["run_id"], "run-123")
         self.assertEqual(result["configuration"], config.as_dict())
-        self.assertIsNone(result["timings"]["iterations"])
+        self.assertIsNone(result["iterations"])
         run_fast_downward.assert_called_once_with(directory, domain, problem, "concrete", "translate")
         sas_to_asp.assert_called_once_with(str(Path(directory, "output.sas")), "bounded", True)
         run_clingo.assert_called_once_with("asp program", 3)
@@ -72,7 +69,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 "core.planning.abstract._write_abstract_problem",
                 return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
             ) as write,
-            patch("core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]),
+            patch("core.planning.abstract.run_fast_downward", side_effect=[concrete_task, abstract_task]),
             patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]),
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
             patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
@@ -136,9 +133,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 "core.planning.abstract._write_abstract_problem",
                 return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
             ),
-            patch(
-                "core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
-            ) as run,
+            patch("core.planning.abstract.run_fast_downward", side_effect=[concrete_task, abstract_task]) as run,
             patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]) as sas_to_asp,
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp") as add_switch,
             patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
@@ -163,8 +158,6 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(context.abstract_asp, "abstract asp")
         self.assertEqual(context.abstract_task, abstract_task)
         self.assertEqual(context.horizon, 4)
-        self.assertEqual(context.fd_timings["fd_concrete_time"], 1.0)
-        self.assertEqual(context.fd_timings["fd_abstract_time"], 2.0)
         refine.assert_called_once_with(context)
 
     def test_fd_source_uses_its_plan_and_skips_abstract_asp_generation(self):
@@ -180,9 +173,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 "core.planning.abstract._write_abstract_problem",
                 return_value=("abstract-domain.pddl", "abstract-problem.pddl"),
             ),
-            patch(
-                "core.planning.abstract.run_fast_downward", side_effect=[(concrete_task, 1.0), (abstract_task, 2.0)]
-            ) as run,
+            patch("core.planning.abstract.run_fast_downward", side_effect=[concrete_task, abstract_task]) as run,
             patch("core.planning.abstract.sas_to_asp", return_value="concrete asp") as sas_to_asp,
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
             patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
@@ -274,7 +265,7 @@ class GeneratedAbstractionTests(unittest.TestCase):
             ),
             patch(
                 "core.planning.abstract.run_fast_downward",
-                side_effect=[({"sasFile": "concrete.sas"}, 1.0), ({"sasFile": "abstract.sas", "horizon": 0}, 2.0)],
+                side_effect=[{"sasFile": "concrete.sas"}, {"sasFile": "abstract.sas", "horizon": 0}],
             ),
             patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]),
             patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
