@@ -17,9 +17,12 @@ def solve_decrementally(asp, horizon, on_attempt=None):
 
     switches = _collect_switches(control)
     symbol_by_step = dict(switches)
-    step_by_literal = {control.symbolic_atoms[symbol].literal: step for step, symbol in switches}
 
-    enabled = {symbol: True for _, symbol in switches}
+    step_by_literal = {}
+    enabled = {}
+    for step, symbol in switches:
+        step_by_literal[control.symbolic_atoms[symbol].literal] = step
+        enabled[symbol] = True
 
     decrements = 0
     while True:
@@ -30,11 +33,11 @@ def solve_decrementally(asp, horizon, on_attempt=None):
         if plan is not None:
             return True, plan, decrements
 
-        blamed = [
-            step
-            for literal in core
-            if (step := step_by_literal.get(literal)) is not None and enabled[symbol_by_step[step]]
-        ]
+        blamed = []
+        for literal in core:
+            step = step_by_literal.get(literal)
+            if step is not None and enabled[symbol_by_step[step]]:
+                blamed.append(step)
         if not blamed:
             return False, None, decrements
 
@@ -57,5 +60,8 @@ def _solve_with_core(control, enabled):
     assumptions = list(enabled.items())
     with control.solve(yield_=True, assumptions=assumptions) as handle:
         for plan in handle:
-            return [str(atom) for atom in plan.symbols(shown=True)], []
+            atoms = []
+            for atom in plan.symbols(shown=True):
+                atoms.append(str(atom))
+            return atoms, []
         return None, list(handle.core())
