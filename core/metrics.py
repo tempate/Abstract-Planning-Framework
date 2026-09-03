@@ -5,29 +5,29 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 
-DURATION_NAMES = (
-    "total",
-    "problem_reading",
-    "symmetry_discovery",
-    "abstraction",
-    "abstract_pddl_writing",
-    "concrete_fd",
-    "abstract_fd",
-    "concrete_asp",
-    "abstract_asp",
-    "abstract_solving",
-    "guided_concrete_solving",
-    "extended_concrete_solving",
-)
+DURATION_LABELS = {
+    "total": "Total",
+    "problem_reading": "Problem reading",
+    "symmetry_discovery": "Symmetry discovery",
+    "abstraction": "Abstraction",
+    "abstract_pddl_writing": "Abstract PDDL writing",
+    "concrete_fd": "Concrete Fast Downward",
+    "abstract_fd": "Abstract Fast Downward",
+    "concrete_asp": "Concrete SAS-to-ASP",
+    "abstract_asp": "Abstract SAS-to-ASP",
+    "abstract_solving": "Abstract plan solving",
+    "guided_concrete_solving": "Guided concrete solving",
+    "extended_concrete_solving": "Extended concrete solving",
+}
 
-COUNTER_NAMES = (
-    "decrements",
-    "increments",
-    "abstract_horizon",
-    "final_horizon",
-    "abstract_solve_calls",
-    "concrete_solve_calls",
-)
+COUNTER_LABELS = {
+    "decrements": "Refinement decrements",
+    "increments": "Horizon increments",
+    "abstract_horizon": "Abstract horizon",
+    "final_horizon": "Final horizon",
+    "abstract_solve_calls": "Abstract solver calls",
+    "concrete_solve_calls": "Concrete solver calls",
+}
 
 
 @dataclass
@@ -41,7 +41,7 @@ class PlanningMetrics:
     @contextmanager
     def measure(self, name: str) -> Iterator[None]:
         """Accumulate elapsed seconds for a named phase."""
-        if name not in DURATION_NAMES:
+        if name not in DURATION_LABELS:
             raise ValueError(f"Unknown duration metric: {name}")
         started_at = self._clock()
         try:
@@ -52,12 +52,12 @@ class PlanningMetrics:
 
     def set_counter(self, name: str, value: int) -> None:
         """Set a named integer counter."""
-        if name not in COUNTER_NAMES:
+        if name not in COUNTER_LABELS:
             raise ValueError(f"Unknown counter metric: {name}")
         self.counters[name] = value
 
     def as_dict(self) -> dict:
         """Return a JSON-serializable snapshot in a stable order."""
-        durations = {name: self.durations[name] for name in DURATION_NAMES if name in self.durations}
-        counters = {name: self.counters[name] for name in COUNTER_NAMES if name in self.counters}
+        durations = {name: self.durations[name] for name in DURATION_LABELS if name in self.durations}
+        counters = {name: self.counters[name] for name in COUNTER_LABELS if name in self.counters}
         return {"durations": durations, "counters": counters}

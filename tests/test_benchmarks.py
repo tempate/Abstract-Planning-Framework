@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from benchmarks.suite import NON_SYMMETRIC_DOMAINS, SUITE, SYMMETRIC_DOMAINS
-from core.metrics import COUNTER_NAMES, DURATION_NAMES
+from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from scripts.collect_benchmarks import FIELDS, collect
 from scripts.run_benchmark import (
     DEFAULT_TIMEOUT,
@@ -201,16 +201,29 @@ class BenchmarkTests(unittest.TestCase):
     def test_separate_mode_runs_are_collected_as_separate_rows(self):
         abstract_output = (
             "Collapsed ['package1', 'package2'] into package_abs (type=package)\n"
-            "Horizon: 4\nPlan found: yes\nDecrements: 2\nIncrements: 1\n"
-            'Metrics: {"durations": {"total": 1.25, "abstract_solving": 0.5}, '
-            '"counters": {"decrements": 2, "increments": 1, "abstract_horizon": 3, '
-            '"final_horizon": 4, "abstract_solve_calls": 1, "concrete_solve_calls": 4}}\n'
+            "Horizon: 4\nPlan found: yes\n"
+            "Metrics:\n"
+            "  Durations (seconds):\n"
+            "    Total                  1.250000\n"
+            "    Abstract plan solving  0.500000\n"
+            "  Solver activity:\n"
+            "    Refinement decrements  2\n"
+            "    Horizon increments     1\n"
+            "    Abstract horizon       3\n"
+            "    Final horizon          4\n"
+            "    Abstract solver calls  1\n"
+            "    Concrete solver calls  4\n"
             "Plan:\n  occurs(action(abstract),1)\n  occurs(action(refine),2)\n"
         )
         concrete_output = (
             "Horizon: 6\nPlan found: yes\n"
-            'Metrics: {"durations": {"total": 2.5, "concrete_fd": 1.0}, '
-            '"counters": {"final_horizon": 6, "concrete_solve_calls": 1}}\n'
+            "Metrics:\n"
+            "  Durations (seconds):\n"
+            "    Total                   2.500000\n"
+            "    Concrete Fast Downward  1.000000\n"
+            "  Solver activity:\n"
+            "    Final horizon          6\n"
+            "    Concrete solver calls  1\n"
             "Plan:\n  occurs(action(first),1)\n  occurs(action(second),1)\n  occurs(action(third),2)\n"
         )
         completed = [
@@ -242,10 +255,10 @@ class BenchmarkTests(unittest.TestCase):
                 "mode",
                 "status",
                 "wall_time_seconds",
-                *(f"{name}_seconds" for name in DURATION_NAMES),
+                *(f"{name}_seconds" for name in DURATION_LABELS),
                 "horizon",
                 "plan_length",
-                *COUNTER_NAMES,
+                *COUNTER_LABELS,
                 "abstracted_object_count",
                 "abstracted_object_type",
                 "error_message",
