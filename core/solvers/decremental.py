@@ -4,15 +4,7 @@ from core.integrations.clingo import create_control
 
 
 def solve_decrementally(asp, horizon, on_attempt=None):
-    """Relax abstract-plan constraints until a concrete plan is found.
-
-    Rather than disabling switches blindly in reverse order, every failed
-    solve yields an unsatisfiable core: the still-enabled switches that
-    Clingo blames for the conflict. The latest blamed switch is disabled
-    next, so switches that do not take part in any conflict keep guiding the
-    concrete search. When a core no longer mentions an enabled switch, no
-    further relaxation can help and the search stops.
-    """
+    """Relax the switches an unsat core blames until a concrete plan is found."""
     control = create_control(asp, horizon)
 
     switches = _collect_switches(control)
@@ -33,6 +25,8 @@ def solve_decrementally(asp, horizon, on_attempt=None):
         if plan is not None:
             return True, plan, decrements
 
+        # Keep switches the core does not blame: they still guide the search.
+        # If the core blames no enabled switch, no relaxation can help.
         blamed = []
         for literal in core:
             step = step_by_literal.get(literal)
