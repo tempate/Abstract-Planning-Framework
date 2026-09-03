@@ -5,7 +5,6 @@ from statistics import mode
 import subprocess
 import sys
 
-from core.execution import get_logger
 from core.paths import FAST_DOWNWARD_SCRIPT
 from core.planning.outcomes import IntegrationError, UnsolvableTaskError
 
@@ -16,17 +15,10 @@ _UNSOLVABLE = {10, 11}
 
 def run_fast_downward(base_dir, domain_path, problem_path, label, task):
     """Run concrete planning and, when provided, abstract planning."""
-    logger = get_logger()
-    logger.info("=" * 65)
-    logger.info("[FD] Fast Downward started")
-
-    task_result = _run_task(label, base_dir, domain_path, problem_path, task, logger)
-    logger.info("[FD] Fast Downward finished")
-
-    return task_result
+    return _run_task(label, base_dir, domain_path, problem_path, task)
 
 
-def _run_task(label, task_directory, domain_path, problem_path, task, logger):
+def _run_task(label, task_directory, domain_path, problem_path, task):
     # Create the directory for the task
     os.makedirs(task_directory, exist_ok=True)
 
@@ -39,7 +31,6 @@ def _run_task(label, task_directory, domain_path, problem_path, task, logger):
     }
 
     # Run Fast Downward for the task
-    logger.info(f"[FD] Running {label} planner")
     completed_process = subprocess.run(_get_command(paths, task), capture_output=True, text=True)
 
     if completed_process.returncode in _UNSOLVABLE:
@@ -49,19 +40,14 @@ def _run_task(label, task_directory, domain_path, problem_path, task, logger):
         diagnostics = "\n".join(
             output.strip() for output in (completed_process.stdout, completed_process.stderr) if output.strip()
         )
-        logger.error(f"[FD] {label.title()} planner FAILED")
-        logger.error(diagnostics)
         raise IntegrationError(
             f"Fast Downward ({label}) failed with exit code {completed_process.returncode}:\n{diagnostics}"
         )
-
-    logger.info(f"[FD] {label.title()} planner success")
 
     # Only calculate the horizon for planning tasks
     horizon = 0
     if task == "plan":
         horizon = calc_horizon(paths["plan"])
-        logger.info(f"[FD] {label.title()} horizon={horizon}")
 
     return {"horizon": horizon, "sasFile": paths["sas"], "planFile": paths["plan"]}
 

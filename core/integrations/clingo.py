@@ -2,7 +2,6 @@
 
 import clingo
 
-from core.execution import get_logger
 from core.planning.plan import PlanAction
 
 THREADS = 1
@@ -10,14 +9,7 @@ THREADS = 1
 
 def run_clingo(asp, horizon):
     """Solve an in-memory ASP program and return its shown atoms."""
-    logger = get_logger()
-    logger.info("[CLINGO] Starting solve")
-    logger.info(f"[CLINGO] Horizon={horizon}")
-    logger.info(f"[CLINGO] Threads={THREADS}")
-
-    plan = collect_plan(create_control(asp, horizon))
-    logger.info(f"[CLINGO] Plan found={plan is not None}")
-    return plan
+    return collect_plan(create_control(asp, horizon))
 
 
 def create_control(asp, horizon):

@@ -28,7 +28,7 @@ class PlannerOutputTests(unittest.TestCase):
         output = StringIO()
 
         with redirect_stdout(output):
-            planner.print_planning_result(result, Mock())
+            planner.print_planning_result(result)
 
         text = output.getvalue()
         self.assertIn("Metrics:\n  Durations (seconds):", text)
@@ -156,7 +156,6 @@ class PlannerExitStatusTests(unittest.TestCase):
             patch.object(planner, "_argument_parser", return_value=parser),
             patch.object(planner, "compute_concrete_plan", return_value={"success": False}),
             patch.object(planner, "print_planning_result"),
-            patch.object(planner, "get_logger"),
         ):
             status = planner.main()
 
@@ -180,7 +179,6 @@ class PlannerExitStatusTests(unittest.TestCase):
             patch.object(planner, "_argument_parser", return_value=parser),
             patch.object(planner, "compute_abstract_plan", return_value={"success": False}),
             patch.object(planner, "print_planning_result"),
-            patch.object(planner, "get_logger"),
         ):
             status = planner.main()
 
@@ -247,7 +245,6 @@ class PlannerExitStatusTests(unittest.TestCase):
                 },
             ) as compute,
             patch.object(planner, "print_planning_result"),
-            patch.object(planner, "get_logger"),
             redirect_stdout(output),
         ):
             status = planner.main()

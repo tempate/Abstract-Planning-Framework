@@ -2,7 +2,6 @@
 
 import argparse
 
-from core.execution import get_logger
 from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
@@ -39,7 +38,7 @@ def main():
             f"Collapsed {sorted(abstraction['objects_to_abstract'])} into {abstraction['abstract_symbol']} "
             f"(type={abstraction['object_type']})"
         )
-    print_planning_result(result, get_logger())
+    print_planning_result(result)
     return 0 if result["success"] else 1
 
 
@@ -66,15 +65,12 @@ def _compute(args):
     raise ValueError(f"Unknown planning mode: {args.mode}")
 
 
-def print_planning_result(result, logger):
-    """Print a result and log its high-level outcome."""
+def print_planning_result(result):
+    """Print a planning result."""
     print("\n=== RESULT ===")
     print(f"Horizon: {result['horizon']}")
     print(f"Plan found: {'yes' if result['plan'] is not None else 'no'}")
     _print_metrics(result["metrics"])
-
-    logger.info(f"Success: {result['success']}")
-    logger.info(f"Plan found: {result['plan'] is not None}")
 
     if result["plan"] is not None:
         print("\nPlan:")

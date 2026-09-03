@@ -1,8 +1,6 @@
 """Realize an abstract plan as a concrete plan."""
 
-import logging
 from dataclasses import dataclass, field
-from pprint import pformat
 
 from core.abstraction.factory import Abstraction
 from core.integrations.clingo import parse_plan_actions, run_clingo
@@ -21,7 +19,6 @@ class RefinementContext:
     abstraction: Abstraction
     relaxed_deletes: tuple
     run_id: str
-    logger: logging.Logger
     metrics: PlanningMetrics
     concrete_task: dict = field(default_factory=dict)
     abstract_task: dict = field(default_factory=dict)
@@ -57,14 +54,6 @@ def refine(context: RefinementContext):
     context.metrics.set_counter("final_horizon", context.horizon)
     context.metrics.set_counter("concrete_solve_calls", solver_operations + 1 + increments)
 
-    if success:
-        context.logger.info("SUCCESS: Concrete plan found.")
-        context.logger.info("Plan:")
-        context.logger.info(pformat(plan))
-    else:
-        context.logger.info("No concrete plan found.")
-        context.logger.info("FAILED")
-
     return _build_result(context, success=success, plan=plan)
 
 
@@ -75,38 +64,26 @@ def _get_abstract_plan(context):
 
     if context.config.plan_source == "fd":
         context.metrics.set_counter("abstract_solve_calls", 0)
-        context.logger.info("Using Fast Downward plan")
         return read_fast_downward_plan(context.abstract_task["planFile"])
 
     raise ValueError(f"Unknown abstract plan source: {context.config.plan_source}")
 
 
 def _solve_abstract_plan(context):
-    context.logger.info("Abstract plan search")
     with context.metrics.measure("abstract_solving"):
         abstract_atoms = run_clingo(context.abstract_asp, context.horizon)
 
     if abstract_atoms is None:
-        context.logger.info("No abstract plan possible.")
-        context.logger.info("FAILED")
         return None
-
-    context.logger.info("Abstract plan:")
-    for atom in abstract_atoms:
-        context.logger.info(f"  {atom}")
 
     return parse_plan_actions(abstract_atoms)
 
 
 def _extend_concrete_search(context):
     """Search above the abstract horizon without abstract-plan constraints."""
-    context.logger.info("No concrete plan found at the abstract horizon.")
-    context.logger.info("Continuing unconstrained concrete search at larger horizons.")
-
     initial_horizon = context.horizon
     while True:
         context.horizon += 1
-        context.logger.info(f"Trying extended concrete horizon={context.horizon}")
         plan = run_clingo(context.concrete_asp, context.horizon)
         if plan is not None:
             increments = context.horizon - initial_horizon

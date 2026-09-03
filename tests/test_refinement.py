@@ -1,4 +1,3 @@
-import logging
 import tempfile
 import unittest
 from pathlib import Path
@@ -36,7 +35,6 @@ class RefinementTests(unittest.TestCase):
             "abstract_task": {"planFile": "sas_plan"},
             "horizon": 3,
             "run_id": "run-123",
-            "logger": Mock(spec=logging.Logger),
             "metrics": PlanningMetrics(),
         }
         values.update(changes)

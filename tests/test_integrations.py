@@ -3,7 +3,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from core.integrations.clingo import collect_plan, create_control, parse_plan_actions
 from core.integrations.fast_downward import _get_command, _run_task, calc_horizon
@@ -75,7 +75,7 @@ class FastDownwardHelperTests(unittest.TestCase):
             domain = Path(directory, "source-domain.pddl")
             problem = Path(directory, "source-problem.pddl")
             with self.assertRaisesRegex(RuntimeError, "translator output"):
-                _run_task("concrete", directory, domain, problem, "translate", Mock())
+                _run_task("concrete", directory, domain, problem, "translate")
 
             command = run.call_args.args[0]
             self.assertIn(str(domain), command)
@@ -95,7 +95,6 @@ class FastDownwardHelperTests(unittest.TestCase):
                         Path(directory, "domain.pddl"),
                         Path(directory, "problem.pddl"),
                         "translate",
-                        Mock(),
                     )
 
 

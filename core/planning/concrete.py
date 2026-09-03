@@ -1,6 +1,6 @@
 """Orchestrate concrete planning from PDDL translation through ASP solving."""
 
-from core.execution import get_logger, temp_run_dir
+from core.execution import temp_run_dir
 from core.integrations.clingo import run_clingo
 from core.integrations.fast_downward import run_fast_downward
 from core.integrations.plasp import sas_to_asp
@@ -19,16 +19,6 @@ def compute_concrete_plan(config: PlanningConfig):
 
 
 def _compute_concrete_plan(config, base_dir, run_id, metrics):
-    logger = get_logger()
-
-    logger.info("=" * 70)
-    logger.info("NEW PLANNING RUN STARTED")
-    logger.info(f"Configuration: {config.as_dict()}")
-    logger.info(f"Requested horizon: {config.horizon if config.horizon is not None else 'auto'}")
-    logger.info(f"Encoding: {config.encoding}")
-    logger.info(f"Run ID: {run_id}")
-    logger.info(f"Base dir: {base_dir}")
-
     # Translate the concrete problem into SAS. With no requested horizon,
     # Fast Downward also finds a plan whose length supplies the horizon.
     fd_task = "plan" if config.horizon is None else "translate"
@@ -36,8 +26,6 @@ def _compute_concrete_plan(config, base_dir, run_id, metrics):
         task = run_fast_downward(base_dir, config.domain_path, config.problem_path, "concrete", fd_task)
 
     effective_horizon = task["horizon"] if config.horizon is None else config.horizon
-    logger.info(f"Effective horizon: {effective_horizon}")
-
     # Generate the ASP representation of the concrete problem.
     with metrics.measure("concrete_asp"):
         asp = sas_to_asp(task["sasFile"], config.encoding, config.time_step)
@@ -48,9 +36,6 @@ def _compute_concrete_plan(config, base_dir, run_id, metrics):
 
     metrics.set_counter("final_horizon", effective_horizon)
     metrics.set_counter("concrete_solve_calls", 1)
-
-    logger.info(f"Plan found: {plan is not None}")
-    logger.info("=" * 70)
 
     return {
         "configuration": config.as_dict(),
