@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -55,8 +56,10 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
     }
     _write_result(result_file, initial)
 
-    command = _planner_command(domain, problem, mode, result_file)
-    result = _run_pipeline(command, timeout)
+    environment = os.environ.copy()
+    environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
+    command = _planner_command(domain, problem, mode)
+    result = _run_pipeline(command, timeout, environment)
     progress = _read_progress(result_file)
     result.update(
         {
@@ -86,7 +89,7 @@ def _read_progress(result_file):
         return {}
 
 
-def _run_pipeline(command, timeout):
+def _run_pipeline(command, timeout, environment=None):
     started = time.perf_counter()
     try:
         completed = subprocess.run(
@@ -97,6 +100,7 @@ def _run_pipeline(command, timeout):
             text=True,
             check=False,
             timeout=timeout,
+            env=environment,
         )
         return_code = completed.returncode
         output = completed.stdout or ""
@@ -134,11 +138,8 @@ def _machine_status(return_code, timed_out, output):
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
-def _planner_command(domain, problem, mode, progress_file=None):
-    command = [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
-    if progress_file is not None:
-        command.extend(("--progress-file", str(progress_file)))
-    return command
+def _planner_command(domain, problem, mode):
+    return [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
 
 
 def _human_status(result):

@@ -10,7 +10,7 @@ from unittest.mock import patch
 from benchmarks.suite import NON_SYMMETRIC_DOMAINS, SUITE, SYMMETRIC_DOMAINS
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from scripts.collect_benchmarks import FIELDS, collect
-from scripts.planner import _write_progress
+from scripts.planner import _update_result_progress
 from scripts.run_benchmark import (
     DEFAULT_TIMEOUT,
     NO_SYMMETRIES_MESSAGE,
@@ -287,25 +287,22 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[1]["abstracted_object_count"], "")
         self.assertEqual(rows[1]["abstracted_object_type"], "")
         self.assertEqual(run.call_count, 2)
-        result_directory = Path(directory) / "example" / "p01"
         self.assertEqual(
-            run.call_args_list[0].args[0],
-            _planner_command(Path("domain.pddl"), Path("p01.pddl"), "abstract", result_directory / "abstract.json"),
+            run.call_args_list[0].args[0], _planner_command(Path("domain.pddl"), Path("p01.pddl"), "abstract")
         )
         self.assertEqual(
-            run.call_args_list[1].args[0],
-            _planner_command(Path("domain.pddl"), Path("p01.pddl"), "concrete", result_directory / "concrete.json"),
+            run.call_args_list[1].args[0], _planner_command(Path("domain.pddl"), Path("p01.pddl"), "concrete")
         )
 
     def test_worker_preserves_phase_progress_in_the_result(self):
         metrics = {"durations": {"concrete_fd": 2.5}, "counters": {}}
 
         def complete(command, **_kwargs):
-            progress_file = Path(command[-1])
-            running = json.loads(progress_file.read_text(encoding="utf-8"))
+            result_file = Path(_kwargs["env"]["APF_BENCHMARK_RESULT_FILE"])
+            running = json.loads(result_file.read_text(encoding="utf-8"))
             self.assertEqual(running["status"], "running")
             self.assertIsNone(running["progress"]["last_completed_phase"])
-            _write_progress(progress_file, "concrete_fd", metrics)
+            _update_result_progress(result_file, "concrete_fd", metrics)
             return subprocess.CompletedProcess(command, 2, stdout="planner failed before final metrics\n")
 
         with (
