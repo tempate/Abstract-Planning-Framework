@@ -11,6 +11,8 @@ def print_planning_result(result, logger):
         print(f"Refinement iterations: {timings['iterations']}")
     if timings.get("decrements") is not None:
         print(f"Decrements: {timings['decrements']}")
+    if timings.get("increments") is not None:
+        print(f"Increments: {timings['increments']}")
     print(f"Total time: {result['timings']['total_time']:.3f}s")
 
     logger.info(f"Success: {result['success']}")

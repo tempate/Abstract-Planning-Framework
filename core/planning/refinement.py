@@ -53,12 +53,17 @@ def refine(context: RefinementContext):
         asp = "\n".join((context.concrete_asp, mapping))
         success, plan, solver_operations = solve_decrementally(asp, context.horizon)
 
+        increments = 0
+        if not success:
+            plan, increments = _extend_concrete_search(context)
+            success = True
+
     if success:
         context.logger.info("SUCCESS: Concrete plan found.")
         context.logger.info("Plan:")
         context.logger.info(pformat(plan))
     else:
-        context.logger.info("No concrete plan found at the selected horizon.")
+        context.logger.info("No concrete plan found.")
         context.logger.info("FAILED")
 
     return _build_result(
@@ -66,6 +71,7 @@ def refine(context: RefinementContext):
         success=success,
         plan=plan,
         solver_operations=solver_operations,
+        increments=increments,
         abstract_solve_time=abstract_solve_time,
         concrete_solve_time=concrete_timing.elapsed,
     )
@@ -103,6 +109,21 @@ def _solve_abstract_plan(context):
     return abstract_plan, timing.elapsed
 
 
+def _extend_concrete_search(context):
+    """Search above the abstract horizon without abstract-plan constraints."""
+    context.logger.info("No concrete plan found at the abstract horizon.")
+    context.logger.info("Continuing unconstrained concrete search at larger horizons.")
+
+    initial_horizon = context.horizon
+    while True:
+        context.horizon += 1
+        context.logger.info(f"Trying extended concrete horizon={context.horizon}")
+        plan = run_clingo(context.concrete_asp, context.horizon)
+        if plan is not None:
+            increments = context.horizon - initial_horizon
+            return plan, increments
+
+
 def read_fast_downward_plan(plan_file_path):
     """Read a Fast Downward plan into chronological plan actions."""
     abstract_plan = []
@@ -119,7 +140,7 @@ def read_fast_downward_plan(plan_file_path):
     return tuple(abstract_plan)
 
 
-def _build_result(context, *, success, plan, solver_operations, abstract_solve_time, concrete_solve_time):
+def _build_result(context, *, success, plan, solver_operations, abstract_solve_time, concrete_solve_time, increments=0):
     total_time = context.total_timing.elapsed
     context.logger.info(f"TOTAL TIME: {total_time:.3f}s")
     return {
@@ -136,6 +157,7 @@ def _build_result(context, *, success, plan, solver_operations, abstract_solve_t
         "timings": {
             "iterations": 1,
             "decrements": solver_operations,
+            "increments": increments,
             "fd_concrete_time": context.fd_timings["fd_concrete_time"],
             "fd_abstract_time": context.fd_timings["fd_abstract_time"],
             "fd_total_time": context.fd_timings["fd_total_time"],
