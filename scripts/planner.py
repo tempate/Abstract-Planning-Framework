@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+from functools import partial
 from pathlib import Path
 
 from core.integrations.unified_planning import PddlError
@@ -46,7 +47,8 @@ def main():
 
 
 def _compute(args):
-    on_update = _progress_callback(os.environ.get("APF_BENCHMARK_RESULT_FILE"))
+    result_file = os.environ.get("APF_BENCHMARK_RESULT_FILE")
+    on_update = partial(_update_result_progress, result_file) if result_file else None
     common = {
         "domain_path": args.domain,
         "problem_path": args.problem,
@@ -68,16 +70,6 @@ def _compute(args):
             on_update,
         )
     raise ValueError(f"Unknown planning mode: {args.mode}")
-
-
-def _progress_callback(result_file):
-    if result_file is None:
-        return None
-
-    def report(event, metrics):
-        _update_result_progress(result_file, event, metrics)
-
-    return report
 
 
 def _update_result_progress(result_file, event, metrics):

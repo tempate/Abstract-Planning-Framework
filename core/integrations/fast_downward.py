@@ -14,20 +14,15 @@ _UNSOLVABLE = {10, 11}
 
 
 def run_fast_downward(base_dir, domain_path, problem_path, label, task):
-    """Run concrete planning and, when provided, abstract planning."""
-    return _run_task(label, base_dir, domain_path, problem_path, task)
-
-
-def _run_task(label, task_directory, domain_path, problem_path, task):
-    # Create the directory for the task
-    os.makedirs(task_directory, exist_ok=True)
+    """Run one Fast Downward translation or planning task."""
+    os.makedirs(base_dir, exist_ok=True)
 
     # Define the paths for the input and output files
     paths = {
         "domain": os.fspath(domain_path),
         "problem": os.fspath(problem_path),
-        "sas": os.path.join(task_directory, "output.sas"),
-        "plan": os.path.join(task_directory, "sas_plan"),
+        "sas": os.path.join(base_dir, "output.sas"),
+        "plan": os.path.join(base_dir, "sas_plan"),
     }
 
     # Run Fast Downward for the task
