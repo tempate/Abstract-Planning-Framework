@@ -7,19 +7,21 @@ import json
 import re
 from pathlib import Path
 
+from core.metrics import COUNTER_NAMES, DURATION_NAMES
 from scripts.run_benchmark import MANIFEST_NAME, RESULTS_DIR, _human_status
 
 CSV_FILE = RESULTS_DIR / "results.csv"
+DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_NAMES)
 FIELDS = (
     "domain",
     "problem",
     "mode",
     "status",
     "wall_time_seconds",
+    *DURATION_FIELDS,
     "horizon",
     "plan_length",
-    "decrements",
-    "increments",
+    *COUNTER_NAMES,
     "abstracted_object_count",
     "abstracted_object_type",
     "error_message",
@@ -79,16 +81,33 @@ def _missing_values():
 
 def _values(result):
     output = result["output"]
+    metrics = _metrics(output)
+    durations = metrics.get("durations", {})
+    counters = metrics.get("counters", {})
     return {
         "status": _human_status(result),
         "wall_time_seconds": result["wall_time_seconds"],
+        **{f"{name}_seconds": durations.get(name, "") for name in DURATION_NAMES},
         "horizon": value(output, "Horizon", int),
         "plan_length": _plan_length(output),
-        "decrements": value(output, "Decrements", int),
-        "increments": value(output, "Increments", int),
+        **{
+            name: counters.get(name, value(output, name.title(), int) if name in ("decrements", "increments") else "")
+            for name in COUNTER_NAMES
+        },
         **_abstraction_values(output),
         "error_message": _error_message(result),
     }
+
+
+def _metrics(output):
+    match = re.search(r"^Metrics: (\{.*\})$", output, re.MULTILINE)
+    if match is None:
+        return {}
+    try:
+        metrics = json.loads(match.group(1))
+    except json.JSONDecodeError:
+        return {}
+    return metrics if isinstance(metrics, dict) else {}
 
 
 def _plan_length(output):

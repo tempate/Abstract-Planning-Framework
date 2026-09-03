@@ -7,6 +7,7 @@ from unittest.mock import Mock, call, patch
 
 from core.abstraction.factory import Abstraction, AbstractionError, build_abstract_problem
 from core.integrations.unified_planning import read_problem
+from core.metrics import PlanningMetrics
 from core.planning.abstract import _write_abstract_problem, compute_abstract_plan
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.concrete import compute_concrete_plan
@@ -45,7 +46,11 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(result["plan"], ["occurs(action,3)"])
         self.assertEqual(result["run_id"], "run-123")
         self.assertEqual(result["configuration"], config.as_dict())
-        self.assertIsNone(result["iterations"])
+        self.assertEqual(result["metrics"]["counters"]["final_horizon"], 3)
+        self.assertEqual(result["metrics"]["counters"]["concrete_solve_calls"], 1)
+        self.assertEqual(
+            set(result["metrics"]["durations"]), {"total", "concrete_fd", "concrete_asp", "guided_concrete_solving"}
+        )
         run_fast_downward.assert_called_once_with(directory, domain, problem, "concrete", "translate")
         sas_to_asp.assert_called_once_with(str(Path(directory, "output.sas")), "bounded", True)
         run_clingo.assert_called_once_with("asp program", 3)
@@ -77,12 +82,18 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             result = compute_abstract_plan(config)
 
-        build.assert_called_once_with(config)
+        build.assert_called_once()
+        self.assertEqual(build.call_args.args[0], config)
+        self.assertIsInstance(build.call_args.args[1], PlanningMetrics)
         write.assert_called_once_with(abstract_problem, "run-dir")
         context = refine.call_args.args[0]
         self.assertIs(context.abstraction, abstraction)
         self.assertIs(context.relaxed_deletes, generated.relaxed_deletes)
-        self.assertEqual(result, {"success": True})
+        self.assertTrue(result["success"])
+        self.assertEqual(
+            set(result["metrics"]["durations"]),
+            {"total", "abstract_pddl_writing", "concrete_fd", "abstract_fd", "concrete_asp", "abstract_asp"},
+        )
 
     def test_exits_abstract_pipeline_when_no_symmetry_class_exists(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", horizon=4, encoding="exact", time_step=True)
@@ -141,7 +152,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             result = compute_abstract_plan(config)
 
-        self.assertEqual(result, {"success": True})
+        self.assertTrue(result["success"])
         self.assertEqual(
             run.call_args_list,
             [
@@ -181,7 +192,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             result = compute_abstract_plan(config)
 
-        self.assertEqual(result, {"success": True})
+        self.assertTrue(result["success"])
         self.assertEqual(run.call_args_list[1].args[-1], "plan")
         sas_to_asp.assert_called_once_with("concrete.sas", "bounded", False)
         context = refine.call_args.args[0]
@@ -274,7 +285,9 @@ class GeneratedAbstractionTests(unittest.TestCase):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             compute_abstract_plan(config)
 
-        build_abstract_problem.assert_called_once_with(config)
+        build_abstract_problem.assert_called_once()
+        self.assertEqual(build_abstract_problem.call_args.args[0], config)
+        self.assertIsInstance(build_abstract_problem.call_args.args[1], PlanningMetrics)
         self.assertEqual(build_abstract_problem.return_value.abstraction.objects, ("a", "b"))
         self.assertIsNone(config.objects_to_abstract)
         self.assertIsNone(config.abstract_name)

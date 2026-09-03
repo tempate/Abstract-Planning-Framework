@@ -6,6 +6,7 @@ from pprint import pformat
 
 from core.abstraction.factory import Abstraction
 from core.integrations.clingo import parse_plan_actions, run_clingo
+from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.planning.mapping import build_mapping
 from core.planning.plan import PlanAction
@@ -21,6 +22,7 @@ class RefinementContext:
     relaxed_deletes: tuple
     run_id: str
     logger: logging.Logger
+    metrics: PlanningMetrics
     concrete_task: dict = field(default_factory=dict)
     abstract_task: dict = field(default_factory=dict)
     concrete_asp: str = ""
@@ -32,17 +34,28 @@ def refine(context: RefinementContext):
     """Obtain an abstract plan and use it to guide concrete search."""
     abstract_plan = _get_abstract_plan(context)
     if abstract_plan is None:
-        return _build_result(context, success=False, plan=None, solver_operations=0)
+        context.metrics.set_counter("decrements", 0)
+        context.metrics.set_counter("increments", 0)
+        context.metrics.set_counter("final_horizon", context.horizon)
+        context.metrics.set_counter("concrete_solve_calls", 0)
+        return _build_result(context, success=False, plan=None)
 
     mapping = build_mapping(abstract_plan, context.abstraction)
 
     asp = "\n".join((context.concrete_asp, mapping))
-    success, plan, solver_operations = solve_decrementally(asp, context.horizon)
+    with context.metrics.measure("guided_concrete_solving"):
+        success, plan, solver_operations = solve_decrementally(asp, context.horizon)
 
     increments = 0
     if not success:
-        plan, increments = _extend_concrete_search(context)
+        with context.metrics.measure("extended_concrete_solving"):
+            plan, increments = _extend_concrete_search(context)
         success = True
+
+    context.metrics.set_counter("decrements", solver_operations)
+    context.metrics.set_counter("increments", increments)
+    context.metrics.set_counter("final_horizon", context.horizon)
+    context.metrics.set_counter("concrete_solve_calls", solver_operations + 1 + increments)
 
     if success:
         context.logger.info("SUCCESS: Concrete plan found.")
@@ -52,16 +65,16 @@ def refine(context: RefinementContext):
         context.logger.info("No concrete plan found.")
         context.logger.info("FAILED")
 
-    return _build_result(
-        context, success=success, plan=plan, solver_operations=solver_operations, increments=increments
-    )
+    return _build_result(context, success=success, plan=plan)
 
 
 def _get_abstract_plan(context):
     if context.config.plan_source == "clingo":
+        context.metrics.set_counter("abstract_solve_calls", 1)
         return _solve_abstract_plan(context)
 
     if context.config.plan_source == "fd":
+        context.metrics.set_counter("abstract_solve_calls", 0)
         context.logger.info("Using Fast Downward plan")
         return read_fast_downward_plan(context.abstract_task["planFile"])
 
@@ -70,7 +83,8 @@ def _get_abstract_plan(context):
 
 def _solve_abstract_plan(context):
     context.logger.info("Abstract plan search")
-    abstract_atoms = run_clingo(context.abstract_asp, context.horizon)
+    with context.metrics.measure("abstract_solving"):
+        abstract_atoms = run_clingo(context.abstract_asp, context.horizon)
 
     if abstract_atoms is None:
         context.logger.info("No abstract plan possible.")
@@ -115,7 +129,7 @@ def read_fast_downward_plan(plan_file_path):
     return tuple(abstract_plan)
 
 
-def _build_result(context, *, success, plan, solver_operations, increments=0):
+def _build_result(context, *, success, plan):
     return {
         "abstraction": {
             "abstract_symbol": context.abstraction.name,
@@ -128,7 +142,4 @@ def _build_result(context, *, success, plan, solver_operations, increments=0):
         "plan": plan if success else None,
         "success": success,
         "run_id": context.run_id,
-        "iterations": 1,
-        "decrements": solver_operations,
-        "increments": increments,
     }

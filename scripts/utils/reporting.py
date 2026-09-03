@@ -1,17 +1,21 @@
 """Console reporting shared by planner entry points."""
 
+import json
+
 
 def print_planning_result(result, logger):
     """Print a result and log its high-level outcome."""
     print("\n=== RESULT ===")
     print(f"Horizon: {result['horizon']}")
     print(f"Plan found: {'yes' if result['plan'] is not None else 'no'}")
-    if result.get("iterations") is not None:
-        print(f"Refinement iterations: {result['iterations']}")
-    if result.get("decrements") is not None:
-        print(f"Decrements: {result['decrements']}")
-    if result.get("increments") is not None:
-        print(f"Increments: {result['increments']}")
+    metrics = result["metrics"]
+    counters = metrics["counters"]
+    if "decrements" in counters:
+        print(f"Decrements: {counters['decrements']}")
+    if "increments" in counters:
+        print(f"Increments: {counters['increments']}")
+    print(f"Total time: {metrics['durations']['total']:.3f}s")
+    print(f"Metrics: {json.dumps(metrics, sort_keys=True)}")
 
     logger.info(f"Success: {result['success']}")
     logger.info(f"Plan found: {result['plan'] is not None}")
