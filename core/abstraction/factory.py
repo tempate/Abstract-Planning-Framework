@@ -8,6 +8,7 @@ from core.abstraction.collapse import AbstractionError, collapse_objects
 from core.abstraction.relaxation import find_relaxable_deletes
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import read_problem
+from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.planning.outcomes import NoSymmetriesError
 
@@ -28,22 +29,27 @@ class AbstractionResult:
     relaxed_deletes: tuple
 
 
-def build_abstract_problem(config: AbstractPlanningConfig):
+def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
     """Read one concrete task, select an object class, and abstract it."""
-    problem = read_problem(config.domain_path, config.problem_path)
+    metrics = metrics or PlanningMetrics()
+    with metrics.measure("problem_reading"):
+        problem = read_problem(config.domain_path, config.problem_path)
 
     if config.objects_to_abstract is None:
-        symmetry_classes = find_symmetric_object_sets(
-            config.domain_path, config.problem_path, config.symmetry_time_limit
-        )
+        with metrics.measure("symmetry_discovery"):
+            symmetry_classes = find_symmetric_object_sets(
+                config.domain_path, config.problem_path, config.symmetry_time_limit
+            )
         if not symmetry_classes:
             raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")
-        abstraction, relaxable_deletes = _select_abstraction(problem, symmetry_classes, config.abstract_name)
-    else:
-        abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
-        relaxable_deletes = find_relaxable_deletes(problem, abstraction)
 
-    collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
+    with metrics.measure("abstraction"):
+        if config.objects_to_abstract is None:
+            abstraction, relaxable_deletes = _select_abstraction(problem, symmetry_classes, config.abstract_name)
+        else:
+            abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
+            relaxable_deletes = find_relaxable_deletes(problem, abstraction)
+        collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
     return AbstractionResult(abstraction=abstraction, problem=collapsed_problem, relaxed_deletes=relaxed_deletes)
 
 

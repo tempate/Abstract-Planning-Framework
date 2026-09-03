@@ -2,7 +2,7 @@
 
 import clingo
 
-from core.execution import get_logger, timed_phase
+from core.execution import get_logger
 from core.planning.plan import PlanAction
 
 THREADS = 1
@@ -15,8 +15,7 @@ def run_clingo(asp, horizon):
     logger.info(f"[CLINGO] Horizon={horizon}")
     logger.info(f"[CLINGO] Threads={THREADS}")
 
-    with timed_phase(logger, "[CLINGO] Solve runtime"):
-        plan = collect_plan(create_control(asp, horizon))
+    plan = collect_plan(create_control(asp, horizon))
     logger.info(f"[CLINGO] Plan found={plan is not None}")
     return plan
 

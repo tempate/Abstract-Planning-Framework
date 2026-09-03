@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from benchmarks.suite import NON_SYMMETRIC_DOMAINS, SUITE, SYMMETRIC_DOMAINS
+from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from scripts.collect_benchmarks import FIELDS, collect
 from scripts.run_benchmark import (
     DEFAULT_TIMEOUT,
@@ -200,11 +201,29 @@ class BenchmarkTests(unittest.TestCase):
     def test_separate_mode_runs_are_collected_as_separate_rows(self):
         abstract_output = (
             "Collapsed ['package1', 'package2'] into package_abs (type=package)\n"
-            "Horizon: 4\nPlan found: yes\nDecrements: 2\nIncrements: 1\nTotal time: 1.250s\n"
+            "Horizon: 4\nPlan found: yes\n"
+            "Metrics:\n"
+            "  Durations (seconds):\n"
+            "    Total                  1.250000\n"
+            "    Abstract plan solving  0.500000\n"
+            "  Solver activity:\n"
+            "    Refinement decrements  2\n"
+            "    Horizon increments     1\n"
+            "    Abstract horizon       3\n"
+            "    Final horizon          4\n"
+            "    Abstract solver calls  1\n"
+            "    Concrete solver calls  4\n"
             "Plan:\n  occurs(action(abstract),1)\n  occurs(action(refine),2)\n"
         )
         concrete_output = (
-            "Horizon: 6\nPlan found: yes\nTotal time: 2.500s\n"
+            "Horizon: 6\nPlan found: yes\n"
+            "Metrics:\n"
+            "  Durations (seconds):\n"
+            "    Total                   2.500000\n"
+            "    Concrete Fast Downward  1.000000\n"
+            "  Solver activity:\n"
+            "    Final horizon          6\n"
+            "    Concrete solver calls  1\n"
             "Plan:\n  occurs(action(first),1)\n  occurs(action(second),1)\n  occurs(action(third),2)\n"
         )
         completed = [
@@ -236,11 +255,10 @@ class BenchmarkTests(unittest.TestCase):
                 "mode",
                 "status",
                 "wall_time_seconds",
-                "planner_time_seconds",
+                *(f"{name}_seconds" for name in DURATION_LABELS),
                 "horizon",
                 "plan_length",
-                "decrements",
-                "increments",
+                *COUNTER_LABELS,
                 "abstracted_object_count",
                 "abstracted_object_type",
                 "error_message",
@@ -252,16 +270,20 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[0]["plan_length"], 2)
         self.assertEqual(rows[0]["decrements"], 2)
         self.assertEqual(rows[0]["increments"], 1)
+        self.assertEqual(rows[0]["total_seconds"], 1.25)
+        self.assertEqual(rows[0]["abstract_solving_seconds"], 0.5)
+        self.assertEqual(rows[0]["abstract_horizon"], 3)
+        self.assertEqual(rows[0]["concrete_solve_calls"], 4)
         self.assertEqual(rows[0]["abstracted_object_count"], 2)
         self.assertEqual(rows[0]["abstracted_object_type"], "package")
-        self.assertEqual(rows[0]["planner_time_seconds"], 1.25)
         self.assertEqual(rows[1]["mode"], "concrete")
         self.assertEqual(rows[1]["status"], "success")
         self.assertEqual(rows[1]["horizon"], 6)
         self.assertEqual(rows[1]["plan_length"], 3)
+        self.assertEqual(rows[1]["total_seconds"], 2.5)
+        self.assertEqual(rows[1]["concrete_fd_seconds"], 1.0)
         self.assertEqual(rows[1]["abstracted_object_count"], "")
         self.assertEqual(rows[1]["abstracted_object_type"], "")
-        self.assertEqual(rows[1]["planner_time_seconds"], 2.5)
         self.assertEqual(run.call_count, 2)
         self.assertEqual(
             run.call_args_list[0].args[0], _planner_command(Path("domain.pddl"), Path("p01.pddl"), "abstract")

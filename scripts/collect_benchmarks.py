@@ -7,20 +7,21 @@ import json
 import re
 from pathlib import Path
 
+from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from scripts.run_benchmark import MANIFEST_NAME, RESULTS_DIR, _human_status
 
 CSV_FILE = RESULTS_DIR / "results.csv"
+DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
 FIELDS = (
     "domain",
     "problem",
     "mode",
     "status",
     "wall_time_seconds",
-    "planner_time_seconds",
+    *DURATION_FIELDS,
     "horizon",
     "plan_length",
-    "decrements",
-    "increments",
+    *COUNTER_LABELS,
     "abstracted_object_count",
     "abstracted_object_type",
     "error_message",
@@ -80,17 +81,49 @@ def _missing_values():
 
 def _values(result):
     output = result["output"]
+    metrics = _metrics(output)
+    durations = metrics.get("durations", {})
+    counters = metrics.get("counters", {})
     return {
         "status": _human_status(result),
         "wall_time_seconds": result["wall_time_seconds"],
-        "planner_time_seconds": value(output, "Total time", lambda item: float(item.removesuffix("s"))),
+        **{f"{name}_seconds": durations.get(name, "") for name in DURATION_LABELS},
         "horizon": value(output, "Horizon", int),
         "plan_length": _plan_length(output),
-        "decrements": value(output, "Decrements", int),
-        "increments": value(output, "Increments", int),
+        **{
+            name: counters.get(name, value(output, name.title(), int) if name in ("decrements", "increments") else "")
+            for name in COUNTER_LABELS
+        },
         **_abstraction_values(output),
         "error_message": _error_message(result),
     }
+
+
+def _metrics(output):
+    # Read the compact JSON emitted by the first structured-metrics version.
+    match = re.search(r"^Metrics: (\{.*\})$", output, re.MULTILINE)
+    if match is not None:
+        try:
+            metrics = json.loads(match.group(1))
+        except json.JSONDecodeError:
+            pass
+        else:
+            if isinstance(metrics, dict):
+                return metrics
+
+    return {
+        "durations": _metric_group(output, DURATION_LABELS, float),
+        "counters": _metric_group(output, COUNTER_LABELS, int),
+    }
+
+
+def _metric_group(output, labels, conversion):
+    values = {}
+    for name, label in labels.items():
+        match = re.search(rf"^    {re.escape(label)}  +(.+)$", output, re.MULTILINE)
+        if match is not None:
+            values[name] = conversion(match.group(1))
+    return values
 
 
 def _plan_length(output):

@@ -2,10 +2,10 @@ import logging
 import tempfile
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
 
 from core.abstraction.factory import Abstraction
+from core.metrics import PlanningMetrics
 from core.planning.abstract import _select_abstract_horizon
 from core.planning.config import AbstractPlanningConfig
 from core.planning.plan import PlanAction
@@ -35,13 +35,9 @@ class RefinementTests(unittest.TestCase):
             "abstract_asp": "abstract asp",
             "abstract_task": {"planFile": "sas_plan"},
             "horizon": 3,
-            "fd_timings": {"fd_concrete_time": 1.0, "fd_abstract_time": 2.0, "fd_total_time": 3.0},
-            "concrete_asp_time": 4.0,
-            "abstract_asp_time": 5.0,
-            "asp_total_time": 9.0,
-            "total_timing": SimpleNamespace(elapsed=12.0),
             "run_id": "run-123",
             "logger": Mock(spec=logging.Logger),
+            "metrics": PlanningMetrics(),
         }
         values.update(changes)
         return RefinementContext(**values)
@@ -55,8 +51,8 @@ class RefinementTests(unittest.TestCase):
 
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
-        self.assertEqual(result["timings"]["decrements"], 0)
-        self.assertEqual(result["timings"]["increments"], 0)
+        self.assertEqual(context.metrics.counters["decrements"], 0)
+        self.assertEqual(context.metrics.counters["increments"], 0)
         self.assertEqual(
             result["abstraction"],
             {
@@ -82,8 +78,8 @@ class RefinementTests(unittest.TestCase):
 
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ["occurs(concrete,1)"])
-        self.assertEqual(result["timings"]["decrements"], 2)
-        self.assertEqual(result["timings"]["increments"], 0)
+        self.assertEqual(context.metrics.counters["decrements"], 2)
+        self.assertEqual(context.metrics.counters["increments"], 0)
         run_clingo.assert_called_once_with("abstract asp", 3)
         parse_plan_actions.assert_called_once_with(["occurs(abstract,1)"])
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
@@ -109,8 +105,8 @@ class RefinementTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ["occurs(extended,5)"])
         self.assertEqual(result["horizon"], 5)
-        self.assertEqual(result["timings"]["decrements"], 3)
-        self.assertEqual(result["timings"]["increments"], 2)
+        self.assertEqual(context.metrics.counters["decrements"], 3)
+        self.assertEqual(context.metrics.counters["increments"], 2)
         solve_decrementally.assert_called_once_with("concrete asp\nmapping asp", 3)
         extend_search.assert_called_once_with(context)
 
@@ -130,8 +126,8 @@ class RefinementTests(unittest.TestCase):
 
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ["occurs(extended,4)"])
-        self.assertEqual(result["timings"]["decrements"], 1)
-        self.assertEqual(result["timings"]["increments"], 1)
+        self.assertEqual(context.metrics.counters["decrements"], 1)
+        self.assertEqual(context.metrics.counters["increments"], 1)
         read_plan.assert_called_once_with("abstract.plan")
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
         solve_decrementally.assert_called_once_with("concrete asp\nfd mapping", 3)

@@ -5,6 +5,7 @@ import argparse
 from core.execution import get_logger
 from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
+from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.planning.abstract import compute_abstract_plan
 from core.planning.concrete import compute_concrete_plan
 from core.planning.config import (
@@ -18,7 +19,6 @@ from core.planning.config import (
 from core.planning.outcomes import PlanningOutcomeError
 
 from .utils.arguments import nonnegative_int, positive_int
-from .utils.reporting import print_planning_result
 
 
 def main():
@@ -64,6 +64,44 @@ def _compute(args):
             )
         )
     raise ValueError(f"Unknown planning mode: {args.mode}")
+
+
+def print_planning_result(result, logger):
+    """Print a result and log its high-level outcome."""
+    print("\n=== RESULT ===")
+    print(f"Horizon: {result['horizon']}")
+    print(f"Plan found: {'yes' if result['plan'] is not None else 'no'}")
+    _print_metrics(result["metrics"])
+
+    logger.info(f"Success: {result['success']}")
+    logger.info(f"Plan found: {result['plan'] is not None}")
+
+    if result["plan"] is not None:
+        print("\nPlan:")
+        plan_actions = [atom for atom in result["plan"] if atom.startswith("occurs(")]
+        for atom in sorted(plan_actions, key=_time_step):
+            print(" ", atom)
+
+
+def _time_step(atom):
+    return int(str(atom).split(",")[-1].rstrip(")"))
+
+
+def _print_metrics(metrics):
+    print("\nMetrics:")
+    _print_metric_group("Durations (seconds)", metrics["durations"], DURATION_LABELS, lambda value: f"{value:.6f}")
+    _print_metric_group("Solver activity", metrics["counters"], COUNTER_LABELS, lambda value: str(int(value)))
+
+
+def _print_metric_group(title, values, labels, format_value):
+    present = [(labels[name], format_value(values[name])) for name in labels if name in values]
+    if not present:
+        return
+
+    width = max(len(label) for label, _ in present)
+    print(f"  {title}:")
+    for label, value in present:
+        print(f"    {label:<{width}}  {value}")
 
 
 def _argument_parser():

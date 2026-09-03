@@ -37,7 +37,7 @@ class ExampleWorkflowTests(unittest.TestCase):
 
         self._assert_success(result)
         self.assertIn("Collapsed ['ball1', 'ball2', 'ball3', 'ball4'] into object_abs", result.stdout)
-        self.assertIn("Decrements:", result.stdout)
+        self.assertRegex(result.stdout, r"(?m)^    Refinement decrements +\d+$")
 
 
 if __name__ == "__main__":

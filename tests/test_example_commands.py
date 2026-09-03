@@ -14,6 +14,32 @@ from core.planning.outcomes import UnsolvableTaskError
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
+class PlannerOutputTests(unittest.TestCase):
+    def test_metrics_are_grouped_and_human_readable(self):
+        result = {
+            "horizon": 5,
+            "plan": ["occurs(move,5)"],
+            "success": True,
+            "metrics": {
+                "durations": {"total": 1.25, "abstract_solving": 0.5},
+                "counters": {"decrements": 2, "final_horizon": 5, "concrete_solve_calls": 3},
+            },
+        }
+        output = StringIO()
+
+        with redirect_stdout(output):
+            planner.print_planning_result(result, Mock())
+
+        text = output.getvalue()
+        self.assertIn("Metrics:\n  Durations (seconds):", text)
+        self.assertRegex(text, r"(?m)^    Total +1\.250000$")
+        self.assertRegex(text, r"(?m)^    Abstract plan solving +0\.500000$")
+        self.assertIn("  Solver activity:", text)
+        self.assertRegex(text, r"(?m)^    Refinement decrements +2$")
+        self.assertRegex(text, r"(?m)^    Concrete solver calls +3$")
+        self.assertNotIn('{"durations"', text)
+
+
 class ShellExampleTests(unittest.TestCase):
     def _run(self, example, argument=None, python_bin=None):
         environment = os.environ.copy()
