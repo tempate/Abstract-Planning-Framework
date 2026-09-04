@@ -1,6 +1,6 @@
 """Realize an abstract plan as a concrete plan."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from core.abstraction.factory import Abstraction
 from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solve
@@ -19,10 +19,8 @@ class RefinementContext:
     relaxed_deletes: tuple
     run_id: str
     metrics: PlanningMetrics
-    concrete_task: str = ""
-    abstract_task: str = ""
-    concrete_asp: str = ""
-    abstract_asp: str = ""
+    concrete_asp: str
+    abstract_asp: str
     horizon: int = 0
 
 
