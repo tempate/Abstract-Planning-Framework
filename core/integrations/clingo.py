@@ -18,6 +18,59 @@ class ClingoSolveResult:
     attempts: int
 
 
+class IncrementalSolver:
+    """One Clingo control whose horizon can be raised without regrounding."""
+
+    def __init__(self, asp, horizon=0):
+        if horizon < 0:
+            raise ValueError("Horizon must be nonnegative")
+
+        arguments = ["-t", str(THREADS), "--warn=none"]
+        self.control = clingo.Control(arguments)
+        self.control.configuration.solve.models = 1
+        self.control.add("base", [], asp)
+        self.control.ground([("base", [])])
+
+        for time_step in range(1, horizon + 1):
+            self.control.ground([("step", [clingo.Number(time_step)])])
+
+        self.horizon = horizon
+        self._check_goal()
+
+    def extend(self):
+        """Raise the horizon by one, keeping everything grounded so far."""
+        self.control.release_external(_query(self.horizon))
+        self.horizon += 1
+        self.control.ground([("step", [clingo.Number(self.horizon)])])
+        self._check_goal()
+
+    def solve(self, assumptions=None):
+        """Return the shown atoms from the first plan at the current horizon."""
+        with self.control.solve(yield_=True, assumptions=assumptions or []) as handle:
+            for plan in handle:
+                return [str(atom) for atom in plan.symbols(shown=True)]
+        return None
+
+    def search(self, assumptions=None, on_attempt=None):
+        """Raise the horizon until the program becomes satisfiable."""
+        attempts = 0
+        while True:
+            attempts += 1
+            if on_attempt is not None:
+                on_attempt(self.horizon, attempts)
+
+            plan = self.solve(assumptions)
+            if plan is not None:
+                return ClingoSolveResult(plan, self.horizon, attempts)
+
+            self.extend()
+
+    def _check_goal(self):
+        """Ground the goal test for the current horizon and activate it."""
+        self.control.ground([("check", [clingo.Number(self.horizon)])])
+        self.control.assign_external(_query(self.horizon), True)
+
+
 def solve(asp, start_horizon=0, on_attempt=None):
     """Incrementally solve an ASP program until a plan is found.
 
@@ -25,70 +78,11 @@ def solve(asp, start_horizon=0, on_attempt=None):
     ``on_attempt`` receives the horizon being tried and the number of solver
     calls made so far, so callers can report progress while the search runs.
     """
-    if start_horizon < 0:
-        raise ValueError("Horizon must be nonnegative")
-
-    control = _create_base_control(asp)
-    for time_step in range(1, start_horizon + 1):
-        control.ground([("step", [clingo.Number(time_step)])])
-
-    previous_query = None
-    horizon = start_horizon
-    attempts = 0
-
-    while True:
-        if previous_query is not None:
-            control.release_external(previous_query)
-            control.ground([("step", [clingo.Number(horizon)])])
-
-        control.ground([("check", [clingo.Number(horizon)])])
-        query = _query(horizon)
-        control.assign_external(query, True)
-        attempts += 1
-        if on_attempt is not None:
-            on_attempt(horizon, attempts)
-
-        plan = collect_plan(control)
-        if plan is not None:
-            return ClingoSolveResult(plan, horizon, attempts)
-
-        previous_query = query
-        horizon += 1
-
-
-def create_control(asp, horizon):
-    """Return a control grounded for one fixed horizon."""
-    if horizon < 0:
-        raise ValueError("Horizon must be nonnegative")
-
-    control = _create_base_control(asp)
-    for time_step in range(1, horizon + 1):
-        control.ground([("step", [clingo.Number(time_step)])])
-    control.ground([("check", [clingo.Number(horizon)])])
-    control.assign_external(_query(horizon), True)
-    return control
-
-
-def _create_base_control(asp):
-    """Add an ASP program and ground its static program part."""
-    arguments = ["-t", str(THREADS), "--warn=none"]
-    control = clingo.Control(arguments)
-    control.configuration.solve.models = 1
-    control.add("base", [], asp)
-    control.ground([("base", [])])
-    return control
+    return IncrementalSolver(asp, start_horizon).search(on_attempt=on_attempt)
 
 
 def _query(horizon):
     return clingo.Function("query", [clingo.Number(horizon)])
-
-
-def collect_plan(control, assumptions=None):
-    """Return the shown atoms from the first plan, if one exists."""
-    with control.solve(yield_=True, assumptions=assumptions or []) as handle:
-        for plan in handle:
-            return [str(atom) for atom in plan.symbols(shown=True)]
-    return None
 
 
 def parse_plan_actions(atoms):

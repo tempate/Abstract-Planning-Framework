@@ -3,11 +3,11 @@
 from dataclasses import dataclass, field
 
 from core.abstraction.factory import Abstraction
-from core.integrations.clingo import parse_plan_actions, solve
+from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solve
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.planning.mapping import build_mapping
-from core.solvers.decremental import solve_decrementally
+from core.solvers.decremental import disabled_switches, solve_decrementally
 
 
 @dataclass
@@ -42,7 +42,8 @@ def refine(context: RefinementContext):
         context.metrics.set_counter("concrete_solve_calls", solve_calls)
 
     with context.metrics.measure("guided_concrete_solving"):
-        success, plan, decrements = solve_decrementally(asp, context.horizon, record_attempt)
+        solver = IncrementalSolver(asp, context.horizon)
+        success, plan, decrements = solve_decrementally(solver, record_attempt)
 
     guided_solve_calls = decrements + 1
     context.metrics.set_counter("decrements", decrements)
@@ -51,7 +52,7 @@ def refine(context: RefinementContext):
     increments = 0
     if not success:
         with context.metrics.measure("extended_concrete_solving"):
-            plan, increments = _extend_concrete_search(context, guided_solve_calls)
+            plan, increments = _extend_concrete_search(context, solver, guided_solve_calls)
         success = True
 
     context.metrics.set_counter("increments", increments)
@@ -77,7 +78,7 @@ def _solve_abstract_plan(context):
     return parse_plan_actions(solve_result.plan)
 
 
-def _extend_concrete_search(context, guided_solve_calls):
+def _extend_concrete_search(context, solver, guided_solve_calls):
     """Search above the abstract horizon without abstract-plan constraints."""
     initial_horizon = context.horizon
 
@@ -86,7 +87,10 @@ def _extend_concrete_search(context, guided_solve_calls):
         context.metrics.set_counter("final_horizon", horizon)
         context.metrics.set_counter("concrete_solve_calls", guided_solve_calls + solve_calls)
 
-    solve_result = solve(context.concrete_asp, initial_horizon + 1, record_attempt)
+    # Every switch is off, so the guided solver now behaves like the plain
+    # concrete program while keeping the grounding the decremental search built.
+    solver.extend()
+    solve_result = solver.search(disabled_switches(solver), record_attempt)
 
     context.horizon = solve_result.horizon
     context.metrics.set_counter("concrete_solve_calls", guided_solve_calls + solve_result.attempts)

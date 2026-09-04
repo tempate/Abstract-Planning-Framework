@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.integrations.clingo import collect_plan, create_control, parse_plan_actions, solve
+from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solve
 from core.integrations.fast_downward import _get_command, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.paths import ABSTRACT_TIME_STEPS_ENCODING
@@ -16,7 +16,7 @@ from core.planning.plan import PlanAction
 class ClingoIntegrationTests(unittest.TestCase):
     @patch("core.integrations.clingo.clingo.Control")
     def test_control_always_uses_one_thread(self, control):
-        create_control("", horizon=3)
+        IncrementalSolver("", horizon=3)
 
         control.assert_called_once_with(["-t", "1", "--warn=none"])
 
@@ -45,12 +45,12 @@ step(0).
 #program step(t).
 step(t).
 """
-        plan = collect_plan(create_control(program, horizon=3))
+        plan = IncrementalSolver(program, horizon=3).solve()
 
         self.assertEqual(set(plan), {"step(0)", "step(1)", "step(2)", "step(3)"})
 
     def test_unsatisfiable_program_has_no_plan(self):
-        plan = collect_plan(create_control(":-.\n", horizon=0))
+        plan = IncrementalSolver(":-.\n", horizon=0).solve()
 
         self.assertIsNone(plan)
 
@@ -108,11 +108,33 @@ reached(t).
         self.assertEqual(attempts, [(2, 1), (3, 2)])
         self.assertEqual(set(result.plan), {"reached(0)", "reached(1)", "reached(2)", "reached(3)"})
 
+    def test_extending_raises_the_horizon_on_the_same_control(self):
+        program = """
+#program base.
+reached(0).
+#show reached/1.
+#program step(t).
+reached(t).
+#program check(t).
+#external query(t).
+:- query(t), t < 2.
+"""
+        solver = IncrementalSolver(program, horizon=1)
+        control = solver.control
+
+        self.assertIsNone(solver.solve())
+
+        solver.extend()
+
+        self.assertIs(solver.control, control)
+        self.assertEqual(solver.horizon, 2)
+        self.assertEqual(set(solver.solve()), {"reached(0)", "reached(1)", "reached(2)"})
+
     def test_abstract_time_shows_can_be_grounded_at_multiple_steps(self):
         time_encoding = Path(ABSTRACT_TIME_STEPS_ENCODING).read_text(encoding="utf-8")
         program = "#program step(t).\noccurs(a,t).\n" + time_encoding + "\n#program base.\naction(a).\n"
 
-        plan = collect_plan(create_control(program, horizon=2))
+        plan = IncrementalSolver(program, horizon=2).solve()
 
         self.assertEqual(set(plan), {"occurs(a,1)", "occurs(a,2)", "occurs_sometime(a)"})
 

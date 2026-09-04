@@ -1,25 +1,15 @@
 """Decremental concrete solving."""
 
-from core.integrations.clingo import collect_plan, create_control
 
-
-def solve_decrementally(asp, horizon, on_attempt=None):
+def solve_decrementally(solver, on_attempt=None):
     """Relax plan constraints in reverse until a concrete plan is found."""
-    control = create_control(asp, horizon)
-
-    # Collect switches
-    switches = []
-    for atom in control.symbolic_atoms:
-        if atom.symbol.name == "switch":
-            switch = (atom.symbol.arguments[0].number, atom.symbol)
-            switches.append(switch)
-    switches.sort(key=lambda item: item[0])
+    switches = collect_switches(solver)
 
     # Try the full abstract plan
     assumptions = {symbol: True for _, symbol in switches}
     if on_attempt is not None:
         on_attempt(0, 1)
-    plan = collect_plan(control, list(assumptions.items()))
+    plan = solver.solve(list(assumptions.items()))
 
     if plan is not None:
         # The plan works. We are done.
@@ -34,8 +24,27 @@ def solve_decrementally(asp, horizon, on_attempt=None):
         # Find a concrete plan with the current assumptions
         if on_attempt is not None:
             on_attempt(decs, decs + 1)
-        plan = collect_plan(control, list(assumptions.items()))
+        plan = solver.solve(list(assumptions.items()))
         if plan is not None:
             return True, plan, decs
 
     return False, None, len(switches)
+
+
+def collect_switches(solver):
+    """Return the abstract-plan switches ordered by time step."""
+    switches = []
+    for atom in solver.control.symbolic_atoms:
+        if atom.symbol.name == "switch":
+            switch = (atom.symbol.arguments[0].number, atom.symbol)
+            switches.append(switch)
+    switches.sort(key=lambda item: item[0])
+    return switches
+
+
+def disabled_switches(solver):
+    """Return assumptions that turn the whole abstract plan off."""
+    assumptions = []
+    for _, symbol in collect_switches(solver):
+        assumptions.append((symbol, False))
+    return assumptions

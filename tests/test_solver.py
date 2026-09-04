@@ -1,11 +1,12 @@
 import unittest
 
+from core.integrations.clingo import IncrementalSolver
 from core.solvers.decremental import solve_decrementally
 
 
 class DecrementalSolverTests(unittest.TestCase):
     def _solve(self, program):
-        return solve_decrementally(program, horizon=1)
+        return solve_decrementally(IncrementalSolver(program, horizon=1))
 
     def test_returns_the_full_plan_without_relaxation_when_it_is_satisfiable(self):
         success, plan, decrements = self._solve("""
@@ -57,7 +58,7 @@ selected(ten_disabled) :- not switch(10).
 
     def test_reports_every_solver_attempt_and_decrement(self):
         attempts = []
-        success, _plan, _decrements = solve_decrementally(
+        solver = IncrementalSolver(
             """
 { switch(1) }.
 { switch(2) }.
@@ -67,7 +68,9 @@ selected(done) :- not switch(1), not switch(2).
 #show selected/1.
 """,
             horizon=1,
-            on_attempt=lambda decrements, calls: attempts.append((decrements, calls)),
+        )
+        success, _plan, _decrements = solve_decrementally(
+            solver, on_attempt=lambda decrements, calls: attempts.append((decrements, calls))
         )
 
         self.assertTrue(success)

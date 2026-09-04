@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
-from core.integrations.clingo import create_control
+from core.integrations.clingo import IncrementalSolver
 from core.planning.mapping import build_mapping
 from core.planning.plan import PlanAction
 
@@ -47,7 +47,7 @@ action(action(("link","a","b"))).
 switch(1).
 """ + mapping
 
-        control = create_control(program, horizon=1)
+        control = IncrementalSolver(program, horizon=1).control
         models = []
         with control.solve(yield_=True) as handle:
             for model in handle:
@@ -66,7 +66,7 @@ action(action(("move","item1"))).
 switch(1).
 """ + mapping
 
-        result = create_control(program, horizon=1).solve()
+        result = IncrementalSolver(program, horizon=1).control.solve()
 
         self.assertTrue(result.unsatisfiable)
 
