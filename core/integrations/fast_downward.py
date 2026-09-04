@@ -1,7 +1,6 @@
 """Fast Downward integration and plan conversion helpers."""
 
 import os
-from statistics import mode
 import subprocess
 import sys
 
