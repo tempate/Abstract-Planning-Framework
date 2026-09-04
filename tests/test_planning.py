@@ -22,9 +22,7 @@ def _stubbed_abstract_pipeline(generated):
         patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
         patch("core.planning.abstract.build_abstract_problem", return_value=generated),
         patch("core.planning.abstract._write_abstract_problem", return_value=("domain.pddl", "problem.pddl")),
-        patch(
-            "core.planning.abstract.pddl_to_sas", side_effect=[{"sasFile": "concrete.sas"}, {"sasFile": "abstract.sas"}]
-        ),
+        patch("core.planning.abstract.pddl_to_sas", side_effect=["concrete.sas", "abstract.sas"]),
         patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]) as sas_to_asp,
         patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
         patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
@@ -46,7 +44,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.concrete.temp_run_dir")
     def test_the_solver_result_becomes_the_planning_result(self, temp_run_dir, pddl_to_sas, sas_to_asp, solve):
         temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
-        pddl_to_sas.return_value = {"sasFile": "concrete.sas"}
+        pddl_to_sas.return_value = "concrete.sas"
         sas_to_asp.return_value = "asp program"
         solve.return_value = ClingoSolveResult(["occurs(action,3)"], horizon=3, attempts=4)
         config = PlanningConfig("domain.pddl", "problem.pddl")

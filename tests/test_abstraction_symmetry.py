@@ -5,8 +5,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.integrations.pddl_symmetries import PddlSymmetriesError, PddlSymmetriesTimeout, find_symmetric_object_sets
-from core.planning.outcomes import UnsolvableTaskError
+from core.integrations.pddl_symmetries import find_symmetric_object_sets
+from core.planning.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 from core.integrations.unified_planning import parse_problem, read_problem
 from core.abstraction.factory import (
     AbstractionError,
@@ -214,7 +214,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         run.return_value = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="bliss is not built")
         with tempfile.TemporaryDirectory() as directory:
             translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(PddlSymmetriesError, "bliss is not built"):
+            with self.assertRaisesRegex(IntegrationError, "bliss is not built"):
                 find_symmetric_object_sets(domain, problem, 10, translator)
 
     @patch("core.integrations.pddl_symmetries.subprocess.run")
@@ -234,7 +234,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as directory:
             translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(PddlSymmetriesError, "malformed"):
+            with self.assertRaisesRegex(IntegrationError, "malformed"):
                 find_symmetric_object_sets(domain, problem, 10, translator)
 
     def test_rejects_nonpositive_symmetry_time_limit(self):
@@ -246,7 +246,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         run.side_effect = subprocess.TimeoutExpired("translate.py", 10)
         with tempfile.TemporaryDirectory() as directory:
             translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(PddlSymmetriesTimeout, "exceeded"):
+            with self.assertRaisesRegex(SymmetryTimeoutError, "exceeded"):
                 find_symmetric_object_sets(domain, problem, 10, translator)
 
 

@@ -17,7 +17,7 @@ class RefinementTests(unittest.TestCase):
             "relaxed_deletes": (object(), object()),
             "concrete_asp": "concrete asp",
             "abstract_asp": "abstract asp",
-            "abstract_task": {"sasFile": "abstract.sas"},
+            "abstract_task": "abstract.sas",
             "horizon": 3,
             "run_id": "run-123",
             "metrics": PlanningMetrics(),

@@ -11,7 +11,7 @@ _SUCCESS = 0
 
 
 def pddl_to_sas(base_dir, domain_path, problem_path, label):
-    """Translate a concrete or abstract PDDL task to SAS."""
+    """Translate a concrete or abstract PDDL task and return its SAS file."""
     os.makedirs(base_dir, exist_ok=True)
 
     # Define the paths for the input and output files
@@ -32,7 +32,7 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
             f"Fast Downward ({label}) failed with exit code {completed_process.returncode}:\n{diagnostics}"
         )
 
-    return {"sasFile": paths["sas"]}
+    return paths["sas"]
 
 
 def _get_command(paths):

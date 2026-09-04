@@ -19,8 +19,8 @@ class RefinementContext:
     relaxed_deletes: tuple
     run_id: str
     metrics: PlanningMetrics
-    concrete_task: dict = field(default_factory=dict)
-    abstract_task: dict = field(default_factory=dict)
+    concrete_task: str = ""
+    abstract_task: str = ""
     concrete_asp: str = ""
     abstract_asp: str = ""
     horizon: int = 0

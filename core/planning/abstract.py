@@ -72,12 +72,12 @@ def _to_asp(context):
 
     # Generate the ASP representation of the concrete problem.
     with context.metrics.measure("concrete_asp"):
-        concrete_asp = sas_to_asp(context.concrete_task["sasFile"], abstract_time_steps=config.time_step)
+        concrete_asp = sas_to_asp(context.concrete_task, abstract_time_steps=config.time_step)
         concrete_asp = add_switch_to_asp_rule(concrete_asp)
 
     # Generate the ASP representation of the abstract problem.
     with context.metrics.measure("abstract_asp"):
-        abstract_asp = sas_to_asp(context.abstract_task["sasFile"], abstract_time_steps=config.time_step)
+        abstract_asp = sas_to_asp(context.abstract_task, abstract_time_steps=config.time_step)
 
     context.concrete_asp = concrete_asp
     context.abstract_asp = abstract_asp
