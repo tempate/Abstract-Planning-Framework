@@ -26,6 +26,7 @@ class Abstraction:
 class AbstractionResult:
     abstraction: Abstraction
     problem: Problem
+    concrete_problem: Problem
     relaxed_deletes: tuple
 
 
@@ -50,7 +51,9 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
             abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
             relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
-    return AbstractionResult(abstraction=abstraction, problem=collapsed_problem, relaxed_deletes=relaxed_deletes)
+    return AbstractionResult(
+        abstraction=abstraction, problem=collapsed_problem, concrete_problem=problem, relaxed_deletes=relaxed_deletes
+    )
 
 
 def _select_abstraction(problem, symmetry_classes, abstract_name=None):

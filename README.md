@@ -4,9 +4,14 @@ An experimental framework for comparing classical planning with abstraction
 and decremental refinement across classical-planning benchmarks using Fast
 Downward, plasp, and Clingo.
 
-Fast Downward translates PDDL tasks to SAS, plasp translates SAS to ASP facts,
-and the repository-owned incremental encoding drives Clingo's plan search.
-Clingo increases the horizon while reusing the same solver instance.
+Unified Planning parses every PDDL task and writes it back out, Fast Downward
+translates the written task to SAS, plasp translates SAS to ASP facts, and the
+repository-owned incremental encoding drives Clingo's plan search. Clingo
+increases the horizon while reusing the same solver instance.
+
+Both modes send the concrete task through Unified Planning, so `concrete` is a
+baseline that pays the same parsing cost as `abstract` on quick tasks and
+translates a byte-identical concrete SAS file.
 
 The abstract workflow builds a symmetric-object abstraction directly from one
 concrete PDDL task, solves it, maps its plan to the concrete task, and relaxes
