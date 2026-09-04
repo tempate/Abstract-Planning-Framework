@@ -56,6 +56,13 @@ ABSTRACTION_PROBLEM = """
 """
 
 
+def _two_object_problem(name, type_name):
+    """Build a problem holding two objects `a` and `b` of one user type."""
+    problem = Problem(name)
+    item = UserType(type_name)
+    return problem, item, problem.add_object("a", item), problem.add_object("b", item)
+
+
 def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
     config = AbstractPlanningConfig(
         "domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract, abstract_name=abstract_name
@@ -114,12 +121,9 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertTrue(result.problem.goals[0].is_false())
 
     def test_rejects_a_multi_argument_initial_value_collision(self):
-        problem = Problem("collision")
-        item = UserType("collision_item")
+        problem, item, a, b = _two_object_problem("collision", "collision_item")
         value = Fluent("value", IntType(), left=item, right=item)
         problem.add_fluent(value)
-        a = problem.add_object("a", item)
-        b = problem.add_object("b", item)
         problem.set_initial_value(value(a, b), 1)
         problem.set_initial_value(value(b, a), 2)
 
@@ -127,12 +131,9 @@ class AbstractionTransformationTests(unittest.TestCase):
             _build_from_problem(problem, ["a", "b"])
 
     def test_deduplicates_equal_initial_values(self):
-        problem = Problem("equal-values")
-        item = UserType("equal_value_item")
+        problem, item, a, b = _two_object_problem("equal-values", "equal_value_item")
         value = Fluent("value", IntType(), target=item)
         problem.add_fluent(value)
-        a = problem.add_object("a", item)
-        b = problem.add_object("b", item)
         problem.set_initial_value(value(a), 1)
         problem.set_initial_value(value(b), 1)
 
@@ -144,12 +145,9 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertEqual(sum(fluent.fluent() == value for fluent in result.problem.explicit_initial_values), 1)
 
     def test_rejects_boolean_initial_value_collisions(self):
-        problem = Problem("boolean-collision")
-        item = UserType("boolean_collision_item")
+        problem, item, a, b = _two_object_problem("boolean-collision", "boolean_collision_item")
         ready = Fluent("ready", BoolType(), target=item)
         problem.add_fluent(ready, default_initial_value=False)
-        a = problem.add_object("a", item)
-        b = problem.add_object("b", item)
         problem.set_initial_value(ready(a), True)
         problem.set_initial_value(ready(b), False)
 
@@ -215,10 +213,7 @@ class AbstractionTransformationTests(unittest.TestCase):
             _build_from_problem(optimized, ["a", "b"])
 
     def test_rewrites_conditions_goals_constraints_and_action_costs(self):
-        problem = Problem("expressions")
-        item = UserType("expression_item")
-        a = problem.add_object("a", item)
-        b = problem.add_object("b", item)
+        problem, item, a, b = _two_object_problem("expressions", "expression_item")
         marked = Fluent("marked", BoolType(), target=item)
         cost = Fluent("cost", IntType(), target=item)
         problem.add_fluent(marked, default_initial_value=False)
@@ -247,10 +242,7 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertEqual(metric.costs[copied_action], cost(abstract_object))
 
     def test_rewrites_a_final_state_minimization_expression(self):
-        problem = Problem("final-state-metric")
-        item = UserType("metric_item")
-        a = problem.add_object("a", item)
-        b = problem.add_object("b", item)
+        problem, item, a, b = _two_object_problem("final-state-metric", "metric_item")
         cost = Fluent("cost", IntType(), target=item)
         problem.add_fluent(cost, default_initial_value=0)
         problem.add_quality_metric(MinimizeExpressionOnFinalState(cost(a) + cost(b)))
@@ -274,10 +266,7 @@ class AbstractionTransformationTests(unittest.TestCase):
         parse_problem(serialized.domain, serialized.problem)
 
     def test_preserves_numeric_effects_and_plan_length_metric(self):
-        problem = Problem("numeric-effects")
-        item = UserType("numeric_item")
-        a = problem.add_object("a", item)
-        b = problem.add_object("b", item)
+        problem, item, a, b = _two_object_problem("numeric-effects", "numeric_item")
         level = Fluent("level", IntType(), target=item)
         problem.add_fluent(level, default_initial_value=0)
 

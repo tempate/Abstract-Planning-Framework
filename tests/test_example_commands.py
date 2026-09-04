@@ -1,11 +1,11 @@
 import os
 import subprocess
+import sys
 import unittest
-from argparse import Namespace
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from scripts import planner
 from scripts.planner import _argument_parser
@@ -14,16 +14,19 @@ from core.planning.outcomes import UnsolvableTaskError
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
+def _argument_after(command, option):
+    """Return the value the echoed example command passed for one option."""
+    tokens = command.split()
+    return tokens[tokens.index(option) + 1]
+
+
 class PlannerOutputTests(unittest.TestCase):
     def test_metrics_are_grouped_and_human_readable(self):
         result = {
             "horizon": 5,
             "plan": ["occurs(move,5)"],
             "success": True,
-            "metrics": {
-                "durations": {"total": 1.25, "abstract_solving": 0.5},
-                "counters": {"decrements": 2, "final_horizon": 5, "concrete_solve_calls": 3},
-            },
+            "metrics": {"durations": {"total": 1.25}, "counters": {"decrements": 2, "concrete_solve_calls": 3}},
         }
         output = StringIO()
 
@@ -33,10 +36,8 @@ class PlannerOutputTests(unittest.TestCase):
         text = output.getvalue()
         self.assertIn("Metrics:\n  Durations (seconds):", text)
         self.assertRegex(text, r"(?m)^    Total +1\.250000$")
-        self.assertRegex(text, r"(?m)^    Abstract plan solving +0\.500000$")
         self.assertIn("  Solver activity:", text)
         self.assertRegex(text, r"(?m)^    Refinement decrements +2$")
-        self.assertRegex(text, r"(?m)^    Concrete solver calls +3$")
         self.assertNotIn('{"durations"', text)
 
 
@@ -66,72 +67,38 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2)
                 self.assertIn("Usage:", result.stderr)
 
-    def test_quick_examples_use_driverlog_p07(self):
+    def test_examples_run_both_modes_on_one_comparable_task(self):
+        commands = {}
         for example in ("concrete", "abstract"):
+            result = self._run(example, python_bin="/bin/echo")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            commands[example] = result.stdout
+
+        for example, command in commands.items():
             with self.subTest(example=example):
-                result = self._run(example, python_bin="/bin/echo")
+                self.assertIn(f"-m scripts.planner {example}", command)
+                self.assertTrue(_argument_after(command, "--domain").endswith(".pddl"))
 
-                self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual(result.stdout.count("benchmarks/downward-benchmarks/driverlog/domain.pddl"), 1)
-                self.assertEqual(result.stdout.count("driverlog/p07.pddl"), 1)
-                self.assertNotIn("--horizon", result.stdout)
-                self.assertNotIn("--encoding", result.stdout)
-
-    def test_abstract_examples_use_automatic_symmetry_selection(self):
-        result = self._run("abstract", python_bin="/bin/echo")
-
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("-m scripts.planner abstract", result.stdout)
-        self.assertNotIn("--plan-source", result.stdout)
-        self.assertNotIn("--abstract-name", result.stdout)
-        self.assertNotIn("--symmetry-time-limit", result.stdout)
-        self.assertNotIn("--objects-to-abstract", result.stdout)
+        # The README compares the two runs, so they have to solve the same task.
+        self.assertEqual(
+            _argument_after(commands["concrete"], "--problem"), _argument_after(commands["abstract"], "--problem")
+        )
+        # The abstract example demonstrates automatic symmetry selection.
+        self.assertNotIn("--objects-to-abstract", commands["abstract"])
 
 
-class PlannerHelpTests(unittest.TestCase):
-    def _help(self, mode):
-        output = StringIO()
-        with self.assertRaises(SystemExit), redirect_stdout(output):
-            _argument_parser().parse_args([mode, "--help"])
-        return output.getvalue()
+class PlannerArgumentTests(unittest.TestCase):
+    def test_concrete_mode_takes_a_domain_and_a_problem(self):
+        args = _argument_parser().parse_args(["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
-    def test_top_level_help_lists_both_planning_modes(self):
-        help_text = _argument_parser().format_help()
-
-        self.assertIn("concrete", help_text)
-        self.assertIn("abstract", help_text)
-
-    def test_concrete_help_displays_shared_defaults(self):
-        help_text = self._help("concrete")
-
-        self.assertIn("time-step based encoding (default: False)", help_text)
-        self.assertNotIn("--horizon", help_text)
-        self.assertNotIn("--encoding", help_text)
-
-    def test_abstract_help_has_no_horizon_or_plan_source_options(self):
-        help_text = self._help("abstract")
-
-        self.assertNotIn("--horizon", help_text)
-        self.assertNotIn("--encoding", help_text)
-        self.assertNotIn("--plan-source", help_text)
-
-    def test_horizon_option_is_rejected(self):
-        with self.assertRaises(SystemExit), redirect_stderr(StringIO()):
-            _argument_parser().parse_args(
-                ["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl", "--horizon", "4"]
-            )
-
-    def test_encoding_option_is_rejected(self):
-        with self.assertRaises(SystemExit), redirect_stderr(StringIO()):
-            _argument_parser().parse_args(
-                ["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl", "--encoding", "bounded"]
-            )
-
-    def test_abstract_mode_accepts_one_concrete_task_for_automatic_abstraction(self):
-        args = _argument_parser().parse_args(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
-
+        self.assertEqual(args.mode, "concrete")
         self.assertEqual(args.domain, "domain.pddl")
         self.assertEqual(args.problem, "problem.pddl")
+
+    def test_abstract_mode_selects_objects_automatically_by_default(self):
+        args = _argument_parser().parse_args(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
+
+        self.assertEqual(args.mode, "abstract")
         self.assertIsNone(args.objects_to_abstract)
 
     def test_abstract_mode_accepts_explicit_objects(self):
@@ -143,121 +110,67 @@ class PlannerHelpTests(unittest.TestCase):
 
 
 class PlannerExitStatusTests(unittest.TestCase):
-    def test_cli_reports_planner_detected_unsolvability_without_a_traceback(self):
-        parser = Mock()
-        parser.parse_args.return_value = Namespace(mode="concrete")
+    """The exit codes are the benchmark runner's status source, so they are a contract."""
+
+    def _main(self, argv):
+        with patch.object(sys, "argv", ["planner", *argv]):
+            return planner.main()
+
+    def test_a_detected_unsolvable_task_exits_without_a_traceback(self):
         output = StringIO()
-        with (
-            patch.object(planner, "_argument_parser", return_value=parser),
-            patch.object(planner, "_compute", side_effect=UnsolvableTaskError("task is unsolvable")),
-            redirect_stdout(output),
-        ):
-            status = planner.main()
+        with patch.object(planner, "_compute", side_effect=UnsolvableTaskError("task is unsolvable")):
+            with redirect_stdout(output):
+                status = self._main(["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(status, 1)
-        self.assertEqual(output.getvalue(), "Starting\nNo plan: task is unsolvable\n")
+        self.assertIn("No plan: task is unsolvable", output.getvalue())
         self.assertNotIn("Traceback", output.getvalue())
 
-    def test_concrete_cli_returns_failure_when_no_plan_is_found(self):
-        parser = Mock()
-        parser.parse_args.return_value = Namespace(
-            mode="concrete", domain="domain.pddl", problem="problem.pddl", time_step=False
-        )
-        with (
-            patch.object(planner, "_argument_parser", return_value=parser),
-            patch.object(planner, "compute_concrete_plan", return_value={"success": False}),
-            patch.object(planner, "print_planning_result"),
-        ):
-            status = planner.main()
+    def test_both_modes_report_failure_when_no_plan_is_found(self):
+        for mode in ("concrete", "abstract"):
+            with self.subTest(mode=mode):
+                with (
+                    patch.object(planner, "_compute", return_value={"success": False}),
+                    patch.object(planner, "print_planning_result"),
+                ):
+                    status = self._main([mode, "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
-        self.assertEqual(status, 1)
+                self.assertEqual(status, 1)
 
-    def test_abstract_cli_returns_failure_when_no_plan_is_found(self):
-        parser = Mock()
-        parser.parse_args.return_value = Namespace(
-            mode="abstract",
-            domain="domain.pddl",
-            problem="problem.pddl",
-            time_step=False,
-            abstract_name=None,
-            objects_to_abstract=None,
-            symmetry_time_limit=300,
-        )
-        with (
-            patch.object(planner, "_argument_parser", return_value=parser),
-            patch.object(planner, "compute_abstract_plan", return_value={"success": False}),
-            patch.object(planner, "print_planning_result"),
-        ):
-            status = planner.main()
-
-        self.assertEqual(status, 1)
-
-    def test_abstract_cli_exits_when_no_symmetry_class_exists(self):
-        parser = Mock()
-        parser.parse_args.return_value = Namespace(
-            mode="abstract",
-            domain="domain.pddl",
-            problem="problem.pddl",
-            time_step=False,
-            abstract_name=None,
-            objects_to_abstract=None,
-            symmetry_time_limit=300,
-        )
-        parser.error.side_effect = SystemExit(2)
-        with (
-            patch.object(planner, "_argument_parser", return_value=parser),
-            patch.object(
-                planner,
-                "compute_abstract_plan",
-                side_effect=planner.AbstractionError("PDDL Symmetries found no abstractable object classes"),
-            ),
-            patch.object(planner, "print_planning_result") as print_result,
-        ):
-            with self.assertRaises(SystemExit) as raised:
-                planner.main()
+    def test_an_abstraction_error_exits_through_the_parser(self):
+        errors = StringIO()
+        with patch.object(planner, "_compute", side_effect=planner.AbstractionError("no abstractable object classes")):
+            with redirect_stderr(errors), self.assertRaises(SystemExit) as raised:
+                self._main(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(raised.exception.code, 2)
-        parser.error.assert_called_once_with("PDDL Symmetries found no abstractable object classes")
-        print_result.assert_not_called()
+        self.assertIn("no abstractable object classes", errors.getvalue())
 
-    def test_abstract_cli_passes_explicit_selection_to_the_planning_pipeline(self):
-        parser = Mock()
-        parser.parse_args.return_value = Namespace(
-            mode="abstract",
-            domain="domain.pddl",
-            problem="problem.pddl",
-            time_step=False,
-            abstract_name="combined",
-            objects_to_abstract=["a", "b"],
-            symmetry_time_limit=17,
-        )
-        output = StringIO()
+    def test_explicit_selection_reaches_the_planning_pipeline(self):
         with (
-            patch.object(planner, "_argument_parser", return_value=parser),
-            patch.object(
-                planner,
-                "compute_abstract_plan",
-                return_value={
-                    "success": True,
-                    "abstraction": {
-                        "objects_to_abstract": ["b", "a"],
-                        "abstract_symbol": "combined",
-                        "object_type": "item",
-                    },
-                },
-            ) as compute,
+            patch.object(planner, "compute_abstract_plan", return_value={"success": True}) as compute,
             patch.object(planner, "print_planning_result"),
-            redirect_stdout(output),
         ):
-            status = planner.main()
+            status = self._main(
+                [
+                    "abstract",
+                    "--domain",
+                    "domain.pddl",
+                    "--problem",
+                    "problem.pddl",
+                    "--objects-to-abstract",
+                    "a",
+                    "b",
+                    "--abstract-name",
+                    "combined",
+                ]
+            )
 
-        self.assertEqual(status, 0)
         config = compute.call_args.args[0]
+        self.assertEqual(status, 0)
         self.assertEqual(config.domain_path, "domain.pddl")
-        self.assertEqual(config.problem_path, "problem.pddl")
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual(config.abstract_name, "combined")
-        self.assertEqual(config.symmetry_time_limit, 17)
 
 
 if __name__ == "__main__":

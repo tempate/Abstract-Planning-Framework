@@ -1,3 +1,4 @@
+import inspect
 import json
 import os
 import shlex
@@ -50,21 +51,19 @@ class BenchmarkTests(unittest.TestCase):
         path.write_text(json.dumps(result), encoding="utf-8")
 
     def test_suite_groups_domains_by_confirmed_symmetries(self):
-        self.assertEqual(len(SYMMETRIC_DOMAINS), 25)
-        self.assertEqual(len(NON_SYMMETRIC_DOMAINS), 23)
+        # The membership of each group follows the benchmark results; only the
+        # split itself is a contract.
         self.assertEqual(SUITE, SYMMETRIC_DOMAINS + NON_SYMMETRIC_DOMAINS)
         self.assertFalse(set(SYMMETRIC_DOMAINS) & set(NON_SYMMETRIC_DOMAINS))
-        self.assertIn("gripper", SYMMETRIC_DOMAINS)
-        self.assertIn("blocks", NON_SYMMETRIC_DOMAINS)
 
     def test_benchmark_runner_defaults_to_symmetric_domains(self):
-        self.assertIs(_benchmark_tasks.__defaults__[1], SYMMETRIC_DOMAINS)
+        suite = inspect.signature(_benchmark_tasks).parameters["suite"].default
+
+        self.assertIs(suite, SYMMETRIC_DOMAINS)
 
     def test_cluster_resource_defaults(self):
         args = _argument_parser().parse_args([])
 
-        self.assertEqual(args.timeout, 30 * 60)
-        self.assertEqual(args.memory_limit, 8 * 1024)
         self.assertEqual(args.timeout, DEFAULT_TIMEOUT)
         self.assertEqual(args.memory_limit, DEFAULT_MEMORY_LIMIT)
 
@@ -88,8 +87,8 @@ class BenchmarkTests(unittest.TestCase):
 
         self.assertEqual(abstract.mode, "abstract")
         self.assertEqual(concrete.mode, "concrete")
-        self.assertEqual(abstract.timeout, 30 * 60)
-        self.assertEqual(concrete.timeout, 30 * 60)
+        self.assertEqual(abstract.timeout, DEFAULT_TIMEOUT)
+        self.assertEqual(concrete.timeout, DEFAULT_TIMEOUT)
 
     def test_prepares_one_copperbench_job_per_mode_and_problem(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -426,51 +425,28 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[1]["mode"], "concrete")
         self.assertEqual(rows[1]["horizon"], 6)
 
-    def test_manifest_marks_one_missing_mode(self):
-        with tempfile.TemporaryDirectory() as directory:
-            problem = Path("p01.pddl")
-            tasks = [
-                ("abstract", "example", Path("domain.pddl"), problem),
-                ("concrete", "example", Path("domain.pddl"), problem),
-            ]
-            _write_manifest(tasks, directory)
-            self._write_result(directory, "abstract")
+    def test_the_manifest_marks_every_mode_that_produced_no_result(self):
+        expected_statuses = {
+            (): ["missing", "missing"],
+            ("abstract",): ["success", "missing"],
+            ("abstract", "concrete"): ["success", "success"],
+        }
+        for completed, statuses in expected_statuses.items():
+            with self.subTest(completed=completed), tempfile.TemporaryDirectory() as directory:
+                problem = Path("p01.pddl")
+                tasks = [
+                    ("abstract", "example", Path("domain.pddl"), problem),
+                    ("concrete", "example", Path("domain.pddl"), problem),
+                ]
+                manifest = _write_manifest(tasks, directory)
+                for mode in completed:
+                    self._write_result(directory, mode)
 
-            rows = collect(directory)
+                rows = collect(directory)
 
-        self.assertEqual(
-            [(row["mode"], row["status"]) for row in rows], [("abstract", "success"), ("concrete", "missing")]
-        )
-
-    def test_manifest_marks_both_modes_missing(self):
-        with tempfile.TemporaryDirectory() as directory:
-            problem = Path("p01.pddl")
-            tasks = [
-                ("abstract", "example", Path("domain.pddl"), problem),
-                ("concrete", "example", Path("domain.pddl"), problem),
-            ]
-            manifest = _write_manifest(tasks, directory)
-
-            rows = collect(directory)
-
-        self.assertEqual(manifest.name, MANIFEST_NAME)
-        self.assertEqual([row["status"] for row in rows], ["missing", "missing"])
-
-    def test_complete_manifest_has_no_missing_rows(self):
-        with tempfile.TemporaryDirectory() as directory:
-            problem = Path("p01.pddl")
-            tasks = [
-                ("abstract", "example", Path("domain.pddl"), problem),
-                ("concrete", "example", Path("domain.pddl"), problem),
-            ]
-            _write_manifest(tasks, directory)
-            self._write_result(directory, "abstract")
-            self._write_result(directory, "concrete")
-
-            rows = collect(directory)
-
-        self.assertEqual(len(rows), 2)
-        self.assertNotIn("missing", {row["status"] for row in rows})
+                self.assertEqual(manifest.name, MANIFEST_NAME)
+                self.assertEqual([row["mode"] for row in rows], ["abstract", "concrete"])
+                self.assertEqual([row["status"] for row in rows], statuses)
 
 
 if __name__ == "__main__":

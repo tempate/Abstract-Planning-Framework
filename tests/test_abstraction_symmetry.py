@@ -8,7 +8,15 @@ from unittest.mock import patch
 from core.integrations.pddl_symmetries import PddlSymmetriesError, PddlSymmetriesTimeout, find_symmetric_object_sets
 from core.planning.outcomes import UnsolvableTaskError
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
+from core.abstraction.factory import (
+    AbstractionError,
+    NoSymmetriesError,
+    _create_abstraction,
+    _select_abstraction,
+    build_abstract_problem,
+)
+from core.abstraction.heuristic import abstraction_score
+from core.abstraction.relaxation import find_relaxable_deletes
 from core.planning.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -56,25 +64,6 @@ SYMMETRY_PROBLEM = """
 """
 
 
-GOAL_DOMAIN = """
-(define (domain goals)
-  (:requirements :strips :typing)
-  (:types item)
-  (:predicates (ready ?x - item) (done ?x - item))
-  (:action finish
-    :parameters (?x - item)
-    :precondition (ready ?x)
-    :effect (and (done ?x) (not (ready ?x)))))
-"""
-
-GOAL_PROBLEM = """
-(define (problem goals-task)
-  (:domain goals)
-  (:objects a1 a2 b1 b2 b3 - item)
-  (:init (ready a1) (ready a2) (ready b1) (ready b2) (ready b3))
-  (:goal (and (done b1) (done b2) (done b3))))
-"""
-
 ORDERING_DOMAIN = """
 (define (domain ordering)
   (:requirements :strips :typing)
@@ -113,15 +102,24 @@ class SymmetrySelectionTests(unittest.TestCase):
     def setUp(self):
         self.problem = parse_problem(SYMMETRY_DOMAIN, SYMMETRY_PROBLEM)
 
-    def test_selects_the_lowest_delete_score(self):
-        classes = [
-            ["cargo-c", "cargo-a", "cargo-b"],
-            ["tool-b", "tool-a"],
-            ["vehicle-d", "vehicle-b", "vehicle-c", "vehicle-a"],
-        ]
-        selected, _ = _select_abstraction(self.problem, classes)
+    def _score(self, problem, objects):
+        abstraction = _create_abstraction(problem, objects, None)
+        return abstraction_score(problem, abstraction, find_relaxable_deletes(problem, abstraction))
 
-        self.assertEqual(set(selected.objects), {"vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"})
+    def test_score_counts_goal_conjuncts_then_deletes_then_class_size(self):
+        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
+
+        # The items are absent from the goal but relax two deletes; the gadgets
+        # appear in both goal conjuncts and relax one.
+        self.assertEqual(self._score(source, ["item1", "item2"]), (0, 2, -2))
+        self.assertEqual(self._score(source, ["gadget1", "gadget2"]), (2, 1, -2))
+
+    def test_selection_takes_the_lowest_score(self):
+        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
+
+        selected, _ = _select_abstraction(source, [["gadget1", "gadget2"], ["item1", "item2"]])
+
+        self.assertEqual(set(selected.objects), {"item1", "item2"})
 
     def test_equal_scores_prefer_the_largest_class(self):
         domain = """
@@ -139,35 +137,6 @@ class SymmetrySelectionTests(unittest.TestCase):
         selected, _ = _select_abstraction(source, [["a1", "a2"], ["b1", "b2", "b3"]])
 
         self.assertEqual(set(selected.objects), {"b1", "b2", "b3"})
-
-    def test_prefers_a_class_the_goal_does_not_mention(self):
-        source = parse_problem(GOAL_DOMAIN, GOAL_PROBLEM)
-
-        selected, _ = _select_abstraction(source, [["b1", "b2", "b3"], ["a1", "a2"]])
-
-        self.assertEqual(set(selected.objects), {"a1", "a2"})
-
-    def test_prefers_the_class_the_goal_mentions_least(self):
-        problem = """
-(define (problem p) (:domain goals)
-  (:objects a1 a2 b1 b2 - item)
-  (:init (ready a1) (ready a2) (ready b1) (ready b2))
-  (:goal (and (done a1) (done b1) (done b2))))
-"""
-        source = parse_problem(GOAL_DOMAIN, problem)
-
-        selected, _ = _select_abstraction(source, [["b1", "b2"], ["a1", "a2"]])
-
-        self.assertEqual(set(selected.objects), {"a1", "a2"})
-
-    def test_goal_conjuncts_outrank_the_relaxed_delete_count(self):
-        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
-
-        selected, relaxable_deletes = _select_abstraction(source, [["gadget1", "gadget2"], ["item1", "item2"]])
-
-        # The items relax two deletes against the gadgets' one, and still win.
-        self.assertEqual(set(selected.objects), {"item1", "item2"})
-        self.assertEqual(len(relaxable_deletes), 2)
 
     def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self):
         classes = [
