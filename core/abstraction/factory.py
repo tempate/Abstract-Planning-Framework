@@ -115,5 +115,5 @@ def _create_abstraction(problem, object_names, abstract_name):
 
 
 def _normalize_object_names(object_names):
-    """Normalize object names to lowercase and remove duplicates."""
-    return {str(name).casefold() for name in object_names}
+    """Normalize object names to lowercase, remove duplicates, and order them."""
+    return sorted({str(name).casefold() for name in object_names})
