@@ -2,7 +2,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from core.integrations.unified_planning import PddlError, parse_problem, read_problem, write_problem
+from core.integrations.unified_planning import (
+    PddlError,
+    parse_problem,
+    read_problem,
+    write_problem,
+    write_problem_files,
+)
 
 ROUND_TRIP_DOMAIN = """
 (define (domain travel)
@@ -75,6 +81,17 @@ class UnifiedPlanningCodecTests(unittest.TestCase):
         metric = reparsed.quality_metrics[0]
         self.assertEqual(metric.costs[move].constant_value(), 1)
         self.assertEqual(metric.default.constant_value(), 0)
+
+    def test_writes_a_matched_pair_into_a_new_directory(self):
+        source = parse_problem(ROUND_TRIP_DOMAIN, ROUND_TRIP_PROBLEM)
+
+        with tempfile.TemporaryDirectory() as directory:
+            domain_path, problem_path = write_problem_files(source, Path(directory, "generated"))
+            reparsed = read_problem(domain_path, problem_path)
+
+            self.assertEqual(domain_path.name, "domain.pddl")
+            self.assertEqual(problem_path.name, "problem.pddl")
+            self.assertEqual([action.name for action in reparsed.actions], ["move"])
 
     def test_wraps_reader_failures(self):
         domain = "(define (domain d) (:predicates (ready))"

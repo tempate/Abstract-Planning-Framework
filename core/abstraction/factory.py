@@ -7,7 +7,6 @@ from unified_planning.model import Problem
 from core.abstraction.collapse import AbstractionError, collapse_objects
 from core.abstraction.relaxation import find_relaxable_deletes
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
-from core.integrations.unified_planning import read_problem
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.planning.outcomes import NoSymmetriesError
@@ -29,11 +28,9 @@ class AbstractionResult:
     relaxed_deletes: tuple
 
 
-def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
-    """Read one concrete task, select an object class, and abstract it."""
+def build_abstract_problem(config: AbstractPlanningConfig, problem: Problem, metrics: PlanningMetrics | None = None):
+    """Select an object class of one concrete task and abstract it."""
     metrics = metrics or PlanningMetrics()
-    with metrics.measure("problem_reading"):
-        problem = read_problem(config.domain_path, config.problem_path)
 
     if config.objects_to_abstract is None:
         with metrics.measure("symmetry_discovery"):

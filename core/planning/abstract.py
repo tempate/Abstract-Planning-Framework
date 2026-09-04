@@ -1,11 +1,10 @@
 """Prepare and dispatch abstraction-based planning workflows."""
 
 import os
-from pathlib import Path
 
 from core.execution import temp_run_dir
 from core.integrations.fast_downward import pddl_to_sas
-from core.integrations.unified_planning import write_problem
+from core.integrations.unified_planning import read_problem, write_problem_files
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.metrics import PlanningMetrics
 from core.abstraction.factory import build_abstract_problem
@@ -24,7 +23,10 @@ def compute_abstract_plan(config: AbstractPlanningConfig, on_update=None):
 
 
 def _compute_abstract_plan(config, base_dir, run_id, metrics):
-    abstract_problem = build_abstract_problem(config, metrics)
+    with metrics.measure("problem_reading"):
+        problem = read_problem(config.domain_path, config.problem_path)
+
+    abstract_problem = build_abstract_problem(config, problem, metrics)
 
     # Report the abstraction before solving so runs that fail later still record it.
     abstraction = abstract_problem.abstraction
@@ -39,7 +41,7 @@ def _compute_abstract_plan(config, base_dir, run_id, metrics):
     )
 
     # Translate the problem to SAS
-    _to_sas(base_dir, abstract_problem.problem, context)
+    _to_sas(base_dir, problem, abstract_problem.problem, context)
 
     # Translate the SAS to ASP
     _to_asp(context)
@@ -47,21 +49,26 @@ def _compute_abstract_plan(config, base_dir, run_id, metrics):
     return refine(context)
 
 
-def _to_sas(base_dir, problem, context):
-    config = context.config
+def _to_sas(base_dir, concrete_problem, abstract_problem, context):
+    # Write the temporary problem files. Both tasks are serialized by Unified
+    # Planning so their SAS translations share one naming scheme, and so the
+    # concrete SAS matches the one the concrete baseline translates.
+    concrete_dir = os.path.join(base_dir, "generated-concrete")
+    with context.metrics.measure("concrete_pddl_writing"):
+        concrete_domain, concrete_problem_path = write_problem_files(concrete_problem, concrete_dir)
+
+    abstract_dir = os.path.join(base_dir, "generated-abstraction")
+    with context.metrics.measure("abstract_pddl_writing"):
+        abstract_domain, abstract_problem_path = write_problem_files(abstract_problem, abstract_dir)
 
     # Translate the concrete problem into SAS.
     dir = os.path.join(base_dir, "concrete")
     with context.metrics.measure("concrete_fd"):
-        concrete_task = pddl_to_sas(dir, config.domain_path, config.problem_path, "concrete")
-
-    # Write the temporary problem files
-    with context.metrics.measure("abstract_pddl_writing"):
-        domain_path, problem_path = _write_abstract_problem(problem, base_dir)
+        concrete_task = pddl_to_sas(dir, concrete_domain, concrete_problem_path, "concrete")
 
     dir = os.path.join(base_dir, "abstract")
     with context.metrics.measure("abstract_fd"):
-        abstract_task = pddl_to_sas(dir, domain_path, problem_path, "abstract")
+        abstract_task = pddl_to_sas(dir, abstract_domain, abstract_problem_path, "abstract")
 
     context.concrete_task = concrete_task
     context.abstract_task = abstract_task
@@ -81,22 +88,3 @@ def _to_asp(context):
 
     context.concrete_asp = concrete_asp
     context.abstract_asp = abstract_asp
-
-
-def _write_abstract_problem(problem, base_dir):
-    """Write the abstract problem to a temporary directory."""
-
-    # Create the temporary directory.
-    input_directory = Path(base_dir, "generated-abstraction")
-    input_directory.mkdir(parents=True, exist_ok=True)
-
-    # Write the abstract domain and problem files.
-    serialized = write_problem(problem)
-
-    domain_path = input_directory / "domain.pddl"
-    domain_path.write_text(serialized.domain, encoding="utf-8")
-
-    problem_path = input_directory / "problem.pddl"
-    problem_path.write_text(serialized.problem, encoding="utf-8")
-
-    return domain_path, problem_path

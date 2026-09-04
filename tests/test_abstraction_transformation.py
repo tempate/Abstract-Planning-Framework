@@ -1,6 +1,5 @@
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 from unified_planning.shortcuts import (
     Always,
@@ -18,7 +17,7 @@ from unified_planning.shortcuts import (
     Variable,
 )
 
-from core.integrations.unified_planning import parse_problem, write_problem
+from core.integrations.unified_planning import parse_problem, read_problem, write_problem
 from core.abstraction.factory import AbstractionError, build_abstract_problem
 from core.planning.config import AbstractPlanningConfig
 
@@ -60,8 +59,7 @@ def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
     config = AbstractPlanningConfig(
         "domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract, abstract_name=abstract_name
     )
-    with patch("core.abstraction.factory.read_problem", return_value=problem):
-        return build_abstract_problem(config)
+    return build_abstract_problem(config, problem)
 
 
 class AbstractionTransformationTests(unittest.TestCase):
@@ -264,9 +262,8 @@ class AbstractionTransformationTests(unittest.TestCase):
 
     def test_parses_and_abstracts_an_agricola_final_state_metric(self):
         root = Path(__file__).resolve().parents[1] / "benchmarks" / "downward-benchmarks" / "agricola-sat18-strips"
-        result = build_abstract_problem(
-            AbstractPlanningConfig(root / "domain.pddl", root / "p01.pddl", objects_to_abstract=("num0", "num1"))
-        )
+        config = AbstractPlanningConfig(root / "domain.pddl", root / "p01.pddl", objects_to_abstract=("num0", "num1"))
+        result = build_abstract_problem(config, read_problem(config.domain_path, config.problem_path))
 
         self.assertIsInstance(result.problem.quality_metrics[0], MinimizeExpressionOnFinalState)
         serialized = write_problem(result.problem)

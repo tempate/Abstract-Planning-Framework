@@ -10,6 +10,7 @@ DURATION_LABELS = {
     "problem_reading": "Problem reading",
     "symmetry_discovery": "Symmetry discovery",
     "abstraction": "Abstraction",
+    "concrete_pddl_writing": "Concrete PDDL writing",
     "abstract_pddl_writing": "Abstract PDDL writing",
     "concrete_fd": "Concrete Fast Downward",
     "abstract_fd": "Abstract Fast Downward",

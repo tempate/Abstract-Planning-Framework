@@ -103,14 +103,12 @@ class SymmetrySelectionTests(unittest.TestCase):
             ["tool-a", "tool-b"],
             ["vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"],
         ]
-        with (
-            patch("core.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.abstraction.factory.find_symmetric_object_sets", return_value=classes) as find_classes,
-        ):
+        with patch("core.abstraction.factory.find_symmetric_object_sets", return_value=classes) as find_classes:
             result = build_abstract_problem(
                 AbstractPlanningConfig(
                     "domain.pddl", "problem.pddl", abstract_name="pooled-vehicles", symmetry_time_limit=17
-                )
+                ),
+                self.problem,
             )
 
         find_classes.assert_called_once_with("domain.pddl", "problem.pddl", 17)
@@ -119,12 +117,11 @@ class SymmetrySelectionTests(unittest.TestCase):
 
     def test_rejects_tasks_without_a_pddl_symmetries_object_class(self):
         with (
-            patch("core.abstraction.factory.read_problem", return_value=self.problem),
             patch("core.abstraction.factory.find_symmetric_object_sets", return_value=[]),
             patch("core.abstraction.factory._select_abstraction") as select,
         ):
             with self.assertRaisesRegex(NoSymmetriesError, "found no abstractable object classes"):
-                build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+                build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"), self.problem)
 
         select.assert_not_called()
 
