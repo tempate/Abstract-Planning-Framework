@@ -25,6 +25,7 @@ class RefinementTests(unittest.TestCase):
         values.update(changes)
         return RefinementContext(**values)
 
+    @patch("core.planning.refinement.IncrementalSolver")
     @patch("core.planning.refinement.solve_decrementally", return_value=(True, ["occurs(concrete,1)"], 2))
     @patch("core.planning.refinement.build_mapping", return_value="mapping asp")
     @patch("core.planning.refinement.parse_plan_actions", return_value=(PlanAction("move", ("item_abs",), 1),))
@@ -32,7 +33,7 @@ class RefinementTests(unittest.TestCase):
         "core.planning.refinement.solve", return_value=ClingoSolveResult(["occurs(abstract,1)"], horizon=2, attempts=3)
     )
     def test_the_abstract_plan_is_mapped_and_its_horizon_is_reported(
-        self, solve, parse_plan_actions, build_mapping, solve_decrementally
+        self, solve, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver
     ):
         context = self._context()
 
@@ -52,19 +53,20 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(solve.call_args.args, ("abstract asp",))
         parse_plan_actions.assert_called_once_with(["occurs(abstract,1)"])
         build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
-        self.assertEqual(solve_decrementally.call_args.args[:2], ("concrete asp\nmapping asp", 2))
+        self.assertEqual(incremental_solver.call_args.args, ("concrete asp\nmapping asp", 2))
+        self.assertIs(solve_decrementally.call_args.args[0], incremental_solver.return_value)
 
+    @patch("core.planning.refinement.disabled_switches", return_value=[])
+    @patch("core.planning.refinement.IncrementalSolver")
     @patch("core.planning.refinement.solve_decrementally", return_value=(False, None, 3))
     @patch("core.planning.refinement.build_mapping", return_value="mapping asp")
     @patch("core.planning.refinement.parse_plan_actions", return_value=())
-    @patch("core.planning.refinement.solve")
+    @patch("core.planning.refinement.solve", return_value=ClingoSolveResult(["abstract atom"], horizon=3, attempts=4))
     def test_unrefinable_plans_extend_the_search_above_the_abstract_horizon(
-        self, solve, parse_plan_actions, build_mapping, solve_decrementally
+        self, solve, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver, disabled_switches
     ):
-        solve.side_effect = [
-            ClingoSolveResult(["abstract atom"], horizon=3, attempts=4),
-            ClingoSolveResult(["occurs(concrete,5)"], horizon=5, attempts=2),
-        ]
+        solver = incremental_solver.return_value
+        solver.search.return_value = ClingoSolveResult(["occurs(concrete,5)"], horizon=5, attempts=2)
 
         context = self._context()
         result = refine(context)
@@ -77,8 +79,12 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(context.metrics.counters["final_horizon"], 5)
         self.assertEqual(context.metrics.counters["concrete_solve_calls"], 6)
         self.assertIn("extended_concrete_solving", context.metrics.durations)
-        self.assertEqual(solve.call_args_list[1].args[:2], ("concrete asp", 4))
-        self.assertEqual(solve_decrementally.call_args.args[:2], ("concrete asp\nmapping asp", 3))
+        self.assertEqual(incremental_solver.call_args.args, ("concrete asp\nmapping asp", 3))
+
+        # The extension continues on the solver the decremental search used.
+        self.assertIs(solve_decrementally.call_args.args[0], solver)
+        solver.extend.assert_called_once_with()
+        self.assertEqual(solver.search.call_args.args[0], [])
 
 
 if __name__ == "__main__":
