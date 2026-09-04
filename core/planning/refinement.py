@@ -52,9 +52,6 @@ def refine(context: RefinementContext):
     with context.metrics.measure("guided_concrete_solving"):
         success, plan, solver_operations = solve_decrementally(asp, context.horizon, record_attempt)
 
-    context.metrics.set_counter("decrements", solver_operations)
-    context.metrics.set_counter("concrete_solve_calls", solver_operations + 1)
-
     increments = 0
     if not success:
         with context.metrics.measure("extended_concrete_solving"):
