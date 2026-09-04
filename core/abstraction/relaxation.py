@@ -10,6 +10,45 @@ class _RelaxableDelete:
     variables: tuple[str, ...]
 
 
+def match_relaxable_delete(action, effect, objects_to_collapse):
+    """Match a delete effect that refers to the collapsed objects."""
+    if (
+        not effect.is_assignment()
+        or not effect.value.is_false()
+        or not effect.fluent.type.is_bool_type()
+        or not effect.fluent.is_fluent_exp()
+    ):
+        return None
+
+    collapsed_type = objects_to_collapse[0].type
+    variable_expressions = []
+    variable_names = []
+
+    for arg in effect.fluent.args:
+        if arg.is_object_exp():
+            if arg.object() in objects_to_collapse:
+                variable_names.append(arg.object().name)
+            continue
+
+        if arg.is_parameter_exp():
+            variable = arg.parameter()
+        elif arg.is_variable_exp():
+            variable = arg.variable()
+        elif not collapsed_type.is_subtype(variable.type):
+            continue
+
+        variable_expressions.append(arg)
+        variable_names.append(f"?{variable.name}")
+
+    if not variable_names:
+        return None
+
+    relaxable_delete = _RelaxableDelete(
+        action=action.name, predicate=effect.fluent.fluent().name, variables=tuple(variable_names)
+    )
+    return tuple(variable_expressions), relaxable_delete
+
+
 def find_relaxable_deletes(problem, abstraction):
     """Find deletes that can be relaxed for the selected objects."""
     objects_to_collapse = tuple(problem.object(name) for name in abstraction.objects)
@@ -27,57 +66,6 @@ def find_relaxable_deletes(problem, abstraction):
         )
         relaxable_deletes.extend(action_relaxable_deletes)
     return tuple(relaxable_deletes)
-
-
-def _find_static_preconditions(expression, variable_expression, static_fluents):
-    static_preconditions = []
-    pending_expressions = [expression]
-    while pending_expressions:
-        current_expression = pending_expressions.pop()
-        if current_expression.is_and():
-            pending_expressions.extend(reversed(current_expression.args))
-        elif (
-            current_expression.is_fluent_exp()
-            and current_expression.fluent() in static_fluents
-            and variable_expression in current_expression.args
-        ):
-            static_preconditions.append(current_expression)
-    return static_preconditions
-
-
-def _matching_object(atom, fact, variable_expression):
-    if not fact.is_fluent_exp() or atom.fluent() != fact.fluent() or len(atom.args) != len(fact.args):
-        return None
-
-    matching_object = None
-    for expected, actual in zip(atom.args, fact.args):
-        if expected.is_parameter_exp() or expected.is_variable_exp():
-            if expected != variable_expression:
-                continue
-            if not actual.is_object_exp():
-                return None
-            if matching_object is not None and matching_object != actual.object():
-                return None
-            matching_object = actual.object()
-        elif expected != actual:
-            return None
-    return matching_object
-
-
-def _objects_supported_by_condition(atom, variable_expression, positive_initial_facts):
-    supported_objects = set()
-    for fact in positive_initial_facts:
-        matching_object = _matching_object(atom, fact, variable_expression)
-        if matching_object is not None:
-            supported_objects.add(matching_object)
-    return supported_objects
-
-
-def _collect_static_preconditions(action, variable_expression, static_fluents):
-    static_preconditions = []
-    for precondition in action.preconditions:
-        static_preconditions.extend(_find_static_preconditions(precondition, variable_expression, static_fluents))
-    return static_preconditions
 
 
 def _find_action_relaxable_deletes(action, static_fluents, positive_initial_facts, objects_to_collapse):
@@ -123,40 +111,52 @@ def _binds_a_collapsed_object(action, variable_expression, static_fluents, posit
     return True
 
 
-def match_relaxable_delete(action, effect, objects_to_collapse):
-    """Match a delete effect that refers to the collapsed objects."""
-    if not effect.is_assignment() or not effect.value.is_false() or not effect.fluent.type.is_bool_type():
+def _collect_static_preconditions(action, variable_expression, static_fluents):
+    static_preconditions = []
+    for precondition in action.preconditions:
+        static_preconditions.extend(_find_static_preconditions(precondition, variable_expression, static_fluents))
+    return static_preconditions
+
+
+def _objects_supported_by_condition(atom, variable_expression, positive_initial_facts):
+    supported_objects = set()
+    for fact in positive_initial_facts:
+        matching_object = _matching_object(atom, fact, variable_expression)
+        if matching_object is not None:
+            supported_objects.add(matching_object)
+    return supported_objects
+
+
+def _find_static_preconditions(expression, variable_expression, static_fluents):
+    static_preconditions = []
+    pending_expressions = [expression]
+    while pending_expressions:
+        current_expression = pending_expressions.pop()
+        if current_expression.is_and():
+            pending_expressions.extend(reversed(current_expression.args))
+        elif (
+            current_expression.is_fluent_exp()
+            and current_expression.fluent() in static_fluents
+            and variable_expression in current_expression.args
+        ):
+            static_preconditions.append(current_expression)
+    return static_preconditions
+
+
+def _matching_object(atom, fact, variable_expression):
+    if not fact.is_fluent_exp() or atom.fluent() != fact.fluent() or len(atom.args) != len(fact.args):
         return None
-    if not effect.fluent.is_fluent_exp():
-        return None
 
-    collapsed_type = objects_to_collapse[0].type
-    variable_expressions = []
-    variable_names = []
-    for argument in effect.fluent.args:
-        if argument.is_object_exp():
-            if argument.object() in objects_to_collapse:
-                variable_names.append(argument.object().name)
-            continue
-        variable = _argument_variable(argument)
-        if variable is None or not collapsed_type.is_subtype(variable.type):
-            continue
-        variable_expressions.append(argument)
-        variable_names.append(f"?{variable.name}")
-
-    if not variable_names:
-        return None
-
-    relaxable_delete = _RelaxableDelete(
-        action=action.name, predicate=effect.fluent.fluent().name, variables=tuple(variable_names)
-    )
-    return tuple(variable_expressions), relaxable_delete
-
-
-def _argument_variable(argument):
-    """Return the parameter or quantified variable an argument refers to."""
-    if argument.is_parameter_exp():
-        return argument.parameter()
-    if argument.is_variable_exp():
-        return argument.variable()
-    return None
+    matching_object = None
+    for expected, actual in zip(atom.args, fact.args):
+        if expected.is_parameter_exp() or expected.is_variable_exp():
+            if expected != variable_expression:
+                continue
+            if not actual.is_object_exp():
+                return None
+            if matching_object is not None and matching_object != actual.object():
+                return None
+            matching_object = actual.object()
+        elif expected != actual:
+            return None
+    return matching_object
