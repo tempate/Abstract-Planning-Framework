@@ -46,8 +46,9 @@ pre-commit install
 
 ## Try it
 
-The examples contain complete, copyable CLI commands using Gripper tasks from
-the Downward benchmark collection.
+The examples contain complete, copyable CLI commands using a Driverlog task
+from the Downward benchmark collection. Both modes solve the same task, so the
+two runs are directly comparable.
 
 ```bash
 ./examples/concrete.sh
@@ -74,8 +75,8 @@ concrete search:
 
 ```bash
 python -m scripts.planner abstract \
-    --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
-    --problem benchmarks/downward-benchmarks/gripper/prob01.pddl
+    --domain benchmarks/downward-benchmarks/driverlog/domain.pddl \
+    --problem benchmarks/downward-benchmarks/driverlog/p07.pddl
 ```
 
 The incremental search requires exactly one action at each step and increases

@@ -66,14 +66,14 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 2)
                 self.assertIn("Usage:", result.stderr)
 
-    def test_quick_examples_use_gripper_prob01(self):
+    def test_quick_examples_use_driverlog_p07(self):
         for example in ("concrete", "abstract"):
             with self.subTest(example=example):
                 result = self._run(example, python_bin="/bin/echo")
 
                 self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual(result.stdout.count("benchmarks/downward-benchmarks/gripper/domain.pddl"), 1)
-                self.assertEqual(result.stdout.count("gripper/prob01.pddl"), 1)
+                self.assertEqual(result.stdout.count("benchmarks/downward-benchmarks/driverlog/domain.pddl"), 1)
+                self.assertEqual(result.stdout.count("driverlog/p07.pddl"), 1)
                 self.assertNotIn("--horizon", result.stdout)
                 self.assertNotIn("--encoding", result.stdout)
 

@@ -29,14 +29,14 @@ class ExampleWorkflowTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.count("Plan found: yes"), expected_plans, result.stdout)
 
-    def test_gripper_concrete_example_finds_a_plan(self):
+    def test_driverlog_concrete_example_finds_a_plan(self):
         self._assert_success(self._run("concrete"))
 
-    def test_gripper_abstract_example_runs_the_refinement_pipeline(self):
+    def test_driverlog_abstract_example_runs_the_refinement_pipeline(self):
         result = self._run("abstract")
 
         self._assert_success(result)
-        self.assertIn("Collapsed ['ball1', 'ball2', 'ball3', 'ball4'] into object_abs", result.stdout)
+        self.assertIn("Collapsed ['package1', 'package6'] into object_abs", result.stdout)
         self.assertRegex(result.stdout, r"(?m)^    Refinement decrements +\d+$")
 
 
