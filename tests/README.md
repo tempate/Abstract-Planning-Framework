@@ -1,26 +1,18 @@
 # Tests
 
-The default suite uses inline PDDL models and test doubles for external
-planners. Real workflow and PDDL Symmetries tests are opt-in and use Driverlog
-and Gripper tasks from the Downward benchmark submodule.
+The default suite uses inline PDDL models and test doubles for external planners.
+Integration tests are opt-in and run the real toolchain on benchmark tasks.
 
 ```bash
-# Fast/default suite
-python -m unittest discover -s tests -p 'test_*.py' -v
+python -m unittest discover -s tests -p 'test_*.py'
 
-# Real external-tool workflows as well
-RUN_PLANNER_INTEGRATION=1 \
-    python -m unittest discover -s tests -p 'test_*.py' -v
+RUN_PLANNER_INTEGRATION=1 python -m unittest discover -s tests -p 'test_*.py'
 ```
 
-To run only the real integrations:
+Only the integrations:
 
 ```bash
-RUN_PLANNER_INTEGRATION=1 \
-    python -m unittest \
-        tests.test_example_workflows_integration \
-        tests.test_abstraction_symmetry.RealSymmetryIntegrationTests -v
+RUN_PLANNER_INTEGRATION=1 python -m unittest \
+    tests.test_example_workflows_integration \
+    tests.test_abstraction_symmetry.RealSymmetryIntegrationTests
 ```
-
-The integration tests execute the public Bash examples in temporary output
-directories.
