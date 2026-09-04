@@ -89,24 +89,42 @@ def parse_plan_actions(atoms):
     """Convert shown ``occurs/2`` atoms into chronological plan actions."""
     actions = []
     for atom in atoms:
-        symbol = clingo.parse_term(atom.rstrip("."))
-        if symbol.type != clingo.SymbolType.Function or symbol.name != "occurs" or len(symbol.arguments) != 2:
-            continue
-
-        action, time_step = symbol.arguments
-        if action.type != clingo.SymbolType.Function or action.name != "action" or len(action.arguments) != 1:
-            continue
-        payload = action.arguments[0]
-        if payload.type == clingo.SymbolType.String:
-            fields = (payload.string,)
-        elif payload.type == clingo.SymbolType.Function and payload.name == "":
-            if not payload.arguments or any(item.type != clingo.SymbolType.String for item in payload.arguments):
-                continue
-            fields = tuple(item.string for item in payload.arguments)
-        else:
-            continue
-        if time_step.type != clingo.SymbolType.Number:
-            continue
-        actions.append(PlanAction(fields[0], fields[1:], time_step.number))
+        action = _plan_action(clingo.parse_term(atom.rstrip(".")))
+        if action is not None:
+            actions.append(action)
 
     return tuple(sorted(actions, key=lambda action: action.time_step))
+
+
+def _plan_action(symbol):
+    """Read one occurs/2 atom, or None when it is some other atom."""
+    if not _is_function(symbol, "occurs", 2):
+        return None
+
+    action, time_step = symbol.arguments
+    if not _is_function(action, "action", 1) or time_step.type != clingo.SymbolType.Number:
+        return None
+
+    fields = _action_fields(action.arguments[0])
+    if fields is None:
+        return None
+    return PlanAction(fields[0], fields[1:], time_step.number)
+
+
+def _action_fields(payload):
+    """Read an action's name and arguments from its string or tuple payload."""
+    if payload.type == clingo.SymbolType.String:
+        return (payload.string,)
+    if payload.type != clingo.SymbolType.Function or payload.name != "" or not payload.arguments:
+        return None
+
+    fields = []
+    for item in payload.arguments:
+        if item.type != clingo.SymbolType.String:
+            return None
+        fields.append(item.string)
+    return tuple(fields)
+
+
+def _is_function(symbol, name, arity):
+    return symbol.type == clingo.SymbolType.Function and symbol.name == name and len(symbol.arguments) == arity
