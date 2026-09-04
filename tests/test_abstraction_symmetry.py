@@ -56,6 +56,49 @@ SYMMETRY_PROBLEM = """
 """
 
 
+GOAL_DOMAIN = """
+(define (domain goals)
+  (:requirements :strips :typing)
+  (:types item)
+  (:predicates (ready ?x - item) (done ?x - item))
+  (:action finish
+    :parameters (?x - item)
+    :precondition (ready ?x)
+    :effect (and (done ?x) (not (ready ?x)))))
+"""
+
+GOAL_PROBLEM = """
+(define (problem goals-task)
+  (:domain goals)
+  (:objects a1 a2 b1 b2 b3 - item)
+  (:init (ready a1) (ready a2) (ready b1) (ready b2) (ready b3))
+  (:goal (and (done b1) (done b2) (done b3))))
+"""
+
+ORDERING_DOMAIN = """
+(define (domain ordering)
+  (:requirements :strips :typing)
+  (:types item gadget)
+  (:predicates (ready ?x - item) (armed ?x - item) (set ?x - gadget) (done ?x - gadget))
+  (:action use-item
+    :parameters (?x - item)
+    :precondition (ready ?x)
+    :effect (and (not (ready ?x)) (not (armed ?x))))
+  (:action use-gadget
+    :parameters (?x - gadget)
+    :precondition (set ?x)
+    :effect (and (done ?x) (not (set ?x)))))
+"""
+
+ORDERING_PROBLEM = """
+(define (problem ordering-task)
+  (:domain ordering)
+  (:objects item1 item2 - item gadget1 gadget2 - gadget)
+  (:init (ready item1) (ready item2) (armed item1) (armed item2) (set gadget1) (set gadget2))
+  (:goal (and (done gadget1) (done gadget2))))
+"""
+
+
 def _stub_symmetry_inputs(directory):
     root = Path(directory)
     translator = root / "translate.py"
@@ -96,6 +139,35 @@ class SymmetrySelectionTests(unittest.TestCase):
         selected, _ = _select_abstraction(source, [["a1", "a2"], ["b1", "b2", "b3"]])
 
         self.assertEqual(set(selected.objects), {"b1", "b2", "b3"})
+
+    def test_prefers_a_class_the_goal_does_not_mention(self):
+        source = parse_problem(GOAL_DOMAIN, GOAL_PROBLEM)
+
+        selected, _ = _select_abstraction(source, [["b1", "b2", "b3"], ["a1", "a2"]])
+
+        self.assertEqual(set(selected.objects), {"a1", "a2"})
+
+    def test_prefers_the_class_the_goal_mentions_least(self):
+        problem = """
+(define (problem p) (:domain goals)
+  (:objects a1 a2 b1 b2 - item)
+  (:init (ready a1) (ready a2) (ready b1) (ready b2))
+  (:goal (and (done a1) (done b1) (done b2))))
+"""
+        source = parse_problem(GOAL_DOMAIN, problem)
+
+        selected, _ = _select_abstraction(source, [["b1", "b2"], ["a1", "a2"]])
+
+        self.assertEqual(set(selected.objects), {"a1", "a2"})
+
+    def test_goal_conjuncts_outrank_the_relaxed_delete_count(self):
+        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
+
+        selected, relaxable_deletes = _select_abstraction(source, [["gadget1", "gadget2"], ["item1", "item2"]])
+
+        # The items relax two deletes against the gadgets' one, and still win.
+        self.assertEqual(set(selected.objects), {"item1", "item2"})
+        self.assertEqual(len(relaxable_deletes), 2)
 
     def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self):
         classes = [
@@ -213,13 +285,14 @@ class SymmetrySelectionTests(unittest.TestCase):
     os.environ.get("RUN_PLANNER_INTEGRATION") == "1", "set RUN_PLANNER_INTEGRATION=1 to run PDDL Symmetries"
 )
 class RealSymmetryIntegrationTests(unittest.TestCase):
-    def test_gripper_symmetries_select_balls(self):
+    def test_gripper_symmetries_select_the_grippers(self):
         problem_path = GRIPPER / "prob01.pddl"
         classes = find_symmetric_object_sets(GRIPPER / "domain.pddl", problem_path)
         selected, _ = _select_abstraction(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
 
         self.assertEqual({tuple(group) for group in classes}, {("ball1", "ball2", "ball3", "ball4"), ("left", "right")})
-        self.assertEqual(set(selected.objects), {"ball1", "ball2", "ball3", "ball4"})
+        # Both classes relax two deletes, but the goal names every ball.
+        self.assertEqual(set(selected.objects), {"left", "right"})
 
 
 if __name__ == "__main__":

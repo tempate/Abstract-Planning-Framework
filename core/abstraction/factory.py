@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from unified_planning.model import Problem
 
 from core.abstraction.collapse import AbstractionError, collapse_objects
+from core.abstraction.heuristic import abstraction_score
 from core.abstraction.relaxation import find_relaxable_deletes
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import read_problem
@@ -54,22 +55,19 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
 
 
 def _select_abstraction(problem, symmetry_classes, abstract_name=None):
-    """Select the lowest-impact class reported by PDDL Symmetries."""
+    """Select the lowest-scoring class reported by PDDL Symmetries."""
     candidate = None
     candidate_relaxable_deletes = ()
+    candidate_score = None
 
     for symmetry_class in symmetry_classes:
         abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)
-        removes_fewer_deletes = len(relaxable_deletes) < len(candidate_relaxable_deletes)
-        is_larger_tie = (
-            candidate is not None
-            and len(relaxable_deletes) == len(candidate_relaxable_deletes)
-            and len(abstraction.objects) > len(candidate.objects)
-        )
-        if candidate is None or removes_fewer_deletes or is_larger_tie:
+        score = abstraction_score(problem, abstraction, relaxable_deletes)
+        if candidate_score is None or score < candidate_score:
             candidate = abstraction
             candidate_relaxable_deletes = relaxable_deletes
+            candidate_score = score
 
     return candidate, candidate_relaxable_deletes
 
