@@ -34,7 +34,10 @@ def match_relaxable_delete(action, effect, objects_to_collapse):
             variable = arg.parameter()
         elif arg.is_variable_exp():
             variable = arg.variable()
-        elif not collapsed_type.is_subtype(variable.type):
+        else:
+            continue
+
+        if not collapsed_type.is_subtype(variable.type):
             continue
 
         variable_expressions.append(arg)

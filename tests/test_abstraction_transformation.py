@@ -325,8 +325,10 @@ class AbstractionTransformationTests(unittest.TestCase):
         result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
 
         # Keeping the delete would drop `at` for the collapsed object while the
-        # other objects it stands for are still there.
+        # other objects it stands for are still there. Only the item argument
+        # matches; `?from` is a place and must not be picked up.
         self.assertEqual([item.predicate for item in result.relaxed_deletes], ["at"])
+        self.assertEqual([item.variables for item in result.relaxed_deletes], [("?x",)])
         shift = result.problem.action("shift")
         self.assertFalse(any(effect.value.is_false() for effect in shift.effects))
 
@@ -355,7 +357,9 @@ class AbstractionTransformationTests(unittest.TestCase):
 
         result = _build_from_problem(source, ["stage", "dock"], "pooled-place")
 
+        # `?x` is an item, so only the named place matches.
         self.assertEqual([item.predicate for item in result.relaxed_deletes], ["at"])
+        self.assertEqual([item.variables for item in result.relaxed_deletes], [("stage",)])
         clear_stage = result.problem.action("clear-stage")
         self.assertFalse(any(effect.value.is_false() for effect in clear_stage.effects))
 
