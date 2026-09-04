@@ -53,5 +53,18 @@ def add_switch_to_asp_rule(asp, encoding_type="bounded"):
     rule_to_modify = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), T > 0."
     modified_rule = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), not switch(T), T > 0."
 
-    lines = [modified_rule if line.strip() == rule_to_modify else line for line in asp.splitlines()]
+    lines = []
+    guarded = 0
+    for line in asp.splitlines():
+        if line.strip() == rule_to_modify:
+            lines.append(modified_rule)
+            guarded += 1
+        else:
+            lines.append(line)
+
+    # Without the guard the switches never suppress the rule, so the abstract
+    # plan would silently stop constraining the concrete search.
+    if guarded == 0:
+        raise IntegrationError(f"No occurrence rule to guard with switches in the {encoding_type} encoding")
+
     return "\n".join(lines) + ("\n" if asp.endswith("\n") else "")
