@@ -2,7 +2,11 @@
 
 An experimental framework for comparing classical planning with abstraction
 and decremental refinement across classical-planning benchmarks using Fast
-Downward, Clingo, and PlanPilot.
+Downward, plasp, and Clingo.
+
+Fast Downward translates PDDL tasks to SAS, plasp translates SAS to ASP facts,
+and the repository-owned incremental encoding drives Clingo's plan search.
+Clingo increases the horizon while reusing the same solver instance.
 
 The abstract workflow builds a symmetric-object abstraction directly from one
 concrete PDDL task, solves it, maps its plan to the concrete task, and relaxes
@@ -12,11 +16,13 @@ planner continues unconstrained concrete search above the abstract horizon.
 
 ## Setup
 
-The planner toolchain and benchmark collection are Git submodules. Initialize
-them together with the repository:
+Fast Downward, PDDL Symmetries, and the benchmark collection are Git
+submodules. Initialize them, install the pinned official plasp release, and
+build Fast Downward:
 
 ```bash
 git submodule update --init --recursive
+python scripts/install_plasp.py
 python -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
@@ -71,6 +77,10 @@ python -m scripts.planner abstract \
     --domain benchmarks/downward-benchmarks/gripper/domain.pddl \
     --problem benchmarks/downward-benchmarks/gripper/prob01.pddl
 ```
+
+The incremental search requires exactly one action at each step and increases
+the horizon until it finds a plan. Benchmark and process timeouts bound
+searches for tasks without a reachable plan.
 
 The planner asks PDDL Symmetries to discover a symmetric set of objects by default. Use `--objects-to-abstract NAME...` to select them explicitly. If PDDL Symmetries does not discover a symmetric set of objects, `abstract` mode exits without running a concrete planning pipeline.
 

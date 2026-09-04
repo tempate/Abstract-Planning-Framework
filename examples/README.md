@@ -18,13 +18,12 @@ Run them from the repository root after initializing the submodules.
 
 `abstract.sh` asks PDDL Symmetries to discover the symmetric object classes.
 The selected ball class is collapsed into a temporary abstract object, the
-abstraction is solved with Clingo, and its plan guides the concrete search.
-Automatic selection requires the pybliss setup described in the main README.
+abstraction is solved, and its plan guides the concrete search. Automatic
+selection requires the pybliss setup described in the main README.
 
 The example paths are deliberately ordinary `--domain` and `--problem`
 arguments. The framework does not otherwise depend on the benchmark layout;
-the same commands accept any compatible PDDL task. Optional abstraction naming
-and horizon arguments use their defaults, so Fast Downward infers the horizon
-automatically. Run
+the same commands accept any compatible PDDL task. The examples let Clingo
+increase the horizon incrementally until it finds a plan. Run
 `python -m scripts.planner --help` for the two planning modes and their complete
 CLI reference.

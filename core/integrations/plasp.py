@@ -1,37 +1,24 @@
-"""PlanPilot integration for translating planning instances to ASP."""
+"""plasp integration for translating planning instances to ASP."""
 
 import os
 import subprocess
 
 from core.planning.outcomes import IntegrationError
 
-from core.paths import (
-    ABSTRACT_TIME_STEPS_ENCODING,
-    ACTION_PER_TIME_STEP_ENCODING,
-    BOUNDED_HORIZON_ENCODING,
-    EXACT_HORIZON_ENCODING,
-    PLASP_BIN,
-)
-
-_HORIZON_ENCODINGS = {"exact": EXACT_HORIZON_ENCODING, "bounded": BOUNDED_HORIZON_ENCODING}
-
-_SWITCH_RULE_BOUNDS = {"exact": "1", "bounded": "0"}
+from core.paths import ABSTRACT_TIME_STEPS_ENCODING, ACTION_PER_TIME_STEP_ENCODING, EXACT_HORIZON_ENCODING, PLASP_BIN
 
 
-def sas_to_asp(sas_path, encoding_type="bounded", abstract_time_steps=False):
-    """Translate a SAS instance and return an in-memory ASP program."""
-    # Encoding files for translation
-    encoding_file = _HORIZON_ENCODINGS[encoding_type]
-
+def sas_to_asp(sas_path, abstract_time_steps=False):
+    """Translate a SAS instance using the exact incremental encoding."""
     if abstract_time_steps:
         time_file = ABSTRACT_TIME_STEPS_ENCODING
     else:
         time_file = ACTION_PER_TIME_STEP_ENCODING
 
     if not os.path.exists(PLASP_BIN):
-        raise FileNotFoundError(f"plasp binary not found: {PLASP_BIN}")
+        raise FileNotFoundError(f"plasp binary not found: {PLASP_BIN}; run `python scripts/install_plasp.py`")
 
-    with open(encoding_file, "r", encoding="utf-8") as encoding_source:
+    with open(EXACT_HORIZON_ENCODING, "r", encoding="utf-8") as encoding_source:
         encoding = encoding_source.read()
     with open(time_file, "r", encoding="utf-8") as time_source:
         time_encoding = time_source.read()
@@ -45,13 +32,10 @@ def sas_to_asp(sas_path, encoding_type="bounded", abstract_time_steps=False):
     return "\n".join(fragment.rstrip("\n") for fragment in fragments) + "\n"
 
 
-def add_switch_to_asp_rule(asp, encoding_type="bounded"):
-    """Return an ASP program with a switch-guarded occurrence constraint."""
-
-    # Define the original rule and the modified rule based on the encoding type
-    bound = _SWITCH_RULE_BOUNDS[encoding_type]
-    rule_to_modify = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), T > 0."
-    modified_rule = f"{bound} {{occurs(Action, T) : action(Action)}} 1 :- time(T), not switch(T), T > 0."
+def add_switch_to_asp_rule(asp):
+    """Guard the exact encoding's occurrence constraint with a switch."""
+    rule_to_modify = "1 {occurs(Action, t) : action(Action)} 1."
+    modified_rule = "1 {occurs(Action, t) : action(Action)} 1 :- not switch(t)."
 
     lines = []
     guarded = 0
@@ -65,6 +49,6 @@ def add_switch_to_asp_rule(asp, encoding_type="bounded"):
     # Without the guard the switches never suppress the rule, so the abstract
     # plan would silently stop constraining the concrete search.
     if guarded == 0:
-        raise IntegrationError(f"No occurrence rule to guard with switches in the {encoding_type} encoding")
+        raise IntegrationError("No occurrence rule to guard with switches in the exact encoding")
 
     return "\n".join(lines) + ("\n" if asp.endswith("\n") else "")

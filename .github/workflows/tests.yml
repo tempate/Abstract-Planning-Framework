@@ -42,6 +42,9 @@ jobs:
       - name: Check Black formatting
         run: python -m black --check .
 
+      - name: Install plasp
+        run: python scripts/install_plasp.py
+
       - name: Build Fast Downward
         run: python lib/downward/build.py release
 

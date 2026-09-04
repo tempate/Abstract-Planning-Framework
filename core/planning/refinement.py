@@ -3,11 +3,10 @@
 from dataclasses import dataclass, field
 
 from core.abstraction.factory import Abstraction
-from core.integrations.clingo import parse_plan_actions, run_clingo
+from core.integrations.clingo import parse_plan_actions, solve
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.planning.mapping import build_mapping
-from core.planning.plan import PlanAction
 from core.solvers.decremental import solve_decrementally
 
 
@@ -23,20 +22,13 @@ class RefinementContext:
     concrete_task: dict = field(default_factory=dict)
     abstract_task: dict = field(default_factory=dict)
     concrete_asp: str = ""
-    abstract_asp: str | None = None
+    abstract_asp: str = ""
     horizon: int = 0
 
 
 def refine(context: RefinementContext):
     """Obtain an abstract plan and use it to guide concrete search."""
-    abstract_plan = _get_abstract_plan(context)
-    if abstract_plan is None:
-        context.metrics.set_counter("decrements", 0)
-        context.metrics.set_counter("increments", 0)
-        context.metrics.set_counter("final_horizon", context.horizon)
-        context.metrics.set_counter("concrete_solve_calls", 0)
-        return _build_result(context, success=False, plan=None)
-
+    abstract_plan = _solve_abstract_plan(context)
     mapping = build_mapping(abstract_plan, context.abstraction)
 
     asp = "\n".join((context.concrete_asp, mapping))
@@ -50,73 +42,55 @@ def refine(context: RefinementContext):
         context.metrics.set_counter("concrete_solve_calls", solve_calls)
 
     with context.metrics.measure("guided_concrete_solving"):
-        success, plan, solver_operations = solve_decrementally(asp, context.horizon, record_attempt)
+        success, plan, decrements = solve_decrementally(asp, context.horizon, record_attempt)
+
+    guided_solve_calls = decrements + 1
+    context.metrics.set_counter("decrements", decrements)
+    context.metrics.set_counter("concrete_solve_calls", guided_solve_calls)
 
     increments = 0
     if not success:
         with context.metrics.measure("extended_concrete_solving"):
-            plan, increments = _extend_concrete_search(context)
+            plan, increments = _extend_concrete_search(context, guided_solve_calls)
         success = True
 
-    context.metrics.set_counter("decrements", solver_operations)
     context.metrics.set_counter("increments", increments)
     context.metrics.set_counter("final_horizon", context.horizon)
-    context.metrics.set_counter("concrete_solve_calls", solver_operations + 1 + increments)
 
     return _build_result(context, success=success, plan=plan)
 
 
-def _get_abstract_plan(context):
-    if context.config.plan_source == "clingo":
-        context.metrics.set_counter("abstract_solve_calls", 1)
-        return _solve_abstract_plan(context)
-
-    if context.config.plan_source == "fd":
-        context.metrics.set_counter("abstract_solve_calls", 0)
-        return read_fast_downward_plan(context.abstract_task["planFile"])
-
-    raise ValueError(f"Unknown abstract plan source: {context.config.plan_source}")
-
-
 def _solve_abstract_plan(context):
+    """Search for the shortest abstract plan and read its horizon."""
+
+    def record_attempt(horizon, solve_calls):
+        context.metrics.set_counter("abstract_horizon", horizon)
+        context.metrics.set_counter("abstract_solve_calls", solve_calls)
+
     with context.metrics.measure("abstract_solving"):
-        abstract_atoms = run_clingo(context.abstract_asp, context.horizon)
+        solve_result = solve(context.abstract_asp, on_attempt=record_attempt)
 
-    if abstract_atoms is None:
-        return None
+    context.horizon = solve_result.horizon
+    context.metrics.set_counter("abstract_horizon", solve_result.horizon)
+    context.metrics.set_counter("abstract_solve_calls", solve_result.attempts)
 
-    return parse_plan_actions(abstract_atoms)
+    return parse_plan_actions(solve_result.plan)
 
 
-def _extend_concrete_search(context):
+def _extend_concrete_search(context, guided_solve_calls):
     """Search above the abstract horizon without abstract-plan constraints."""
     initial_horizon = context.horizon
-    while True:
-        context.horizon += 1
-        increments = context.horizon - initial_horizon
-        solve_calls = context.metrics.counters.get("concrete_solve_calls", 0) + 1
-        context.metrics.set_counter("increments", increments)
-        context.metrics.set_counter("final_horizon", context.horizon)
-        context.metrics.set_counter("concrete_solve_calls", solve_calls)
-        plan = run_clingo(context.concrete_asp, context.horizon)
-        if plan is not None:
-            return plan, increments
 
+    def record_attempt(horizon, solve_calls):
+        context.metrics.set_counter("increments", horizon - initial_horizon)
+        context.metrics.set_counter("final_horizon", horizon)
+        context.metrics.set_counter("concrete_solve_calls", guided_solve_calls + solve_calls)
 
-def read_fast_downward_plan(plan_file_path):
-    """Read a Fast Downward plan into chronological plan actions."""
-    abstract_plan = []
-    with open(plan_file_path, "r") as plan_file:
-        time_step = 1
-        for line in plan_file:
-            line = line.strip()
-            if not line or line.startswith(";"):
-                continue
-            action_name, *arguments = line.strip("()").split()
-            abstract_plan.append(PlanAction(action_name, tuple(arguments), time_step))
-            time_step += 1
+    solve_result = solve(context.concrete_asp, initial_horizon + 1, record_attempt)
 
-    return tuple(abstract_plan)
+    context.horizon = solve_result.horizon
+    context.metrics.set_counter("concrete_solve_calls", guided_solve_calls + solve_result.attempts)
+    return solve_result.plan, context.horizon - initial_horizon
 
 
 def _build_result(context, *, success, plan):
