@@ -256,7 +256,6 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual(config.abstract_name, "combined")
         self.assertEqual(config.symmetry_time_limit, 17)
-        self.assertIn("Collapsed ['a', 'b'] into combined", output.getvalue())
 
 
 if __name__ == "__main__":

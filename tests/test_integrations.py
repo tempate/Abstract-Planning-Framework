@@ -8,6 +8,7 @@ from unittest.mock import patch
 from core.integrations.clingo import collect_plan, create_control, parse_plan_actions
 from core.integrations.fast_downward import _get_command, calc_horizon, run_fast_downward
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
+from core.planning.outcomes import IntegrationError
 from core.planning.plan import PlanAction
 from core.planning.outcomes import UnsolvableTaskError
 
@@ -137,6 +138,10 @@ class PlaspPostProcessingTests(unittest.TestCase):
                 self.assertEqual(result.count("not switch(T)"), 1)
                 self.assertIn("before.\n", result)
                 self.assertIn("after.\n", result)
+
+    def test_switch_guard_rejects_an_encoding_without_the_occurrence_rule(self):
+        with self.assertRaisesRegex(IntegrationError, "No occurrence rule"):
+            add_switch_to_asp_rule("before.\nafter.\n")
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ SYMMETRIC_DOMAINS = [
     "sokoban-sat11-strips",
     "woodworking-sat11-strips",
     # IPC 2006 (no newer satisficing STRIPS formulation)
-    "pathways",
+    # "pathways", Excluded: potassco/plasp/issues/14.
     "pipesworld-tankage",
     "tpp",
     # IPC 1998--2004 (no newer satisficing STRIPS formulation)
@@ -68,9 +68,7 @@ NON_SYMMETRIC_DOMAINS = [
     "tidybot-sat11-strips",
     # IPC 2006 (no newer satisficing STRIPS formulation)
     "rovers",
-    # Temporarily excluded: Unified Planning cannot convert standard
-    # ``(either ...)`` parameter types (aiplan4eu/unified-planning#817).
-    # "storage",
+    # "storage", Excluded: aiplan4eu/unified-planning/issues/817.
     "trucks-strips",
     # IPC 1998--2004 (no newer satisficing STRIPS formulation)
     "blocks",

@@ -36,12 +36,6 @@ def main():
     except (AbstractionError, PddlError, OSError, UnicodeError, ValueError) as error:
         parser.error(str(error))
 
-    abstraction = result.get("abstraction")
-    if abstraction is not None:
-        print(
-            f"Collapsed {sorted(abstraction['objects_to_abstract'])} into {abstraction['abstract_symbol']} "
-            f"(type={abstraction['object_type']})"
-        )
     print_planning_result(result)
     return 0 if result["success"] else 1
 
