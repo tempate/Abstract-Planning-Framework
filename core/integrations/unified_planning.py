@@ -44,3 +44,19 @@ def write_problem(problem: Problem):
         return PddlText(writer.get_domain(), writer.get_problem())
     except Exception as error:
         raise PddlError(f"Could not serialize PDDL task: {error}") from error
+
+
+def write_problem_files(problem: Problem, directory):
+    """Write a Unified Planning problem as a PDDL pair inside one directory."""
+    directory = Path(directory)
+    directory.mkdir(parents=True, exist_ok=True)
+
+    serialized = write_problem(problem)
+
+    domain_path = directory / "domain.pddl"
+    domain_path.write_text(serialized.domain, encoding="utf-8")
+
+    problem_path = directory / "problem.pddl"
+    problem_path.write_text(serialized.problem, encoding="utf-8")
+
+    return domain_path, problem_path
