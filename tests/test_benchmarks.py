@@ -50,7 +50,7 @@ class BenchmarkTests(unittest.TestCase):
         path.write_text(json.dumps(result), encoding="utf-8")
 
     def test_suite_groups_domains_by_confirmed_symmetries(self):
-        self.assertEqual(len(SYMMETRIC_DOMAINS), 26)
+        self.assertEqual(len(SYMMETRIC_DOMAINS), 25)
         self.assertEqual(len(NON_SYMMETRIC_DOMAINS), 23)
         self.assertEqual(SUITE, SYMMETRIC_DOMAINS + NON_SYMMETRIC_DOMAINS)
         self.assertFalse(set(SYMMETRIC_DOMAINS) & set(NON_SYMMETRIC_DOMAINS))
