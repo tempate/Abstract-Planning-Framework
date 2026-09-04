@@ -32,6 +32,8 @@ def refine(context: RefinementContext):
     mapping = build_mapping(abstract_plan, context.abstraction)
 
     asp = "\n".join((context.concrete_asp, mapping))
+
+    # Publish the counters before searching so an interrupted run still has them.
     context.metrics.set_counter("decrements", 0)
     context.metrics.set_counter("increments", 0)
     context.metrics.set_counter("final_horizon", context.horizon)
@@ -45,18 +47,18 @@ def refine(context: RefinementContext):
         solver = IncrementalSolver(asp, context.horizon)
         success, plan, decrements = solve_decrementally(solver, record_attempt)
 
-    guided_solve_calls = decrements + 1
-    context.metrics.set_counter("decrements", decrements)
-    context.metrics.set_counter("concrete_solve_calls", guided_solve_calls)
-
+    solve_calls = decrements + 1
     increments = 0
     if not success:
         with context.metrics.measure("extended_concrete_solving"):
-            plan, increments = _extend_concrete_search(context, solver, guided_solve_calls)
+            plan, increments, extended_calls = _extend_concrete_search(context, solver, solve_calls)
+        solve_calls += extended_calls
         success = True
 
+    context.metrics.set_counter("decrements", decrements)
     context.metrics.set_counter("increments", increments)
     context.metrics.set_counter("final_horizon", context.horizon)
+    context.metrics.set_counter("concrete_solve_calls", solve_calls)
 
     return _build_result(context, success=success, plan=plan)
 
@@ -93,8 +95,7 @@ def _extend_concrete_search(context, solver, guided_solve_calls):
     solve_result = solver.search(disabled_switches(solver), record_attempt)
 
     context.horizon = solve_result.horizon
-    context.metrics.set_counter("concrete_solve_calls", guided_solve_calls + solve_result.attempts)
-    return solve_result.plan, context.horizon - initial_horizon
+    return solve_result.plan, context.horizon - initial_horizon, solve_result.attempts
 
 
 def _build_result(context, *, success, plan):
