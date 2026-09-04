@@ -1,13 +1,19 @@
 # Examples
 
-The examples contain complete CLI commands for the Gripper domain from the
+The examples contain complete CLI commands for the Driverlog domain from the
 [Downward benchmark collection](https://github.com/aibasel/downward-benchmarks).
 Run them from the repository root after initializing the submodules.
 
 | Script | Task | Purpose |
 | --- | --- | --- |
-| `concrete.sh` | `gripper/prob01.pddl` | Solve the concrete task directly |
-| `abstract.sh` | `gripper/prob01.pddl` | Discover and solve an object abstraction |
+| `concrete.sh` | `driverlog/p07.pddl` | Solve the concrete task directly |
+| `abstract.sh` | `driverlog/p07.pddl` | Discover and solve an object abstraction |
+
+Both scripts solve the same task, so the two runs are directly comparable. The
+abstraction pays off here: it collapses two interchangeable packages, its
+abstract horizon of 13 already matches the concrete plan length, and the guided
+concrete search then finds a plan in a single solver call instead of raising the
+horizon 14 times.
 
 ## Planning
 
@@ -17,7 +23,7 @@ Run them from the repository root after initializing the submodules.
 ```
 
 `abstract.sh` asks PDDL Symmetries to discover the symmetric object classes.
-The selected ball class is collapsed into a temporary abstract object, the
+The selected package class is collapsed into a temporary abstract object, the
 abstraction is solved, and its plan guides the concrete search. Automatic
 selection requires the pybliss setup described in the main README.
 
