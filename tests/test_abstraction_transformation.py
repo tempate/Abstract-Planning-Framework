@@ -300,6 +300,69 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertEqual(decreased.fluent, level(abstract_object))
         self.assertIsInstance(result.problem.quality_metrics[0], MinimizeSequentialPlanLength)
 
+    def test_relaxes_a_delete_that_takes_more_than_the_collapsed_object(self):
+        domain = """
+(define (domain transit)
+  (:requirements :strips :typing)
+  (:types item place)
+  (:predicates
+    (at ?x - item ?p - place)
+    (linked ?a - place ?b - place))
+  (:action shift
+    :parameters (?x - item ?from - place ?to - place)
+    :precondition (and (at ?x ?from) (linked ?from ?to))
+    :effect (and (at ?x ?to) (not (at ?x ?from)))))
+"""
+        problem_text = """
+(define (problem transit-task)
+  (:domain transit)
+  (:objects item-a item-b - item dock stage - place)
+  (:init (at item-a dock) (at item-b dock) (linked dock stage))
+  (:goal (and (at item-a stage) (at item-b stage))))
+"""
+        source = parse_problem(domain, problem_text)
+
+        result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
+
+        # Keeping the delete would drop `at` for the collapsed object while the
+        # other objects it stands for are still there. Only the item argument
+        # matches; `?from` is a place and must not be picked up.
+        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["at"])
+        self.assertEqual([item.variables for item in result.relaxed_deletes], [("?x",)])
+        shift = result.problem.action("shift")
+        self.assertFalse(any(effect.value.is_false() for effect in shift.effects))
+
+    def test_relaxes_a_delete_that_names_a_collapsed_object_directly(self):
+        domain = """
+(define (domain depot)
+  (:requirements :strips :typing)
+  (:types item place)
+  (:constants stage - place)
+  (:predicates
+    (at ?x - item ?p - place)
+    (ready ?x - item))
+  (:action clear-stage
+    :parameters (?x - item)
+    :precondition (at ?x stage)
+    :effect (and (ready ?x) (not (at ?x stage)))))
+"""
+        problem_text = """
+(define (problem depot-task)
+  (:domain depot)
+  (:objects crate - item dock - place)
+  (:init (at crate stage))
+  (:goal (ready crate)))
+"""
+        source = parse_problem(domain, problem_text)
+
+        result = _build_from_problem(source, ["stage", "dock"], "pooled-place")
+
+        # `?x` is an item, so only the named place matches.
+        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["at"])
+        self.assertEqual([item.variables for item in result.relaxed_deletes], [("stage",)])
+        clear_stage = result.problem.action("clear-stage")
+        self.assertFalse(any(effect.value.is_false() for effect in clear_stage.effects))
+
 
 if __name__ == "__main__":
     unittest.main()
