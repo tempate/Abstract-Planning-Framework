@@ -79,10 +79,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         abstract_problem = Mock()
         concrete_problem = Mock()
         generated = SimpleNamespace(
-            problem=abstract_problem,
-            concrete_problem=concrete_problem,
-            abstraction=abstraction,
-            relaxed_deletes=(object(), object()),
+            problem=abstract_problem, abstraction=abstraction, relaxed_deletes=(object(), object())
         )
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl")
         concrete_task = {"sasFile": "concrete.sas"}
@@ -90,6 +87,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
 
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch("core.planning.abstract.read_problem", return_value=concrete_problem) as read,
             patch("core.planning.abstract.build_abstract_problem", return_value=generated) as build,
             patch("core.planning.abstract.write_problem_files", side_effect=_written_paths) as write,
             patch("core.planning.abstract.pddl_to_sas", side_effect=[concrete_task, abstract_task]),
@@ -100,9 +98,11 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             result = compute_abstract_plan(config)
 
+        read.assert_called_once_with("domain.pddl", "problem.pddl")
         build.assert_called_once()
         self.assertEqual(build.call_args.args[0], config)
-        self.assertIsInstance(build.call_args.args[1], PlanningMetrics)
+        self.assertIs(build.call_args.args[1], concrete_problem)
+        self.assertIsInstance(build.call_args.args[2], PlanningMetrics)
         self.assertEqual(
             write.call_args_list,
             [
@@ -118,6 +118,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             set(result["metrics"]["durations"]),
             {
                 "total",
+                "problem_reading",
                 "concrete_pddl_writing",
                 "abstract_pddl_writing",
                 "concrete_fd",
@@ -132,6 +133,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
 
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch("core.planning.abstract.read_problem"),
             patch(
                 "core.planning.abstract.build_abstract_problem",
                 side_effect=AbstractionError("PDDL Symmetries found no abstractable object classes"),
@@ -149,6 +151,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
 
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch("core.planning.abstract.read_problem"),
             patch(
                 "core.planning.abstract.build_abstract_problem",
                 side_effect=AbstractionError("Selected objects must have the same declared type"),
@@ -164,13 +167,12 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
     def test_clingo_source_translates_both_tasks_and_receives_abstract_asp(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", time_step=True)
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
-        generated = SimpleNamespace(
-            problem=Mock(), concrete_problem=Mock(), abstraction=abstraction, relaxed_deletes=()
-        )
+        generated = SimpleNamespace(problem=Mock(), abstraction=abstraction, relaxed_deletes=())
         concrete_task = {"sasFile": "concrete.sas"}
         abstract_task = {"sasFile": "abstract.sas"}
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch("core.planning.abstract.read_problem"),
             patch("core.planning.abstract.build_abstract_problem", return_value=generated),
             patch("core.planning.abstract.write_problem_files", side_effect=_written_paths),
             patch("core.planning.abstract.pddl_to_sas", side_effect=[concrete_task, abstract_task]) as run,
@@ -215,13 +217,12 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
     def test_incremental_search_translates_both_tasks_and_generates_both_programs(self):
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl")
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
-        generated = SimpleNamespace(
-            problem=Mock(), concrete_problem=Mock(), abstraction=abstraction, relaxed_deletes=()
-        )
+        generated = SimpleNamespace(problem=Mock(), abstraction=abstraction, relaxed_deletes=())
         concrete_task = {"sasFile": "concrete.sas"}
         abstract_task = {"sasFile": "abstract.sas"}
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch("core.planning.abstract.read_problem"),
             patch("core.planning.abstract.build_abstract_problem", return_value=generated),
             patch("core.planning.abstract.write_problem_files", side_effect=_written_paths),
             patch("core.planning.abstract.pddl_to_sas", side_effect=[concrete_task, abstract_task]) as run,
@@ -302,30 +303,24 @@ class GeneratedAbstractionTests(unittest.TestCase):
             problem.write_text(problem_text, encoding="utf-8")
             config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"], abstract_name="combined")
 
-            abstract_problem = build_abstract_problem(config)
+            abstract_problem = build_abstract_problem(config, read_problem(domain, problem))
             abstract_domain, abstract_problem_path = write_problem_files(abstract_problem.problem, root / "run")
             generated = read_problem(abstract_domain, abstract_problem_path)
-            concrete_domain, concrete_problem_path = write_problem_files(
-                abstract_problem.concrete_problem, root / "concrete-run"
-            )
-            regenerated = read_problem(concrete_domain, concrete_problem_path)
 
         self.assertEqual(abstract_problem.abstraction.name, "combined")
         self.assertEqual(config.abstract_name, "combined")
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual({item.name for item in generated.all_objects}, {"combined"})
-        self.assertEqual({item.name for item in regenerated.all_objects}, {"a", "b"})
 
     @patch("core.planning.abstract.build_abstract_problem")
     def test_automatic_selection_is_delegated_to_symmetry_abstraction(self, build_abstract_problem):
         problem = Mock()
         abstraction = Abstraction("item_abs", ("a", "b"), "item")
-        build_abstract_problem.return_value = Mock(
-            problem=problem, concrete_problem=Mock(), abstraction=abstraction, relaxed_deletes=()
-        )
+        build_abstract_problem.return_value = Mock(problem=problem, abstraction=abstraction, relaxed_deletes=())
         config = AbstractPlanningConfig("domain.pddl", "problem.pddl", symmetry_time_limit=17)
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
+            patch("core.planning.abstract.read_problem"),
             patch("core.planning.abstract.write_problem_files", side_effect=_written_paths),
             patch(
                 "core.planning.abstract.pddl_to_sas",
@@ -340,7 +335,7 @@ class GeneratedAbstractionTests(unittest.TestCase):
 
         build_abstract_problem.assert_called_once()
         self.assertEqual(build_abstract_problem.call_args.args[0], config)
-        self.assertIsInstance(build_abstract_problem.call_args.args[1], PlanningMetrics)
+        self.assertIsInstance(build_abstract_problem.call_args.args[2], PlanningMetrics)
         self.assertEqual(build_abstract_problem.return_value.abstraction.objects, ("a", "b"))
         self.assertIsNone(config.objects_to_abstract)
         self.assertIsNone(config.abstract_name)
