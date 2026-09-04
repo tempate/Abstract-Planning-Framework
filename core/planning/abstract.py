@@ -26,6 +26,10 @@ def compute_abstract_plan(config: AbstractPlanningConfig, on_update=None):
 def _compute_abstract_plan(config, base_dir, run_id, metrics):
     abstract_problem = build_abstract_problem(config, metrics)
 
+    # Report the abstraction before solving so runs that fail later still record it.
+    abstraction = abstract_problem.abstraction
+    print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
+
     context = RefinementContext(
         config=config,
         abstraction=abstract_problem.abstraction,
