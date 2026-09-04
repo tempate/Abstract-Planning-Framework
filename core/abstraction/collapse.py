@@ -38,7 +38,7 @@ def collapse_objects(problem, abstraction, relaxable_deletes):
     collapsed_problem.add_object(abstract_object)
 
     collapsed_actions, relaxed_deletes = _copy_actions(
-        problem, collapsed_problem, rewrite, objects_to_collapse[0].type, deletes_to_relax
+        problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax
     )
     _copy_initial_values(problem, collapsed_problem, rewrite)
     _copy_goals_and_constraints(problem, collapsed_problem, rewrite)
@@ -72,18 +72,18 @@ def _validate_supported_problem(problem):
         raise AbstractionError("Unsupported PDDL feature: non-instantaneous actions")
 
 
-def _copy_actions(problem, collapsed_problem, rewrite, collapsed_type, deletes_to_relax):
+def _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax):
     collapsed_actions = {}
     relaxed_deletes = []
     for action in problem.actions:
-        collapsed_action, action_relaxed_deletes = _copy_action(action, rewrite, collapsed_type, deletes_to_relax)
+        collapsed_action, action_relaxed_deletes = _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax)
         collapsed_problem.add_action(collapsed_action)
         collapsed_actions[action] = collapsed_action
         relaxed_deletes.extend(action_relaxed_deletes)
     return collapsed_actions, tuple(relaxed_deletes)
 
 
-def _copy_action(action, rewrite, collapsed_type, deletes_to_relax):
+def _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax):
     collapsed_action = action.clone()
     collapsed_action.clear_preconditions()
     for precondition in action.preconditions:
@@ -92,7 +92,7 @@ def _copy_action(action, rewrite, collapsed_type, deletes_to_relax):
     relaxed_deletes = []
     collapsed_action.clear_effects()
     for effect in action.effects:
-        match = match_relaxable_delete(action, effect, collapsed_type)
+        match = match_relaxable_delete(action, effect, objects_to_collapse)
         if match is not None:
             _, relaxable_delete = match
             if relaxable_delete in deletes_to_relax:

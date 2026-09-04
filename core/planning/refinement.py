@@ -103,7 +103,7 @@ def _build_result(context, *, success, plan):
             "abstract_symbol": context.abstraction.name,
             "objects_to_abstract": list(context.abstraction.objects),
             "object_type": context.abstraction.object_type,
-            "relaxed_unary_deletes": len(context.relaxed_deletes),
+            "relaxed_deletes": len(context.relaxed_deletes),
         },
         "configuration": context.config.as_dict(),
         "horizon": context.horizon,
