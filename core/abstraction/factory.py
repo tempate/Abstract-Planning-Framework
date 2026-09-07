@@ -55,7 +55,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
 
 
 def _select_abstraction(problem, symmetry_classes, abstract_name=None):
-    """Select the lowest-scoring class reported by PDDL Symmetries."""
+    """Select the largest class reported by PDDL Symmetries."""
     candidate = None
     candidate_relaxable_deletes = ()
     candidate_score = None
@@ -63,7 +63,7 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
     for symmetry_class in symmetry_classes:
         abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)
-        score = abstraction_score(problem, abstraction, relaxable_deletes)
+        score = abstraction_score(abstraction)
         if candidate_score is None or score < candidate_score:
             candidate = abstraction
             candidate_relaxable_deletes = relaxable_deletes
