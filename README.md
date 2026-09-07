@@ -73,6 +73,10 @@ abstract and one concrete Slurm task per problem, each capped at 30 minutes and
 python -m scripts.run_benchmarks
 ```
 
+Both modes are skipped for the problems listed in `benchmarks/no-symmetries.txt`,
+where PDDL Symmetries found no abstraction class. That file header carries the
+command that regenerates it from a collected run.
+
 Results and logs land in `benchmark-results/`, rewritten after every completed
 phase so an interrupted worker keeps its partial timings. Collect them into
 `benchmark-results/results.csv`:

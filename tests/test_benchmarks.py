@@ -161,6 +161,19 @@ class BenchmarkTests(unittest.TestCase):
                 [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
             )
 
+    def test_problems_without_symmetries_are_not_submitted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+            (benchmark / "p02.pddl").touch()
+
+            tasks = list(_benchmark_tasks(root, ["example"], skipped={("example", "p01.pddl")}))
+
+            self.assertEqual([problem.name for _mode, _name, _domain, problem in tasks], ["p02.pddl", "p02.pddl"])
+
     def test_planner_gets_only_the_mode_problem_and_domain(self):
         command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract")
         concrete_command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "concrete")
