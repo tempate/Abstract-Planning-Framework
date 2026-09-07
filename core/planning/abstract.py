@@ -3,14 +3,14 @@
 import os
 from pathlib import Path
 
-from core.execution import temp_run_dir
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.unified_planning import write_problem
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.metrics import PlanningMetrics
 from core.abstraction.factory import build_abstract_problem
 from core.planning.config import AbstractPlanningConfig
-from core.planning.refinement import RefinementContext, refine
+from core.planning.execution import temp_run_dir
+from core.refinement.pipeline import RefinementContext, refine
 
 
 def compute_abstract_plan(config: AbstractPlanningConfig, on_update=None):

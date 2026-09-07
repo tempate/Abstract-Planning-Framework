@@ -6,8 +6,8 @@ from core.abstraction.factory import Abstraction
 from core.integrations.clingo import IncrementalSolver, parse_plan_actions, plan_length, solve
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
-from core.planning.mapping import build_mapping, mapped_horizon
-from core.solvers.decremental import disabled_switches, solve_decrementally
+from core.refinement.decremental import disabled_switches, solve_decrementally
+from core.refinement.mapping import build_mapping, mapped_horizon
 
 
 @dataclass
@@ -26,9 +26,16 @@ class RefinementContext:
 
 def refine(context: RefinementContext):
     """Obtain an abstract plan and use it to guide concrete search."""
+    # Find an abstract plan
     abstract_plan = _solve_abstract_plan(context)
+
+    # Build the ASP to map abstract to concrete actions
     mapping = build_mapping(abstract_plan, context.abstraction)
-    plan = _solve_concrete_plan(context, "\n".join((context.concrete_asp, mapping)))
+
+    # Solve the ASP
+    asp = "\n".join((context.concrete_asp, mapping))
+    plan = _solve_concrete_plan(context, asp)
+
     return _build_result(context, plan)
 
 

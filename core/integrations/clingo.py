@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import clingo
 
-from core.planning.plan import PlanAction
+from core.plan import PlanAction
 
 THREADS = 1
 

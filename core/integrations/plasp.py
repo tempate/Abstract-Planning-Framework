@@ -3,9 +3,13 @@
 import os
 import subprocess
 
-from core.planning.outcomes import IntegrationError
-
-from core.paths import ABSTRACT_TIME_STEPS_ENCODING, ACTION_PER_TIME_STEP_ENCODING, EXACT_HORIZON_ENCODING, PLASP_BIN
+from core.integrations.paths import (
+    ABSTRACT_TIME_STEPS_ENCODING,
+    ACTION_PER_TIME_STEP_ENCODING,
+    EXACT_HORIZON_ENCODING,
+    PLASP_BIN,
+)
+from core.outcomes import IntegrationError
 
 
 def sas_to_asp(sas_path, abstract_time_steps=False):

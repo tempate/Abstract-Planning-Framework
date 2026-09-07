@@ -9,7 +9,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from core.planning.outcomes import STATUS_BY_EXIT_CODE
+from core.outcomes import STATUS_BY_EXIT_CODE
 from scripts.utils.arguments import positive_int
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

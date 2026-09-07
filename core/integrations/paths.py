@@ -2,7 +2,7 @@ from pathlib import Path
 
 # Project filesystem layout. Keep fixed paths here so callers do not need to
 # know where bundled tools and generated artifacts live.
-_ROOT = Path(__file__).resolve().parents[1]
+_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _project_path(*parts):

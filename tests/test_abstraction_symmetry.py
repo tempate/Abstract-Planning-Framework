@@ -6,9 +6,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
-from core.planning.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 from core.integrations.unified_planning import parse_problem, read_problem
 from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
+from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 from core.planning.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

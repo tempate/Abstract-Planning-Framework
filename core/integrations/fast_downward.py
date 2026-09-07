@@ -4,8 +4,8 @@ import os
 import subprocess
 import sys
 
-from core.paths import FAST_DOWNWARD_SCRIPT
-from core.planning.outcomes import IntegrationError
+from core.integrations.paths import FAST_DOWNWARD_SCRIPT
+from core.outcomes import IntegrationError
 
 _SUCCESS = 0
 

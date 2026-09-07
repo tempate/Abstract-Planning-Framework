@@ -8,9 +8,9 @@ from unittest.mock import patch
 from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solve
 from core.integrations.fast_downward import _get_command, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
-from core.paths import ABSTRACT_TIME_STEPS_ENCODING
-from core.planning.outcomes import IntegrationError
-from core.planning.plan import PlanAction
+from core.integrations.paths import ABSTRACT_TIME_STEPS_ENCODING
+from core.outcomes import IntegrationError
+from core.plan import PlanAction
 
 
 class ClingoIntegrationTests(unittest.TestCase):

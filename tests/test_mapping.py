@@ -3,8 +3,8 @@ from types import SimpleNamespace
 
 from core.integrations.clingo import IncrementalSolver
 from core.integrations.plasp import add_switch_to_asp_rule
-from core.planning.mapping import build_mapping
-from core.planning.plan import PlanAction
+from core.plan import PlanAction
+from core.refinement.mapping import build_mapping
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
 

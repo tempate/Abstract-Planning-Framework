@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from scripts import planner
 from scripts.planner import _argument_parser
-from core.planning.outcomes import UnsolvableTaskError
+from core.outcomes import UnsolvableTaskError
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 

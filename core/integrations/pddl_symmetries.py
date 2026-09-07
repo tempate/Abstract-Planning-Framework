@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from core.paths import PDDL_SYMMETRIES_TRANSLATOR
-from core.planning.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
+from core.integrations.paths import PDDL_SYMMETRIES_TRANSLATOR
+from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 
 
 def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, translator_path=PDDL_SYMMETRIES_TRANSLATOR):
