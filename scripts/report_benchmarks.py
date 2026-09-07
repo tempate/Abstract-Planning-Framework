@@ -9,6 +9,7 @@ from scripts.run_benchmark import PROJECT_ROOT
 
 DEFAULT_CSV = PROJECT_ROOT / "benchmarks" / "results.csv"
 UNFINISHED_STATUSES = ("running", "missing")
+RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
 # A killed run reports the phase it completed last, so it died in the next one.
 KILLED_IN_PHASE = {
     "abstract_asp": "Searching for the abstract plan",
@@ -24,6 +25,7 @@ def main():
     _print_head_to_head(problems)
     _print_timeout_phases(problems)
     _print_refinement_outcomes(problems)
+    _print_relaxed_deletes(problems)
 
 
 def _argument_parser():
@@ -117,6 +119,40 @@ def _print_refinement_outcomes(problems):
     _print_narrow("Refined after switching some actions off", _share(counts["switched"], total, 0))
     _print_narrow("Abstract plan discarded, solved above it", _share(counts["discarded"], total, 0))
     _print_narrow("Total", total)
+
+
+def _print_relaxed_deletes(problems):
+    rows = []
+    for modes in problems:
+        row = modes["abstract"]
+        if row["status"] == "success" and int(row["increments"]) == 0 and row.get("relaxed_deletes"):
+            rows.append(row)
+    if not rows:
+        print("\nTable 7 — Deletes relaxed: the CSV predates the relaxed-deletes counter\n")
+        return
+
+    counts = {bucket: 0 for bucket in RELAXED_DELETE_BUCKETS}
+    for row in rows:
+        counts[_relaxed_delete_bucket(int(row["relaxed_deletes"]))] += 1
+
+    total = len(rows)
+    title = f"Table 7 — Deletes relaxed, over the {total} successes whose abstract plan was used"
+    _print_narrow_header(title, "Deletes relaxed", "Problems")
+    for bucket in RELAXED_DELETE_BUCKETS:
+        _print_narrow(bucket, _share(counts[bucket], total, 0))
+    _print_narrow("Total", total)
+
+
+def _relaxed_delete_bucket(relaxed_deletes):
+    if relaxed_deletes == 0:
+        return "None"
+    if relaxed_deletes < 5:
+        return "1 to 4"
+    if relaxed_deletes < 10:
+        return "5 to 9"
+    if relaxed_deletes < 20:
+        return "10 to 19"
+    return "20 or more"
 
 
 def _solved_by_both(modes):

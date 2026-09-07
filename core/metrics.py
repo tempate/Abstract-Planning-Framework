@@ -21,6 +21,7 @@ DURATION_LABELS = {
 }
 
 COUNTER_LABELS = {
+    "relaxed_deletes": "Relaxed deletes",
     "decrements": "Refinement decrements",
     "increments": "Horizon increments",
     "abstract_horizon": "Abstract horizon",
