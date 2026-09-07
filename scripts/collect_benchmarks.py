@@ -29,7 +29,7 @@ FIELDS = (
 )
 
 
-def value(output, label, convert=str):
+def _value(output, label, convert=str):
     match = re.search(rf"^{re.escape(label)}: (.+)$", output, re.MULTILINE)
     return "" if match is None else convert(match.group(1))
 
@@ -91,15 +91,25 @@ def _values(result):
         "wall_time_seconds": result["wall_time_seconds"],
         "last_completed_phase": progress.get("last_completed_phase", ""),
         **{f"{name}_seconds": durations.get(name, "") for name in DURATION_LABELS},
-        "horizon": value(output, "Horizon", int),
+        "horizon": _value(output, "Horizon", int),
         "plan_length": _plan_length(output),
-        **{
-            name: counters.get(name, value(output, name.title(), int) if name in ("decrements", "increments") else "")
-            for name in COUNTER_LABELS
-        },
+        **_counter_values(output, counters),
         **_abstraction_values(output),
         "error_message": _error_message(result),
     }
+
+
+def _counter_values(output, counters):
+    """Read the counters, falling back to the two the oldest planner printed on their own line."""
+    values = {}
+    for name in COUNTER_LABELS:
+        if name in counters:
+            values[name] = counters[name]
+        elif name in ("decrements", "increments"):
+            values[name] = _value(output, name.title(), int)
+        else:
+            values[name] = ""
+    return values
 
 
 def _metrics(output, progress=None):
@@ -135,7 +145,7 @@ def _metric_group(output, labels, conversion):
 
 
 def _plan_length(output):
-    if value(output, "Plan found") != "yes":
+    if _value(output, "Plan found") != "yes":
         return ""
     return len(re.findall(r"^[ \t]+occurs\(", output, re.MULTILINE))
 
