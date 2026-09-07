@@ -5,11 +5,15 @@ The domain variants come from downward-benchmarks'
 which PDDL Symmetries produced a valid abstraction class for at least one task
 in the benchmark results; ``NON_SYMMETRIC_DOMAINS`` contains the remaining
 selected variants. Both groups remain in ``SUITE``.
+
+A symmetric domain still holds individual tasks without an abstraction class.
+``NON_SYMMETRIC_PROBLEMS`` lists those, read from ``no-symmetries.txt``.
 """
 
 from pathlib import Path
 
 BENCHMARKS_DIR = Path(__file__).parent / "downward-benchmarks"
+NON_SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "no-symmetries.txt"
 
 SYMMETRIC_DOMAINS = [
     # IPC 2023
@@ -79,3 +83,16 @@ NON_SYMMETRIC_DOMAINS = [
 ]
 
 SUITE = SYMMETRIC_DOMAINS + NON_SYMMETRIC_DOMAINS
+
+
+def _read_non_symmetric_problems(path=NON_SYMMETRIC_PROBLEMS_FILE):
+    problems = set()
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line and not line.startswith("#"):
+            domain, _, problem = line.partition("/")
+            problems.add((domain, problem))
+    return frozenset(problems)
+
+
+NON_SYMMETRIC_PROBLEMS = _read_non_symmetric_problems()

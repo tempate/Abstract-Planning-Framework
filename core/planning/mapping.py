@@ -33,14 +33,14 @@ def build_mapping(abstract_plan, abstraction):
 def _action_pattern(action, abstraction):
     """Extract the action pattern and independent variables from an abstract action."""
     # Find the arguments and the abstract variables of the action
-    vars = []
+    variables = []
     args = []
     for arg in action.args:
         if arg.casefold() == abstraction.name.casefold():
             # Replace the abstract variable with a new independent variable for the concrete action.
-            var = f"ConcreteObject{len(vars) + 1}"
-            vars.append(var)
-            args.append(var)
+            variable = f"ConcreteObject{len(variables) + 1}"
+            variables.append(variable)
+            args.append(variable)
         else:
             args.append(_quote(arg))
 
@@ -49,8 +49,8 @@ def _action_pattern(action, abstraction):
 
     # Build the conditions for the independent variables and the action.
     conds = []
-    for var in vars:
-        conds.append(f"concrete_object({var})")
+    for variable in variables:
+        conds.append(f"concrete_object({variable})")
     conds.append(f"action({action_str})")
     conds_str = ", ".join(conds)
 

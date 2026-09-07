@@ -30,57 +30,48 @@ def _compute_abstract_plan(config, base_dir, run_id, metrics):
     abstraction = abstract_problem.abstraction
     print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
 
+    concrete_sas, abstract_sas = _to_sas(base_dir, abstract_problem.problem, config, metrics)
+    concrete_asp, abstract_asp = _to_asp(concrete_sas, abstract_sas, config, metrics)
+
     context = RefinementContext(
         config=config,
-        abstraction=abstract_problem.abstraction,
+        abstraction=abstraction,
         relaxed_deletes=abstract_problem.relaxed_deletes,
         run_id=run_id,
         metrics=metrics,
+        concrete_asp=concrete_asp,
+        abstract_asp=abstract_asp,
     )
-
-    # Translate the problem to SAS
-    _to_sas(base_dir, abstract_problem.problem, context)
-
-    # Translate the SAS to ASP
-    _to_asp(context)
-
     return refine(context)
 
 
-def _to_sas(base_dir, problem, context):
-    config = context.config
-
-    # Translate the concrete problem into SAS.
-    dir = os.path.join(base_dir, "concrete")
-    with context.metrics.measure("concrete_fd"):
-        concrete_task = pddl_to_sas(dir, config.domain_path, config.problem_path, "concrete")
+def _to_sas(base_dir, problem, config, metrics):
+    """Translate the concrete and abstract tasks and return their SAS files."""
+    with metrics.measure("concrete_fd"):
+        concrete_dir = os.path.join(base_dir, "concrete")
+        concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
 
     # Write the temporary problem files
-    with context.metrics.measure("abstract_pddl_writing"):
+    with metrics.measure("abstract_pddl_writing"):
         domain_path, problem_path = _write_abstract_problem(problem, base_dir)
 
-    dir = os.path.join(base_dir, "abstract")
-    with context.metrics.measure("abstract_fd"):
-        abstract_task = pddl_to_sas(dir, domain_path, problem_path, "abstract")
+    with metrics.measure("abstract_fd"):
+        abstract_dir = os.path.join(base_dir, "abstract")
+        abstract_sas = pddl_to_sas(abstract_dir, domain_path, problem_path, "abstract")
 
-    context.concrete_task = concrete_task
-    context.abstract_task = abstract_task
+    return concrete_sas, abstract_sas
 
 
-def _to_asp(context):
-    config = context.config
-
-    # Generate the ASP representation of the concrete problem.
-    with context.metrics.measure("concrete_asp"):
-        concrete_asp = sas_to_asp(context.concrete_task["sasFile"], abstract_time_steps=config.time_step)
+def _to_asp(concrete_sas, abstract_sas, config, metrics):
+    """Translate both SAS files into their ASP programs."""
+    with metrics.measure("concrete_asp"):
+        concrete_asp = sas_to_asp(concrete_sas, abstract_time_steps=config.time_step)
         concrete_asp = add_switch_to_asp_rule(concrete_asp)
 
-    # Generate the ASP representation of the abstract problem.
-    with context.metrics.measure("abstract_asp"):
-        abstract_asp = sas_to_asp(context.abstract_task["sasFile"], abstract_time_steps=config.time_step)
+    with metrics.measure("abstract_asp"):
+        abstract_asp = sas_to_asp(abstract_sas, abstract_time_steps=config.time_step)
 
-    context.concrete_asp = concrete_asp
-    context.abstract_asp = abstract_asp
+    return concrete_asp, abstract_asp
 
 
 def _write_abstract_problem(problem, base_dir):

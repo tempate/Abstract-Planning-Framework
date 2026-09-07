@@ -29,7 +29,6 @@ class PlaspInstallerTests(unittest.TestCase):
             destination = Path(directory, "bin", "plasp")
             with (
                 patch.object(installer, "PLASP_BIN", destination),
-                patch.object(installer, "PLASP_ARCHIVE_SHA256", hashlib.sha256(archive).hexdigest()),
                 patch.object(installer, "PLASP_BINARY_SHA256", hashlib.sha256(binary).hexdigest()),
                 patch.object(installer, "_download_archive", download),
                 patch.object(installer.platform, "machine", return_value="x86_64"),
@@ -41,19 +40,19 @@ class PlaspInstallerTests(unittest.TestCase):
             self.assertTrue(destination.stat().st_mode & stat.S_IXUSR)
             download.assert_called_once_with()
 
-    def test_rejects_an_archive_with_the_wrong_checksum(self):
+    def test_rejects_a_binary_with_the_wrong_checksum(self):
         archive = _archive_with(b"unexpected")
 
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory, "bin", "plasp")
             with (
                 patch.object(installer, "PLASP_BIN", destination),
-                patch.object(installer, "PLASP_ARCHIVE_SHA256", "0" * 64),
+                patch.object(installer, "PLASP_BINARY_SHA256", "0" * 64),
                 patch.object(installer, "_download_archive", return_value=archive),
                 patch.object(installer.platform, "machine", return_value="x86_64"),
                 patch.object(installer.sys, "platform", "linux"),
             ):
-                with self.assertRaisesRegex(RuntimeError, "archive checksum mismatch"):
+                with self.assertRaisesRegex(RuntimeError, "binary checksum mismatch"):
                     installer.install_plasp()
 
             self.assertFalse(destination.exists())

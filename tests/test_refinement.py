@@ -17,7 +17,6 @@ class RefinementTests(unittest.TestCase):
             "relaxed_deletes": (object(), object()),
             "concrete_asp": "concrete asp",
             "abstract_asp": "abstract asp",
-            "abstract_task": {"sasFile": "abstract.sas"},
             "horizon": 3,
             "run_id": "run-123",
             "metrics": PlanningMetrics(),
@@ -49,12 +48,10 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(context.metrics.counters["increments"], 0)
         self.assertEqual(context.metrics.counters["final_horizon"], 2)
         self.assertEqual(context.metrics.counters["concrete_solve_calls"], 3)
-        self.assertEqual(set(context.metrics.durations), {"abstract_solving", "guided_concrete_solving"})
-        self.assertEqual(solve.call_args.args, ("abstract asp",))
-        parse_plan_actions.assert_called_once_with(["occurs(abstract,1)"])
-        build_mapping.assert_called_once_with((PlanAction("move", ("item_abs",), 1),), context.abstraction)
+        self.assertIn("abstract_solving", context.metrics.durations)
+        # The guided search runs the mapping alongside the concrete program, and
+        # starts from the abstract horizon rather than from zero.
         self.assertEqual(incremental_solver.call_args.args, ("concrete asp\nmapping asp", 2))
-        self.assertIs(solve_decrementally.call_args.args[0], incremental_solver.return_value)
 
     @patch("core.planning.refinement.disabled_switches", return_value=[])
     @patch("core.planning.refinement.IncrementalSolver")

@@ -5,10 +5,18 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.integrations.pddl_symmetries import PddlSymmetriesError, PddlSymmetriesTimeout, find_symmetric_object_sets
-from core.planning.outcomes import UnsolvableTaskError
+from core.integrations.pddl_symmetries import find_symmetric_object_sets
+from core.planning.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
+from core.abstraction.factory import (
+    AbstractionError,
+    NoSymmetriesError,
+    _create_abstraction,
+    _select_abstraction,
+    build_abstract_problem,
+)
+from core.abstraction.heuristic import abstraction_score
+from core.abstraction.relaxation import find_relaxable_deletes
 from core.planning.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -56,6 +64,30 @@ SYMMETRY_PROBLEM = """
 """
 
 
+ORDERING_DOMAIN = """
+(define (domain ordering)
+  (:requirements :strips :typing)
+  (:types item gadget)
+  (:predicates (ready ?x - item) (armed ?x - item) (set ?x - gadget) (done ?x - gadget))
+  (:action use-item
+    :parameters (?x - item)
+    :precondition (ready ?x)
+    :effect (and (not (ready ?x)) (not (armed ?x))))
+  (:action use-gadget
+    :parameters (?x - gadget)
+    :precondition (set ?x)
+    :effect (and (done ?x) (not (set ?x)))))
+"""
+
+ORDERING_PROBLEM = """
+(define (problem ordering-task)
+  (:domain ordering)
+  (:objects item1 item2 - item gadget1 gadget2 - gadget)
+  (:init (ready item1) (ready item2) (armed item1) (armed item2) (set gadget1) (set gadget2))
+  (:goal (and (done gadget1) (done gadget2))))
+"""
+
+
 def _stub_symmetry_inputs(directory):
     root = Path(directory)
     translator = root / "translate.py"
@@ -70,15 +102,24 @@ class SymmetrySelectionTests(unittest.TestCase):
     def setUp(self):
         self.problem = parse_problem(SYMMETRY_DOMAIN, SYMMETRY_PROBLEM)
 
-    def test_selects_the_lowest_delete_score(self):
-        classes = [
-            ["cargo-c", "cargo-a", "cargo-b"],
-            ["tool-b", "tool-a"],
-            ["vehicle-d", "vehicle-b", "vehicle-c", "vehicle-a"],
-        ]
-        selected, _ = _select_abstraction(self.problem, classes)
+    def _score(self, problem, objects):
+        abstraction = _create_abstraction(problem, objects, None)
+        return abstraction_score(problem, abstraction, find_relaxable_deletes(problem, abstraction))
 
-        self.assertEqual(set(selected.objects), {"vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"})
+    def test_score_counts_goal_conjuncts_then_deletes_then_class_size(self):
+        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
+
+        # The items are absent from the goal but relax two deletes; the gadgets
+        # appear in both goal conjuncts and relax one.
+        self.assertEqual(self._score(source, ["item1", "item2"]), (0, 2, -2))
+        self.assertEqual(self._score(source, ["gadget1", "gadget2"]), (2, 1, -2))
+
+    def test_selection_takes_the_lowest_score(self):
+        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
+
+        selected, _ = _select_abstraction(source, [["gadget1", "gadget2"], ["item1", "item2"]])
+
+        self.assertEqual(set(selected.objects), {"item1", "item2"})
 
     def test_equal_scores_prefer_the_largest_class(self):
         domain = """
@@ -173,7 +214,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         run.return_value = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="bliss is not built")
         with tempfile.TemporaryDirectory() as directory:
             translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(PddlSymmetriesError, "bliss is not built"):
+            with self.assertRaisesRegex(IntegrationError, "bliss is not built"):
                 find_symmetric_object_sets(domain, problem, 10, translator)
 
     @patch("core.integrations.pddl_symmetries.subprocess.run")
@@ -193,7 +234,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as directory:
             translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(PddlSymmetriesError, "malformed"):
+            with self.assertRaisesRegex(IntegrationError, "malformed"):
                 find_symmetric_object_sets(domain, problem, 10, translator)
 
     def test_rejects_nonpositive_symmetry_time_limit(self):
@@ -205,7 +246,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         run.side_effect = subprocess.TimeoutExpired("translate.py", 10)
         with tempfile.TemporaryDirectory() as directory:
             translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(PddlSymmetriesTimeout, "exceeded"):
+            with self.assertRaisesRegex(SymmetryTimeoutError, "exceeded"):
                 find_symmetric_object_sets(domain, problem, 10, translator)
 
 
@@ -213,13 +254,14 @@ class SymmetrySelectionTests(unittest.TestCase):
     os.environ.get("RUN_PLANNER_INTEGRATION") == "1", "set RUN_PLANNER_INTEGRATION=1 to run PDDL Symmetries"
 )
 class RealSymmetryIntegrationTests(unittest.TestCase):
-    def test_gripper_symmetries_select_balls(self):
+    def test_gripper_symmetries_select_the_grippers(self):
         problem_path = GRIPPER / "prob01.pddl"
         classes = find_symmetric_object_sets(GRIPPER / "domain.pddl", problem_path)
         selected, _ = _select_abstraction(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
 
         self.assertEqual({tuple(group) for group in classes}, {("ball1", "ball2", "ball3", "ball4"), ("left", "right")})
-        self.assertEqual(set(selected.objects), {"ball1", "ball2", "ball3", "ball4"})
+        # Both classes relax two deletes, but the goal names every ball.
+        self.assertEqual(set(selected.objects), {"left", "right"})
 
 
 if __name__ == "__main__":
