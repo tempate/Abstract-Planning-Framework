@@ -8,15 +8,7 @@ from unittest.mock import patch
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.planning.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.abstraction.factory import (
-    AbstractionError,
-    NoSymmetriesError,
-    _create_abstraction,
-    _select_abstraction,
-    build_abstract_problem,
-)
-from core.abstraction.heuristic import abstraction_score
-from core.abstraction.relaxation import find_relaxable_deletes
+from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
 from core.planning.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -82,9 +74,9 @@ ORDERING_DOMAIN = """
 ORDERING_PROBLEM = """
 (define (problem ordering-task)
   (:domain ordering)
-  (:objects item1 item2 - item gadget1 gadget2 - gadget)
-  (:init (ready item1) (ready item2) (armed item1) (armed item2) (set gadget1) (set gadget2))
-  (:goal (and (done gadget1) (done gadget2))))
+  (:objects item1 item2 - item gadget1 gadget2 gadget3 - gadget)
+  (:init (ready item1) (ready item2) (armed item1) (armed item2) (set gadget1) (set gadget2) (set gadget3))
+  (:goal (and (done gadget1) (done gadget2) (done gadget3))))
 """
 
 
@@ -102,41 +94,14 @@ class SymmetrySelectionTests(unittest.TestCase):
     def setUp(self):
         self.problem = parse_problem(SYMMETRY_DOMAIN, SYMMETRY_PROBLEM)
 
-    def _score(self, problem, objects):
-        abstraction = _create_abstraction(problem, objects, None)
-        return abstraction_score(problem, abstraction, find_relaxable_deletes(problem, abstraction))
-
-    def test_score_counts_goal_conjuncts_then_deletes_then_class_size(self):
+    def test_selection_takes_the_largest_class(self):
+        # The gadgets win on size alone: they also fill every goal conjunct and
+        # relax fewer deletes than the items, and neither counts.
         source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
 
-        # The items are absent from the goal but relax two deletes; the gadgets
-        # appear in both goal conjuncts and relax one.
-        self.assertEqual(self._score(source, ["item1", "item2"]), (0, 2, -2))
-        self.assertEqual(self._score(source, ["gadget1", "gadget2"]), (2, 1, -2))
+        selected, _ = _select_abstraction(source, [["item1", "item2"], ["gadget1", "gadget2", "gadget3"]])
 
-    def test_selection_takes_the_lowest_score(self):
-        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
-
-        selected, _ = _select_abstraction(source, [["gadget1", "gadget2"], ["item1", "item2"]])
-
-        self.assertEqual(set(selected.objects), {"item1", "item2"})
-
-    def test_equal_scores_prefer_the_largest_class(self):
-        domain = """
-(define (domain d) (:types item) (:predicates (free ?x - item))
-  (:action use :parameters (?x - item) :precondition (free ?x)
-    :effect (not (free ?x))))
-"""
-        problem = """
-(define (problem p) (:domain d)
-  (:objects a1 a2 b1 b2 b3 - item)
-  (:init) (:goal (and)))
-"""
-
-        source = parse_problem(domain, problem)
-        selected, _ = _select_abstraction(source, [["a1", "a2"], ["b1", "b2", "b3"]])
-
-        self.assertEqual(set(selected.objects), {"b1", "b2", "b3"})
+        self.assertEqual(set(selected.objects), {"gadget1", "gadget2", "gadget3"})
 
     def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self):
         classes = [
@@ -254,14 +219,15 @@ class SymmetrySelectionTests(unittest.TestCase):
     os.environ.get("RUN_PLANNER_INTEGRATION") == "1", "set RUN_PLANNER_INTEGRATION=1 to run PDDL Symmetries"
 )
 class RealSymmetryIntegrationTests(unittest.TestCase):
-    def test_gripper_symmetries_select_the_grippers(self):
+    def test_gripper_symmetries_select_the_balls(self):
         problem_path = GRIPPER / "prob01.pddl"
         classes = find_symmetric_object_sets(GRIPPER / "domain.pddl", problem_path)
         selected, _ = _select_abstraction(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
 
         self.assertEqual({tuple(group) for group in classes}, {("ball1", "ball2", "ball3", "ball4"), ("left", "right")})
-        # Both classes relax two deletes, but the goal names every ball.
-        self.assertEqual(set(selected.objects), {"left", "right"})
+        # The goal names every ball, and the four of them still win over the two
+        # grippers: collapsing them is what drops the abstract horizon.
+        self.assertEqual(set(selected.objects), {"ball1", "ball2", "ball3", "ball4"})
 
 
 if __name__ == "__main__":
