@@ -329,6 +329,31 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[0]["concrete_fd_seconds"], 2.5)
         self.assertEqual(rows[0]["last_completed_phase"], "concrete_fd")
 
+    def test_timed_out_run_still_records_the_collapsed_class(self):
+        metrics = {
+            "durations": {},
+            "counters": {},
+            "abstraction": {"objects": ["ball1", "ball2", "ball3"], "object_type": "ball"},
+        }
+
+        def selected_then_killed(command, **kwargs):
+            result_file = Path(kwargs["env"]["APF_BENCHMARK_RESULT_FILE"])
+            _update_result_progress(result_file, {"kind": "abstraction_selected"}, metrics)
+            raise subprocess.TimeoutExpired(command, 10, output="Starting\n")
+
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch("scripts.run_benchmark.subprocess.run", side_effect=selected_then_killed),
+        ):
+            _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=10)
+            rows = collect(directory)
+
+        # Nothing the killed run printed reaches the collector, so the class can
+        # only come from the result file.
+        self.assertEqual(rows[0]["status"], "timed out")
+        self.assertEqual(rows[0]["abstracted_object_count"], 3)
+        self.assertEqual(rows[0]["abstracted_object_type"], "ball")
+
     def test_collector_preserves_concise_error_message(self):
         failed = subprocess.CompletedProcess(
             [], 2, stdout="usage: planner.py [-h]\nplanner.py: error: Unsupported quality metric\nStarting\n"

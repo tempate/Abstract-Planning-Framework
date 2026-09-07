@@ -94,7 +94,7 @@ def _values(result):
         "horizon": _value(output, "Horizon", int),
         "plan_length": _plan_length(output),
         **_counter_values(output, counters),
-        **_abstraction_values(output),
+        **_abstraction_values(output, metrics.get("abstraction")),
         "error_message": _error_message(result),
     }
 
@@ -150,7 +150,14 @@ def _plan_length(output):
     return len(re.findall(r"^[ \t]+occurs\(", output, re.MULTILINE))
 
 
-def _abstraction_values(output):
+def _abstraction_values(output, abstraction=None):
+    """Read the collapsed class, falling back to the line older planners only printed."""
+    if abstraction:
+        return {
+            "abstracted_object_count": len(abstraction["objects"]),
+            "abstracted_object_type": abstraction["object_type"],
+        }
+
     match = re.search(r"^Collapsed (\[.*\]) into \S+ \(type=([^)]+)\)$", output, re.MULTILINE)
     if match is None:
         return {"abstracted_object_count": "", "abstracted_object_type": ""}

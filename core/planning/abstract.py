@@ -26,8 +26,11 @@ def compute_abstract_plan(config: AbstractPlanningConfig, on_update=None):
 def _compute_abstract_plan(config, base_dir, run_id, metrics):
     abstract_problem = build_abstract_problem(config, metrics)
 
-    # Report the abstraction before solving so runs that fail later still record it.
+    # Report the abstraction before solving so runs that fail later still record
+    # it. The metrics snapshot reaches the result file on every update, which is
+    # what survives a run killed at the benchmark timeout.
     abstraction = abstract_problem.abstraction
+    metrics.set_abstraction(abstraction.objects, abstraction.object_type)
     print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
 
     concrete_sas, abstract_sas = _to_sas(base_dir, abstract_problem.problem, config, metrics)
