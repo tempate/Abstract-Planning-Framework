@@ -219,14 +219,15 @@ class SymmetrySelectionTests(unittest.TestCase):
     os.environ.get("RUN_PLANNER_INTEGRATION") == "1", "set RUN_PLANNER_INTEGRATION=1 to run PDDL Symmetries"
 )
 class RealSymmetryIntegrationTests(unittest.TestCase):
-    def test_gripper_symmetries_select_the_grippers(self):
+    def test_gripper_symmetries_select_the_balls(self):
         problem_path = GRIPPER / "prob01.pddl"
         classes = find_symmetric_object_sets(GRIPPER / "domain.pddl", problem_path)
         selected, _ = _select_abstraction(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
 
         self.assertEqual({tuple(group) for group in classes}, {("ball1", "ball2", "ball3", "ball4"), ("left", "right")})
-        # Both classes relax two deletes, but the goal names every ball.
-        self.assertEqual(set(selected.objects), {"left", "right"})
+        # The goal names every ball, and the four of them still win over the two
+        # grippers: collapsing them is what drops the abstract horizon.
+        self.assertEqual(set(selected.objects), {"ball1", "ball2", "ball3", "ball4"})
 
 
 if __name__ == "__main__":
