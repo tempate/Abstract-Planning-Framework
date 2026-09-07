@@ -3,6 +3,7 @@
 import argparse
 import csv
 import statistics
+import sys
 from pathlib import Path
 
 from scripts.run_benchmark import PROJECT_ROOT
@@ -56,7 +57,7 @@ def _print_coverage(problems):
     found = _status_counts(problems, "success")
     timeouts = _status_counts(problems, "timed out")
 
-    _print_wide_header("Table 1 — Coverage", "Metric")
+    _print_wide_header("Coverage", "Metric")
     _print_wide("Plans found", _share(found["abstract"], total, 1), _share(found["concrete"], total, 1))
     _print_wide("Timeouts", _share(timeouts["abstract"], total, 1), _share(timeouts["concrete"], total, 1))
     _print_wide("Total problems", total, total)
@@ -74,7 +75,7 @@ def _print_head_to_head(problems):
     concrete_times = [_runtime(modes["concrete"]) for modes in solved_by_both]
     found = _status_counts(problems, "success")
 
-    _print_wide_header("Table 2 — Head to head", "Metric")
+    _print_wide_header("Head to head", "Metric")
     _print_wide("Plans found by both pipelines", shared, shared)
     _print_wide(
         "Faster when both found a plan", _share(faster["abstract"], shared, 1), _share(faster["concrete"], shared, 1)
@@ -95,7 +96,7 @@ def _print_timeout_phases(problems):
         phase = KILLED_IN_PHASE.get(row["last_completed_phase"], row["last_completed_phase"])
         counts[phase] = counts.get(phase, 0) + 1
 
-    _print_narrow_header("Table 3 — Where the timeouts died", "Where the abstract pipeline was killed", "Timeouts")
+    _print_narrow_header("Where the timeouts died", "Where the abstract pipeline was killed", "Timeouts")
     for phase, count in sorted(counts.items(), key=lambda item: -item[1]):
         _print_narrow(phase, _share(count, len(timeouts), 0))
     _print_narrow("Total", len(timeouts))
@@ -113,7 +114,7 @@ def _print_refinement_outcomes(problems):
             counts["refined"] += 1
 
     total = len(successes)
-    title = "Table 4 — How the successes were solved"
+    title = "How the successes were solved"
     _print_narrow_header(title, f"How the {total} successes were solved", "Problems")
     _print_narrow("Abstract plan refined directly", _share(counts["refined"], total, 0))
     _print_narrow("Refined after switching some actions off", _share(counts["switched"], total, 0))
@@ -128,7 +129,7 @@ def _print_relaxed_deletes(problems):
         if row["status"] == "success" and int(row["increments"]) == 0 and row.get("relaxed_deletes"):
             rows.append(row)
     if not rows:
-        print("\nTable 7 — Deletes relaxed: the CSV predates the relaxed-deletes counter\n")
+        print(f"\n{_bold('Deletes relaxed')}: the CSV predates the relaxed-deletes counter\n")
         return
 
     counts = {bucket: 0 for bucket in RELAXED_DELETE_BUCKETS}
@@ -136,7 +137,7 @@ def _print_relaxed_deletes(problems):
         counts[_relaxed_delete_bucket(int(row["relaxed_deletes"]))] += 1
 
     total = len(rows)
-    title = f"Table 7 — Deletes relaxed, over the {total} successes whose abstract plan was used"
+    title = f"Deletes relaxed, over the {total} successes whose abstract plan was used"
     _print_narrow_header(title, "Deletes relaxed", "Problems")
     for bucket in RELAXED_DELETE_BUCKETS:
         _print_narrow(bucket, _share(counts[bucket], total, 0))
@@ -176,12 +177,17 @@ def _share(count, total, decimals):
     return f"{count} ({count / total:.{decimals}%})" if total else f"{count}"
 
 
+def _bold(text):
+    """Bold the text on a terminal, leaving redirected output plain."""
+    return f"\033[1m{text}\033[0m" if sys.stdout.isatty() else text
+
+
 def _seconds(value):
     return f"{value:,.2f} s"
 
 
 def _print_wide_header(title, label):
-    print(f"\n{title}\n")
+    print(f"\n{_bold(title)}\n")
     _print_wide(label, "Abstract pipeline", "Concrete pipeline")
     print("-" * 80)
 
@@ -191,7 +197,7 @@ def _print_wide(label, abstract, concrete):
 
 
 def _print_narrow_header(title, label, value_label):
-    print(f"\n{title}\n")
+    print(f"\n{_bold(title)}\n")
     _print_narrow(label, value_label)
     print("-" * 61)
 
