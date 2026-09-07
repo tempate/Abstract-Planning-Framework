@@ -198,7 +198,8 @@ class PlaspPostProcessingTests(unittest.TestCase):
 
         result = add_switch_to_asp_rule(f"before.\n{rule}\nafter.\n")
 
-        self.assertIn("not switch(t).", result)
+        self.assertIn("not switch(t), not gap(t).", result)
+        self.assertIn("0 {occurs(Action, t) : action(Action)} 1 :- gap(t).", result)
         self.assertNotIn(rule, result)
         self.assertEqual(result.count("not switch(t)"), 1)
         self.assertIn("before.\n", result)
