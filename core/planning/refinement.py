@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from core.abstraction.factory import Abstraction
-from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solve
+from core.integrations.clingo import IncrementalSolver, parse_plan_actions, plan_length, solve
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.planning.mapping import build_mapping, mapped_horizon
@@ -116,6 +116,7 @@ def _build_result(context, plan):
         "configuration": context.config.as_dict(),
         "horizon": context.horizon,
         "plan": plan,
+        "plan_length": None if plan is None else plan_length(plan),
         "success": plan is not None,
         "run_id": context.run_id,
     }

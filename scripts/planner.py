@@ -79,7 +79,7 @@ def print_planning_result(result):
     _print_metrics(result["metrics"])
 
     if result["plan"] is not None:
-        print("\nPlan:")
+        print(f"\nPlan ({result['plan_length']} actions):")
         plan_actions = [atom for atom in result["plan"] if atom.startswith("occurs(")]
         for atom in sorted(plan_actions, key=_time_step):
             print(" ", atom)

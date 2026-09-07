@@ -96,6 +96,11 @@ def parse_plan_actions(atoms):
     return tuple(sorted(actions, key=lambda action: action.time_step))
 
 
+def plan_length(atoms):
+    """Count the actions in a plan, which gaps leave below the horizon."""
+    return len(parse_plan_actions(atoms))
+
+
 def _plan_action(symbol):
     """Read one occurs/2 atom, or None when it is some other atom."""
     if not _is_function(symbol, "occurs", 2):

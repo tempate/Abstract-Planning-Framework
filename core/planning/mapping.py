@@ -18,11 +18,8 @@ def build_mapping(abstract_plan, abstraction):
 
     args equal to the abstraction name become independent variables
     ranging over its objects.  The concrete ASP ``action/1`` relation then
-    limits the choices to grounded actions that actually exist.
-
-    The abstract actions are spread over the even time steps, leaving a gap
-    before the first one, between consecutive ones, and after the last one.
-    Each gap holds one concrete action or none.
+    limits the choices to grounded actions that actually exist.  The actions
+    take the even time steps, leaving a gap around each for one action or none.
     """
     mapping_rules = []
 

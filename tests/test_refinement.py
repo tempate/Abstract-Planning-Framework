@@ -54,6 +54,25 @@ class RefinementTests(unittest.TestCase):
         # with gaps rather than from zero.
         self.assertEqual(incremental_solver.call_args.args, ("concrete asp\nmapping asp", 5))
 
+    @patch("core.planning.refinement.IncrementalSolver")
+    @patch(
+        "core.planning.refinement.solve_decrementally",
+        return_value=(True, ['occurs(action(("move","a")),2)', 'occurs(action(("move","b")),4)'], 0),
+    )
+    @patch("core.planning.refinement.build_mapping", return_value="mapping asp")
+    @patch("core.planning.refinement.parse_plan_actions", return_value=())
+    @patch(
+        "core.planning.refinement.solve", return_value=ClingoSolveResult(["occurs(abstract,1)"], horizon=2, attempts=1)
+    )
+    def test_the_plan_length_counts_actions_instead_of_time_steps(
+        self, solve, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver
+    ):
+        result = refine(self._context())
+
+        # The two actions sit on a horizon of five, whose gaps stayed empty.
+        self.assertEqual(result["horizon"], 5)
+        self.assertEqual(result["plan_length"], 2)
+
     @patch("core.planning.refinement.disabled_switches", return_value=[])
     @patch("core.planning.refinement.IncrementalSolver")
     @patch("core.planning.refinement.solve_decrementally", return_value=(False, None, 3))

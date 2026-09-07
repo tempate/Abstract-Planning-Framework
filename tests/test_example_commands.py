@@ -25,6 +25,7 @@ class PlannerOutputTests(unittest.TestCase):
         result = {
             "horizon": 5,
             "plan": ["occurs(move,5)"],
+            "plan_length": 1,
             "success": True,
             "metrics": {"durations": {"total": 1.25}, "counters": {"decrements": 2, "concrete_solve_calls": 3}},
         }
