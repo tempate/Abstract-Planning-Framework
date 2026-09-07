@@ -15,16 +15,22 @@ def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, transl
     """Run PDDL Symmetries and return its non-trivial object classes."""
     if time_limit < 1:
         raise ValueError("PDDL Symmetries time limit must be positive")
+    command = _translator_command(domain_path, problem_path, time_limit, translator_path)
+    return _parse_object_sets(_run_translator(command, time_limit))
+
+
+def _translator_command(domain_path, problem_path, time_limit, translator_path):
+    """Build the translator invocation, checking that every input exists."""
     translator = Path(translator_path).resolve()
     if not translator.is_file():
-        raise IntegrationError("PDDL Symmetries is not initialized. Run " "'git submodule update --init --recursive'.")
+        raise IntegrationError("PDDL Symmetries is not initialized. Run 'git submodule update --init --recursive'.")
     domain = Path(domain_path).resolve()
     problem = Path(problem_path).resolve()
     for label, path in (("domain", domain), ("problem", problem)):
         if not path.is_file():
             raise IntegrationError(f"PDDL {label} file does not exist: {path}")
 
-    command = [
+    return [
         sys.executable,
         str(translator),
         str(domain),
@@ -36,6 +42,10 @@ def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, transl
         str(time_limit),
         "--stop-after-computing-symmetries",
     ]
+
+
+def _run_translator(command, time_limit):
+    """Run the translator in a scratch directory and return its standard output."""
     try:
         with TemporaryDirectory(prefix="pddl-symmetries-") as working_directory:
             result = subprocess.run(
@@ -56,8 +66,12 @@ def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, transl
     if result.returncode != 0:
         suffix = f":\n{diagnostics}" if diagnostics else ""
         raise IntegrationError(f"PDDL Symmetries failed with exit code {result.returncode}{suffix}")
+    return result.stdout
 
-    match = re.search(r"^\s*Non-trivial symmetric object sets:\s*(.+)$", result.stdout, flags=re.MULTILINE)
+
+def _parse_object_sets(stdout):
+    """Read the object classes the translator reported."""
+    match = re.search(r"^\s*Non-trivial symmetric object sets:\s*(.+)$", stdout, flags=re.MULTILINE)
     if not match:
         raise IntegrationError("PDDL Symmetries did not report symmetric object sets")
     try:
