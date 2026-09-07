@@ -85,6 +85,14 @@ phase so an interrupted worker keeps its partial timings. Collect them into
 python -m scripts.collect_benchmarks
 ```
 
+Print the coverage, head-to-head, timeout-phase, and refinement-outcome tables
+for a collected CSV, over the problems both pipelines finished. The report also
+replaces `benchmarks/reports.md`, which holds the latest one:
+
+```bash
+python -m scripts.report_benchmarks benchmarks/results.csv
+```
+
 ## Tests
 
 ```bash
