@@ -124,7 +124,7 @@ class SymmetrySelectionTests(unittest.TestCase):
                 AbstractPlanningConfig("domain.pddl", "problem.pddl", symmetry_time_limit=17)
             )
 
-        find_classes.assert_called_once_with("domain.pddl", "problem.pddl", 17)
+        find_classes.assert_called_once_with("domain.pddl", "problem.pddl", 17, variant="baseline")
         collapsed = {abstraction.name: set(abstraction.objects) for abstraction in result.abstractions}
         self.assertEqual(
             collapsed,
@@ -219,6 +219,29 @@ class SymmetrySelectionTests(unittest.TestCase):
             translator, domain, problem = _stub_symmetry_inputs(directory)
             with self.assertRaisesRegex(IntegrationError, "malformed"):
                 find_symmetric_object_sets(domain, problem, 10, translator)
+
+    @patch("core.integrations.pddl_symmetries.subprocess.run")
+    def test_each_variant_drops_its_stabilization_constraints(self, run):
+        run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="Non-trivial symmetric object sets: []\n", stderr=""
+        )
+        expected = {
+            "baseline": set(),
+            "no-init": {"--do-not-stabilize-initial-state"},
+            "no-goal": {"--do-not-stabilize-goal"},
+            "both": {"--do-not-stabilize-initial-state", "--do-not-stabilize-goal"},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            translator, domain, problem = _stub_symmetry_inputs(directory)
+            for variant, flags in expected.items():
+                with self.subTest(variant=variant):
+                    find_symmetric_object_sets(domain, problem, 10, translator, variant)
+                    command = run.call_args.args[0]
+                    self.assertEqual({arg for arg in command if arg.startswith("--do-not")}, flags)
+
+    def test_rejects_an_unknown_symmetry_variant(self):
+        with self.assertRaisesRegex(ValueError, "Unknown symmetry variant"):
+            find_symmetric_object_sets("d.pddl", "p.pddl", 10, variant="stabilize-nothing")
 
     def test_rejects_nonpositive_symmetry_time_limit(self):
         with self.assertRaisesRegex(ValueError, "positive"):

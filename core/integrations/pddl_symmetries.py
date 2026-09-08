@@ -10,17 +10,30 @@ from tempfile import TemporaryDirectory
 from core.integrations.paths import PDDL_SYMMETRIES_TRANSLATOR
 from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 
+# A class is only symmetric if the permutation preserves the initial state and
+# the goal. Dropping either constraint reports larger, coarser classes.
+SYMMETRY_VARIANTS = {
+    "baseline": (),
+    "no-init": ("--do-not-stabilize-initial-state",),
+    "no-goal": ("--do-not-stabilize-goal",),
+    "both": ("--do-not-stabilize-initial-state", "--do-not-stabilize-goal"),
+}
 
-def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, translator_path=PDDL_SYMMETRIES_TRANSLATOR):
+
+def find_symmetric_object_sets(
+    domain_path, problem_path, time_limit=300, translator_path=PDDL_SYMMETRIES_TRANSLATOR, variant="baseline"
+):
     """Run PDDL Symmetries and return its non-trivial object classes."""
     if time_limit < 1:
         raise ValueError("PDDL Symmetries time limit must be positive")
-    command = _translator_command(domain_path, problem_path, time_limit, translator_path)
+    command = _translator_command(domain_path, problem_path, time_limit, translator_path, variant)
     return _parse_object_sets(_run_translator(command, time_limit))
 
 
-def _translator_command(domain_path, problem_path, time_limit, translator_path):
+def _translator_command(domain_path, problem_path, time_limit, translator_path, variant="baseline"):
     """Build the translator invocation, checking that every input exists."""
+    if variant not in SYMMETRY_VARIANTS:
+        raise ValueError(f"Unknown symmetry variant: {variant}")
     translator = Path(translator_path).resolve()
     if not translator.is_file():
         raise IntegrationError("PDDL Symmetries is not initialized. Run 'git submodule update --init --recursive'.")
@@ -41,6 +54,7 @@ def _translator_command(domain_path, problem_path, time_limit, translator_path):
         "--bliss-time-limit",
         str(time_limit),
         "--stop-after-computing-symmetries",
+        *SYMMETRY_VARIANTS[variant],
     ]
 
 
