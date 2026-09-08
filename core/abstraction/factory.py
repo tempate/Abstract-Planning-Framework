@@ -31,37 +31,32 @@ class AbstractionResult:
 
 
 def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
-    """Read one concrete task, select an object class, and abstract it."""
+    """Read one concrete task, find its symmetric object classes, and abstract it."""
     metrics = metrics or PlanningMetrics()
     with metrics.measure("problem_reading"):
         problem = read_problem(config.domain_path, config.problem_path)
 
-    if config.objects_to_abstract is None:
-        with metrics.measure("symmetry_discovery"):
-            symmetry_classes = find_symmetric_object_sets(
-                config.domain_path, config.problem_path, config.symmetry_time_limit
-            )
-        if not symmetry_classes:
-            raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")
+    with metrics.measure("symmetry_discovery"):
+        symmetry_classes = find_symmetric_object_sets(
+            config.domain_path, config.problem_path, config.symmetry_time_limit
+        )
+    if not symmetry_classes:
+        raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")
 
     with metrics.measure("abstraction"):
-        if config.objects_to_abstract is None:
-            abstraction, relaxable_deletes = _select_abstraction(problem, symmetry_classes, config.abstract_name)
-        else:
-            abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
-            relaxable_deletes = find_relaxable_deletes(problem, abstraction)
+        abstraction, relaxable_deletes = _select_abstraction(problem, symmetry_classes)
         collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
     return AbstractionResult(abstraction=abstraction, problem=collapsed_problem, relaxed_deletes=relaxed_deletes)
 
 
-def _select_abstraction(problem, symmetry_classes, abstract_name=None):
+def _select_abstraction(problem, symmetry_classes):
     """Select the largest class reported by PDDL Symmetries."""
     candidate = None
     candidate_relaxable_deletes = ()
     candidate_score = None
 
     for symmetry_class in symmetry_classes:
-        abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
+        abstraction = _create_abstraction(problem, symmetry_class, None)
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         score = abstraction_score(abstraction)
         if candidate_score is None or score < candidate_score:

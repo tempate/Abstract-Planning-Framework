@@ -1,6 +1,5 @@
 """User-facing configuration for concrete and abstract planning runs."""
 
-from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from os import PathLike
 
@@ -27,10 +26,4 @@ class PlanningConfig:
 class AbstractPlanningConfig(PlanningConfig):
     """Complete input configuration for an abstraction-based planning run."""
 
-    objects_to_abstract: Sequence[str] | None = None
-    abstract_name: str | None = None
     symmetry_time_limit: int = 300
-
-    def __post_init__(self):
-        if self.objects_to_abstract is not None:
-            object.__setattr__(self, "objects_to_abstract", tuple(self.objects_to_abstract))

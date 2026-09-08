@@ -114,14 +114,12 @@ class SymmetrySelectionTests(unittest.TestCase):
             patch("core.abstraction.factory.find_symmetric_object_sets", return_value=classes) as find_classes,
         ):
             result = build_abstract_problem(
-                AbstractPlanningConfig(
-                    "domain.pddl", "problem.pddl", abstract_name="pooled-vehicles", symmetry_time_limit=17
-                )
+                AbstractPlanningConfig("domain.pddl", "problem.pddl", symmetry_time_limit=17)
             )
 
         find_classes.assert_called_once_with("domain.pddl", "problem.pddl", 17)
         self.assertEqual(set(result.abstraction.objects), {"vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"})
-        self.assertEqual(result.abstraction.name, "pooled-vehicles")
+        self.assertEqual(result.abstraction.name, "vehicle_abs")
 
     def test_rejects_tasks_without_a_pddl_symmetries_object_class(self):
         with (

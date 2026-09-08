@@ -19,7 +19,9 @@ from unified_planning.shortcuts import (
 )
 
 from core.integrations.unified_planning import parse_problem, write_problem
-from core.abstraction.factory import AbstractionError, build_abstract_problem
+from core.abstraction.collapse import collapse_objects
+from core.abstraction.factory import AbstractionError, AbstractionResult, _create_abstraction, build_abstract_problem
+from core.abstraction.relaxation import find_relaxable_deletes
 from core.planning.config import AbstractPlanningConfig
 
 ABSTRACTION_DOMAIN = """
@@ -64,11 +66,11 @@ def _two_object_problem(name, type_name):
 
 
 def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
-    config = AbstractPlanningConfig(
-        "domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract, abstract_name=abstract_name
-    )
-    with patch("core.abstraction.factory.read_problem", return_value=problem):
-        return build_abstract_problem(config)
+    """Collapse one chosen class without going through symmetry discovery."""
+    abstraction = _create_abstraction(problem, objects_to_abstract, abstract_name)
+    relaxable_deletes = find_relaxable_deletes(problem, abstraction)
+    collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
+    return AbstractionResult(abstraction=abstraction, problem=collapsed_problem, relaxed_deletes=relaxed_deletes)
 
 
 class AbstractionTransformationTests(unittest.TestCase):
@@ -256,9 +258,8 @@ class AbstractionTransformationTests(unittest.TestCase):
 
     def test_parses_and_abstracts_an_agricola_final_state_metric(self):
         root = Path(__file__).resolve().parents[1] / "benchmarks" / "downward-benchmarks" / "agricola-sat18-strips"
-        result = build_abstract_problem(
-            AbstractPlanningConfig(root / "domain.pddl", root / "p01.pddl", objects_to_abstract=("num0", "num1"))
-        )
+        with patch("core.abstraction.factory.find_symmetric_object_sets", return_value=[["num0", "num1"]]):
+            result = build_abstract_problem(AbstractPlanningConfig(root / "domain.pddl", root / "p01.pddl"))
 
         self.assertIsInstance(result.problem.quality_metrics[0], MinimizeExpressionOnFinalState)
         serialized = write_problem(result.problem)
