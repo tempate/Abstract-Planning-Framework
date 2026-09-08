@@ -9,6 +9,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
+from core.integrations.pddl_symmetries import SYMMETRY_VARIANTS
 from core.outcomes import STATUS_BY_EXIT_CODE
 from scripts.utils.arguments import positive_int
 
@@ -22,7 +23,9 @@ SYMMETRY_TIMEOUT_MESSAGE = "PDDL Symmetries exceeded its"
 
 def main():
     args = _argument_parser().parse_args()
-    result = _run_task(args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout)
+    result = _run_task(
+        args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout, variant=args.symmetry_variant
+    )
     print(f"{args.domain_name}/{args.problem.name}: {_task_status(args.mode, result)}", flush=True)
 
 
@@ -35,11 +38,22 @@ def _argument_parser():
     parser.add_argument(
         "--timeout", type=positive_int, default=DEFAULT_TIMEOUT, help="Wall-clock limit in seconds for this pipeline"
     )
+    parser.add_argument(
+        "--symmetry-variant",
+        choices=tuple(SYMMETRY_VARIANTS),
+        default="baseline",
+        help="Which stabilization constraints PDDL Symmetries keeps; ignored by the concrete pipeline",
+    )
     return parser
 
 
-def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None):
-    result_file = Path(results_dir) / domain_name / problem.stem / f"{mode}.json"
+def result_name(mode, variant):
+    """Name the result file so each symmetry variant keeps its own run."""
+    return f"{mode}.json" if variant == "baseline" else f"{mode}-{variant}.json"
+
+
+def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, variant="baseline"):
+    result_file = Path(results_dir) / domain_name / problem.stem / result_name(mode, variant)
     result_file.parent.mkdir(parents=True, exist_ok=True)
     started_at = datetime.now(timezone.utc).isoformat()
     initial = {
@@ -49,6 +63,7 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
         "wall_time_seconds": 0.0,
         "output": "",
         "mode": mode,
+        "symmetry_variant": variant,
         "domain": domain_name,
         "problem": problem.name,
         "started_at": started_at,
@@ -58,12 +73,13 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
 
     environment = os.environ.copy()
     environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
-    command = _planner_command(domain, problem, mode)
+    command = _planner_command(domain, problem, mode, variant)
     result = _run_pipeline(command, timeout, environment)
     progress = _read_progress(result_file)
     result.update(
         {
             "mode": mode,
+            "symmetry_variant": variant,
             "domain": domain_name,
             "problem": problem.name,
             "started_at": started_at,
@@ -138,8 +154,11 @@ def _machine_status(return_code, timed_out, output):
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
-def _planner_command(domain, problem, mode):
-    return [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
+def _planner_command(domain, problem, mode, variant="baseline"):
+    command = [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
+    if mode == "abstract":
+        command += ["--symmetry-variant", variant]
+    return command
 
 
 def _human_status(result):
