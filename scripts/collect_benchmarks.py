@@ -27,6 +27,7 @@ FIELDS = (
     *COUNTER_LABELS,
     "abstracted_object_count",
     "abstracted_object_type",
+    "abstracted_class_count",
     "error_message",
 )
 
@@ -153,22 +154,44 @@ def _plan_length(output):
 
 
 def _abstraction_values(output, abstraction=None):
-    """Read the collapsed class, falling back to the line older planners only printed."""
+    """Summarize the collapsed classes over every class the run reported."""
+    classes = _collapsed_classes(output, abstraction)
+    if not classes:
+        return {"abstracted_object_count": "", "abstracted_object_type": "", "abstracted_class_count": ""}
+
+    object_count = 0
+    object_types = []
+    for count, object_type in classes:
+        if count == "":
+            object_count = ""
+        elif object_count != "":
+            object_count += count
+        if object_type not in object_types:
+            object_types.append(object_type)
+    return {
+        "abstracted_object_count": object_count,
+        "abstracted_object_type": "+".join(object_types),
+        "abstracted_class_count": len(classes),
+    }
+
+
+def _collapsed_classes(output, abstraction):
+    """Return (object count, type) per class, from the metrics snapshot or the printed lines."""
     if abstraction:
-        return {
-            "abstracted_object_count": len(abstraction["objects"]),
-            "abstracted_object_type": abstraction["object_type"],
-        }
+        # Runs before classes became plural stored a single class as one dict.
+        entries = [abstraction] if isinstance(abstraction, dict) else abstraction
+        classes = []
+        for entry in entries:
+            classes.append((len(entry["objects"]), entry["object_type"]))
+        return classes
 
-    match = re.search(r"^Collapsed (\[.*\]) into \S+ \(type=([^)]+)\)$", output, re.MULTILINE)
-    if match is None:
-        return {"abstracted_object_count": "", "abstracted_object_type": ""}
-
-    try:
-        object_count = len(ast.literal_eval(match.group(1)))
-    except (SyntaxError, ValueError):
-        object_count = ""
-    return {"abstracted_object_count": object_count, "abstracted_object_type": match.group(2)}
+    classes = []
+    for objects, object_type in re.findall(r"^Collapsed (\[.*\]) into \S+ \(type=([^)]+)\)$", output, re.MULTILINE):
+        try:
+            classes.append((len(ast.literal_eval(objects)), object_type))
+        except (SyntaxError, ValueError):
+            classes.append(("", object_type))
+    return classes
 
 
 def _error_message(result):

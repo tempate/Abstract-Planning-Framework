@@ -269,6 +269,7 @@ class BenchmarkTests(unittest.TestCase):
                 *COUNTER_LABELS,
                 "abstracted_object_count",
                 "abstracted_object_type",
+                "abstracted_class_count",
                 "error_message",
             ),
         )
