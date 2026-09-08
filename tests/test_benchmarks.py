@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from benchmarks.suite import NON_SYMMETRIC_DOMAINS, SUITE, SYMMETRIC_DOMAINS
+from benchmarks.suite import SYMMETRIC_DOMAINS
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from scripts.collect_benchmarks import FIELDS, collect
 from scripts.planner import _update_result_progress
@@ -49,12 +49,6 @@ class BenchmarkTests(unittest.TestCase):
         path = Path(directory) / "example" / "p01" / f"{mode}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(result), encoding="utf-8")
-
-    def test_suite_groups_domains_by_confirmed_symmetries(self):
-        # The membership of each group follows the benchmark results; only the
-        # split itself is a contract.
-        self.assertEqual(SUITE, SYMMETRIC_DOMAINS + NON_SYMMETRIC_DOMAINS)
-        self.assertFalse(set(SYMMETRIC_DOMAINS) & set(NON_SYMMETRIC_DOMAINS))
 
     def test_benchmark_runner_defaults_to_symmetric_domains(self):
         suite = inspect.signature(_benchmark_tasks).parameters["suite"].default

@@ -4,7 +4,9 @@ The domain variants come from downward-benchmarks'
 ``suite_satisficing_strips()``. ``SYMMETRIC_DOMAINS`` retains the variants for
 which PDDL Symmetries produced a valid abstraction class for at least one task
 in the benchmark results; ``NON_SYMMETRIC_DOMAINS`` contains the remaining
-selected variants. Both groups remain in ``SUITE``.
+selected variants. ``SYMMETRIC_NON_PNF_DOMAINS`` holds symmetric variants kept out of the
+experiments because they are not in positive normal form, so relaxing deletes
+is not an overapproximation there. All three groups remain in ``SUITE``.
 
 A symmetric domain still holds individual tasks without an abstraction class.
 ``NON_SYMMETRIC_PROBLEMS`` lists those, read from ``no-symmetries.txt``.
@@ -16,26 +18,15 @@ BENCHMARKS_DIR = Path(__file__).parent / "downward-benchmarks"
 NON_SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "no-symmetries.txt"
 
 SYMMETRIC_DOMAINS = [
-    # IPC 2023
-    "quantum-layout-sat23-strips",
-    # IPC 2018
-    "organic-synthesis-sat18-strips",
-    "organic-synthesis-split-sat18-strips",
-    # IPC 2014
     "barman-sat14-strips",
     "childsnack-sat14-strips",
-    "hiking-sat14-strips",
-    "openstacks-sat14-strips",
-    # IPC 2011 (no newer satisficing STRIPS formulation)
     "elevators-sat11-strips",
     "nomystery-sat11-strips",
     "sokoban-sat11-strips",
     "woodworking-sat11-strips",
-    # IPC 2006 (no newer satisficing STRIPS formulation)
     # "pathways", Excluded: potassco/plasp/issues/14.
     "pipesworld-tankage",
     "tpp",
-    # IPC 1998--2004 (no newer satisficing STRIPS formulation)
     "airport",
     "depot",
     "driverlog",
@@ -43,21 +34,27 @@ SYMMETRIC_DOMAINS = [
     "logistics00",
     "logistics98",
     "miconic",
-    "mprime",
     "mystery",
     "pipesworld-notankage",
     "satellite",
     "zenotravel",
 ]
 
+SYMMETRIC_NON_PNF_DOMAINS = [
+    "quantum-layout-sat23-strips",
+    "organic-synthesis-sat18-strips",
+    "organic-synthesis-split-sat18-strips",
+    "hiking-sat14-strips",
+    "openstacks-sat14-strips",
+    "mprime",
+]
+
 NON_SYMMETRIC_DOMAINS = [
-    # IPC 2018
     "agricola-sat18-strips",
     "data-network-sat18-strips",
     "snake-sat18-strips",
     "spider-sat18-strips",
     "termes-sat18-strips",
-    # IPC 2014
     "floortile-sat14-strips",
     "ged-sat14-strips",
     "parking-sat14-strips",
@@ -65,16 +62,13 @@ NON_SYMMETRIC_DOMAINS = [
     "thoughtful-sat14-strips",
     "transport-sat14-strips",
     "visitall-sat14-strips",
-    # IPC 2011 (no newer satisficing STRIPS formulation)
     "parcprinter-sat11-strips",
     "pegsol-sat11-strips",
     "scanalyzer-sat11-strips",
     "tidybot-sat11-strips",
-    # IPC 2006 (no newer satisficing STRIPS formulation)
     "rovers",
     # "storage", Excluded: aiplan4eu/unified-planning/issues/817.
     "trucks-strips",
-    # IPC 1998--2004 (no newer satisficing STRIPS formulation)
     "blocks",
     "freecell",
     "grid",
@@ -82,7 +76,7 @@ NON_SYMMETRIC_DOMAINS = [
     "psr-small",
 ]
 
-SUITE = SYMMETRIC_DOMAINS + NON_SYMMETRIC_DOMAINS
+SUITE = SYMMETRIC_DOMAINS + SYMMETRIC_NON_PNF_DOMAINS + NON_SYMMETRIC_DOMAINS
 
 
 def _read_non_symmetric_problems(path=NON_SYMMETRIC_PROBLEMS_FILE):
