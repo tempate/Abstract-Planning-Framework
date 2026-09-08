@@ -10,8 +10,8 @@ from core.abstraction.relaxation import find_relaxable_deletes
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import read_problem
 from core.metrics import PlanningMetrics
+from core.outcomes import NoSymmetriesError
 from core.planning.config import AbstractPlanningConfig
-from core.planning.outcomes import NoSymmetriesError
 
 __all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "NoSymmetriesError", "build_abstract_problem"]
 

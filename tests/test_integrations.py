@@ -8,9 +8,9 @@ from unittest.mock import patch
 from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solve
 from core.integrations.fast_downward import _get_command, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
-from core.paths import ABSTRACT_TIME_STEPS_ENCODING
-from core.planning.outcomes import IntegrationError
-from core.planning.plan import PlanAction
+from core.integrations.paths import ABSTRACT_TIME_STEPS_ENCODING
+from core.outcomes import IntegrationError
+from core.plan import PlanAction
 
 
 class ClingoIntegrationTests(unittest.TestCase):
@@ -198,7 +198,8 @@ class PlaspPostProcessingTests(unittest.TestCase):
 
         result = add_switch_to_asp_rule(f"before.\n{rule}\nafter.\n")
 
-        self.assertIn("not switch(t).", result)
+        self.assertIn("not switch(t), not gap(t).", result)
+        self.assertIn("0 {occurs(Action, t) : action(Action)} 1 :- gap(t).", result)
         self.assertNotIn(rule, result)
         self.assertEqual(result.count("not switch(t)"), 1)
         self.assertIn("before.\n", result)

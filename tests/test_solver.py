@@ -1,7 +1,7 @@
 import unittest
 
 from core.integrations.clingo import IncrementalSolver
-from core.solvers.decremental import solve_decrementally
+from core.refinement.decremental import solve_decrementally
 
 
 class DecrementalSolverTests(unittest.TestCase):

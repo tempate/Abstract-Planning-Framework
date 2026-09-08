@@ -1,11 +1,11 @@
 """Orchestrate concrete planning from PDDL translation through ASP solving."""
 
-from core.execution import temp_run_dir
-from core.integrations.clingo import solve
+from core.integrations.clingo import plan_length, solve
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.planning.config import PlanningConfig
+from core.planning.execution import temp_run_dir
 
 
 def compute_concrete_plan(config: PlanningConfig, on_update=None):
@@ -42,6 +42,7 @@ def _compute_concrete_plan(config, base_dir, run_id, metrics):
         "configuration": config.as_dict(),
         "horizon": solve_result.horizon,
         "plan": solve_result.plan,
+        "plan_length": None if solve_result.plan is None else plan_length(solve_result.plan),
         "success": solve_result.plan is not None,
         "run_id": run_id,
     }

@@ -15,8 +15,8 @@ Run them from the repository root after initializing the submodules.
 ```
 
 The abstraction pays off on this task: it collapses two interchangeable packages
-and its horizon already matches the concrete plan length, so the guided search
-finds a plan in a single solver call.
+and every abstract action maps onto a concrete one, so the guided search finds a
+plan in a single solver call and leaves every gap empty.
 
 `abstract.sh` selects the object class automatically, which needs the pybliss
 setup described in the main README.

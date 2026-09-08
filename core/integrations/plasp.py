@@ -3,9 +3,13 @@
 import os
 import subprocess
 
-from core.planning.outcomes import IntegrationError
-
-from core.paths import ABSTRACT_TIME_STEPS_ENCODING, ACTION_PER_TIME_STEP_ENCODING, EXACT_HORIZON_ENCODING, PLASP_BIN
+from core.integrations.paths import (
+    ABSTRACT_TIME_STEPS_ENCODING,
+    ACTION_PER_TIME_STEP_ENCODING,
+    EXACT_HORIZON_ENCODING,
+    PLASP_BIN,
+)
+from core.outcomes import IntegrationError
 
 
 def sas_to_asp(sas_path, abstract_time_steps=False):
@@ -33,9 +37,14 @@ def sas_to_asp(sas_path, abstract_time_steps=False):
 
 
 def add_switch_to_asp_rule(asp):
-    """Guard the exact encoding's occurrence constraint with a switch."""
+    """Guard the exact encoding's occurrence constraint with a switch, and let gaps stay empty."""
     rule_to_modify = "1 {occurs(Action, t) : action(Action)} 1."
-    modified_rule = "1 {occurs(Action, t) : action(Action)} 1 :- not switch(t)."
+    modified_rule = "\n".join(
+        (
+            "1 {occurs(Action, t) : action(Action)} 1 :- not switch(t), not gap(t).",
+            "0 {occurs(Action, t) : action(Action)} 1 :- gap(t).",
+        )
+    )
 
     lines = []
     guarded = 0

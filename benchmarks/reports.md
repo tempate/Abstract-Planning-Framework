@@ -1,14 +1,14 @@
 # Benchmark report
 
-2026-09-07 14:19 — benchmarks/results.csv
+2026-09-08 11:33 — benchmarks/results.csv
 
 ## Coverage
 
 ```
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Plans found                                        99 (21.7%)        111 (24.3%)
-Timeouts                                          356 (77.9%)        345 (75.5%)
+Plans found                                       118 (25.8%)        110 (24.1%)
+Timeouts                                          335 (73.3%)        345 (75.5%)
 Total problems                                            457                457
 ```
 
@@ -17,11 +17,11 @@ Total problems                                            457                457
 ```
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Plans found by both pipelines                              97                 97
-Faster when both found a plan                        5 (5.2%)         92 (94.8%)
-Plan found when the other did not                           2                 14
-Median runtime when both found a plan                 13.24 s             8.86 s
-Total runtime across shared solves                10,600.99 s         4,446.11 s
+Plans found by both pipelines                             103                103
+Faster when both found a plan                      18 (17.5%)         85 (82.5%)
+Plan found when the other did not                          15                  7
+Median runtime when both found a plan                 11.42 s             9.86 s
+Total runtime across shared solves                 9,215.24 s         8,333.96 s
 ```
 
 ## Where the timeouts died
@@ -29,25 +29,32 @@ Total runtime across shared solves                10,600.99 s         4,446.11 s
 ```
 Where the abstract pipeline was killed               Timeouts
 -------------------------------------------------------------
-Searching for the abstract plan                     310 (87%)
-Extended concrete search                              30 (8%)
-Guided concrete search                                16 (4%)
-Total                                                     356
+Searching for the abstract plan                     310 (93%)
+Extended concrete search                              17 (5%)
+Guided concrete search                                 8 (2%)
+Total                                                     335
 ```
 
 ## How the successes were solved
 
 ```
-How the 99 successes were solved                     Problems
+How the 118 successes were solved                    Problems
 -------------------------------------------------------------
-Abstract plan refined directly                       55 (56%)
-Refined after switching some actions off             12 (12%)
-Abstract plan discarded, solved above it             32 (32%)
-Total                                                      99
+Abstract plan refined directly                       89 (75%)
+Refined after switching some actions off             24 (20%)
+Abstract plan discarded, solved above it               5 (4%)
+Total                                                     118
 ```
 
-## Deletes relaxed
+## Deletes relaxed, over the 113 successes whose abstract plan was used
 
 ```
-This CSV predates the relaxed-deletes counter
+Deletes relaxed                                      Problems
+-------------------------------------------------------------
+None                                                 11 (10%)
+1 to 4                                               69 (61%)
+5 to 9                                               13 (12%)
+10 to 19                                             15 (13%)
+20 or more                                             5 (4%)
+Total                                                     113
 ```

@@ -8,9 +8,11 @@ import re
 from pathlib import Path
 
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from scripts.run_benchmark import MANIFEST_NAME, RESULTS_DIR, _human_status
+from scripts.run_benchmark import MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR, _human_status
 
-CSV_FILE = RESULTS_DIR / "results.csv"
+# The raw run output stays in the untracked results directory; the collected CSV
+# is the artifact that gets committed and reported on.
+CSV_FILE = PROJECT_ROOT / "benchmarks" / "results.csv"
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
 FIELDS = (
     "domain",
@@ -184,7 +186,7 @@ def _error_message(result):
 
 def main():
     rows = collect()
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    CSV_FILE.parent.mkdir(parents=True, exist_ok=True)
     with CSV_FILE.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=FIELDS)
         writer.writeheader()

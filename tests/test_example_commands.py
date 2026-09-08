@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from scripts import planner
 from scripts.planner import _argument_parser
-from core.planning.outcomes import UnsolvableTaskError
+from core.outcomes import UnsolvableTaskError
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -25,6 +25,7 @@ class PlannerOutputTests(unittest.TestCase):
         result = {
             "horizon": 5,
             "plan": ["occurs(move,5)"],
+            "plan_length": 1,
             "success": True,
             "metrics": {"durations": {"total": 1.25}, "counters": {"decrements": 2, "concrete_solve_calls": 3}},
         }

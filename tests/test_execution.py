@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from core.execution import temp_run_dir
+from core.planning.execution import temp_run_dir
 
 
 class ExecutionTests(unittest.TestCase):

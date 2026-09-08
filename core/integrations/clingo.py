@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import clingo
 
-from core.planning.plan import PlanAction
+from core.plan import PlanAction
 
 THREADS = 1
 
@@ -94,6 +94,11 @@ def parse_plan_actions(atoms):
             actions.append(action)
 
     return tuple(sorted(actions, key=lambda action: action.time_step))
+
+
+def plan_length(atoms):
+    """Count the actions in a plan, which gaps leave below the horizon."""
+    return len(parse_plan_actions(atoms))
 
 
 def _plan_action(symbol):
