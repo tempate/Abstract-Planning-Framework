@@ -140,7 +140,7 @@ class BenchmarkTests(unittest.TestCase):
             ],
         )
 
-    def test_discovers_both_modes_for_problem_and_its_domain(self):
+    def test_discovers_the_problem_and_its_domain(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             benchmark = root / "example"
@@ -150,8 +150,9 @@ class BenchmarkTests(unittest.TestCase):
             domain.touch()
             problem.touch()
 
+            self.assertEqual(list(_benchmark_tasks(root, ["example"])), [("abstract", "example", domain, problem)])
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"])),
+                list(_benchmark_tasks(root, ["example"], with_concrete=True)),
                 [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
             )
 
@@ -166,7 +167,7 @@ class BenchmarkTests(unittest.TestCase):
 
             tasks = list(_benchmark_tasks(root, ["example"], skipped={("example", "p01.pddl")}))
 
-            self.assertEqual([problem.name for _mode, _name, _domain, problem in tasks], ["p02.pddl", "p02.pddl"])
+            self.assertEqual([problem.name for _mode, _name, _domain, problem in tasks], ["p02.pddl"])
 
     def test_planner_gets_only_the_mode_problem_and_domain(self):
         command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract")
@@ -193,8 +194,7 @@ class BenchmarkTests(unittest.TestCase):
             result.touch()
 
             self.assertEqual(
-                list(_benchmark_tasks(benchmarks, ["example"])),
-                [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
+                list(_benchmark_tasks(benchmarks, ["example"])), [("abstract", "example", domain, problem)]
             )
 
     def test_collector_ignores_copperbench_metadata_next_to_results(self):

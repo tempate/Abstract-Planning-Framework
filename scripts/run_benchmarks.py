@@ -20,7 +20,7 @@ DEFAULT_MEMORY_LIMIT = 8 * 1024
 
 def main():
     args = _argument_parser().parse_args()
-    tasks = list(_benchmark_tasks())
+    tasks = list(_benchmark_tasks(with_concrete=args.with_concrete))
     _reset_results_dir()
     _write_manifest(tasks)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
@@ -72,6 +72,9 @@ def _argument_parser():
         type=positive_int,
         help="Maximum number of CopperBench array tasks allowed to run concurrently",
     )
+    parser.add_argument(
+        "--with-concrete", action="store_true", help="Also submit the concrete pipeline for every problem"
+    )
     return parser
 
 
@@ -122,13 +125,16 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SYMMETRIC_DOMAINS, skipped=NON_SYMMETRIC_PROBLEMS):
+def _benchmark_tasks(
+    benchmarks_dir=BENCHMARKS_DIR, suite=SYMMETRIC_DOMAINS, skipped=NON_SYMMETRIC_PROBLEMS, with_concrete=False
+):
+    modes = ("abstract", "concrete") if with_concrete else ("abstract",)
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
             if "domain" not in problem.name and (domain_name, problem.name) not in skipped:
                 domain = _find_domain(problem)
-                for mode in ("abstract", "concrete"):
+                for mode in modes:
                     yield mode, domain_name, domain, problem
 
 
