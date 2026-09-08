@@ -97,7 +97,10 @@ class BenchmarkTests(unittest.TestCase):
             definition_dir.mkdir()
 
             config_file = _write_copperbench_config(
-                [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
+                [
+                    ("abstract", "example", domain, problem, "no-init"),
+                    ("concrete", "example", domain, problem, "baseline"),
+                ],
                 definition_dir=definition_dir,
                 timeout=1800,
                 memory_limit=4096,
@@ -128,6 +131,8 @@ class BenchmarkTests(unittest.TestCase):
                 "$3",
                 "--problem",
                 "$4",
+                "--symmetry-variant",
+                "$5",
                 "--timeout",
                 "$timeout",
             ],
@@ -135,8 +140,8 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(
             instances,
             [
-                f"abstract example {domain.resolve()} {problem.resolve()}",
-                f"concrete example {domain.resolve()} {problem.resolve()}",
+                f"abstract example {domain.resolve()} {problem.resolve()} no-init",
+                f"concrete example {domain.resolve()} {problem.resolve()} baseline",
             ],
         )
 
@@ -150,11 +155,32 @@ class BenchmarkTests(unittest.TestCase):
             domain.touch()
             problem.touch()
 
-            self.assertEqual(list(_benchmark_tasks(root, ["example"])), [("abstract", "example", domain, problem)])
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], with_concrete=True)),
-                [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
+                list(_benchmark_tasks(root, ["example"], variants=("no-init",))),
+                [("abstract", "example", domain, problem, "no-init")],
             )
+            # The concrete pipeline ignores symmetries, so it runs once whatever
+            # the variants are.
+            self.assertEqual(
+                list(_benchmark_tasks(root, ["example"], with_concrete=True, variants=("no-init", "no-goal"))),
+                [
+                    ("abstract", "example", domain, problem, "no-init"),
+                    ("abstract", "example", domain, problem, "no-goal"),
+                    ("concrete", "example", domain, problem, "baseline"),
+                ],
+            )
+
+    def test_the_suite_run_covers_every_experiment_variant(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+
+            tasks = list(_benchmark_tasks(root, ["example"]))
+
+            self.assertEqual([variant for *_rest, variant in tasks], list(EXPERIMENT_VARIANTS))
 
     def test_problems_without_symmetries_are_not_submitted(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -165,9 +191,9 @@ class BenchmarkTests(unittest.TestCase):
             (benchmark / "p01.pddl").touch()
             (benchmark / "p02.pddl").touch()
 
-            tasks = list(_benchmark_tasks(root, ["example"], skipped={("example", "p01.pddl")}))
+            tasks = list(_benchmark_tasks(root, ["example"], skipped={("example", "p01.pddl")}, variants=("no-init",)))
 
-            self.assertEqual([problem.name for _mode, _name, _domain, problem in tasks], ["p02.pddl"])
+            self.assertEqual([problem.name for _mode, _name, _domain, problem, _variant in tasks], ["p02.pddl"])
 
     def test_planner_gets_only_the_mode_problem_and_domain(self):
         command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract")
@@ -194,7 +220,8 @@ class BenchmarkTests(unittest.TestCase):
             result.touch()
 
             self.assertEqual(
-                list(_benchmark_tasks(benchmarks, ["example"])), [("abstract", "example", domain, problem)]
+                list(_benchmark_tasks(benchmarks, ["example"], variants=("no-init",))),
+                [("abstract", "example", domain, problem, "no-init")],
             )
 
     def test_collector_ignores_copperbench_metadata_next_to_results(self):
