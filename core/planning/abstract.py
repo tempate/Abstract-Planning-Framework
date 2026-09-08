@@ -29,7 +29,7 @@ def _compute_abstract_plan(config, base_dir, run_id, metrics):
     # Report the abstraction before solving so runs that fail later still record
     # it. The metrics snapshot reaches the result file on every update, which is
     # what survives a run killed at the benchmark timeout.
-    abstractions = (abstract_problem.abstraction,)
+    abstractions = abstract_problem.abstractions
     metrics.set_abstraction(abstractions)
     metrics.set_counter("relaxed_deletes", len(abstract_problem.relaxed_deletes))
     for abstraction in abstractions:

@@ -33,7 +33,7 @@ def _stubbed_abstract_pipeline(generated):
 
 def _generated_abstraction(relaxed_deletes=()):
     return SimpleNamespace(
-        problem=Mock(), abstraction=Abstraction("item_abs", ("a", "b"), "item"), relaxed_deletes=relaxed_deletes
+        problem=Mock(), abstractions=(Abstraction("item_abs", ("a", "b"), "item"),), relaxed_deletes=relaxed_deletes
     )
 
 
@@ -70,7 +70,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
 
         context = stubs.refine.call_args.args[0]
         self.assertTrue(result["success"])
-        self.assertEqual(context.abstractions, (generated.abstraction,))
+        self.assertEqual(context.abstractions, generated.abstractions)
         self.assertIs(context.relaxed_deletes, generated.relaxed_deletes)
         self.assertEqual(context.concrete_asp, "guarded concrete asp")
         self.assertEqual(context.abstract_asp, "abstract asp")
@@ -127,7 +127,7 @@ class GeneratedAbstractionTests(unittest.TestCase):
             abstract_domain, abstract_problem_path = _write_abstract_problem(abstract_problem.problem, root / "run")
             generated = read_problem(abstract_domain, abstract_problem_path)
 
-        self.assertEqual(abstract_problem.abstraction.name, "item_abs")
+        self.assertEqual(abstract_problem.abstractions[0].name, "item_abs")
         self.assertEqual({item.name for item in generated.all_objects}, {"item_abs"})
 
 

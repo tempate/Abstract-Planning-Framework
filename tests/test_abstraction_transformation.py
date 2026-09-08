@@ -69,8 +69,8 @@ def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
     """Collapse one chosen class without going through symmetry discovery."""
     abstraction = _create_abstraction(problem, objects_to_abstract, abstract_name)
     relaxable_deletes = find_relaxable_deletes(problem, abstraction)
-    collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
-    return AbstractionResult(abstraction=abstraction, problem=collapsed_problem, relaxed_deletes=relaxed_deletes)
+    collapsed_problem, relaxed_deletes = collapse_objects(problem, (abstraction,), relaxable_deletes)
+    return AbstractionResult(abstractions=(abstraction,), problem=collapsed_problem, relaxed_deletes=relaxed_deletes)
 
 
 class AbstractionTransformationTests(unittest.TestCase):
@@ -84,7 +84,7 @@ class AbstractionTransformationTests(unittest.TestCase):
         result_objects = {item.name for item in result.problem.all_objects}
         self.assertTrue({"item-a", "item-b"}.isdisjoint(result_objects))
         self.assertEqual(result_objects, {"item-c", "pooled-item"})
-        self.assertEqual(result.abstraction.object_type, "item")
+        self.assertEqual(result.abstractions[0].object_type, "item")
         self.assertEqual([item.action for item in result.relaxed_deletes], ["consume"])
         serialized = write_problem(result.problem)
         for selected in ("item-a", "item-b"):

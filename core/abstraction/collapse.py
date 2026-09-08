@@ -16,16 +16,24 @@ class AbstractionError(ValueError):
     """Raised when a requested model abstraction cannot be constructed safely."""
 
 
-def collapse_objects(problem, abstraction, relaxable_deletes):
-    """Replace the abstraction's concrete objects in a fresh problem."""
+def collapse_objects(problem, abstractions, relaxable_deletes):
+    """Replace every abstraction's concrete objects in one fresh problem."""
     _validate_supported_problem(problem)
-    objects_to_collapse = tuple(problem.object(name) for name in abstraction.objects)
     deletes_to_relax = set(relaxable_deletes)
     collapsed_problem = Problem(
         problem.name, environment=problem.environment, initial_defaults=problem.initial_defaults
     )
-    abstract_object = Object(abstraction.name, objects_to_collapse[0].type, problem.environment)
-    object_substitutions = {item: abstract_object for item in objects_to_collapse}
+
+    # One abstract object per class, substituted together so the problem is
+    # rewritten in a single pass.
+    collapsed_classes = []
+    object_substitutions = {}
+    for abstraction in abstractions:
+        objects_to_collapse = tuple(problem.object(name) for name in abstraction.objects)
+        abstract_object = Object(abstraction.name, objects_to_collapse[0].type, problem.environment)
+        collapsed_classes.append((objects_to_collapse, abstract_object))
+        for item in objects_to_collapse:
+            object_substitutions[item] = abstract_object
 
     def rewrite(expression):
         return expression.substitute(object_substitutions).simplify()
@@ -33,12 +41,13 @@ def collapse_objects(problem, abstraction, relaxable_deletes):
     for fluent in problem.fluents:
         collapsed_problem.add_fluent(fluent, default_initial_value=problem.fluents_defaults.get(fluent))
     for item in problem.all_objects:
-        if item not in objects_to_collapse:
+        if item not in object_substitutions:
             collapsed_problem.add_object(item)
-    collapsed_problem.add_object(abstract_object)
+    for _, abstract_object in collapsed_classes:
+        collapsed_problem.add_object(abstract_object)
 
     collapsed_actions, relaxed_deletes = _copy_actions(
-        problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax
+        problem, collapsed_problem, rewrite, collapsed_classes, deletes_to_relax
     )
     _copy_initial_values(problem, collapsed_problem, rewrite)
     _copy_goals_and_constraints(problem, collapsed_problem, rewrite)
@@ -72,18 +81,18 @@ def _validate_supported_problem(problem):
         raise AbstractionError("Unsupported PDDL feature: non-instantaneous actions")
 
 
-def _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax):
+def _copy_actions(problem, collapsed_problem, rewrite, collapsed_classes, deletes_to_relax):
     collapsed_actions = {}
     relaxed_deletes = []
     for action in problem.actions:
-        collapsed_action, action_relaxed_deletes = _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax)
+        collapsed_action, action_relaxed_deletes = _copy_action(action, rewrite, collapsed_classes, deletes_to_relax)
         collapsed_problem.add_action(collapsed_action)
         collapsed_actions[action] = collapsed_action
         relaxed_deletes.extend(action_relaxed_deletes)
     return collapsed_actions, tuple(relaxed_deletes)
 
 
-def _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax):
+def _copy_action(action, rewrite, collapsed_classes, deletes_to_relax):
     collapsed_action = action.clone()
     collapsed_action.clear_preconditions()
     for precondition in action.preconditions:
@@ -92,12 +101,10 @@ def _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax):
     relaxed_deletes = []
     collapsed_action.clear_effects()
     for effect in action.effects:
-        match = match_relaxable_delete(action, effect, objects_to_collapse)
-        if match is not None:
-            _, relaxable_delete = match
-            if relaxable_delete in deletes_to_relax:
-                relaxed_deletes.append(relaxable_delete)
-                continue
+        relaxed_delete = _relaxed_delete(action, effect, collapsed_classes, deletes_to_relax)
+        if relaxed_delete is not None:
+            relaxed_deletes.append(relaxed_delete)
+            continue
 
         fluent = rewrite(effect.fluent)
         value = rewrite(effect.value)
@@ -111,6 +118,15 @@ def _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax):
         else:
             raise AbstractionError(f"Unsupported effect in action {action.name}: {effect}")
     return collapsed_action, relaxed_deletes
+
+
+def _relaxed_delete(action, effect, collapsed_classes, deletes_to_relax):
+    """Return the delete this effect relaxes for any collapsed class, if any."""
+    for objects_to_collapse, _ in collapsed_classes:
+        match = match_relaxable_delete(action, effect, objects_to_collapse)
+        if match is not None and match[1] in deletes_to_relax:
+            return match[1]
+    return None
 
 
 def _copy_initial_values(problem, collapsed_problem, rewrite):
