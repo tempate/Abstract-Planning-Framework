@@ -42,11 +42,13 @@ def _argument_parser():
     return parser
 
 
-def _finished_problems(results_file):
+def _finished_problems(results_file, variant="baseline"):
     """Pair both pipelines per problem, dropping problems either one has not finished."""
     rows = {}
     with Path(results_file).open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
+            if row.get("symmetry_variant", "baseline") != variant:
+                continue
             rows.setdefault((row["domain"], row["problem"]), {})[row["mode"]] = row
 
     problems = []

@@ -21,6 +21,7 @@ from scripts.run_benchmark import (
     _planner_command,
     _run_pipeline,
     _run_task,
+    result_name,
 )
 from scripts.run_benchmarks import (
     DEFAULT_MEMORY_LIMIT,
@@ -236,6 +237,28 @@ class BenchmarkTests(unittest.TestCase):
                 [("abstract", "example", domain, problem, "no-init")],
             )
 
+    def test_each_symmetry_variant_becomes_its_own_row(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for variant in ("baseline", "no-init", "both"):
+                result = {
+                    "domain": "example",
+                    "problem": "p01.pddl",
+                    "mode": "abstract",
+                    "symmetry_variant": variant,
+                    "status": "success",
+                    "return_code": 0,
+                    "timed_out": False,
+                    "wall_time_seconds": 1.0,
+                    "output": "Plan found: yes\n",
+                }
+                path = Path(directory) / "example" / "p01" / result_name("abstract", variant)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(json.dumps(result), encoding="utf-8")
+
+            rows = collect(directory)
+
+            self.assertEqual([row["symmetry_variant"] for row in rows], ["baseline", "both", "no-init"])
+
     def test_collector_ignores_copperbench_metadata_next_to_results(self):
         with tempfile.TemporaryDirectory() as directory:
             run_dir = Path(directory) / "run-1"
@@ -299,6 +322,7 @@ class BenchmarkTests(unittest.TestCase):
                 "domain",
                 "problem",
                 "mode",
+                "symmetry_variant",
                 "status",
                 "wall_time_seconds",
                 "last_completed_phase",
