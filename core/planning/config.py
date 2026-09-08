@@ -30,6 +30,7 @@ class AbstractPlanningConfig(PlanningConfig):
     objects_to_abstract: Sequence[str] | None = None
     abstract_name: str | None = None
     symmetry_time_limit: int = 300
+    symmetry_variant: str = "baseline"
 
     def __post_init__(self):
         if self.objects_to_abstract is not None:
