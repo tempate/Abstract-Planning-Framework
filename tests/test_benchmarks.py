@@ -24,6 +24,7 @@ from scripts.run_benchmark import (
 )
 from scripts.run_benchmarks import (
     DEFAULT_MEMORY_LIMIT,
+    EXPERIMENT_VARIANTS,
     MANIFEST_NAME,
     _argument_parser,
     _benchmark_tasks,
@@ -200,7 +201,18 @@ class BenchmarkTests(unittest.TestCase):
         concrete_command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "concrete")
 
         self.assertEqual(
-            command[1:], ["-m", "scripts.planner", "abstract", "--problem", "problem.pddl", "--domain", "domain.pddl"]
+            command[1:],
+            [
+                "-m",
+                "scripts.planner",
+                "abstract",
+                "--problem",
+                "problem.pddl",
+                "--domain",
+                "domain.pddl",
+                "--symmetry-variant",
+                "baseline",
+            ],
         )
         self.assertEqual(
             concrete_command[1:],
@@ -494,8 +506,8 @@ class BenchmarkTests(unittest.TestCase):
             with self.subTest(completed=completed), tempfile.TemporaryDirectory() as directory:
                 problem = Path("p01.pddl")
                 tasks = [
-                    ("abstract", "example", Path("domain.pddl"), problem),
-                    ("concrete", "example", Path("domain.pddl"), problem),
+                    ("abstract", "example", Path("domain.pddl"), problem, "baseline"),
+                    ("concrete", "example", Path("domain.pddl"), problem, "baseline"),
                 ]
                 manifest = _write_manifest(tasks, directory)
                 for mode in completed:
