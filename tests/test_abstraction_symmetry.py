@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
+from core.abstraction.factory import AbstractionError, NoSymmetriesError, _build_abstractions, build_abstract_problem
 from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 from core.planning.config import AbstractPlanningConfig
 
@@ -94,16 +94,23 @@ class SymmetrySelectionTests(unittest.TestCase):
     def setUp(self):
         self.problem = parse_problem(SYMMETRY_DOMAIN, SYMMETRY_PROBLEM)
 
-    def test_selection_takes_the_largest_class(self):
-        # The gadgets win on size alone: they also fill every goal conjunct and
-        # relax fewer deletes than the items, and neither counts.
+    def test_every_reported_class_is_collapsed(self):
         source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
 
-        selected, _ = _select_abstraction(source, [["item1", "item2"], ["gadget1", "gadget2", "gadget3"]])
+        abstractions, _ = _build_abstractions(source, [["item1", "item2"], ["gadget1", "gadget2", "gadget3"]])
 
-        self.assertEqual(set(selected.objects), {"gadget1", "gadget2", "gadget3"})
+        collapsed = {abstraction.name: set(abstraction.objects) for abstraction in abstractions}
+        self.assertEqual(collapsed, {"item_abs": {"item1", "item2"}, "gadget_abs": {"gadget1", "gadget2", "gadget3"}})
 
-    def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self):
+    def test_classes_sharing_a_declared_type_get_distinct_names(self):
+        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
+
+        abstractions, _ = _build_abstractions(source, [["item1", "item2"], ["gadget1", "gadget2"], ["gadget3"]])
+
+        names = [abstraction.name for abstraction in abstractions]
+        self.assertEqual(len(names), len(set(names)))
+
+    def test_planner_abstraction_collapses_every_pddl_symmetries_class(self):
         classes = [
             ["cargo-a", "cargo-b", "cargo-c"],
             ["tool-a", "tool-b"],
@@ -114,25 +121,30 @@ class SymmetrySelectionTests(unittest.TestCase):
             patch("core.abstraction.factory.find_symmetric_object_sets", return_value=classes) as find_classes,
         ):
             result = build_abstract_problem(
-                AbstractPlanningConfig(
-                    "domain.pddl", "problem.pddl", abstract_name="pooled-vehicles", symmetry_time_limit=17
-                )
+                AbstractPlanningConfig("domain.pddl", "problem.pddl", symmetry_time_limit=17)
             )
 
         find_classes.assert_called_once_with("domain.pddl", "problem.pddl", 17)
-        self.assertEqual(set(result.abstraction.objects), {"vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"})
-        self.assertEqual(result.abstraction.name, "pooled-vehicles")
+        collapsed = {abstraction.name: set(abstraction.objects) for abstraction in result.abstractions}
+        self.assertEqual(
+            collapsed,
+            {
+                "cargo_abs": {"cargo-a", "cargo-b", "cargo-c"},
+                "tool_abs": {"tool-a", "tool-b"},
+                "vehicle_abs": {"vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"},
+            },
+        )
 
     def test_rejects_tasks_without_a_pddl_symmetries_object_class(self):
         with (
             patch("core.abstraction.factory.read_problem", return_value=self.problem),
             patch("core.abstraction.factory.find_symmetric_object_sets", return_value=[]),
-            patch("core.abstraction.factory._select_abstraction") as select,
+            patch("core.abstraction.factory._build_abstractions") as build,
         ):
             with self.assertRaisesRegex(NoSymmetriesError, "found no abstractable object classes"):
                 build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
-        select.assert_not_called()
+        build.assert_not_called()
 
     def test_accepts_domain_constants_reported_by_pddl_symmetries(self):
         domain = """
@@ -148,13 +160,19 @@ class SymmetrySelectionTests(unittest.TestCase):
   (:init (open depot-a) (open depot-b))
   (:goal (open depot-a)))
 """
-        selected, _ = _select_abstraction(parse_problem(domain, problem), [["depot-b", "depot-a"]])
+        abstractions, _ = _build_abstractions(parse_problem(domain, problem), [["depot-b", "depot-a"]])
 
-        self.assertEqual(set(selected.objects), {"depot-a", "depot-b"})
+        self.assertEqual(set(abstractions[0].objects), {"depot-a", "depot-b"})
 
-    def test_rejects_a_symmetry_class_that_cannot_be_collapsed(self):
-        with self.assertRaisesRegex(AbstractionError, "same declared type"):
-            _select_abstraction(self.problem, [["cargo-a", "tool-a"]])
+    def test_skips_a_symmetry_class_that_cannot_be_collapsed(self):
+        # A heterogeneous class is unusable, but it must not cost the run the others.
+        abstractions, _ = _build_abstractions(self.problem, [["cargo-a", "tool-a"], ["tool-a", "tool-b"]])
+
+        self.assertEqual([abstraction.name for abstraction in abstractions], ["tool_abs"])
+
+    def test_reports_no_symmetries_when_no_class_can_be_collapsed(self):
+        with self.assertRaisesRegex(NoSymmetriesError, "could be collapsed"):
+            _build_abstractions(self.problem, [["cargo-a", "tool-a"]])
 
     @patch("core.integrations.pddl_symmetries.subprocess.run")
     def test_extracts_object_sets_from_translator_output(self, run):
@@ -219,15 +237,18 @@ class SymmetrySelectionTests(unittest.TestCase):
     os.environ.get("RUN_PLANNER_INTEGRATION") == "1", "set RUN_PLANNER_INTEGRATION=1 to run PDDL Symmetries"
 )
 class RealSymmetryIntegrationTests(unittest.TestCase):
-    def test_gripper_symmetries_select_the_balls(self):
+    def test_gripper_symmetries_collapse_the_balls_and_the_grippers(self):
         problem_path = GRIPPER / "prob01.pddl"
         classes = find_symmetric_object_sets(GRIPPER / "domain.pddl", problem_path)
-        selected, _ = _select_abstraction(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
+        abstractions, _ = _build_abstractions(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
 
         self.assertEqual({tuple(group) for group in classes}, {("ball1", "ball2", "ball3", "ball4"), ("left", "right")})
-        # The goal names every ball, and the four of them still win over the two
-        # grippers: collapsing them is what drops the abstract horizon.
-        self.assertEqual(set(selected.objects), {"ball1", "ball2", "ball3", "ball4"})
+        self.assertEqual(
+            {frozenset(abstraction.objects) for abstraction in abstractions},
+            {frozenset(("left", "right")), frozenset(("ball1", "ball2", "ball3", "ball4"))},
+        )
+        # Both classes are declared `object`, so the second name gets a suffix.
+        self.assertEqual({abstraction.name for abstraction in abstractions}, {"object_abs", "object_abs2"})
 
 
 if __name__ == "__main__":

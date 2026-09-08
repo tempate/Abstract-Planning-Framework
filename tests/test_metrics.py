@@ -1,4 +1,5 @@
 import unittest
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 from core.metrics import PlanningMetrics
@@ -21,13 +22,21 @@ class PlanningMetricsTests(unittest.TestCase):
 
         self.assertEqual(metrics.as_dict(), {"durations": {"total": 1.25}, "counters": {"final_horizon": 4}})
 
-    def test_the_collapsed_class_reaches_the_snapshot_as_it_is_selected(self):
+    def test_every_collapsed_class_reaches_the_snapshot_as_it_is_selected(self):
         updates = []
         metrics = PlanningMetrics(on_update=lambda *update: updates.append(update))
 
-        metrics.set_abstraction(("ball2", "ball1"), "ball")
+        metrics.set_abstraction(
+            (
+                SimpleNamespace(objects=("ball2", "ball1"), object_type="ball"),
+                SimpleNamespace(objects=("rooma",), object_type="room"),
+            )
+        )
 
-        self.assertEqual(updates[0][1]["abstraction"], {"objects": ["ball1", "ball2"], "object_type": "ball"})
+        self.assertEqual(
+            updates[0][1]["abstraction"],
+            [{"objects": ["ball1", "ball2"], "object_type": "ball"}, {"objects": ["rooma"], "object_type": "room"}],
+        )
 
     def test_unknown_metrics_are_rejected(self):
         metrics = PlanningMetrics()

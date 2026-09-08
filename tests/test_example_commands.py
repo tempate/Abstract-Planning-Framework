@@ -96,18 +96,13 @@ class PlannerArgumentTests(unittest.TestCase):
         self.assertEqual(args.domain, "domain.pddl")
         self.assertEqual(args.problem, "problem.pddl")
 
-    def test_abstract_mode_selects_objects_automatically_by_default(self):
-        args = _argument_parser().parse_args(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
-
-        self.assertEqual(args.mode, "abstract")
-        self.assertIsNone(args.objects_to_abstract)
-
-    def test_abstract_mode_accepts_explicit_objects(self):
+    def test_abstract_mode_takes_a_symmetry_time_limit(self):
         args = _argument_parser().parse_args(
-            ["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl", "--objects-to-abstract", "a", "b"]
+            ["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl", "--symmetry-time-limit", "17"]
         )
 
-        self.assertEqual(args.objects_to_abstract, ["a", "b"])
+        self.assertEqual(args.mode, "abstract")
+        self.assertEqual(args.symmetry_time_limit, 17)
 
 
 class PlannerExitStatusTests(unittest.TestCase):
@@ -147,31 +142,19 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, 2)
         self.assertIn("no abstractable object classes", errors.getvalue())
 
-    def test_explicit_selection_reaches_the_planning_pipeline(self):
+    def test_abstract_arguments_reach_the_planning_pipeline(self):
         with (
             patch.object(planner, "compute_abstract_plan", return_value={"success": True}) as compute,
             patch.object(planner, "print_planning_result"),
         ):
             status = self._main(
-                [
-                    "abstract",
-                    "--domain",
-                    "domain.pddl",
-                    "--problem",
-                    "problem.pddl",
-                    "--objects-to-abstract",
-                    "a",
-                    "b",
-                    "--abstract-name",
-                    "combined",
-                ]
+                ["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl", "--symmetry-time-limit", "17"]
             )
 
         config = compute.call_args.args[0]
         self.assertEqual(status, 0)
         self.assertEqual(config.domain_path, "domain.pddl")
-        self.assertEqual(config.objects_to_abstract, ("a", "b"))
-        self.assertEqual(config.abstract_name, "combined")
+        self.assertEqual(config.symmetry_time_limit, 17)
 
 
 if __name__ == "__main__":

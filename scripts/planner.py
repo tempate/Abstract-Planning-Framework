@@ -41,13 +41,7 @@ def _compute(args):
         return compute_concrete_plan(PlanningConfig(**common), on_update)
     if args.mode == "abstract":
         return compute_abstract_plan(
-            AbstractPlanningConfig(
-                **common,
-                objects_to_abstract=args.objects_to_abstract,
-                abstract_name=args.abstract_name,
-                symmetry_time_limit=args.symmetry_time_limit,
-            ),
-            on_update,
+            AbstractPlanningConfig(**common, symmetry_time_limit=args.symmetry_time_limit), on_update
         )
     raise ValueError(f"Unknown planning mode: {args.mode}")
 
@@ -116,8 +110,6 @@ def _argument_parser():
 
     # Abstract planning arguments
     abstract = argparse.ArgumentParser(add_help=False)
-    abstract.add_argument("--objects-to-abstract", nargs="+", help="Objects to collapse; omit to use PDDL Symmetries")
-    abstract.add_argument("--abstract-name", help="Name of the collapsed object")
     abstract.add_argument(
         "--symmetry-time-limit", type=positive_int, default=300, help="Symmetry discovery time limit in seconds"
     )

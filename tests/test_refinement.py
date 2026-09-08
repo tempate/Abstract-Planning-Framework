@@ -13,7 +13,7 @@ class RefinementTests(unittest.TestCase):
     def _context(self, **changes):
         values = {
             "config": AbstractPlanningConfig("domain.pddl", "problem.pddl"),
-            "abstraction": Abstraction("item_abs", ("a", "b"), "item"),
+            "abstractions": (Abstraction("item_abs", ("a", "b"), "item"),),
             "relaxed_deletes": (object(), object()),
             "concrete_asp": "concrete asp",
             "abstract_asp": "abstract asp",

@@ -15,7 +15,7 @@ class RefinementContext:
     """Configuration and run state for abstract-plan refinement."""
 
     config: AbstractPlanningConfig
-    abstraction: Abstraction
+    abstractions: tuple[Abstraction, ...]
     relaxed_deletes: tuple
     run_id: str
     metrics: PlanningMetrics
@@ -30,7 +30,7 @@ def refine(context: RefinementContext):
     abstract_plan = _solve_abstract_plan(context)
 
     # Build the ASP to map abstract to concrete actions
-    mapping = build_mapping(abstract_plan, context.abstraction)
+    mapping = build_mapping(abstract_plan, context.abstractions)
 
     # Solve the ASP
     asp = "\n".join((context.concrete_asp, mapping))
@@ -115,9 +115,14 @@ def _publish_counters(context, *, decrements, increments, solve_calls):
 def _build_result(context, plan):
     return {
         "abstraction": {
-            "abstract_symbol": context.abstraction.name,
-            "objects_to_abstract": list(context.abstraction.objects),
-            "object_type": context.abstraction.object_type,
+            "collapsed_classes": [
+                {
+                    "abstract_symbol": abstraction.name,
+                    "objects_to_abstract": list(abstraction.objects),
+                    "object_type": abstraction.object_type,
+                }
+                for abstraction in context.abstractions
+            ],
             "relaxed_deletes": len(context.relaxed_deletes),
         },
         "configuration": context.config.as_dict(),

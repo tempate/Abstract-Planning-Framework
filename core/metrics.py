@@ -37,7 +37,7 @@ class PlanningMetrics:
 
     durations: dict[str, float] = field(default_factory=dict)
     counters: dict[str, int] = field(default_factory=dict)
-    abstraction: dict | None = None
+    abstraction: list[dict] | None = None
     _clock: Callable[[], float] = field(default=time.perf_counter, repr=False)
     on_update: Callable[[dict, dict], None] | None = field(default=None, repr=False)
 
@@ -64,9 +64,12 @@ class PlanningMetrics:
         self.counters[name] = value
         self._report({"kind": "counter_updated", "counter": name})
 
-    def set_abstraction(self, objects, object_type: str) -> None:
-        """Record the collapsed object class."""
-        self.abstraction = {"objects": sorted(objects), "object_type": object_type}
+    def set_abstraction(self, abstractions) -> None:
+        """Record the collapsed object classes."""
+        collapsed = []
+        for abstraction in abstractions:
+            collapsed.append({"objects": sorted(abstraction.objects), "object_type": abstraction.object_type})
+        self.abstraction = collapsed
         self._report({"kind": "abstraction_selected"})
 
     def as_dict(self) -> dict:

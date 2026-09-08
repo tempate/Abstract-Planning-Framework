@@ -33,7 +33,7 @@ def _stubbed_abstract_pipeline(generated):
 
 def _generated_abstraction(relaxed_deletes=()):
     return SimpleNamespace(
-        problem=Mock(), abstraction=Abstraction("item_abs", ("a", "b"), "item"), relaxed_deletes=relaxed_deletes
+        problem=Mock(), abstractions=(Abstraction("item_abs", ("a", "b"), "item"),), relaxed_deletes=relaxed_deletes
     )
 
 
@@ -70,7 +70,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
 
         context = stubs.refine.call_args.args[0]
         self.assertTrue(result["success"])
-        self.assertIs(context.abstraction, generated.abstraction)
+        self.assertEqual(context.abstractions, generated.abstractions)
         self.assertIs(context.relaxed_deletes, generated.relaxed_deletes)
         self.assertEqual(context.concrete_asp, "guarded concrete asp")
         self.assertEqual(context.abstract_asp, "abstract asp")
@@ -104,19 +104,11 @@ class PlanningConfigurationTests(unittest.TestCase):
 
         self.assertIsInstance(abstract, PlanningConfig)
         self.assertFalse(abstract.time_step)
-        self.assertIsNone(abstract.abstract_name)
-        self.assertIsNone(abstract.objects_to_abstract)
-
-    def test_selected_objects_are_stored_immutably(self):
-        objects_to_abstract = ["hangar1", "hangar2"]
-        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract)
-        objects_to_abstract.append("hangar3")
-
-        self.assertEqual(config.objects_to_abstract, ("hangar1", "hangar2"))
+        self.assertEqual(abstract.symmetry_time_limit, 300)
 
 
 class GeneratedAbstractionTests(unittest.TestCase):
-    def test_explicit_objects_create_temporary_planner_inputs(self):
+    def test_a_collapsed_class_creates_temporary_planner_inputs(self):
         domain_text = "(define (domain d) (:types item) (:predicates (ready ?x - item)))"
         problem_text = """
 (define (problem p) (:domain d)
@@ -128,14 +120,15 @@ class GeneratedAbstractionTests(unittest.TestCase):
             problem = root / "problem.pddl"
             domain.write_text(domain_text, encoding="utf-8")
             problem.write_text(problem_text, encoding="utf-8")
-            config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"], abstract_name="combined")
+            config = AbstractPlanningConfig(domain, problem)
 
-            abstract_problem = build_abstract_problem(config)
+            with patch("core.abstraction.factory.find_symmetric_object_sets", return_value=[["a", "b"]]):
+                abstract_problem = build_abstract_problem(config)
             abstract_domain, abstract_problem_path = _write_abstract_problem(abstract_problem.problem, root / "run")
             generated = read_problem(abstract_domain, abstract_problem_path)
 
-        self.assertEqual(abstract_problem.abstraction.name, "combined")
-        self.assertEqual({item.name for item in generated.all_objects}, {"combined"})
+        self.assertEqual(abstract_problem.abstractions[0].name, "item_abs")
+        self.assertEqual({item.name for item in generated.all_objects}, {"item_abs"})
 
 
 class ArgumentTests(unittest.TestCase):
