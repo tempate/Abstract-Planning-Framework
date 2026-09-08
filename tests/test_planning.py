@@ -70,7 +70,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
 
         context = stubs.refine.call_args.args[0]
         self.assertTrue(result["success"])
-        self.assertIs(context.abstraction, generated.abstraction)
+        self.assertEqual(context.abstractions, (generated.abstraction,))
         self.assertIs(context.relaxed_deletes, generated.relaxed_deletes)
         self.assertEqual(context.concrete_asp, "guarded concrete asp")
         self.assertEqual(context.abstract_asp, "abstract asp")
