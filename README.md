@@ -82,7 +82,7 @@ command that regenerates it from a collected run.
 
 Results and logs land in `benchmark-results/`, rewritten after every completed
 phase so an interrupted worker keeps its partial timings. Collect them into
-`benchmark-results/results.csv`:
+`benchmarks/results.csv`, overwriting the previous run:
 
 ```bash
 python -m scripts.collect_benchmarks
