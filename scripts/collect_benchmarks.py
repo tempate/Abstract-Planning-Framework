@@ -18,6 +18,7 @@ FIELDS = (
     "domain",
     "problem",
     "mode",
+    "symmetry_variant",
     "status",
     "wall_time_seconds",
     "last_completed_phase",
@@ -47,14 +48,15 @@ def collect(results_dir=RESULTS_DIR):
             continue
 
         mode = result.get("mode")
+        variant = result.get("symmetry_variant", "baseline")
         if mode in ("abstract", "concrete"):
-            results[(result["domain"], result["problem"], mode)] = result
+            results[(result["domain"], result["problem"], mode, variant)] = result
         else:
             # Results produced before modes became separate jobs stored the
             # concrete comparison inside the abstract result.
-            results.setdefault((result["domain"], result["problem"], "abstract"), result)
+            results.setdefault((result["domain"], result["problem"], "abstract", "baseline"), result)
             if "concrete" in result:
-                results.setdefault((result["domain"], result["problem"], "concrete"), result["concrete"])
+                results.setdefault((result["domain"], result["problem"], "concrete", "baseline"), result["concrete"])
 
     keys = set(results)
     manifest = results_dir / MANIFEST_NAME
@@ -62,17 +64,17 @@ def collect(results_dir=RESULTS_DIR):
         keys.update(_manifest_keys(manifest))
 
     rows = []
-    for domain, problem, mode in sorted(keys):
-        result = results.get((domain, problem, mode))
+    for domain, problem, mode, variant in sorted(keys):
+        result = results.get((domain, problem, mode, variant))
         values = _missing_values() if result is None else _values(result)
-        rows.append({"domain": domain, "problem": problem, "mode": mode, **values})
+        rows.append({"domain": domain, "problem": problem, "mode": mode, "symmetry_variant": variant, **values})
     return rows
 
 
 def _manifest_keys(manifest):
     entries = json.loads(manifest.read_text(encoding="utf-8"))["expected_results"]
     return {
-        (entry["domain"], entry["problem"], entry["mode"])
+        (entry["domain"], entry["problem"], entry["mode"], entry.get("symmetry_variant", "baseline"))
         for entry in entries
         if entry["mode"] in ("abstract", "concrete")
     }
@@ -191,9 +193,9 @@ def main():
         writer = csv.DictWriter(stream, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(rows)
-    missing = Counter(row["mode"] for row in rows if row["status"] == "missing")
+    missing = Counter(f"{row['mode']}/{row['symmetry_variant']}" for row in rows if row["status"] == "missing")
     if missing:
-        details = ", ".join(f"{mode}: {count}" for mode, count in sorted(missing.items()))
+        details = ", ".join(f"{label}: {count}" for label, count in sorted(missing.items()))
         print(f"Incomplete benchmark run: {sum(missing.values())} expected results are missing ({details})")
     print(f"Collected {len(rows)} results in {CSV_FILE}")
 

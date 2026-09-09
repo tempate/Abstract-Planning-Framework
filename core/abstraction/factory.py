@@ -39,7 +39,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     if config.objects_to_abstract is None:
         with metrics.measure("symmetry_discovery"):
             symmetry_classes = find_symmetric_object_sets(
-                config.domain_path, config.problem_path, config.symmetry_time_limit
+                config.domain_path, config.problem_path, config.symmetry_time_limit, variant=config.symmetry_variant
             )
         if not symmetry_classes:
             raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")

@@ -8,6 +8,7 @@ from pathlib import Path
 
 from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
+from core.integrations.pddl_symmetries import SYMMETRY_VARIANTS
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.outcomes import PlanningOutcomeError
 from core.planning.abstract import compute_abstract_plan
@@ -46,6 +47,7 @@ def _compute(args):
                 objects_to_abstract=args.objects_to_abstract,
                 abstract_name=args.abstract_name,
                 symmetry_time_limit=args.symmetry_time_limit,
+                symmetry_variant=args.symmetry_variant,
             ),
             on_update,
         )
@@ -120,6 +122,12 @@ def _argument_parser():
     abstract.add_argument("--abstract-name", help="Name of the collapsed object")
     abstract.add_argument(
         "--symmetry-time-limit", type=positive_int, default=300, help="Symmetry discovery time limit in seconds"
+    )
+    abstract.add_argument(
+        "--symmetry-variant",
+        choices=tuple(SYMMETRY_VARIANTS),
+        default="baseline",
+        help="Which stabilization constraints PDDL Symmetries keeps",
     )
 
     parser = argparse.ArgumentParser(description=__doc__)
