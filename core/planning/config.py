@@ -27,3 +27,4 @@ class AbstractPlanningConfig(PlanningConfig):
     """Complete input configuration for an abstraction-based planning run."""
 
     symmetry_time_limit: int = 300
+    symmetry_variant: str = "baseline"

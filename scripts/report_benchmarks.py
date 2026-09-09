@@ -1,4 +1,4 @@
-"""Summarize a collected benchmark CSV as coverage and refinement tables."""
+"""Summarize a collected benchmark CSV, one row per pipeline configuration."""
 
 import argparse
 import csv
@@ -11,28 +11,40 @@ from scripts.run_benchmark import PROJECT_ROOT
 
 DEFAULT_CSV = PROJECT_ROOT / "benchmarks" / "results.csv"
 REPORTS_FILE = PROJECT_ROOT / "benchmarks" / "reports.md"
+CONCRETE = "concrete"
+BASELINE = "baseline"
 UNFINISHED_STATUSES = ("running", "missing")
+# A run killed by a signal or an error never reached a verdict either.
+UNFINISHED_PREFIXES = ("killed", "error")
+COUNTED_STATUSES = ("success", "timed out", "no plan found")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
 # A killed run reports the phase it completed last, so it died in the next one.
 KILLED_IN_PHASE = {
-    "abstract_asp": "Searching for the abstract plan",
+    "abstract_asp": "Abstract search",
     "abstract_solving": "Guided concrete search",
     "guided_concrete_solving": "Extended concrete search",
 }
+TIMEOUT_PHASES = ("Abstract search", "Guided concrete search", "Extended concrete search")
 
 
 def main():
     args = _argument_parser().parse_args()
-    problems = _finished_problems(args.results)
+    problems, dropped = _finished_problems(args.results)
+    if not problems:
+        sys.exit("No problem was finished by every configuration")
+
+    configs = _configs(problems)
     sections = [
-        _coverage(problems),
-        _head_to_head(problems),
-        _timeout_phases(problems),
-        _refinement_outcomes(problems),
-        _relaxed_deletes(problems),
+        _coverage(problems, configs),
+        _against_concrete(problems, configs),
+        _abstraction_sizes(problems, configs),
+        _timeout_phases(problems, configs),
+        _refinement_outcomes(problems, configs),
+        _relaxed_deletes(problems, configs),
     ]
-    _print_report(sections)
-    _write_report(sections, args.results)
+    preamble = f"{len(problems)} problems every configuration finished, {dropped} dropped as unfinished"
+    _print_report(sections, preamble)
+    _write_report(sections, preamble, args.results)
     print(f"\nWrote this report to {_relative(REPORTS_FILE)}")
 
 
@@ -43,117 +55,173 @@ def _argument_parser():
 
 
 def _finished_problems(results_file):
-    """Pair both pipelines per problem, dropping problems either one has not finished."""
-    rows = {}
+    """Group each problem's runs by configuration, dropping problems any of them left unfinished."""
+    runs = {}
     with Path(results_file).open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
-            rows.setdefault((row["domain"], row["problem"]), {})[row["mode"]] = row
+            config = CONCRETE if row["mode"] == CONCRETE else _variant(row)
+            runs.setdefault((row["domain"], row["problem"]), {})[config] = row
 
-    problems = []
-    for modes in rows.values():
-        if modes.keys() != {"abstract", "concrete"}:
-            continue
-        if modes["abstract"]["status"] in UNFINISHED_STATUSES or modes["concrete"]["status"] in UNFINISHED_STATUSES:
-            continue
-        problems.append(modes)
-    return problems
+    configs = set()
+    for problem in runs.values():
+        configs.update(problem)
 
-
-def _coverage(problems):
-    total = len(problems)
-    found = _status_counts(problems, "success")
-    timeouts = _status_counts(problems, "timed out")
-
-    lines = _wide_header("Metric")
-    lines.append(_wide("Plans found", _share(found["abstract"], total, 1), _share(found["concrete"], total, 1)))
-    lines.append(_wide("Timeouts", _share(timeouts["abstract"], total, 1), _share(timeouts["concrete"], total, 1)))
-    lines.append(_wide("Total problems", total, total))
-    return "Coverage", lines
-
-
-def _head_to_head(problems):
-    solved_by_both = [modes for modes in problems if _solved_by_both(modes)]
-    shared = len(solved_by_both)
-    faster = {"abstract": 0, "concrete": 0}
-    for modes in solved_by_both:
-        winner = "abstract" if _runtime(modes["abstract"]) < _runtime(modes["concrete"]) else "concrete"
-        faster[winner] += 1
-
-    abstract_times = [_runtime(modes["abstract"]) for modes in solved_by_both]
-    concrete_times = [_runtime(modes["concrete"]) for modes in solved_by_both]
-    found = _status_counts(problems, "success")
-
-    lines = _wide_header("Metric")
-    lines.append(_wide("Plans found by both pipelines", shared, shared))
-    faster_abstract = _share(faster["abstract"], shared, 1)
-    faster_concrete = _share(faster["concrete"], shared, 1)
-    lines.append(_wide("Faster when both found a plan", faster_abstract, faster_concrete))
-    lines.append(_wide("Plan found when the other did not", found["abstract"] - shared, found["concrete"] - shared))
-    lines.append(
-        _wide(
-            "Median runtime when both found a plan",
-            _seconds(statistics.median(abstract_times)),
-            _seconds(statistics.median(concrete_times)),
-        )
-    )
-    total_runtimes = (_seconds(sum(abstract_times)), _seconds(sum(concrete_times)))
-    lines.append(_wide("Total runtime across shared solves", *total_runtimes))
-    return "Head to head", lines
-
-
-def _timeout_phases(problems):
-    timeouts = [modes["abstract"] for modes in problems if modes["abstract"]["status"] == "timed out"]
-    counts = {}
-    for row in timeouts:
-        phase = KILLED_IN_PHASE.get(row["last_completed_phase"], row["last_completed_phase"])
-        counts[phase] = counts.get(phase, 0) + 1
-
-    lines = _narrow_header("Where the abstract pipeline was killed", "Timeouts")
-    for phase, count in sorted(counts.items(), key=lambda item: -item[1]):
-        lines.append(_narrow(phase, _share(count, len(timeouts), 0)))
-    lines.append(_narrow("Total", len(timeouts)))
-    return "Where the timeouts died", lines
-
-
-def _refinement_outcomes(problems):
-    successes = [modes["abstract"] for modes in problems if modes["abstract"]["status"] == "success"]
-    counts = {"refined": 0, "switched": 0, "discarded": 0}
-    for row in successes:
-        if int(row["increments"]) > 0:
-            counts["discarded"] += 1
-        elif int(row["decrements"]) > 0:
-            counts["switched"] += 1
+    problems, dropped = [], 0
+    for problem in runs.values():
+        unfinished = any(_unfinished(row["status"]) for row in problem.values())
+        if unfinished or problem.keys() != configs:
+            dropped += 1
         else:
-            counts["refined"] += 1
-
-    total = len(successes)
-    lines = _narrow_header(f"How the {total} successes were solved", "Problems")
-    lines.append(_narrow("Abstract plan refined directly", _share(counts["refined"], total, 0)))
-    lines.append(_narrow("Refined after switching some actions off", _share(counts["switched"], total, 0)))
-    lines.append(_narrow("Abstract plan discarded, solved above it", _share(counts["discarded"], total, 0)))
-    lines.append(_narrow("Total", total))
-    return "How the successes were solved", lines
+            problems.append(problem)
+    return problems, dropped
 
 
-def _relaxed_deletes(problems):
+def _unfinished(status):
+    return status in UNFINISHED_STATUSES or status.startswith(UNFINISHED_PREFIXES)
+
+
+def _configs(problems):
+    """Every configuration in the CSV: the concrete pipeline first, then the variants."""
+    configs = set()
+    for problem in problems:
+        configs.update(problem)
+    return sorted(configs, key=lambda config: (config != CONCRETE, config != BASELINE, config))
+
+
+def _variant(row):
+    return row.get("symmetry_variant") or BASELINE
+
+
+def _coverage(problems, configs):
+    total = len(problems)
     rows = []
-    for modes in problems:
-        row = modes["abstract"]
-        if row["status"] == "success" and int(row["increments"]) == 0 and row.get("relaxed_deletes"):
-            rows.append(row)
+    for config in configs:
+        counts = _status_counts(problems, config)
+        other = total - sum(counts[status] for status in COUNTED_STATUSES)
+        rows.append(
+            [
+                config,
+                _share(counts["success"], total, 1),
+                counts["timed out"],
+                counts["no plan found"],
+                other,
+                _versus_baseline(problems, configs, config),
+            ]
+        )
+    headers = ["Configuration", "Plans found", "Timeouts", "No plan found", "Other", "vs baseline"]
+    return "Coverage", _table(headers, rows)
+
+
+def _versus_baseline(problems, configs, config):
+    if config == BASELINE or BASELINE not in configs:
+        return "—"
+    gained = sum(1 for problem in problems if _solved(problem[config]) and not _solved(problem[BASELINE]))
+    lost = sum(1 for problem in problems if not _solved(problem[config]) and _solved(problem[BASELINE]))
+    return f"+{gained} / -{lost}"
+
+
+def _against_concrete(problems, configs):
+    if CONCRETE not in configs:
+        return "Against the concrete pipeline", ["This CSV holds no concrete run"]
+
+    rows = []
+    for config in _variants(configs):
+        shared = [problem for problem in problems if _solved(problem[config]) and _solved(problem[CONCRETE])]
+        abstract_times = [_runtime(problem[config]) for problem in shared]
+        concrete_times = [_runtime(problem[CONCRETE]) for problem in shared]
+        faster = sum(1 for problem in shared if _runtime(problem[config]) < _runtime(problem[CONCRETE]))
+        only_abstract = sum(1 for problem in problems if _solved(problem[config]) and not _solved(problem[CONCRETE]))
+        only_concrete = sum(1 for problem in problems if not _solved(problem[config]) and _solved(problem[CONCRETE]))
+        rows.append(
+            [
+                config,
+                len(shared),
+                _share(faster, len(shared), 0),
+                only_abstract,
+                only_concrete,
+                _pair(statistics.median(abstract_times), statistics.median(concrete_times)) if shared else "—",
+                _pair(sum(abstract_times), sum(concrete_times)) if shared else "—",
+            ]
+        )
+    headers = ["Variant", "Solved by both", "Faster", "Only the variant", "Only concrete", "Median", "Total"]
+    return "Against the concrete pipeline, runtimes as variant / concrete", _table(headers, rows)
+
+
+def _abstraction_sizes(problems, configs):
+    rows = []
+    for config in _variants(configs):
+        sizes = [_objects(problem[config]) for problem in problems if _objects(problem[config])]
+        classes = [_classes(problem[config]) for problem in problems if _classes(problem[config])]
+        rows.append(
+            [
+                config,
+                f"{statistics.median(sizes):.0f}",
+                f"{statistics.mean(sizes):.1f}",
+                max(sizes),
+                f"{statistics.median(classes):.0f}" if classes else "—",
+                max(classes) if classes else "—",
+                _larger_than_baseline(problems, configs, config),
+            ]
+        )
+    headers = ["Variant", "Median objects", "Mean", "Most", "Median classes", "Most", "Class grew vs baseline"]
+    return "How much each variant collapsed", _table(headers, rows)
+
+
+def _larger_than_baseline(problems, configs, config):
+    if config == BASELINE or BASELINE not in configs:
+        return "—"
+    comparable = [problem for problem in problems if _objects(problem[config]) and _objects(problem[BASELINE])]
+    grew = sum(1 for problem in comparable if _objects(problem[config]) > _objects(problem[BASELINE]))
+    return _share(grew, len(comparable), 0)
+
+
+def _timeout_phases(problems, configs):
+    rows = []
+    for config in _variants(configs):
+        timeouts = [problem[config] for problem in problems if problem[config]["status"] == "timed out"]
+        counts = {phase: 0 for phase in TIMEOUT_PHASES}
+        for row in timeouts:
+            phase = KILLED_IN_PHASE.get(row["last_completed_phase"], row["last_completed_phase"])
+            counts[phase] = counts.get(phase, 0) + 1
+        shares = [_share(counts[phase], len(timeouts), 0) for phase in TIMEOUT_PHASES]
+        rows.append([config, *shares, len(timeouts)])
+    return "Where the timeouts died", _table(["Variant", *TIMEOUT_PHASES, "Timeouts"], rows)
+
+
+def _refinement_outcomes(problems, configs):
+    rows = []
+    for config in _variants(configs):
+        successes = [problem[config] for problem in problems if _solved(problem[config])]
+        discarded = sum(1 for row in successes if int(row["increments"]) > 0)
+        switched = sum(1 for row in successes if int(row["increments"]) == 0 and int(row["decrements"]) > 0)
+        refined = len(successes) - discarded - switched
+        shares = [_share(count, len(successes), 0) for count in (refined, switched, discarded)]
+        rows.append([config, *shares, len(successes)])
+    headers = ["Variant", "Refined directly", "Switched actions off", "Discarded, solved above", "Successes"]
+    return "How the successes were solved", _table(headers, rows)
+
+
+def _relaxed_deletes(problems, configs):
+    rows = []
+    for config in _variants(configs):
+        relaxed = []
+        for problem in problems:
+            row = problem[config]
+            if _solved(row) and int(row["increments"]) == 0 and row.get("relaxed_deletes"):
+                relaxed.append(int(row["relaxed_deletes"]))
+        if not relaxed:
+            continue
+
+        counts = {bucket: 0 for bucket in RELAXED_DELETE_BUCKETS}
+        for value in relaxed:
+            counts[_relaxed_delete_bucket(value)] += 1
+        shares = [_share(counts[bucket], len(relaxed), 0) for bucket in RELAXED_DELETE_BUCKETS]
+        rows.append([config, *shares, f"{statistics.median(relaxed):.0f}", max(relaxed), len(relaxed)])
     if not rows:
         return "Deletes relaxed", ["This CSV predates the relaxed-deletes counter"]
 
-    counts = {bucket: 0 for bucket in RELAXED_DELETE_BUCKETS}
-    for row in rows:
-        counts[_relaxed_delete_bucket(int(row["relaxed_deletes"]))] += 1
-
-    total = len(rows)
-    lines = _narrow_header("Deletes relaxed", "Problems")
-    for bucket in RELAXED_DELETE_BUCKETS:
-        lines.append(_narrow(bucket, _share(counts[bucket], total, 0)))
-    lines.append(_narrow("Total", total))
-    return f"Deletes relaxed, over the {total} successes whose abstract plan was used", lines
+    headers = ["Variant", *RELAXED_DELETE_BUCKETS, "Median", "Most", "Problems"]
+    return "Deletes relaxed, over the successes whose abstract plan was used", _table(headers, rows)
 
 
 def _relaxed_delete_bucket(relaxed_deletes):
@@ -168,20 +236,31 @@ def _relaxed_delete_bucket(relaxed_deletes):
     return "20 or more"
 
 
-def _solved_by_both(modes):
-    return all(modes[mode]["status"] == "success" for mode in ("abstract", "concrete"))
+def _variants(configs):
+    return [config for config in configs if config != CONCRETE]
+
+
+def _solved(row):
+    return row["status"] == "success"
 
 
 def _runtime(row):
     return float(row["wall_time_seconds"])
 
 
-def _status_counts(problems, status):
-    counts = {"abstract": 0, "concrete": 0}
-    for modes in problems:
-        for mode in counts:
-            if modes[mode]["status"] == status:
-                counts[mode] += 1
+def _objects(row):
+    return int(row["abstracted_object_count"]) if row["abstracted_object_count"] else 0
+
+
+def _classes(row):
+    return int(row["abstracted_class_count"]) if row.get("abstracted_class_count") else 0
+
+
+def _status_counts(problems, config):
+    counts = {status: 0 for status in COUNTED_STATUSES}
+    for problem in problems:
+        status = problem[config]["status"]
+        counts[status] = counts.get(status, 0) + 1
     return counts
 
 
@@ -189,8 +268,8 @@ def _share(count, total, decimals):
     return f"{count} ({count / total:.{decimals}%})" if total else f"{count}"
 
 
-def _seconds(value):
-    return f"{value:,.2f} s"
+def _pair(abstract, concrete):
+    return f"{abstract:,.1f} / {concrete:,.1f} s"
 
 
 def _relative(path):
@@ -206,31 +285,33 @@ def _bold(text):
     return f"\033[1m{text}\033[0m" if sys.stdout.isatty() else text
 
 
-def _wide_header(label):
-    return [_wide(label, "Abstract pipeline", "Concrete pipeline"), "-" * 80]
+def _table(headers, rows):
+    columns = [[str(cell) for cell in column] for column in zip(headers, *rows)]
+    widths = [max(len(cell) for cell in column) for column in columns]
+    lines = [_line(headers, widths), "-" * (sum(widths) + 2 * (len(widths) - 1))]
+    for row in rows:
+        lines.append(_line(row, widths))
+    return lines
 
 
-def _wide(label, abstract, concrete):
-    return f"{label:<44}{abstract:>17}  {concrete:>17}"
+def _line(cells, widths):
+    padded = [str(cells[0]).ljust(widths[0])]
+    for cell, width in zip(cells[1:], widths[1:]):
+        padded.append(str(cell).rjust(width))
+    return "  ".join(padded)
 
 
-def _narrow_header(label, value_label):
-    return [_narrow(label, value_label), "-" * 61]
-
-
-def _narrow(label, value):
-    return f"{label:<45}{value:>16}"
-
-
-def _print_report(sections):
+def _print_report(sections, preamble):
+    print(f"\n{preamble}")
     for title, lines in sections:
         print(f"\n{_bold(title)}\n")
         print("\n".join(lines))
 
 
-def _write_report(sections, results_file):
+def _write_report(sections, preamble, results_file):
     """Replace the report file with the latest report."""
-    report = ["# Benchmark report", "", f"{datetime.now().strftime('%Y-%m-%d %H:%M')} — {_relative(results_file)}", ""]
+    stamp = f"{datetime.now().strftime('%Y-%m-%d %H:%M')} — {_relative(results_file)}"
+    report = ["# Benchmark report", "", stamp, "", preamble, ""]
     for title, lines in sections:
         report += [f"## {title}", "", "```", *lines, "```", ""]
     REPORTS_FILE.write_text("\n".join(report), encoding="utf-8")

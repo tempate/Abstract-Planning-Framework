@@ -16,6 +16,9 @@ from scripts.run_benchmark import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, 
 from scripts.utils.arguments import positive_int
 
 DEFAULT_MEMORY_LIMIT = 8 * 1024
+# The baseline is already collected in benchmarks/results.csv, so a suite run
+# only covers the variants that weaken the symmetry criterion.
+EXPERIMENT_VARIANTS = ("no-init", "no-goal", "both")
 
 
 def main():
@@ -31,7 +34,7 @@ def main():
             memory_limit=args.memory_limit,
             max_parallel_jobs=args.max_parallel_jobs,
         )
-        print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
+        print(f"Submitting {len(tasks)} cluster jobs (one per symmetry variant and benchmark problem)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
 
 
@@ -48,7 +51,8 @@ def _reset_results_dir(results_dir=RESULTS_DIR):
 def _write_manifest(tasks, results_dir=RESULTS_DIR):
     """Record every result expected from a submitted benchmark run."""
     expected_results = [
-        {"domain": domain_name, "problem": problem.name, "mode": mode} for mode, domain_name, _domain, problem in tasks
+        {"domain": domain_name, "problem": problem.name, "mode": mode, "symmetry_variant": variant}
+        for mode, domain_name, _domain, problem, variant in tasks
     ]
     manifest = {"version": 1, "expected_results": expected_results}
     path = Path(results_dir) / MANIFEST_NAME
@@ -100,14 +104,16 @@ def _write_copperbench_config(
         "$3",
         "--problem",
         "$4",
+        "--symmetry-variant",
+        "$5",
         "--timeout",
         "$timeout",
     ]
     configs_file.write_text(shlex.join(worker) + "\n", encoding="utf-8")
 
     instances = []
-    for mode, domain_name, domain, problem in tasks:
-        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()}")
+    for mode, domain_name, domain, problem, variant in tasks:
+        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()} {variant}")
     instances_file.write_text("\n".join(instances) + "\n", encoding="utf-8")
 
     config = {
@@ -126,16 +132,22 @@ def _write_copperbench_config(
 
 
 def _benchmark_tasks(
-    benchmarks_dir=BENCHMARKS_DIR, suite=SYMMETRIC_DOMAINS, skipped=NON_SYMMETRIC_PROBLEMS, with_concrete=False
+    benchmarks_dir=BENCHMARKS_DIR,
+    suite=SYMMETRIC_DOMAINS,
+    skipped=NON_SYMMETRIC_PROBLEMS,
+    with_concrete=False,
+    variants=EXPERIMENT_VARIANTS,
 ):
-    modes = ("abstract", "concrete") if with_concrete else ("abstract",)
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
             if "domain" not in problem.name and (domain_name, problem.name) not in skipped:
                 domain = _find_domain(problem)
-                for mode in modes:
-                    yield mode, domain_name, domain, problem
+                for variant in variants:
+                    yield "abstract", domain_name, domain, problem, variant
+                # The concrete pipeline never looks at symmetries, so it runs once.
+                if with_concrete:
+                    yield "concrete", domain_name, domain, problem, "baseline"
 
 
 def _find_domain(problem):
