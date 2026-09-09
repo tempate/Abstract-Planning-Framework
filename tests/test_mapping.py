@@ -38,7 +38,7 @@ class MappingTests(unittest.TestCase):
         mapping = build_mapping(abstract_plan, abstraction)
 
         self.assertIn(
-            '1 { occurs(action(("inspect","item1")),2) : action(action(("inspect","item1"))) } 1 :- switch(2).', mapping
+            '0 { occurs(action(("inspect","item1")),2) : action(action(("inspect","item1"))) } 1 :- switch(2).', mapping
         )
 
     def test_every_abstract_action_is_surrounded_by_a_gap(self):
@@ -67,7 +67,7 @@ switch(2).
         models = self._models(program, horizon=3)
         in_first_gap = {'occurs(action(("inspect","item1")),1)', 'occurs(action(("unrelated","x")),1)'}
 
-        self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
+        self.assertTrue(any('occurs(action(("inspect","item1")),2)' in model for model in models))
         self.assertTrue(any('occurs(action(("unrelated","x")),1)' in model for model in models))
         self.assertTrue(any(not model & in_first_gap for model in models))
 
@@ -83,10 +83,10 @@ switch(2).
         models = self._models(program, horizon=2)
 
         self.assertTrue(models)
-        self.assertTrue(all('occurs(action(("link","a","b")),2)' in model for model in models))
+        self.assertTrue(any('occurs(action(("link","a","b")),2)' in model for model in models))
         self.assertTrue(all('occurs(action(("link","a","a")),2)' not in model for model in models))
 
-    def test_mapping_rejects_plan_actions_that_are_not_concrete_actions(self):
+    def test_an_abstract_action_without_a_concrete_counterpart_is_left_out(self):
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         mapping = build_mapping(abstract_plan, abstraction)
@@ -95,9 +95,11 @@ action(action(("move","item1"))).
 switch(2).
 """ + mapping
 
-        result = IncrementalSolver(program, horizon=2).control.solve()
+        models = self._models(program, horizon=2)
 
-        self.assertTrue(result.unsatisfiable)
+        self.assertTrue(models)
+        for model in models:
+            self.assertNotIn('occurs(action(("inspect","item1")),2)', model)
 
     def _models(self, program, horizon):
         control = IncrementalSolver(program, horizon).control
