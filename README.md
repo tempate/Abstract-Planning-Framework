@@ -58,9 +58,9 @@ python -m scripts.planner --help
   its plan to guide the concrete search.
 
 The search allows exactly one action per step and raises the horizon until it
-finds a plan. `abstract` mode spreads the abstract actions over the even steps,
-leaving a gap before the first, between consecutive ones, and after the last,
-where one further concrete action may occur or none. It asks PDDL Symmetries for
+finds a plan. `abstract` mode fixes the order of the abstract actions, not the
+steps they take: every step holds one action or none, and the horizon leaves a
+further step for each abstract action, plus one. It asks PDDL Symmetries for
 a symmetric object class; pass `--objects-to-abstract NAME...` to choose one
 yourself. If no symmetric class is found, `abstract` exits instead of falling
 back to concrete search.

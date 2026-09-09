@@ -3,14 +3,9 @@
 import json
 
 
-def concrete_time_step(abstract_time_step):
-    """Place an abstract action after the gap that precedes it."""
-    return 2 * abstract_time_step
-
-
 def mapped_horizon(abstract_horizon):
     """Return the concrete horizon holding every abstract action and its gaps."""
-    return concrete_time_step(abstract_horizon) + 1
+    return 2 * abstract_horizon + 1
 
 
 def build_mapping(abstract_plan, abstraction):
@@ -18,8 +13,9 @@ def build_mapping(abstract_plan, abstraction):
 
     args equal to the abstraction name become independent variables
     ranging over its objects.  The concrete ASP ``action/1`` relation then
-    limits the choices to grounded actions that actually exist.  The actions
-    take the even time steps, leaving a gap around each for one action or none.
+    limits the choices to grounded actions that actually exist.  The abstract
+    plan fixes the order of its actions, not the steps they take, so every step
+    is a gap that holds one action or none.
     """
     mapping_rules = []
 
@@ -27,22 +23,30 @@ def build_mapping(abstract_plan, abstraction):
     for object_name in abstraction.objects:
         mapping_rules.append(f"concrete_object({_quote(object_name)}).")
 
-    # Mark the odd time steps as gaps so the encoding lets them stay empty.
-    for time_step in range(1, mapped_horizon(_abstract_horizon(abstract_plan)) + 1, 2):
+    # Mark every time step as a gap, so the encoding lets any of them stay
+    # empty and the abstract actions are free to take the ones they need.
+    horizon = mapped_horizon(_abstract_horizon(abstract_plan))
+    for time_step in range(1, horizon + 1):
         mapping_rules.append(f"gap({time_step}).")
 
-    for action in sorted(abstract_plan, key=lambda action: action.time_step):
-        time_step = concrete_time_step(action.time_step)
-
-        # Add a switch for each time step to allow the abstract plan to be disabled.
-        switch = f"switch({time_step})"
+    ordered_actions = sorted(abstract_plan, key=lambda action: action.time_step)
+    for position, action in enumerate(ordered_actions, start=1):
+        # Number the switches by position in the abstract plan, so the
+        # decremental search still relaxes the plan from its end. A position
+        # never suppresses the time step of the same number, because every step
+        # is a gap.
+        switch = f"switch({position})"
         mapping_rules.append(f"0 {{ {switch} }} 1.")
 
-        # Add a rule to map the abstract action to a concrete candidate action.
-        # If the switch is on, then the action at the time step must hold for some grounding.
+        # Place the action on one of the time steps, and map it to a concrete
+        # candidate action there.
+        mapping_rules.append(f"1 {{ abstract_step({position},T) : T = 1..{horizon} }} 1 :- {switch}.")
         action_str, conds_str = _action_pattern(action, abstraction)
-        rule = f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1 :- {switch}."
+        rule = f"1 {{ occurs({action_str},T) : {conds_str} }} 1 :- abstract_step({position},T)."
         mapping_rules.append(rule)
+
+    # Keep the actions in the order the abstract plan put them in.
+    mapping_rules.append(":- abstract_step(I,T1), abstract_step(J,T2), I < J, T1 >= T2.")
 
     return "\n".join(mapping_rules)
 

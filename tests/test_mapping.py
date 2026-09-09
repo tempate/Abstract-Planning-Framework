@@ -38,21 +38,48 @@ class MappingTests(unittest.TestCase):
         mapping = build_mapping(abstract_plan, abstraction)
 
         self.assertIn(
-            '1 { occurs(action(("inspect","item1")),2) : action(action(("inspect","item1"))) } 1 :- switch(2).', mapping
+            '1 { occurs(action(("inspect","item1")),T) : action(action(("inspect","item1"))) } 1'
+            " :- abstract_step(1,T).",
+            mapping,
         )
 
-    def test_every_abstract_action_is_surrounded_by_a_gap(self):
+    def test_every_time_step_is_a_gap(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item2",), 2))
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
 
         mapping = build_mapping(abstract_plan, abstraction)
 
-        # The actions take the even steps 2 and 4, the gaps the odd ones around them.
-        self.assertIn("gap(1).", mapping)
-        self.assertIn("gap(3).", mapping)
-        self.assertIn("gap(5).", mapping)
-        self.assertNotIn("gap(2).", mapping)
-        self.assertNotIn("gap(4).", mapping)
+        # The two actions are free to take any of the five steps.
+        for time_step in range(1, 6):
+            self.assertIn(f"gap({time_step}).", mapping)
+        self.assertNotIn("gap(6).", mapping)
+
+    def test_the_abstract_actions_keep_their_order(self):
+        abstract_plan = (PlanAction("first", ("item1",), 1), PlanAction("second", ("item1",), 2))
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
+        mapping = build_mapping(abstract_plan, abstraction)
+        program = """
+action(action(("first","item1"))).
+action(action(("second","item1"))).
+switch(1).
+switch(2).
+""" + mapping
+
+        models = self._models(program, horizon=5)
+
+        self.assertTrue(models)
+        placements = set()
+        for model in models:
+            steps = {}
+            for position in (1, 2):
+                for time_step in range(1, 6):
+                    if f"abstract_step({position},{time_step})" in model:
+                        steps[position] = time_step
+            self.assertLess(steps[1], steps[2])
+            placements.add((steps[1], steps[2]))
+
+        # The order is all that is fixed, so the pair takes every ordered slot.
+        self.assertEqual(len(placements), 10)
 
     def test_a_gap_holds_any_concrete_action_or_none(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
@@ -61,15 +88,16 @@ class MappingTests(unittest.TestCase):
         program = add_switch_to_asp_rule(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
-switch(2).
+switch(1).
 """ + mapping
 
         models = self._models(program, horizon=3)
-        in_first_gap = {'occurs(action(("inspect","item1")),1)', 'occurs(action(("unrelated","x")),1)'}
+        on_first_step = {'occurs(action(("inspect","item1")),1)', 'occurs(action(("unrelated","x")),1)'}
 
-        self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
         self.assertTrue(any('occurs(action(("unrelated","x")),1)' in model for model in models))
-        self.assertTrue(any(not model & in_first_gap for model in models))
+        self.assertTrue(any(not model & on_first_step for model in models))
+        for model in models:
+            self.assertTrue(any(f'occurs(action(("inspect","item1")),{step})' in model for step in (1, 2, 3)))
 
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
@@ -77,14 +105,16 @@ switch(2).
         mapping = build_mapping(abstract_plan, abstraction)
         program = """
 action(action(("link","a","b"))).
-switch(2).
+switch(1).
 """ + mapping
 
-        models = self._models(program, horizon=2)
+        models = self._models(program, horizon=3)
 
         self.assertTrue(models)
-        self.assertTrue(all('occurs(action(("link","a","b")),2)' in model for model in models))
-        self.assertTrue(all('occurs(action(("link","a","a")),2)' not in model for model in models))
+        for model in models:
+            self.assertTrue(any(f'occurs(action(("link","a","b")),{step})' in model for step in (1, 2, 3)))
+            for step in (1, 2, 3):
+                self.assertNotIn(f'occurs(action(("link","a","a")),{step})', model)
 
     def test_mapping_rejects_plan_actions_that_are_not_concrete_actions(self):
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
@@ -92,10 +122,10 @@ switch(2).
         mapping = build_mapping(abstract_plan, abstraction)
         program = """
 action(action(("move","item1"))).
-switch(2).
+switch(1).
 """ + mapping
 
-        result = IncrementalSolver(program, horizon=2).control.solve()
+        result = IncrementalSolver(program, horizon=3).control.solve()
 
         self.assertTrue(result.unsatisfiable)
 
