@@ -1,3 +1,4 @@
+import csv
 import inspect
 import json
 import os
@@ -10,7 +11,7 @@ from unittest.mock import patch
 
 from benchmarks.suite import SYMMETRIC_DOMAINS
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from scripts.collect_benchmarks import FIELDS, collect
+from scripts.collect_benchmarks import FIELDS, _preserved_concrete_rows, collect
 from scripts.planner import _update_result_progress
 from scripts.run_benchmark import (
     DEFAULT_TIMEOUT,
@@ -479,6 +480,60 @@ class BenchmarkTests(unittest.TestCase):
                 self.assertEqual(manifest.name, MANIFEST_NAME)
                 self.assertEqual([row["mode"] for row in rows], ["abstract", "concrete"])
                 self.assertEqual([row["status"] for row in rows], statuses)
+
+
+class CollectedCsvTests(unittest.TestCase):
+    @staticmethod
+    def _write_csv(directory, rows):
+        path = Path(directory) / "results.csv"
+        with path.open("w", encoding="utf-8", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=FIELDS)
+            writer.writeheader()
+            for domain, problem, mode, status in rows:
+                writer.writerow({"domain": domain, "problem": problem, "mode": mode, "status": status})
+        return path
+
+    @staticmethod
+    def _collected(rows):
+        collected = []
+        for domain, problem, mode, status in rows:
+            collected.append({"domain": domain, "problem": problem, "mode": mode, "status": status})
+        return collected
+
+    def test_a_run_without_concrete_results_keeps_the_ones_already_collected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            csv_file = self._write_csv(directory, [("example", "p01.pddl", "concrete", "success")])
+            collected = self._collected([("example", "p01.pddl", "abstract", "success")])
+
+            preserved = _preserved_concrete_rows(collected, csv_file)
+
+        self.assertEqual([row["mode"] for row in preserved], ["concrete"])
+        self.assertEqual(preserved[0]["status"], "success")
+
+    def test_a_collected_result_replaces_the_one_already_in_the_csv(self):
+        rows = [("example", "p01.pddl", "concrete", "success")]
+        for status in ("timed out", "missing"):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as directory:
+                csv_file = self._write_csv(directory, rows)
+                collected = self._collected([("example", "p01.pddl", "concrete", status)])
+
+                preserved = _preserved_concrete_rows(collected, csv_file)
+
+                self.assertEqual(preserved, [])
+
+    def test_abstract_results_the_run_did_not_cover_are_dropped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            csv_file = self._write_csv(directory, [("example", "p01.pddl", "abstract", "success")])
+
+            preserved = _preserved_concrete_rows(self._collected([]), csv_file)
+
+        self.assertEqual(preserved, [])
+
+    def test_a_first_run_has_nothing_to_keep(self):
+        with tempfile.TemporaryDirectory() as directory:
+            preserved = _preserved_concrete_rows(self._collected([]), Path(directory) / "results.csv")
+
+        self.assertEqual(preserved, [])
 
 
 if __name__ == "__main__":
