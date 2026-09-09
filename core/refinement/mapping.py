@@ -2,15 +2,19 @@
 
 import json
 
+# Steps left free around every abstract action, each holding one concrete
+# action or none.
+GAP_SIZE = 2
+
 
 def concrete_time_step(abstract_time_step):
     """Place an abstract action after the gap that precedes it."""
-    return 2 * abstract_time_step
+    return (GAP_SIZE + 1) * abstract_time_step
 
 
 def mapped_horizon(abstract_horizon):
     """Return the concrete horizon holding every abstract action and its gaps."""
-    return concrete_time_step(abstract_horizon) + 1
+    return concrete_time_step(abstract_horizon) + GAP_SIZE
 
 
 def build_mapping(abstract_plan, abstraction):
@@ -19,7 +23,8 @@ def build_mapping(abstract_plan, abstraction):
     args equal to the abstraction name become independent variables
     ranging over its objects.  The concrete ASP ``action/1`` relation then
     limits the choices to grounded actions that actually exist.  The actions
-    take the even time steps, leaving a gap around each for one action or none.
+    take every ``GAP_SIZE + 1``-th time step, leaving ``GAP_SIZE`` steps around
+    each for one action or none.
     """
     mapping_rules = []
 
@@ -27,9 +32,11 @@ def build_mapping(abstract_plan, abstraction):
     for object_name in abstraction.objects:
         mapping_rules.append(f"concrete_object({_quote(object_name)}).")
 
-    # Mark the odd time steps as gaps so the encoding lets them stay empty.
-    for time_step in range(1, mapped_horizon(_abstract_horizon(abstract_plan)) + 1, 2):
-        mapping_rules.append(f"gap({time_step}).")
+    # Mark the time steps no abstract action takes as gaps so the encoding lets
+    # them stay empty.
+    for time_step in range(1, mapped_horizon(_abstract_horizon(abstract_plan)) + 1):
+        if time_step % (GAP_SIZE + 1) != 0:
+            mapping_rules.append(f"gap({time_step}).")
 
     for action in sorted(abstract_plan, key=lambda action: action.time_step):
         time_step = concrete_time_step(action.time_step)

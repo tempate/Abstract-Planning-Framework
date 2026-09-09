@@ -40,24 +40,24 @@ class RefinementTests(unittest.TestCase):
 
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ["occurs(concrete,1)"])
-        self.assertEqual(result["horizon"], 5)
+        self.assertEqual(result["horizon"], 8)
         self.assertEqual(result["run_id"], "run-123")
         self.assertEqual(context.metrics.counters["abstract_horizon"], 2)
         self.assertEqual(context.metrics.counters["abstract_solve_calls"], 3)
         self.assertEqual(context.metrics.counters["decrements"], 2)
         self.assertEqual(context.metrics.counters["increments"], 0)
-        self.assertEqual(context.metrics.counters["final_horizon"], 5)
+        self.assertEqual(context.metrics.counters["final_horizon"], 8)
         self.assertEqual(context.metrics.counters["concrete_solve_calls"], 3)
         self.assertIn("abstract_solving", context.metrics.durations)
         # The guided search runs the mapping alongside the concrete program, and
         # starts from the mapped horizon that surrounds the two abstract actions
         # with gaps rather than from zero.
-        self.assertEqual(incremental_solver.call_args.args, ("concrete asp\nmapping asp", 5))
+        self.assertEqual(incremental_solver.call_args.args, ("concrete asp\nmapping asp", 8))
 
     @patch("core.refinement.pipeline.IncrementalSolver")
     @patch(
         "core.refinement.pipeline.solve_decrementally",
-        return_value=(True, ['occurs(action(("move","a")),2)', 'occurs(action(("move","b")),4)'], 0),
+        return_value=(True, ['occurs(action(("move","a")),3)', 'occurs(action(("move","b")),6)'], 0),
     )
     @patch("core.refinement.pipeline.build_mapping", return_value="mapping asp")
     @patch("core.refinement.pipeline.parse_plan_actions", return_value=())
@@ -69,8 +69,8 @@ class RefinementTests(unittest.TestCase):
     ):
         result = refine(self._context())
 
-        # The two actions sit on a horizon of five, whose gaps stayed empty.
-        self.assertEqual(result["horizon"], 5)
+        # The two actions sit on a horizon of eight, whose gaps stayed empty.
+        self.assertEqual(result["horizon"], 8)
         self.assertEqual(result["plan_length"], 2)
 
     @patch("core.refinement.pipeline.disabled_switches", return_value=[])
@@ -83,20 +83,20 @@ class RefinementTests(unittest.TestCase):
         self, solve, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver, disabled_switches
     ):
         solver = incremental_solver.return_value
-        solver.search.return_value = ClingoSolveResult(["occurs(concrete,9)"], horizon=9, attempts=2)
+        solver.search.return_value = ClingoSolveResult(["occurs(concrete,13)"], horizon=13, attempts=2)
 
         context = self._context()
         result = refine(context)
 
         self.assertTrue(result["success"])
-        self.assertEqual(result["plan"], ["occurs(concrete,9)"])
-        self.assertEqual(result["horizon"], 9)
+        self.assertEqual(result["plan"], ["occurs(concrete,13)"])
+        self.assertEqual(result["horizon"], 13)
         self.assertEqual(context.metrics.counters["decrements"], 3)
         self.assertEqual(context.metrics.counters["increments"], 2)
-        self.assertEqual(context.metrics.counters["final_horizon"], 9)
+        self.assertEqual(context.metrics.counters["final_horizon"], 13)
         self.assertEqual(context.metrics.counters["concrete_solve_calls"], 6)
         self.assertIn("extended_concrete_solving", context.metrics.durations)
-        self.assertEqual(incremental_solver.call_args.args, ("concrete asp\nmapping asp", 7))
+        self.assertEqual(incremental_solver.call_args.args, ("concrete asp\nmapping asp", 11))
 
         # The extension continues on the solver the decremental search used.
         self.assertIs(solve_decrementally.call_args.args[0], solver)

@@ -38,7 +38,7 @@ class MappingTests(unittest.TestCase):
         mapping = build_mapping(abstract_plan, abstraction)
 
         self.assertIn(
-            '1 { occurs(action(("inspect","item1")),2) : action(action(("inspect","item1"))) } 1 :- switch(2).', mapping
+            '1 { occurs(action(("inspect","item1")),3) : action(action(("inspect","item1"))) } 1 :- switch(3).', mapping
         )
 
     def test_every_abstract_action_is_surrounded_by_a_gap(self):
@@ -47,12 +47,11 @@ class MappingTests(unittest.TestCase):
 
         mapping = build_mapping(abstract_plan, abstraction)
 
-        # The actions take the even steps 2 and 4, the gaps the odd ones around them.
-        self.assertIn("gap(1).", mapping)
-        self.assertIn("gap(3).", mapping)
-        self.assertIn("gap(5).", mapping)
-        self.assertNotIn("gap(2).", mapping)
-        self.assertNotIn("gap(4).", mapping)
+        # The actions take the steps 3 and 6, the gaps the two steps around each.
+        for time_step in (1, 2, 4, 5, 7, 8):
+            self.assertIn(f"gap({time_step}).", mapping)
+        self.assertNotIn("gap(3).", mapping)
+        self.assertNotIn("gap(6).", mapping)
 
     def test_a_gap_holds_any_concrete_action_or_none(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
@@ -61,14 +60,19 @@ class MappingTests(unittest.TestCase):
         program = add_switch_to_asp_rule(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
-switch(2).
+switch(3).
 """ + mapping
 
-        models = self._models(program, horizon=3)
-        in_first_gap = {'occurs(action(("inspect","item1")),1)', 'occurs(action(("unrelated","x")),1)'}
+        models = self._models(program, horizon=5)
+        in_first_gap = {
+            f'occurs(action(("{name}","{argument}")),{time_step})'
+            for name, argument in (("inspect", "item1"), ("unrelated", "x"))
+            for time_step in (1, 2)
+        }
 
-        self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
+        self.assertTrue(all('occurs(action(("inspect","item1")),3)' in model for model in models))
         self.assertTrue(any('occurs(action(("unrelated","x")),1)' in model for model in models))
+        self.assertTrue(any('occurs(action(("unrelated","x")),2)' in model for model in models))
         self.assertTrue(any(not model & in_first_gap for model in models))
 
     def test_grounded_action_relation_filters_incompatible_combinations(self):
@@ -77,14 +81,14 @@ switch(2).
         mapping = build_mapping(abstract_plan, abstraction)
         program = """
 action(action(("link","a","b"))).
-switch(2).
+switch(3).
 """ + mapping
 
-        models = self._models(program, horizon=2)
+        models = self._models(program, horizon=3)
 
         self.assertTrue(models)
-        self.assertTrue(all('occurs(action(("link","a","b")),2)' in model for model in models))
-        self.assertTrue(all('occurs(action(("link","a","a")),2)' not in model for model in models))
+        self.assertTrue(all('occurs(action(("link","a","b")),3)' in model for model in models))
+        self.assertTrue(all('occurs(action(("link","a","a")),3)' not in model for model in models))
 
     def test_mapping_rejects_plan_actions_that_are_not_concrete_actions(self):
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
@@ -92,10 +96,10 @@ switch(2).
         mapping = build_mapping(abstract_plan, abstraction)
         program = """
 action(action(("move","item1"))).
-switch(2).
+switch(3).
 """ + mapping
 
-        result = IncrementalSolver(program, horizon=2).control.solve()
+        result = IncrementalSolver(program, horizon=3).control.solve()
 
         self.assertTrue(result.unsatisfiable)
 
