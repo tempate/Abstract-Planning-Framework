@@ -39,9 +39,11 @@ def build_mapping(abstract_plan, abstraction):
         mapping_rules.append(f"0 {{ {switch} }} 1.")
 
         # Add a rule to map the abstract action to a concrete candidate action.
-        # If the switch is on, then the action at the time step must hold for some grounding.
+        # If the switch is on, then the time step holds one grounding of the
+        # action or nothing, so the abstract plan bounds the concrete one
+        # instead of prescribing it.
         action_str, conds_str = _action_pattern(action, abstraction)
-        rule = f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1 :- {switch}."
+        rule = f"0 {{ occurs({action_str},{time_step}) : {conds_str} }} 1 :- {switch}."
         mapping_rules.append(rule)
 
     return "\n".join(mapping_rules)
