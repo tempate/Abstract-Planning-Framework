@@ -184,17 +184,53 @@ def _error_message(result):
     return lines[-1] if lines else ""
 
 
+def _key(row):
+    return (row["domain"], row["problem"], row["mode"])
+
+
+def _preserved_concrete_rows(collected, csv_file=CSV_FILE):
+    """Read the concrete results a run did not cover, so it cannot erase the baseline.
+
+    The runner submits the abstract pipeline alone by default, so its results
+    directory holds no concrete run to collect. Abstract rows still come from
+    the run alone, which keeps the CSV in step with the encoding that produced
+    them.
+    """
+    csv_file = Path(csv_file)
+    if not csv_file.is_file():
+        return []
+
+    collected_keys = set()
+    for row in collected:
+        collected_keys.add(_key(row))
+
+    preserved = []
+    with csv_file.open(encoding="utf-8", newline="") as stream:
+        for row in csv.DictReader(stream):
+            if row["mode"] != "concrete" or _key(row) in collected_keys:
+                continue
+            kept = {}
+            for field in FIELDS:
+                kept[field] = row.get(field, "")
+            preserved.append(kept)
+    return preserved
+
+
 def main():
-    rows = collect()
+    collected = collect()
+    preserved = _preserved_concrete_rows(collected)
+    rows = sorted(collected + preserved, key=_key)
     CSV_FILE.parent.mkdir(parents=True, exist_ok=True)
     with CSV_FILE.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(rows)
-    missing = Counter(row["mode"] for row in rows if row["status"] == "missing")
+    missing = Counter(row["mode"] for row in collected if row["status"] == "missing")
     if missing:
         details = ", ".join(f"{mode}: {count}" for mode, count in sorted(missing.items()))
         print(f"Incomplete benchmark run: {sum(missing.values())} expected results are missing ({details})")
+    if preserved:
+        print(f"Kept {len(preserved)} concrete results the run did not cover")
     print(f"Collected {len(rows)} results in {CSV_FILE}")
 
 
