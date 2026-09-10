@@ -1,0 +1,6 @@
+# Problems the ladder scan accepts, as domain/problem.
+# The non-PNF domains are left out: relaxing deletes is not an overapproximation there.
+# trucks-strips is left out as well: it ships a grounded domain per problem, up to 12 MB,
+# which costs minutes to parse and holds a dozen initial facts, so it has no ladder to find.
+# Regenerate:
+#   python -m scripts.detect_ladders --suite > ladders.txt.new

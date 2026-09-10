@@ -3,10 +3,11 @@
 ``SUITE`` holds every domain variant selected from downward-benchmarks'
 ``suite_satisficing_strips()``. A problem is only worth submitting when some
 source can abstract it, so ``SYMMETRIC_PROBLEMS`` lists the ones PDDL Symmetries
-reports a class for, read from ``symmetries.txt``, whose header carries the
-command that regenerates it from a collected run.
+reports a class for, read from ``symmetries.txt``, and ``LADDER_PROBLEMS`` lists
+the ones the ladder scan accepts, read from ``ladders.txt``. Each file header
+carries the command that regenerates it.
 
-``NON_PNF_DOMAINS`` stays out of that file: those domains are not in positive
+``NON_PNF_DOMAINS`` stays out of both files: those domains are not in positive
 normal form, so relaxing deletes is not an overapproximation there.
 """
 
@@ -14,6 +15,7 @@ from pathlib import Path
 
 BENCHMARKS_DIR = Path(__file__).parent / "downward-benchmarks"
 SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
+LADDER_PROBLEMS_FILE = Path(__file__).parent / "ladders.txt"
 
 SUITE = [
     "agricola-sat18-strips",
@@ -89,3 +91,5 @@ def _read_problems(path):
 
 
 SYMMETRIC_PROBLEMS = _read_problems(SYMMETRIC_PROBLEMS_FILE)
+LADDER_PROBLEMS = _read_problems(LADDER_PROBLEMS_FILE)
+ABSTRACTABLE_PROBLEMS = SYMMETRIC_PROBLEMS | LADDER_PROBLEMS

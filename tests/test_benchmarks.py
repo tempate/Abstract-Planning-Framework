@@ -161,7 +161,7 @@ class BenchmarkTests(unittest.TestCase):
                 [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
             )
 
-    def test_only_problems_with_an_abstraction_class_are_submitted(self):
+    def test_only_problems_an_abstraction_source_accepts_are_submitted(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             benchmark = root / "example"
