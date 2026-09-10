@@ -8,6 +8,7 @@ from unittest.mock import patch
 from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solve
 from core.integrations.fast_downward import _get_command, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
+from core.integrations.sas import parse_atom, read_sas
 from core.integrations.paths import ABSTRACT_TIME_STEPS_ENCODING
 from core.outcomes import IntegrationError
 from core.plan import PlanAction
@@ -208,6 +209,66 @@ class PlaspPostProcessingTests(unittest.TestCase):
     def test_switch_guard_rejects_an_encoding_without_the_occurrence_rule(self):
         with self.assertRaisesRegex(IntegrationError, "No occurrence rule"):
             add_switch_to_asp_rule("before.\nafter.\n")
+
+
+SAS_TASK = """begin_version
+3
+end_version
+begin_metric
+0
+end_metric
+2
+begin_variable
+var0
+-1
+3
+Atom fuel(truck, f0)
+Atom fuel(truck, f1)
+Atom fuel(truck, f2)
+end_variable
+begin_variable
+var1
+-1
+2
+Atom at(truck, l0)
+<none of those>
+end_variable
+0
+1
+begin_operator
+drive
+1
+1 0
+1
+0 0 2 1
+1
+end_operator
+0
+"""
+
+
+class SasReadingTests(unittest.TestCase):
+    def test_reads_the_variables_and_the_values_they_range_over(self):
+        task = read_sas(SAS_TASK)
+
+        self.assertEqual([variable.name for variable in task.variables], ["var0", "var1"])
+        self.assertEqual(task.variables[0].values[0], "Atom fuel(truck, f0)")
+        self.assertEqual(len(task.variables[1].values), 2)
+
+    def test_reads_the_value_changes_the_operators_make(self):
+        task = read_sas(SAS_TASK)
+
+        self.assertEqual(task.transitions[0], {(2, 1)})
+        self.assertEqual(task.transitions[1], set())
+
+    def test_an_effect_without_a_precondition_can_come_from_any_value(self):
+        task = read_sas(SAS_TASK.replace("0 0 2 1", "0 0 -1 1"))
+
+        self.assertEqual(task.transitions[0], {(0, 1), (2, 1)})
+
+    def test_a_value_naming_no_atom_parses_to_nothing(self):
+        self.assertEqual(parse_atom("Atom fuel(truck, f0)"), ("fuel", ("truck", "f0")))
+        self.assertIsNone(parse_atom("<none of those>"))
 
 
 if __name__ == "__main__":
