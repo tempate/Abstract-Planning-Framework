@@ -23,6 +23,7 @@ from scripts.run_benchmark import (
     _run_pipeline,
     _run_task,
 )
+from scripts.report_benchmarks import _head_to_head
 from scripts.run_benchmarks import (
     DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
@@ -534,6 +535,21 @@ class CollectedCsvTests(unittest.TestCase):
             preserved = _preserved_concrete_rows(self._collected([]), Path(directory) / "results.csv")
 
         self.assertEqual(preserved, [])
+
+
+class ReportTests(unittest.TestCase):
+    def test_the_report_survives_a_run_with_no_shared_solves(self):
+        problems = [
+            {
+                "abstract": {"status": "timed out", "wall_time_seconds": "1800.0"},
+                "concrete": {"status": "success", "wall_time_seconds": "12.0"},
+            }
+        ]
+
+        _title, lines = _head_to_head(problems)
+
+        median = next(line for line in lines if line.startswith("Median runtime"))
+        self.assertNotIn(" s", median)
 
 
 if __name__ == "__main__":

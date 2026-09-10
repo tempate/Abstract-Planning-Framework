@@ -89,13 +89,7 @@ def _head_to_head(problems):
     faster_concrete = _share(faster["concrete"], shared, 1)
     lines.append(_wide("Faster when both found a plan", faster_abstract, faster_concrete))
     lines.append(_wide("Plan found when the other did not", found["abstract"] - shared, found["concrete"] - shared))
-    lines.append(
-        _wide(
-            "Median runtime when both found a plan",
-            _seconds(statistics.median(abstract_times)),
-            _seconds(statistics.median(concrete_times)),
-        )
-    )
+    lines.append(_wide("Median runtime when both found a plan", _median(abstract_times), _median(concrete_times)))
     total_runtimes = (_seconds(sum(abstract_times)), _seconds(sum(concrete_times)))
     lines.append(_wide("Total runtime across shared solves", *total_runtimes))
     return "Head to head", lines
@@ -191,6 +185,11 @@ def _share(count, total, decimals):
 
 def _seconds(value):
     return f"{value:,.2f} s"
+
+
+def _median(times):
+    """Report the median, which a run with no shared solves does not have."""
+    return _seconds(statistics.median(times)) if times else "n/a"
 
 
 def _relative(path):
