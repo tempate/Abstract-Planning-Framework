@@ -88,7 +88,7 @@ def _relaxable_delete_for_effect(action, effect, static_fluents, positive_initia
         return None
 
     variable_expressions, relaxable_delete = match
-    if not variable_expressions:
+    if _names_a_collapsed_object(effect, objects_to_collapse):
         # The delete names a collapsed object outright, so it always applies.
         return relaxable_delete
 
@@ -100,6 +100,13 @@ def _relaxable_delete_for_effect(action, effect, static_fluents, positive_initia
         ):
             return relaxable_delete
     return None
+
+
+def _names_a_collapsed_object(effect, objects_to_collapse):
+    for arg in effect.fluent.args:
+        if arg.is_object_exp() and arg.object() in objects_to_collapse:
+            return True
+    return False
 
 
 def _binds_a_collapsed_object(action, variable_expression, static_fluents, positive_initial_facts, objects_to_collapse):

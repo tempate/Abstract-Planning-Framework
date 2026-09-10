@@ -356,6 +356,39 @@ class AbstractionTransformationTests(unittest.TestCase):
         clear_stage = result.problem.action("clear-stage")
         self.assertFalse(any(effect.value.is_false() for effect in clear_stage.effects))
 
+    def test_relaxes_a_named_collapsed_object_a_static_precondition_rules_out(self):
+        domain = """
+(define (domain wiring)
+  (:requirements :strips :typing)
+  (:types port)
+  (:constants hub - port)
+  (:predicates
+    (linked ?a - port ?b - port)
+    (movable ?a - port)
+    (cut ?a - port))
+  (:action unlink
+    :parameters (?a - port)
+    :precondition (and (movable ?a) (linked ?a hub))
+    :effect (and (cut ?a) (not (linked ?a hub)))))
+"""
+        problem_text = """
+(define (problem wiring-task)
+  (:domain wiring)
+  (:objects spur gate - port)
+  (:init (movable gate) (linked gate hub) (linked spur hub))
+  (:goal (cut gate)))
+"""
+        source = parse_problem(domain, problem_text)
+
+        result = _build_from_problem(source, ["hub", "spur"], "pooled-port")
+
+        # `movable` is static and holds for no collapsed object, so `?a` cannot
+        # bind one. The named `hub` still makes the delete apply.
+        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["linked"])
+        self.assertEqual([item.variables for item in result.relaxed_deletes], [("?a", "hub")])
+        unlink = result.problem.action("unlink")
+        self.assertFalse(any(effect.value.is_false() for effect in unlink.effects))
+
 
 if __name__ == "__main__":
     unittest.main()
