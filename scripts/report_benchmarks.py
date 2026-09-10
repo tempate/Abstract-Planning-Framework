@@ -130,13 +130,15 @@ def _refinement_outcomes(problems):
 
 
 def _relaxed_deletes(problems):
+    successes = [modes["abstract"] for modes in problems if modes["abstract"]["status"] == "success"]
     rows = []
-    for modes in problems:
-        row = modes["abstract"]
-        if row["status"] == "success" and int(row["increments"]) == 0 and row.get("relaxed_deletes"):
+    for row in successes:
+        if int(row["increments"]) == 0 and row.get("relaxed_deletes"):
             rows.append(row)
     if not rows:
-        return "Deletes relaxed", ["This CSV predates the relaxed-deletes counter"]
+        if successes and not any(row.get("relaxed_deletes") for row in successes):
+            return "Deletes relaxed", ["This CSV predates the relaxed-deletes counter"]
+        return "Deletes relaxed", ["No success was solved with its abstract plan"]
 
     counts = {bucket: 0 for bucket in RELAXED_DELETE_BUCKETS}
     for row in rows:
