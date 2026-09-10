@@ -9,16 +9,42 @@ from unified_planning.model.metrics import (
 
 from core.abstraction.relaxation import match_relaxable_delete
 
-__all__ = ["AbstractionError", "collapse_objects"]
+__all__ = ["AbstractionError", "collapse_objects", "validate_supported_problem"]
 
 
 class AbstractionError(ValueError):
     """Raised when a requested model abstraction cannot be constructed safely."""
 
 
+def validate_supported_problem(problem):
+    """Reject a problem whose features the object collapse cannot copy."""
+    kind = problem.kind
+    checks = (
+        (kind.has_time(), "temporal planning"),
+        (kind.has_hierarchical(), "hierarchical planning"),
+        (kind.has_contingent(), "contingent planning"),
+        (kind.has_processes(), "processes"),
+        (kind.has_events(), "events"),
+        (kind.has_simulated_effects(), "simulated effects"),
+        (kind.has_object_fluents(), "object-valued fluents"),
+        (kind.has_oversubscription(), "oversubscription metrics"),
+        (kind.has_temporal_oversubscription(), "temporal oversubscription metrics"),
+    )
+    for present, label in checks:
+        if present:
+            raise AbstractionError(f"Unsupported PDDL feature: {label}")
+    if len(problem.quality_metrics) > 1:
+        raise AbstractionError("Unsupported PDDL feature: multiple quality metrics")
+    if problem.quality_metrics and not isinstance(
+        problem.quality_metrics[0], (MinimizeActionCosts, MinimizeExpressionOnFinalState, MinimizeSequentialPlanLength)
+    ):
+        raise AbstractionError(f"Unsupported quality metric: {type(problem.quality_metrics[0]).__name__}")
+    if any(not isinstance(action, InstantaneousAction) for action in problem.actions):
+        raise AbstractionError("Unsupported PDDL feature: non-instantaneous actions")
+
+
 def collapse_objects(problem, abstraction, relaxable_deletes):
     """Replace the abstraction's concrete objects in a fresh problem."""
-    _validate_supported_problem(problem)
     objects_to_collapse = tuple(problem.object(name) for name in abstraction.objects)
     deletes_to_relax = set(relaxable_deletes)
     collapsed_problem = Problem(
@@ -44,32 +70,6 @@ def collapse_objects(problem, abstraction, relaxable_deletes):
     _copy_goals_and_constraints(problem, collapsed_problem, rewrite)
     _copy_quality_metric(problem, collapsed_problem, collapsed_actions, rewrite)
     return collapsed_problem, relaxed_deletes
-
-
-def _validate_supported_problem(problem):
-    kind = problem.kind
-    checks = (
-        (kind.has_time(), "temporal planning"),
-        (kind.has_hierarchical(), "hierarchical planning"),
-        (kind.has_contingent(), "contingent planning"),
-        (kind.has_processes(), "processes"),
-        (kind.has_events(), "events"),
-        (kind.has_simulated_effects(), "simulated effects"),
-        (kind.has_object_fluents(), "object-valued fluents"),
-        (kind.has_oversubscription(), "oversubscription metrics"),
-        (kind.has_temporal_oversubscription(), "temporal oversubscription metrics"),
-    )
-    for present, label in checks:
-        if present:
-            raise AbstractionError(f"Unsupported PDDL feature: {label}")
-    if len(problem.quality_metrics) > 1:
-        raise AbstractionError("Unsupported PDDL feature: multiple quality metrics")
-    if problem.quality_metrics and not isinstance(
-        problem.quality_metrics[0], (MinimizeActionCosts, MinimizeExpressionOnFinalState, MinimizeSequentialPlanLength)
-    ):
-        raise AbstractionError(f"Unsupported quality metric: {type(problem.quality_metrics[0]).__name__}")
-    if any(not isinstance(action, InstantaneousAction) for action in problem.actions):
-        raise AbstractionError("Unsupported PDDL feature: non-instantaneous actions")
 
 
 def _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax):

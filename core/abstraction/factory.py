@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from unified_planning.model import Problem
 
-from core.abstraction.collapse import AbstractionError, collapse_objects
+from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
 from core.abstraction.heuristic import abstraction_score
 from core.abstraction.relaxation import find_relaxable_deletes
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
@@ -35,6 +35,10 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     metrics = metrics or PlanningMetrics()
     with metrics.measure("problem_reading"):
         problem = read_problem(config.domain_path, config.problem_path)
+
+    # Reject unsupported models before anything walks the actions, which only
+    # the instantaneous ones are shaped for.
+    validate_supported_problem(problem)
 
     if config.objects_to_abstract is None:
         with metrics.measure("symmetry_discovery"):

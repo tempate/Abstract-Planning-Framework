@@ -14,6 +14,7 @@ from unified_planning.shortcuts import (
     MinimizeExpressionOnFinalState,
     MinimizeSequentialPlanLength,
     Problem,
+    StartTiming,
     UserType,
     Variable,
 )
@@ -194,8 +195,11 @@ class AbstractionTransformationTests(unittest.TestCase):
         temporal_item = UserType("temporal_item")
         temporal.add_object("a", temporal_item)
         temporal.add_object("b", temporal_item)
+        busy = Fluent("busy", BoolType(), target=temporal_item)
+        temporal.add_fluent(busy, default_initial_value=False)
         wait = DurativeAction("wait")
         wait.set_fixed_duration(1)
+        wait.add_effect(StartTiming(), busy(temporal.object("a")), False)
         temporal.add_action(wait)
 
         with self.assertRaisesRegex(AbstractionError, "temporal planning"):
