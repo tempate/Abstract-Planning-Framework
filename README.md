@@ -69,8 +69,8 @@ back to concrete search.
 
 Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
-abstract and one concrete Slurm task per problem, each capped at 30 minutes and
-8192 MiB:
+abstract Slurm task per problem, each capped at 30 minutes and 8192 MiB.
+`--with-concrete` submits the concrete baseline alongside it:
 
 ```bash
 python -m scripts.run_benchmarks
