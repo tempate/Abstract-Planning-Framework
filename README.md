@@ -81,9 +81,10 @@ abstract Slurm task per problem, each capped at 30 minutes and 8192 MiB.
 python -m scripts.run_benchmarks
 ```
 
-Both modes are skipped for the problems listed in `benchmarks/no-symmetries.txt`,
-where PDDL Symmetries found no abstraction class. That file header carries the
-command that regenerates it from a collected run.
+`benchmarks/suite.py` holds every domain variant in `SUITE`. A problem is only
+submitted when it is listed in `benchmarks/symmetries.txt`, where PDDL Symmetries
+reported an abstraction class. That file header carries the command that
+regenerates it from a collected run.
 
 Results and logs land in `benchmark-results/`, rewritten after every completed
 phase so an interrupted worker keeps its partial timings. Collect them into
