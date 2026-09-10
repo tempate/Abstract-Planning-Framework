@@ -89,8 +89,9 @@ def _extend_concrete_search(context, solver, decrements):
             context, decrements=decrements, increments=horizon - mapped, solve_calls=guided_solve_calls + solve_calls
         )
 
-    # Every switch is off, so the guided solver now behaves like the plain
-    # concrete program while keeping the grounding the decremental search built.
+    # Every switch is off, so no abstract action constrains the search any more.
+    # The mapped gaps stay optional, which only admits shorter plans than the
+    # plain concrete program, and the decremental search's grounding is kept.
     solver.extend()
     solve_result = solver.search(disabled_switches(solver), record_attempt)
 
