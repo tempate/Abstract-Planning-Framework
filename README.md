@@ -17,10 +17,15 @@ Initialize them, install the pinned plasp release, and build Fast Downward:
 ```bash
 git submodule update --init --recursive
 python scripts/install_plasp.py
+python lib/downward/build.py release
+```
+
+Then set up a virtual environment for the Python packages:
+
+```bash
 python -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
-python lib/downward/build.py release
 ```
 
 Automatic object selection additionally requires the pybliss extension:
