@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from benchmarks.suite import SYMMETRIC_DOMAINS
+from benchmarks.suite import SUITE
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from scripts.collect_benchmarks import FIELDS, _preserved_concrete_rows, collect
 from scripts.planner import _update_result_progress
@@ -52,10 +52,10 @@ class BenchmarkTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(result), encoding="utf-8")
 
-    def test_benchmark_runner_defaults_to_symmetric_domains(self):
+    def test_benchmark_runner_defaults_to_the_whole_suite(self):
         suite = inspect.signature(_benchmark_tasks).parameters["suite"].default
 
-        self.assertIs(suite, SYMMETRIC_DOMAINS)
+        self.assertIs(suite, SUITE)
 
     def test_cluster_resource_defaults(self):
         args = _argument_parser().parse_args([])
@@ -152,13 +152,16 @@ class BenchmarkTests(unittest.TestCase):
             domain.touch()
             problem.touch()
 
-            self.assertEqual(list(_benchmark_tasks(root, ["example"])), [("abstract", "example", domain, problem)])
+            runnable = {("example", "p01.pddl")}
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], with_concrete=True)),
+                list(_benchmark_tasks(root, ["example"], runnable)), [("abstract", "example", domain, problem)]
+            )
+            self.assertEqual(
+                list(_benchmark_tasks(root, ["example"], runnable, with_concrete=True)),
                 [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
             )
 
-    def test_problems_without_symmetries_are_not_submitted(self):
+    def test_only_problems_with_an_abstraction_class_are_submitted(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             benchmark = root / "example"
@@ -167,7 +170,7 @@ class BenchmarkTests(unittest.TestCase):
             (benchmark / "p01.pddl").touch()
             (benchmark / "p02.pddl").touch()
 
-            tasks = list(_benchmark_tasks(root, ["example"], skipped={("example", "p01.pddl")}))
+            tasks = list(_benchmark_tasks(root, ["example"], runnable={("example", "p02.pddl")}))
 
             self.assertEqual([problem.name for _mode, _name, _domain, problem in tasks], ["p02.pddl"])
 
@@ -196,7 +199,8 @@ class BenchmarkTests(unittest.TestCase):
             result.touch()
 
             self.assertEqual(
-                list(_benchmark_tasks(benchmarks, ["example"])), [("abstract", "example", domain, problem)]
+                list(_benchmark_tasks(benchmarks, ["example"], {("example", "p01.pddl")})),
+                [("abstract", "example", domain, problem)],
             )
 
     def test_collector_ignores_copperbench_metadata_next_to_results(self):
