@@ -63,9 +63,16 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
     candidate = None
     candidate_relaxable_deletes = ()
     candidate_score = None
+    rejection = None
 
     for symmetry_class in symmetry_classes:
-        abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
+        try:
+            abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
+        except AbstractionError as error:
+            # One unusable class does not make the others unusable, so keep the
+            # reason for the case where none of them works.
+            rejection = rejection or error
+            continue
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         score = abstraction_score(abstraction)
         if candidate_score is None or score < candidate_score:
@@ -73,6 +80,8 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
             candidate_relaxable_deletes = relaxable_deletes
             candidate_score = score
 
+    if candidate is None:
+        raise rejection
     return candidate, candidate_relaxable_deletes
 
 
