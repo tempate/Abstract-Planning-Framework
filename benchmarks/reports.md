@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-09-08 13:44 — benchmarks/results.csv
+2026-09-10 11:45 — benchmarks/results.csv
 
 ## Coverage
 
@@ -18,10 +18,10 @@ Total problems                                            380                380
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
 Plans found by both pipelines                              72                 72
-Faster when both found a plan                      17 (23.6%)         55 (76.4%)
+Faster when both found a plan                      18 (25.0%)         54 (75.0%)
 Plan found when the other did not                          11                  3
-Median runtime when both found a plan                  7.46 s             8.99 s
-Total runtime across shared solves                 5,332.50 s         6,815.32 s
+Median runtime when both found a plan                  7.26 s             8.99 s
+Total runtime across shared solves                 5,403.92 s         6,815.32 s
 ```
 
 ## Where the timeouts died
@@ -40,8 +40,8 @@ Total                                                     295
 ```
 How the 83 successes were solved                     Problems
 -------------------------------------------------------------
-Abstract plan refined directly                       56 (67%)
-Refined after switching some actions off             22 (27%)
+Abstract plan refined directly                       54 (65%)
+Refined after switching some actions off             24 (29%)
 Abstract plan discarded, solved above it               5 (6%)
 Total                                                      83
 ```
