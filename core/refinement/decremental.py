@@ -17,7 +17,7 @@ def solve_decrementally(solver, on_attempt=None):
 
     # The plan does not work. We need to decrementally disable switches.
     # Decrementally disable switches and check for a concrete plan
-    for decs, (id, symbol) in enumerate(reversed(switches), start=1):
+    for decs, (_time_step, symbol) in enumerate(reversed(switches), start=1):
         # Disable the last switch
         assumptions[symbol] = False
 
