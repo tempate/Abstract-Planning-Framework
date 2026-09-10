@@ -156,6 +156,11 @@ class SymmetrySelectionTests(unittest.TestCase):
         with self.assertRaisesRegex(AbstractionError, "same declared type"):
             _select_abstraction(self.problem, [["cargo-a", "tool-a"]])
 
+    def test_an_unusable_symmetry_class_leaves_the_usable_ones_selectable(self):
+        selected, _ = _select_abstraction(self.problem, [["cargo-a", "tool-a"], ["tool-a", "tool-b"]])
+
+        self.assertEqual(set(selected.objects), {"tool-a", "tool-b"})
+
     @patch("core.integrations.pddl_symmetries.subprocess.run")
     def test_extracts_object_sets_from_translator_output(self, run):
         run.return_value = subprocess.CompletedProcess(

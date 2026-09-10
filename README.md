@@ -17,10 +17,15 @@ Initialize them, install the pinned plasp release, and build Fast Downward:
 ```bash
 git submodule update --init --recursive
 python scripts/install_plasp.py
+python lib/downward/build.py release
+```
+
+Then set up a virtual environment for the Python packages:
+
+```bash
 python -m venv venv
 source venv/bin/activate
 python -m pip install -r requirements.txt
-python lib/downward/build.py release
 ```
 
 Automatic object selection additionally requires the pybliss extension:
@@ -69,8 +74,8 @@ back to concrete search.
 
 Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
-abstract and one concrete Slurm task per problem, each capped at 30 minutes and
-8192 MiB:
+abstract Slurm task per problem, each capped at 30 minutes and 8192 MiB.
+`--with-concrete` submits the concrete baseline alongside it:
 
 ```bash
 python -m scripts.run_benchmarks

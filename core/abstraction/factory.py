@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from unified_planning.model import Problem
 
-from core.abstraction.collapse import AbstractionError, collapse_objects
+from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
 from core.abstraction.heuristic import abstraction_score
 from core.abstraction.relaxation import find_relaxable_deletes
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
@@ -36,6 +36,10 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     with metrics.measure("problem_reading"):
         problem = read_problem(config.domain_path, config.problem_path)
 
+    # Reject unsupported models before anything walks the actions, which only
+    # the instantaneous ones are shaped for.
+    validate_supported_problem(problem)
+
     if config.objects_to_abstract is None:
         with metrics.measure("symmetry_discovery"):
             symmetry_classes = find_symmetric_object_sets(
@@ -59,9 +63,16 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
     candidate = None
     candidate_relaxable_deletes = ()
     candidate_score = None
+    rejection = None
 
     for symmetry_class in symmetry_classes:
-        abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
+        try:
+            abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
+        except AbstractionError as error:
+            # One unusable class does not make the others unusable, so keep the
+            # reason for the case where none of them works.
+            rejection = rejection or error
+            continue
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         score = abstraction_score(abstraction)
         if candidate_score is None or score < candidate_score:
@@ -69,6 +80,8 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
             candidate_relaxable_deletes = relaxable_deletes
             candidate_score = score
 
+    if candidate is None:
+        raise rejection
     return candidate, candidate_relaxable_deletes
 
 

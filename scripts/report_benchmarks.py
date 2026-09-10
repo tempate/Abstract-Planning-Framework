@@ -89,13 +89,7 @@ def _head_to_head(problems):
     faster_concrete = _share(faster["concrete"], shared, 1)
     lines.append(_wide("Faster when both found a plan", faster_abstract, faster_concrete))
     lines.append(_wide("Plan found when the other did not", found["abstract"] - shared, found["concrete"] - shared))
-    lines.append(
-        _wide(
-            "Median runtime when both found a plan",
-            _seconds(statistics.median(abstract_times)),
-            _seconds(statistics.median(concrete_times)),
-        )
-    )
+    lines.append(_wide("Median runtime when both found a plan", _median(abstract_times), _median(concrete_times)))
     total_runtimes = (_seconds(sum(abstract_times)), _seconds(sum(concrete_times)))
     lines.append(_wide("Total runtime across shared solves", *total_runtimes))
     return "Head to head", lines
@@ -136,13 +130,15 @@ def _refinement_outcomes(problems):
 
 
 def _relaxed_deletes(problems):
+    successes = [modes["abstract"] for modes in problems if modes["abstract"]["status"] == "success"]
     rows = []
-    for modes in problems:
-        row = modes["abstract"]
-        if row["status"] == "success" and int(row["increments"]) == 0 and row.get("relaxed_deletes"):
+    for row in successes:
+        if int(row["increments"]) == 0 and row.get("relaxed_deletes"):
             rows.append(row)
     if not rows:
-        return "Deletes relaxed", ["This CSV predates the relaxed-deletes counter"]
+        if successes and not any(row.get("relaxed_deletes") for row in successes):
+            return "Deletes relaxed", ["This CSV predates the relaxed-deletes counter"]
+        return "Deletes relaxed", ["No success was solved with its abstract plan"]
 
     counts = {bucket: 0 for bucket in RELAXED_DELETE_BUCKETS}
     for row in rows:
@@ -191,6 +187,11 @@ def _share(count, total, decimals):
 
 def _seconds(value):
     return f"{value:,.2f} s"
+
+
+def _median(times):
+    """Report the median, which a run with no shared solves does not have."""
+    return _seconds(statistics.median(times)) if times else "n/a"
 
 
 def _relative(path):

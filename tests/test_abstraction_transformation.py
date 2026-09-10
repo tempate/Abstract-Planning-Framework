@@ -14,6 +14,7 @@ from unified_planning.shortcuts import (
     MinimizeExpressionOnFinalState,
     MinimizeSequentialPlanLength,
     Problem,
+    StartTiming,
     UserType,
     Variable,
 )
@@ -194,8 +195,11 @@ class AbstractionTransformationTests(unittest.TestCase):
         temporal_item = UserType("temporal_item")
         temporal.add_object("a", temporal_item)
         temporal.add_object("b", temporal_item)
+        busy = Fluent("busy", BoolType(), target=temporal_item)
+        temporal.add_fluent(busy, default_initial_value=False)
         wait = DurativeAction("wait")
         wait.set_fixed_duration(1)
+        wait.add_effect(StartTiming(), busy(temporal.object("a")), False)
         temporal.add_action(wait)
 
         with self.assertRaisesRegex(AbstractionError, "temporal planning"):
@@ -351,6 +355,39 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertEqual([item.variables for item in result.relaxed_deletes], [("stage",)])
         clear_stage = result.problem.action("clear-stage")
         self.assertFalse(any(effect.value.is_false() for effect in clear_stage.effects))
+
+    def test_relaxes_a_named_collapsed_object_a_static_precondition_rules_out(self):
+        domain = """
+(define (domain wiring)
+  (:requirements :strips :typing)
+  (:types port)
+  (:constants hub - port)
+  (:predicates
+    (linked ?a - port ?b - port)
+    (movable ?a - port)
+    (cut ?a - port))
+  (:action unlink
+    :parameters (?a - port)
+    :precondition (and (movable ?a) (linked ?a hub))
+    :effect (and (cut ?a) (not (linked ?a hub)))))
+"""
+        problem_text = """
+(define (problem wiring-task)
+  (:domain wiring)
+  (:objects spur gate - port)
+  (:init (movable gate) (linked gate hub) (linked spur hub))
+  (:goal (cut gate)))
+"""
+        source = parse_problem(domain, problem_text)
+
+        result = _build_from_problem(source, ["hub", "spur"], "pooled-port")
+
+        # `movable` is static and holds for no collapsed object, so `?a` cannot
+        # bind one. The named `hub` still makes the delete apply.
+        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["linked"])
+        self.assertEqual([item.variables for item in result.relaxed_deletes], [("?a", "hub")])
+        unlink = result.problem.action("unlink")
+        self.assertFalse(any(effect.value.is_false() for effect in unlink.effects))
 
 
 if __name__ == "__main__":
