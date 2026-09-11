@@ -368,6 +368,28 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[0]["status"], "error (exit code 2)")
         self.assertEqual(rows[0]["error_message"], "Unsupported quality metric")
 
+    def test_collector_reads_an_error_the_planner_capitalized(self):
+        # Fast Downward reports its failure, then keeps printing; the message is
+        # not the last thing on stdout.
+        failed = subprocess.CompletedProcess(
+            [],
+            2,
+            stdout=(
+                "Starting\n"
+                "Error: Fast Downward (abstract) failed with exit code 31\n"
+                "Driver aborting after translate\n"
+                "INFO     Planner time: 0.14s\n"
+            ),
+        )
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch("scripts.run_benchmark.subprocess.run", return_value=failed),
+        ):
+            _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
+            rows = collect(directory)
+
+        self.assertEqual(rows[0]["error_message"], "Fast Downward (abstract) failed with exit code 31")
+
     def test_each_mode_receives_the_complete_timeout(self):
         timeouts = [
             subprocess.TimeoutExpired([], 1800, output="Starting abstract\n"),
