@@ -69,6 +69,25 @@ problems, submit, then `git checkout --` them. Workers get explicit problem
 paths, so restoring the files mid-run is safe. Say plainly that such a run is
 not reproducible from a SHA, since the committed code submits the whole set.
 
+## Running two branches at once
+
+One run per worktree, never two from one checkout. `_reset_results_dir()` deletes
+`benchmark-results/` before submitting and that path is `PROJECT_ROOT`-relative,
+so a second submission from the same directory wipes the first run's results and
+its manifest while those jobs are still writing into it.
+
+```bash
+git worktree add ../apf-<branch> <branch>
+cd ../apf-<branch> && git submodule update --init --recursive
+```
+
+The submodule step is not optional. `git worktree add` leaves
+`benchmarks/downward-benchmarks`, `lib/downward` and `lib/pddl-symmetries` empty,
+so the runner finds no problems and submits nothing without saying why.
+
+`fetch_benchmarks` guards on `squeue -u "$USER"`, the whole user rather than one
+run, so neither run can be pulled until both drain. Give each its own `--into`.
+
 ## Before reporting on a run
 
 ```bash
