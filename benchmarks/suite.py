@@ -76,6 +76,7 @@ NON_PNF_DOMAINS = [
     "organic-synthesis-sat18-strips",
     "organic-synthesis-split-sat18-strips",
     "quantum-layout-sat23-strips",
+    "snake-sat18-strips",
 ]
 
 
