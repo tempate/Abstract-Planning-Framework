@@ -16,7 +16,8 @@ BENCHMARKS_DIR = Path(__file__).parent / "downward-benchmarks"
 SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
 
 SUITE = [
-    "agricola-sat18-strips",
+    # "agricola-sat18-strips", Excluded: its fluent-valued action costs
+    # round-trip to :numeric-fluents, which the translator rejects.
     "airport",
     "barman-sat14-strips",
     "blocks",
