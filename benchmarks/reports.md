@@ -1,15 +1,15 @@
 # Benchmark report
 
-2026-09-10 11:45 — benchmarks/results.csv
+2026-09-11 15:06 — benchmarks/results.csv
 
 ## Coverage
 
 ```
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Plans found                                        83 (21.8%)         75 (19.7%)
-Timeouts                                          295 (77.6%)        305 (80.3%)
-Total problems                                            380                380
+Plans found                                        91 (20.7%)         78 (17.8%)
+Timeouts                                          339 (77.2%)        359 (81.8%)
+Total problems                                            439                439
 ```
 
 ## Head to head
@@ -17,11 +17,11 @@ Total problems                                            380                380
 ```
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Plans found by both pipelines                              72                 72
-Faster when both found a plan                      18 (25.0%)         54 (75.0%)
-Plan found when the other did not                          11                  3
-Median runtime when both found a plan                  7.26 s             8.99 s
-Total runtime across shared solves                 5,403.92 s         6,815.32 s
+Plans found by both pipelines                              75                 75
+Faster when both found a plan                      21 (28.0%)         54 (72.0%)
+Plan found when the other did not                          16                  3
+Median runtime when both found a plan                  7.06 s             9.19 s
+Total runtime across shared solves                 9,061.88 s        11,333.48 s
 ```
 
 ## Where the timeouts died
@@ -29,32 +29,32 @@ Total runtime across shared solves                 5,403.92 s         6,815.32 s
 ```
 Where the abstract pipeline was killed               Timeouts
 -------------------------------------------------------------
-Searching for the abstract plan                     271 (92%)
-Extended concrete search                              17 (6%)
+Searching for the abstract plan                     297 (88%)
+Extended concrete search                             35 (10%)
 Guided concrete search                                 7 (2%)
-Total                                                     295
+Total                                                     339
 ```
 
 ## How the successes were solved
 
 ```
-How the 83 successes were solved                     Problems
+How the 91 successes were solved                     Problems
 -------------------------------------------------------------
-Abstract plan refined directly                       54 (65%)
-Refined after switching some actions off             24 (29%)
-Abstract plan discarded, solved above it               5 (6%)
-Total                                                      83
+Abstract plan refined directly                       60 (66%)
+Refined after switching some actions off             23 (25%)
+Abstract plan discarded, solved above it               8 (9%)
+Total                                                      91
 ```
 
-## Deletes relaxed, over the 78 successes whose abstract plan was used
+## Deletes relaxed, over the 83 successes whose abstract plan was used
 
 ```
 Deletes relaxed                                      Problems
 -------------------------------------------------------------
-None                                                 11 (14%)
-1 to 4                                               39 (50%)
-5 to 9                                               13 (17%)
-10 to 19                                             15 (19%)
+None                                                 11 (13%)
+1 to 4                                               44 (53%)
+5 to 9                                               13 (16%)
+10 to 19                                             15 (18%)
 20 or more                                             0 (0%)
-Total                                                      78
+Total                                                      83
 ```
