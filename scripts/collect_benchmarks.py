@@ -216,12 +216,13 @@ def _preserved_concrete_rows(collected, csv_file=CSV_FILE):
     return preserved
 
 
-def main():
-    collected = collect()
-    preserved = _preserved_concrete_rows(collected)
+def main(results_dir=RESULTS_DIR, csv_file=CSV_FILE):
+    collected = collect(results_dir)
+    preserved = _preserved_concrete_rows(collected, csv_file)
     rows = sorted(collected + preserved, key=_key)
-    CSV_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with CSV_FILE.open("w", encoding="utf-8", newline="") as stream:
+    csv_file = Path(csv_file)
+    csv_file.parent.mkdir(parents=True, exist_ok=True)
+    with csv_file.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(rows)
@@ -231,7 +232,7 @@ def main():
         print(f"Incomplete benchmark run: {sum(missing.values())} expected results are missing ({details})")
     if preserved:
         print(f"Kept {len(preserved)} concrete results the run did not cover")
-    print(f"Collected {len(rows)} results in {CSV_FILE}")
+    print(f"Collected {len(rows)} results in {csv_file}")
 
 
 if __name__ == "__main__":
