@@ -30,7 +30,7 @@ def _compute_abstract_plan(config, base_dir, run_id, metrics):
     # it. The metrics snapshot reaches the result file on every update, which is
     # what survives a run killed at the benchmark timeout.
     abstraction = abstract_problem.abstraction
-    metrics.set_abstraction(abstraction.objects, abstraction.object_type)
+    metrics.set_abstraction(abstraction.objects, abstraction.object_type, abstraction.source)
     metrics.set_counter("relaxed_deletes", len(abstract_problem.relaxed_deletes))
     print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
 

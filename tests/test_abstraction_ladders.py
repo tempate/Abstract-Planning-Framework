@@ -62,18 +62,18 @@ class LadderDetectionTests(unittest.TestCase):
         self.assertEqual(set(result.abstraction.objects), {"l0", "l1", "l2", "l3", "l4"})
 
     def test_the_ladder_wins_over_a_smaller_symmetry_class(self):
-        candidates = [["c0", "c1"]]
+        candidates = [("symmetry", ["c0", "c1"])]
         for ladder in find_ladders(self.problem):
-            candidates.append(list(ladder.objects))
+            candidates.append(("ladder", list(ladder.objects)))
 
         selected, _ = _select_abstraction(self.problem, candidates)
 
         self.assertEqual(set(selected.objects), {"l0", "l1", "l2", "l3", "l4"})
 
     def test_a_larger_symmetry_class_still_wins_over_the_ladder(self):
-        candidates = [["c0", "c1", "c2", "c3", "c4", "c5"]]
+        candidates = [("symmetry", ["c0", "c1", "c2", "c3", "c4", "c5"])]
         for ladder in find_ladders(self.problem):
-            candidates.append(list(ladder.objects))
+            candidates.append(("ladder", list(ladder.objects)))
 
         selected, _ = _select_abstraction(self.problem, candidates)
 

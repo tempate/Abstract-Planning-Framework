@@ -33,7 +33,9 @@ def _stubbed_abstract_pipeline(generated):
 
 def _generated_abstraction(relaxed_deletes=()):
     return SimpleNamespace(
-        problem=Mock(), abstraction=Abstraction("item_abs", ("a", "b"), "item"), relaxed_deletes=relaxed_deletes
+        problem=Mock(),
+        abstraction=Abstraction("item_abs", ("a", "b"), "item", "symmetry"),
+        relaxed_deletes=relaxed_deletes,
     )
 
 
