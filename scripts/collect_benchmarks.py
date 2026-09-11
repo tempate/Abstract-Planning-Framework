@@ -176,7 +176,9 @@ def _error_message(result):
         return ""
 
     output = result["output"]
-    match = re.search(r"^.*error: (.+)$", output, re.MULTILINE)
+    # Fast Downward capitalizes its Error:, so a case-sensitive match falls
+    # through to the last line, which is the planner's timing summary.
+    match = re.search(r"^.*error: (.+)$", output, re.MULTILINE | re.IGNORECASE)
     if match is not None:
         return match.group(1)
 
