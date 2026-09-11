@@ -25,9 +25,11 @@ class PlanningMetricsTests(unittest.TestCase):
         updates = []
         metrics = PlanningMetrics(on_update=lambda *update: updates.append(update))
 
-        metrics.set_abstraction(("ball2", "ball1"), "ball")
+        metrics.set_abstraction(("ball2", "ball1"), "ball", "symmetry")
 
-        self.assertEqual(updates[0][1]["abstraction"], {"objects": ["ball1", "ball2"], "object_type": "ball"})
+        self.assertEqual(
+            updates[0][1]["abstraction"], {"objects": ["ball1", "ball2"], "object_type": "ball", "source": "symmetry"}
+        )
 
     def test_unknown_metrics_are_rejected(self):
         metrics = PlanningMetrics()

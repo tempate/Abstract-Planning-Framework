@@ -27,6 +27,7 @@ FIELDS = (
     *COUNTER_LABELS,
     "abstracted_object_count",
     "abstracted_object_type",
+    "abstraction_source",
     "error_message",
 )
 
@@ -88,6 +89,9 @@ def _values(result):
     metrics = _metrics(output, progress)
     durations = metrics.get("durations", {})
     counters = metrics.get("counters", {})
+    # A finished run prints its metrics table, so _metrics reads that and never
+    # sees the abstraction the progress snapshot carries.
+    abstraction = metrics.get("abstraction") or (progress.get("metrics") or {}).get("abstraction")
     return {
         "status": _human_status(result),
         "wall_time_seconds": result["wall_time_seconds"],
@@ -96,7 +100,7 @@ def _values(result):
         "horizon": _value(output, "Horizon", int),
         "plan_length": _plan_length(output),
         **_counter_values(output, counters),
-        **_abstraction_values(output, metrics.get("abstraction")),
+        **_abstraction_values(output, abstraction),
         "error_message": _error_message(result),
     }
 
@@ -158,17 +162,18 @@ def _abstraction_values(output, abstraction=None):
         return {
             "abstracted_object_count": len(abstraction["objects"]),
             "abstracted_object_type": abstraction["object_type"],
+            "abstraction_source": abstraction.get("source", ""),
         }
 
     match = re.search(r"^Collapsed (\[.*\]) into \S+ \(type=([^)]+)\)$", output, re.MULTILINE)
     if match is None:
-        return {"abstracted_object_count": "", "abstracted_object_type": ""}
+        return {"abstracted_object_count": "", "abstracted_object_type": "", "abstraction_source": ""}
 
     try:
         object_count = len(ast.literal_eval(match.group(1)))
     except (SyntaxError, ValueError):
         object_count = ""
-    return {"abstracted_object_count": object_count, "abstracted_object_type": match.group(2)}
+    return {"abstracted_object_count": object_count, "abstracted_object_type": match.group(2), "abstraction_source": ""}
 
 
 def _error_message(result):
