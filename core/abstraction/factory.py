@@ -1,10 +1,11 @@
-"""Build planning abstractions from PDDL Symmetries classes."""
+"""Build planning abstractions from PDDL Symmetries classes and resource ladders."""
 
 from dataclasses import dataclass
 
 from unified_planning.model import Problem
 
 from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
+from core.abstraction.detect_ladders import find_ladder_classes
 from core.abstraction.heuristic import abstraction_score
 from core.abstraction.relaxation import find_relaxable_deletes
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
@@ -21,6 +22,7 @@ class Abstraction:
     name: str
     objects: tuple[str, ...]
     object_type: str
+    source: str
 
 
 @dataclass(frozen=True)
@@ -30,8 +32,12 @@ class AbstractionResult:
     relaxed_deletes: tuple
 
 
-def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
-    """Read one concrete task, select an object class, and abstract it."""
+def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None, concrete_sas=None):
+    """Read one concrete task, select an object class, and abstract it.
+
+    Resource ladders are read off the translated task, so they are only offered
+    as candidates when the caller has one to hand.
+    """
     metrics = metrics or PlanningMetrics()
     with metrics.measure("problem_reading"):
         problem = read_problem(config.domain_path, config.problem_path)
@@ -45,29 +51,36 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
             symmetry_classes = find_symmetric_object_sets(
                 config.domain_path, config.problem_path, config.symmetry_time_limit
             )
-        if not symmetry_classes:
-            raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")
 
     with metrics.measure("abstraction"):
         if config.objects_to_abstract is None:
-            abstraction, relaxable_deletes = _select_abstraction(problem, symmetry_classes, config.abstract_name)
+            candidates = []
+            for object_names in symmetry_classes:
+                candidates.append(("symmetry", object_names))
+            for object_names in find_ladder_classes(problem, concrete_sas):
+                candidates.append(("ladder", object_names))
+            if not candidates:
+                raise NoSymmetriesError(
+                    "PDDL Symmetries found no abstractable object classes, and no resource ladder either"
+                )
+            abstraction, relaxable_deletes = _select_abstraction(problem, candidates, config.abstract_name)
         else:
-            abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
+            abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name, "explicit")
             relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
     return AbstractionResult(abstraction=abstraction, problem=collapsed_problem, relaxed_deletes=relaxed_deletes)
 
 
-def _select_abstraction(problem, symmetry_classes, abstract_name=None):
-    """Select the largest class reported by PDDL Symmetries."""
+def _select_abstraction(problem, candidate_classes, abstract_name=None):
+    """Select the largest collapsible class, whether a symmetry class or a ladder."""
     candidate = None
     candidate_relaxable_deletes = ()
     candidate_score = None
     rejection = None
 
-    for symmetry_class in symmetry_classes:
+    for source, candidate_class in candidate_classes:
         try:
-            abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
+            abstraction = _create_abstraction(problem, candidate_class, abstract_name, source)
         except AbstractionError as error:
             # One unusable class does not make the others unusable, so keep the
             # reason for the case where none of them works.
@@ -85,7 +98,7 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
     return candidate, candidate_relaxable_deletes
 
 
-def _create_abstraction(problem, object_names, abstract_name):
+def _create_abstraction(problem, object_names, abstract_name, source):
     objects_by_name = {item.name.casefold(): item for item in problem.all_objects}
 
     # Normalize names and remove duplicates.
@@ -124,6 +137,7 @@ def _create_abstraction(problem, object_names, abstract_name):
         name=abstract_name,
         objects=tuple(item.name for item in objects_to_collapse),
         object_type=objects_to_collapse[0].type.name,
+        source=source,
     )
 
 

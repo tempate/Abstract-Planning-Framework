@@ -33,7 +33,9 @@ def _stubbed_abstract_pipeline(generated):
 
 def _generated_abstraction(relaxed_deletes=()):
     return SimpleNamespace(
-        problem=Mock(), abstraction=Abstraction("item_abs", ("a", "b"), "item"), relaxed_deletes=relaxed_deletes
+        problem=Mock(),
+        abstraction=Abstraction("item_abs", ("a", "b"), "item", "symmetry"),
+        relaxed_deletes=relaxed_deletes,
     )
 
 
@@ -85,7 +87,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
                 for translation in stubs.sas_to_asp.call_args_list:
                     self.assertEqual(translation.kwargs["abstract_time_steps"], time_step)
 
-    def test_an_abstraction_failure_aborts_before_translation(self):
+    def test_an_abstraction_failure_aborts_before_the_abstract_translation(self):
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
             patch("core.planning.abstract.build_abstract_problem", side_effect=AbstractionError("no classes")),
@@ -95,7 +97,9 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
             with self.assertRaises(AbstractionError):
                 compute_abstract_plan(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
-        pddl_to_sas.assert_not_called()
+        # The concrete task is translated first, since the abstraction reads its
+        # resource-ladder candidates off it. The abstract one is never reached.
+        self.assertEqual(pddl_to_sas.call_count, 1)
 
 
 class PlanningConfigurationTests(unittest.TestCase):

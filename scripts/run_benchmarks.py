@@ -11,7 +11,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from benchmarks.suite import BENCHMARKS_DIR, SUITE, SYMMETRIC_PROBLEMS
+from benchmarks.suite import ABSTRACTABLE_PROBLEMS, BENCHMARKS_DIR, SUITE
 from scripts.run_benchmark import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR
 from scripts.utils.arguments import positive_int
 
@@ -125,7 +125,7 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SUITE, runnable=SYMMETRIC_PROBLEMS, with_concrete=False):
+def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SUITE, runnable=ABSTRACTABLE_PROBLEMS, with_concrete=False):
     modes = ("abstract", "concrete") if with_concrete else ("abstract",)
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
