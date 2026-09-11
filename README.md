@@ -65,10 +65,11 @@ python -m scripts.planner --help
 The search allows exactly one action per step and raises the horizon until it
 finds a plan. `abstract` mode spreads the abstract actions over the even steps,
 leaving a gap before the first, between consecutive ones, and after the last,
-where one further concrete action may occur or none. It asks PDDL Symmetries for
-a symmetric object class; pass `--objects-to-abstract NAME...` to choose one
-yourself. If no symmetric class is found, `abstract` exits instead of falling
-back to concrete search.
+where one further concrete action may occur or none. It collapses the largest
+class it can find, weighing the symmetric object classes PDDL Symmetries reports
+against the resource ladders `scripts/detect_ladders.py` reports; pass
+`--objects-to-abstract NAME...` to choose one yourself. If neither source finds
+anything, `abstract` exits instead of falling back to concrete search.
 
 ## Benchmark suite
 
@@ -82,9 +83,10 @@ python -m scripts.run_benchmarks
 ```
 
 `benchmarks/suite.py` holds every domain variant in `SUITE`. A problem is only
-submitted when it is listed in `benchmarks/symmetries.txt`, where PDDL Symmetries
-reported an abstraction class. That file header carries the command that
-regenerates it from a collected run.
+submitted when an abstraction source accepts it, so it must be listed in
+`benchmarks/symmetries.txt`, where PDDL Symmetries reported a class, or in
+`benchmarks/ladders.txt`, where the ladder scan found one. Each file header
+carries the command that regenerates it.
 
 Results and logs land in `benchmark-results/`, rewritten after every completed
 phase so an interrupted worker keeps its partial timings. Collect them into
