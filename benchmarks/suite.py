@@ -5,7 +5,8 @@
 is only worth submitting when some source can abstract it, so
 ``SYMMETRIC_PROBLEMS`` lists the ones PDDL Symmetries reports a class for, read
 from ``symmetries.txt``, whose header carries the command that regenerates it
-from a collected run.
+from a collected run, and ``LADDER_PROBLEMS`` lists the ones the ladder scan
+accepts, read from ``ladders.txt``.
 
 ``NON_PNF_DOMAINS`` holds what ``SUITE`` leaves out, grouped by why.
 ``python -m scripts.scan_pnf`` derives both groups from the PDDL.
@@ -15,6 +16,7 @@ from pathlib import Path
 
 BENCHMARKS_DIR = Path(__file__).parent / "downward-benchmarks"
 SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
+LADDER_PROBLEMS_FILE = Path(__file__).parent / "ladders.txt"
 
 SUITE = [
     "airport",
@@ -93,3 +95,5 @@ def _read_problems(path):
 
 
 SYMMETRIC_PROBLEMS = _read_problems(SYMMETRIC_PROBLEMS_FILE)
+LADDER_PROBLEMS = _read_problems(LADDER_PROBLEMS_FILE)
+ABSTRACTABLE_PROBLEMS = SYMMETRIC_PROBLEMS | LADDER_PROBLEMS
