@@ -22,6 +22,7 @@ class Abstraction:
     name: str
     objects: tuple[str, ...]
     object_type: str
+    source: str
 
 
 @dataclass(frozen=True)
@@ -53,14 +54,18 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
 
     with metrics.measure("abstraction"):
         if config.objects_to_abstract is None:
-            candidates = list(symmetry_classes) + find_ladder_classes(problem, concrete_sas)
+            candidates = []
+            for object_names in symmetry_classes:
+                candidates.append(("symmetry", object_names))
+            for object_names in find_ladder_classes(problem, concrete_sas):
+                candidates.append(("ladder", object_names))
             if not candidates:
                 raise NoSymmetriesError(
                     "PDDL Symmetries found no abstractable object classes, and no resource ladder either"
                 )
             abstraction, relaxable_deletes = _select_abstraction(problem, candidates, config.abstract_name)
         else:
-            abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
+            abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name, "explicit")
             relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
     return AbstractionResult(abstraction=abstraction, problem=collapsed_problem, relaxed_deletes=relaxed_deletes)
@@ -73,9 +78,9 @@ def _select_abstraction(problem, candidate_classes, abstract_name=None):
     candidate_score = None
     rejection = None
 
-    for candidate_class in candidate_classes:
+    for source, candidate_class in candidate_classes:
         try:
-            abstraction = _create_abstraction(problem, candidate_class, abstract_name)
+            abstraction = _create_abstraction(problem, candidate_class, abstract_name, source)
         except AbstractionError as error:
             # One unusable class does not make the others unusable, so keep the
             # reason for the case where none of them works.
@@ -93,7 +98,7 @@ def _select_abstraction(problem, candidate_classes, abstract_name=None):
     return candidate, candidate_relaxable_deletes
 
 
-def _create_abstraction(problem, object_names, abstract_name):
+def _create_abstraction(problem, object_names, abstract_name, source):
     objects_by_name = {item.name.casefold(): item for item in problem.all_objects}
 
     # Normalize names and remove duplicates.
@@ -132,6 +137,7 @@ def _create_abstraction(problem, object_names, abstract_name):
         name=abstract_name,
         objects=tuple(item.name for item in objects_to_collapse),
         object_type=objects_to_collapse[0].type.name,
+        source=source,
     )
 
 

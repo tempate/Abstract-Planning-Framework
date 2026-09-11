@@ -64,9 +64,9 @@ class PlanningMetrics:
         self.counters[name] = value
         self._report({"kind": "counter_updated", "counter": name})
 
-    def set_abstraction(self, objects, object_type: str) -> None:
-        """Record the collapsed object class."""
-        self.abstraction = {"objects": sorted(objects), "object_type": object_type}
+    def set_abstraction(self, objects, object_type: str, source: str) -> None:
+        """Record the collapsed object class and which detector offered it."""
+        self.abstraction = {"objects": sorted(objects), "object_type": object_type, "source": source}
         self._report({"kind": "abstraction_selected"})
 
     def as_dict(self) -> dict:
