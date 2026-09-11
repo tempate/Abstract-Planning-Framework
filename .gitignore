@@ -5,3 +5,4 @@ __pycache__/
 *.py[cod]
 *.so
 benchmark-results/
+.claude/settings.local.json
