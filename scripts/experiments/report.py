@@ -1,4 +1,4 @@
-"""Summarize a collected benchmark CSV as coverage and refinement tables."""
+"""Summarize a collected benchmark CSV, as plan coverage or as solvability verdicts."""
 
 import argparse
 import csv
@@ -11,8 +11,10 @@ from scripts.experiments.run import PROJECT_ROOT
 
 DEFAULT_CSV = PROJECT_ROOT / "benchmarks" / "results.csv"
 REPORTS_FILE = PROJECT_ROOT / "benchmarks" / "reports.md"
+UNSOLVABLE_REPORTS_FILE = PROJECT_ROOT / "benchmarks" / "unsolvable-reports.md"
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
+VERDICTS = ("unsolvable", "unknown", "solvable")
 # A killed run reports the phase it completed last, so it died in the next one.
 KILLED_IN_PHASE = {
     "abstract_asp": "Searching for the abstract plan",
@@ -24,16 +26,24 @@ KILLED_IN_PHASE = {
 def main():
     args = _argument_parser().parse_args()
     problems = _finished_problems(args.results)
-    sections = [
-        _coverage(problems),
-        _head_to_head(problems),
-        _timeout_phases(problems),
-        _refinement_outcomes(problems),
-        _relaxed_deletes(problems),
-    ]
+    if _is_verdict_run(problems):
+        # A decide run reports no plan, horizon or refinement, so none of the
+        # other tables have anything to say about one. It also gets its own
+        # report file, or it would replace the one the plan runs write.
+        sections = [_verdicts(problems), _verdict_head_to_head(problems), _timeout_phases(problems)]
+        reports_file = UNSOLVABLE_REPORTS_FILE
+    else:
+        sections = [
+            _coverage(problems),
+            _head_to_head(problems),
+            _timeout_phases(problems),
+            _refinement_outcomes(problems),
+            _relaxed_deletes(problems),
+        ]
+        reports_file = REPORTS_FILE
     _print_report(sections)
-    _write_report(sections, args.results)
-    print(f"\nWrote this report to {_relative(REPORTS_FILE)}")
+    _write_report(sections, args.results, reports_file)
+    print(f"\nWrote this report to {_relative(reports_file)}")
 
 
 def _argument_parser():
@@ -57,6 +67,68 @@ def _finished_problems(results_file):
             continue
         problems.append(modes)
     return problems
+
+
+def _is_verdict_run(problems):
+    """Tell a run that decided solvability from one that searched for plans."""
+    for modes in problems:
+        for row in modes.values():
+            if row.get("verdict"):
+                return True
+    return False
+
+
+def _verdicts(problems):
+    total = len(problems)
+    lines = _wide_header("Verdict")
+    for verdict in VERDICTS:
+        counts = _verdict_counts(problems, verdict)
+        abstract = _share(counts["abstract"], total, 1)
+        concrete = _share(counts["concrete"], total, 1)
+        lines.append(_wide(verdict.capitalize(), abstract, concrete))
+
+    # Everything that finished without deciding: no symmetries, or an error.
+    missing = _verdict_counts(problems, "")
+    lines.append(_wide("No verdict", _share(missing["abstract"], total, 1), _share(missing["concrete"], total, 1)))
+    lines.append(_wide("Total problems", total, total))
+    return "Verdicts", lines
+
+
+def _verdict_head_to_head(problems):
+    proved = []
+    for modes in problems:
+        if modes["abstract"]["verdict"] == "unsolvable" and modes["concrete"]["verdict"] == "unsolvable":
+            proved.append(modes)
+
+    shared = len(proved)
+    faster = {"abstract": 0, "concrete": 0}
+    abstract_times = []
+    concrete_times = []
+    for modes in proved:
+        abstract_times.append(_runtime(modes["abstract"]))
+        concrete_times.append(_runtime(modes["concrete"]))
+        winner = "abstract" if _runtime(modes["abstract"]) < _runtime(modes["concrete"]) else "concrete"
+        faster[winner] += 1
+
+    counts = _verdict_counts(problems, "unsolvable")
+    lines = _wide_header("Metric")
+    lines.append(_wide("Proved unsolvable", counts["abstract"], counts["concrete"]))
+    lines.append(_wide("Proved unsolvable by both", shared, shared))
+    faster_abstract = _share(faster["abstract"], shared, 1)
+    faster_concrete = _share(faster["concrete"], shared, 1)
+    lines.append(_wide("Faster when both proved it", faster_abstract, faster_concrete))
+    lines.append(_wide("Median runtime when both proved it", _median(abstract_times), _median(concrete_times)))
+    lines.append(_wide("Proved it when the other did not", counts["abstract"] - shared, counts["concrete"] - shared))
+    return "Head to head", lines
+
+
+def _verdict_counts(problems, verdict):
+    counts = {"abstract": 0, "concrete": 0}
+    for modes in problems:
+        for mode in counts:
+            if modes[mode]["verdict"] == verdict:
+                counts[mode] += 1
+    return counts
 
 
 def _coverage(problems):
@@ -249,12 +321,12 @@ def _print_report(sections):
         print("\n".join(lines))
 
 
-def _write_report(sections, results_file):
+def _write_report(sections, results_file, reports_file=REPORTS_FILE):
     """Replace the report file with the latest report."""
     report = ["# Benchmark report", "", f"{datetime.now().strftime('%Y-%m-%d %H:%M')} — {_relative(results_file)}", ""]
     for title, lines in sections:
         report += [f"## {title}", "", "```", *lines, "```", ""]
-    REPORTS_FILE.write_text("\n".join(report), encoding="utf-8")
+    Path(reports_file).write_text("\n".join(report), encoding="utf-8")
 
 
 if __name__ == "__main__":
