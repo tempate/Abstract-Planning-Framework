@@ -146,21 +146,39 @@ def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SUITE, runnable=SYMMET
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
-            if "domain" not in problem.name and (domain_name, problem.name) in runnable:
+            if not _is_domain_file(problem.name) and (domain_name, problem.name) in runnable:
                 domain = _find_domain(problem)
                 for mode in modes:
                     yield mode, domain_name, domain, problem
 
 
+def _is_domain_file(name):
+    """Tell a domain file from a problem file by name.
+
+    downward-benchmarks spells it out in full; unsolve-ipc-2016 shortens it to
+    dom, satdom and unknowndom, against prob, satprob and unknownprob.
+    """
+    return "dom" in name and "prob" not in name
+
+
 def _find_domain(problem):
-    """Find the domain file using the naming conventions in downward-benchmarks."""
-    candidates = (
+    """Find the domain file using the naming conventions of the benchmark collections."""
+    candidates = [
         "domain.pddl",
         f"{problem.stem}-domain{problem.suffix}",
         f"{problem.name[:3]}-domain.pddl",
         f"domain_{problem.name}",
         f"domain-{problem.name}",
-    )
+    ]
+    if "prob" in problem.stem:
+        # unsolve-ipc-2016 names the pair after each other: probNN.pddl with
+        # domNN.pddl, and likewise satprobNN and unknownprobNN. Guarded, or a
+        # problem with no prob in its name would answer as its own domain.
+        candidates.append(f"{problem.stem.replace('prob', 'dom', 1)}{problem.suffix}")
+        # bag-barman and bag-transport ship no satdomNN, and their satprobNN is
+        # probNN with a single symbol changed, so it belongs to the same domNN.
+        # Last, or diagnosis and cave-diving would take domNN over their satdomNN.
+        candidates.append(f"dom{problem.stem.partition('prob')[2]}{problem.suffix}")
     for name in candidates:
         domain = problem.parent / name
         if domain.is_file():

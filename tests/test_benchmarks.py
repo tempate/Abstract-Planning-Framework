@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from benchmarks.suite import SUITE
+from scripts.experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from scripts.experiments.collect import FIELDS, _preserved_concrete_rows, collect
 from scripts.utils.reporting import update_result_progress
@@ -609,3 +610,37 @@ class ReportTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DomainLookupTests(unittest.TestCase):
+    def _collection(self, names):
+        directory = Path(tempfile.mkdtemp())
+        for name in names:
+            (directory / name).write_text("", encoding="utf-8")
+        return directory
+
+    def test_finds_a_domain_shared_by_every_problem(self):
+        directory = self._collection(["domain.pddl", "p01.pddl"])
+
+        self.assertEqual(_find_domain(directory / "p01.pddl").name, "domain.pddl")
+
+    def test_finds_the_domain_numbered_with_the_problem(self):
+        directory = self._collection(["dom01.pddl", "prob01.pddl", "dom02.pddl", "prob02.pddl"])
+
+        self.assertEqual(_find_domain(directory / "prob02.pddl").name, "dom02.pddl")
+
+    def test_finds_the_domain_of_a_named_problem_variant(self):
+        directory = self._collection(["satdom02.pddl", "satprob02.pddl", "dom02.pddl", "prob02.pddl"])
+
+        self.assertEqual(_find_domain(directory / "satprob02.pddl").name, "satdom02.pddl")
+
+    def test_falls_back_to_the_domain_the_variant_shares_with_its_problem(self):
+        directory = self._collection(["dom02.pddl", "prob02.pddl", "satprob02.pddl"])
+
+        self.assertEqual(_find_domain(directory / "satprob02.pddl").name, "dom02.pddl")
+
+    def test_reports_a_problem_with_no_domain(self):
+        directory = self._collection(["p01.pddl"])
+
+        with self.assertRaises(FileNotFoundError):
+            _find_domain(directory / "p01.pddl")
