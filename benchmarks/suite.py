@@ -10,6 +10,11 @@ positive normal form first; ``# Inequality.`` negates only ``(= ?x ?y)``, which
 no relaxed delete reaches, but which collapsing two objects into one symbol
 does, by making the two sides equal.
 
+``UNSOLVABLE_SUITE`` is the second collection, the FINAL domains of
+unsolve-ipc-2016. There is no symmetries file for it, so every problem
+known to be unsolvable runs, which is the probNN of each domain: satprobNN is
+the solvable twin beside it and unknownprobNN was never settled.
+
 A problem is only worth submitting when some source can abstract it, so
 ``SYMMETRIC_PROBLEMS`` lists the ones PDDL Symmetries reports a class for, read
 from ``symmetries.txt``, whose header carries the command that regenerates it
@@ -19,6 +24,7 @@ from a collected run.
 from pathlib import Path
 
 BENCHMARKS_DIR = Path(__file__).parent / "downward-benchmarks"
+UNSOLVABLE_BENCHMARKS_DIR = Path(__file__).parent / "unsolve-ipc-2016"
 SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
 
 SUITE = [
@@ -74,6 +80,25 @@ SUITE = [
     "visitall-sat14-strips",
     "woodworking-sat11-strips",
     "zenotravel",
+]
+
+
+UNSOLVABLE_SUITE = [
+    "bag-barman",
+    "bag-gripper",
+    "bag-transport",
+    "bottleneck",
+    "cave-diving",
+    "chessboard-pebbling",
+    "diagnosis",
+    "document-transfer",
+    "over-nomystery",
+    "over-rovers",
+    "over-tpp",
+    "pegsol",
+    "pegsol-row5",
+    "sliding-tiles",
+    "tetris",
 ]
 
 
