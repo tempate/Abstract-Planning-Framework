@@ -173,6 +173,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         self.assertEqual(result, [["b", "a"], ["x", "y"]])
         command = run.call_args.args[0]
         self.assertIn("--only-object-symmetries", command)
+        self.assertIn("--do-not-stabilize-initial-state", command)
         self.assertEqual(command[command.index("--bliss-time-limit") + 1], "17")
         self.assertTrue(Path(command[1]).is_absolute())
         working_directory = Path(run.call_args.kwargs["cwd"])

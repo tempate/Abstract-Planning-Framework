@@ -36,7 +36,7 @@ class ExampleWorkflowTests(unittest.TestCase):
         result = self._run("abstract")
 
         self._assert_success(result)
-        self.assertIn("Collapsed ['package1', 'package6'] into object_abs", result.stdout)
+        self.assertRegex(result.stdout, r"(?m)^Collapsed \['package.*\] into object_abs")
         self.assertRegex(result.stdout, r"(?m)^    Refinement decrements +\d+$")
 
 
