@@ -1,4 +1,4 @@
-"""Run one concrete or abstract benchmark."""
+"""Run one concrete or abstract benchmark, for a plan or for a solvability verdict."""
 
 import argparse
 import json
@@ -16,29 +16,38 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = PROJECT_ROOT / "runs"
 DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"
+PIPELINE_MODULES = {"plan": "scripts.planner", "decide": "scripts.unsolvability"}
 NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
 SYMMETRY_TIMEOUT_MESSAGE = "PDDL Symmetries exceeded its"
 
 
 def main():
     args = _argument_parser().parse_args()
-    result = _run_task(args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout)
+    result = _run_task(
+        args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout, pipeline=args.pipeline
+    )
     print(f"{args.domain_name}/{args.problem.name}: {_task_status(args.mode, result)}", flush=True)
 
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("concrete", "abstract"), help="Planning pipeline to benchmark")
+    parser.add_argument("mode", choices=("concrete", "abstract"), help="Whether to abstract the task first")
     parser.add_argument("--domain-name", required=True, help="Benchmark-suite domain name")
     parser.add_argument("--domain", required=True, type=Path, help="Domain PDDL file")
     parser.add_argument("--problem", required=True, type=Path, help="Problem PDDL file")
     parser.add_argument(
         "--timeout", type=positive_int, default=DEFAULT_TIMEOUT, help="Wall-clock limit in seconds for this pipeline"
     )
+    parser.add_argument(
+        "--pipeline",
+        choices=tuple(PIPELINE_MODULES),
+        default="plan",
+        help="plan searches for a plan; decide only reports whether the task is solvable",
+    )
     return parser
 
 
-def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None):
+def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, pipeline="plan"):
     result_file = Path(results_dir) / domain_name / problem.stem / f"{mode}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
     started_at = datetime.now(timezone.utc).isoformat()
@@ -49,6 +58,7 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
         "wall_time_seconds": 0.0,
         "output": "",
         "mode": mode,
+        "pipeline": pipeline,
         "domain": domain_name,
         "problem": problem.name,
         "started_at": started_at,
@@ -58,12 +68,13 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
 
     environment = os.environ.copy()
     environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
-    command = _planner_command(domain, problem, mode)
+    command = _planner_command(domain, problem, mode, pipeline)
     result = _run_pipeline(command, timeout, environment)
     progress = _read_progress(result_file)
     result.update(
         {
             "mode": mode,
+            "pipeline": pipeline,
             "domain": domain_name,
             "problem": problem.name,
             "started_at": started_at,
@@ -152,8 +163,9 @@ def _machine_status(return_code, timed_out, output, interrupted=False):
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
-def _planner_command(domain, problem, mode):
-    return [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
+def _planner_command(domain, problem, mode, pipeline="plan"):
+    module = PIPELINE_MODULES[pipeline]
+    return [sys.executable, "-m", module, mode, "--problem", str(problem), "--domain", str(domain)]
 
 
 def _human_status(result):

@@ -11,7 +11,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from benchmarks.suite import BENCHMARKS_DIR, SUITE, SYMMETRIC_PROBLEMS
+from benchmarks.suite import BENCHMARKS_DIR, SUITE, SYMMETRIC_PROBLEMS, UNSOLVABLE_BENCHMARKS_DIR, UNSOLVABLE_SUITE
 from scripts.experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR
 from scripts.utils.arguments import positive_int
 
@@ -26,9 +26,22 @@ DEFAULT_PARTITION = "any"
 
 def main():
     args = _argument_parser().parse_args()
-    tasks = list(_benchmark_tasks(with_concrete=args.with_concrete))
+    if args.unsolvable:
+        # The collection has no symmetries file, so every problem is submitted.
+        tasks = list(
+            _benchmark_tasks(
+                benchmarks_dir=UNSOLVABLE_BENCHMARKS_DIR,
+                suite=UNSOLVABLE_SUITE,
+                runnable=None,
+                with_concrete=args.with_concrete,
+            )
+        )
+        pipeline = "decide"
+    else:
+        tasks = list(_benchmark_tasks(with_concrete=args.with_concrete))
+        pipeline = "plan"
     _reset_results_dir()
-    _write_manifest(tasks)
+    _write_manifest(tasks, pipeline=pipeline)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
         config_file = _write_copperbench_config(
             tasks,
@@ -37,6 +50,7 @@ def main():
             memory_limit=args.memory_limit,
             max_parallel_jobs=args.max_parallel_jobs,
             partition=args.partition,
+            pipeline=pipeline,
         )
         print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
@@ -52,12 +66,12 @@ def _reset_results_dir(results_dir=RESULTS_DIR):
     results_dir.mkdir(parents=True)
 
 
-def _write_manifest(tasks, results_dir=RESULTS_DIR):
+def _write_manifest(tasks, results_dir=RESULTS_DIR, pipeline="plan"):
     """Record every result expected from a submitted benchmark run."""
     expected_results = [
         {"domain": domain_name, "problem": problem.name, "mode": mode} for mode, domain_name, _domain, problem in tasks
     ]
-    manifest = {"version": 1, "expected_results": expected_results}
+    manifest = {"version": 1, "pipeline": pipeline, "expected_results": expected_results}
     path = Path(results_dir) / MANIFEST_NAME
     path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return path
@@ -85,6 +99,11 @@ def _argument_parser():
     parser.add_argument(
         "--with-concrete", action="store_true", help="Also submit the concrete pipeline for every problem"
     )
+    parser.add_argument(
+        "--unsolvable",
+        action="store_true",
+        help="Submit the unsolve-ipc-2016 collection for a solvability verdict instead of a plan",
+    )
     return parser
 
 
@@ -95,6 +114,7 @@ def _write_copperbench_config(
     memory_limit=DEFAULT_MEMORY_LIMIT,
     max_parallel_jobs=None,
     partition=DEFAULT_PARTITION,
+    pipeline="plan",
 ):
     """Write the files CopperBench needs to submit one job per problem."""
     definition_dir = Path(definition_dir)
@@ -117,6 +137,8 @@ def _write_copperbench_config(
         "$4",
         "--timeout",
         "$timeout",
+        "--pipeline",
+        pipeline,
     ]
     configs_file.write_text(shlex.join(worker) + "\n", encoding="utf-8")
 
@@ -146,10 +168,13 @@ def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SUITE, runnable=SYMMET
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
-            if not _is_domain_file(problem.name) and (domain_name, problem.name) in runnable:
-                domain = _find_domain(problem)
-                for mode in modes:
-                    yield mode, domain_name, domain, problem
+            if _is_domain_file(problem.name) or _has_other_status(problem.name):
+                continue
+            if runnable is not None and (domain_name, problem.name) not in runnable:
+                continue
+            domain = _find_domain(problem)
+            for mode in modes:
+                yield mode, domain_name, domain, problem
 
 
 def _is_domain_file(name):
@@ -159,6 +184,16 @@ def _is_domain_file(name):
     dom, satdom and unknowndom, against prob, satprob and unknownprob.
     """
     return "dom" in name and "prob" not in name
+
+
+def _has_other_status(name):
+    """Tell the problems standing around an unsolvable one from the problem itself.
+
+    unsolve-ipc-2016 names probNN for the instances known to be unsolvable,
+    satprobNN for the solvable twin beside it, and unknownprobNN for the ones
+    nobody settled. Only the first is what this suite asks about.
+    """
+    return name.startswith(("satprob", "unknownprob"))
 
 
 def _find_domain(problem):

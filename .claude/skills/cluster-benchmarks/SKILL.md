@@ -60,6 +60,11 @@ python -m scripts.experiments.submit --with-concrete
 pipelines and drops any problem missing one, so abstract-only problems appear in
 no table.
 
+`--unsolvable` swaps the suite for unsolve-ipc-2016 and the planner for
+`scripts.unsolvability`, which reports a verdict instead of a plan. The CSV
+carries it in the `verdict` column. Only the probNN problems run, the ones known
+unsolvable; satprob and unknownprob are skipped.
+
 `main()` calls `_reset_results_dir()`, which **deletes the whole results tree**
 before submitting. Move it aside first, or confirm the results are already
 pulled.

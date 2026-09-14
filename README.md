@@ -86,6 +86,12 @@ submitted when it is listed in `benchmarks/symmetries.txt`, where PDDL Symmetrie
 reported an abstraction class. That file header carries the command that
 regenerates it from a collected run.
 
+`--unsolvable` submits the other collection instead, `UNSOLVABLE_SUITE` over
+`benchmarks/unsolve-ipc-2016`, through `scripts.unsolvability`, which reports a
+solvability verdict rather than a plan. It runs the probNN problems, the ones
+known to be unsolvable, and not the satprob twins or the unsettled
+unknownprob ones.
+
 Results and logs land in `runs/`, rewritten after every completed
 phase so an interrupted worker keeps its partial timings. Collect them into
 `benchmarks/results.csv`, which the run replaces except for the concrete
