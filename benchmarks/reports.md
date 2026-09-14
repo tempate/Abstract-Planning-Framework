@@ -1,14 +1,14 @@
 # Benchmark report
 
-2026-09-10 11:45 — benchmarks/results.csv
+2026-09-14 11:37 — benchmarks/results.csv
 
 ## Coverage
 
 ```
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Plans found                                        83 (21.8%)         75 (19.7%)
-Timeouts                                          295 (77.6%)        305 (80.3%)
+Plans found                                        90 (23.7%)         75 (19.7%)
+Timeouts                                          288 (75.8%)        305 (80.3%)
 Total problems                                            380                380
 ```
 
@@ -17,11 +17,11 @@ Total problems                                            380                380
 ```
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Plans found by both pipelines                              72                 72
-Faster when both found a plan                      18 (25.0%)         54 (75.0%)
-Plan found when the other did not                          11                  3
-Median runtime when both found a plan                  7.26 s             8.99 s
-Total runtime across shared solves                 5,403.92 s         6,815.32 s
+Plans found by both pipelines                              75                 75
+Faster when both found a plan                      29 (38.7%)         46 (61.3%)
+Plan found when the other did not                          15                  0
+Median runtime when both found a plan                  6.81 s             9.57 s
+Total runtime across shared solves                 4,331.64 s         9,445.54 s
 ```
 
 ## Where the timeouts died
@@ -29,32 +29,32 @@ Total runtime across shared solves                 5,403.92 s         6,815.32 s
 ```
 Where the abstract pipeline was killed               Timeouts
 -------------------------------------------------------------
-Searching for the abstract plan                     271 (92%)
-Extended concrete search                              17 (6%)
-Guided concrete search                                 7 (2%)
-Total                                                     295
+Searching for the abstract plan                     238 (83%)
+Guided concrete search                               30 (10%)
+Extended concrete search                              20 (7%)
+Total                                                     288
 ```
 
 ## How the successes were solved
 
 ```
-How the 83 successes were solved                     Problems
+How the 90 successes were solved                     Problems
 -------------------------------------------------------------
-Abstract plan refined directly                       54 (65%)
-Refined after switching some actions off             24 (29%)
-Abstract plan discarded, solved above it               5 (6%)
-Total                                                      83
+Abstract plan refined directly                       48 (53%)
+Refined after switching some actions off             35 (39%)
+Abstract plan discarded, solved above it               7 (8%)
+Total                                                      90
 ```
 
-## Deletes relaxed, over the 78 successes whose abstract plan was used
+## Deletes relaxed, over the 83 successes whose abstract plan was used
 
 ```
 Deletes relaxed                                      Problems
 -------------------------------------------------------------
-None                                                 11 (14%)
-1 to 4                                               39 (50%)
-5 to 9                                               13 (17%)
-10 to 19                                             15 (19%)
-20 or more                                             0 (0%)
-Total                                                      78
+None                                                 11 (13%)
+1 to 4                                               43 (52%)
+5 to 9                                                8 (10%)
+10 to 19                                             19 (23%)
+20 or more                                             2 (2%)
+Total                                                      83
 ```
