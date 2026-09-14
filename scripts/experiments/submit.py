@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 
 from benchmarks.suite import BENCHMARKS_DIR, SUITE, SYMMETRIC_PROBLEMS
-from scripts.run_benchmark import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR
+from scripts.experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR
 from scripts.utils.arguments import positive_int
 
 DEFAULT_MEMORY_LIMIT = 8 * 1024
@@ -107,7 +107,7 @@ def _write_copperbench_config(
     worker = [
         sys.executable,
         "-m",
-        "scripts.run_benchmark",
+        "scripts.experiments.run",
         "$1",
         "--domain-name",
         "$2",

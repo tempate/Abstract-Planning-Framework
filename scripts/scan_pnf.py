@@ -11,7 +11,7 @@ import re
 from pathlib import Path
 
 from benchmarks.suite import BENCHMARKS_DIR, SUITE
-from scripts.run_benchmark import PROJECT_ROOT
+from scripts.experiments.run import PROJECT_ROOT
 
 DEFAULT_CSV = PROJECT_ROOT / "benchmarks" / "results.csv"
 NEEDS_PNF = "needs PNF"

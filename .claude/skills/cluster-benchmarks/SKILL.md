@@ -26,11 +26,11 @@ ssh -o BatchMode=yes copperhead 'cd <dir> && git rev-parse --abbrev-ref HEAD && 
 Compare that HEAD to the local branch. A mismatch means the results are not this
 branch's run.
 
-Then pull with `fetch_benchmarks`, which refuses while `squeue` is non-empty,
+Then pull with `scripts.experiments.fetch`, which refuses while `squeue` is non-empty,
 rsyncs, and collects in one step:
 
 ```bash
-python -m scripts.fetch_benchmarks --remote-dir <dir>/benchmark-results/ --into <scratch> --csv benchmarks/results.csv
+python -m scripts.experiments.fetch --remote-dir <dir>/benchmark-results/ --into <scratch> --csv benchmarks/results.csv
 ```
 
 `--into` must point **outside the repo**. Only `benchmark-results/` is
@@ -45,7 +45,7 @@ the run did not cover. Merge the raw trees instead, then collect once:
 
 1. rsync both result directories into one scratch directory
 2. write a manifest whose `expected_results` is the union of both manifests
-3. `collect_benchmarks.main(<merged dir>, "benchmarks/results.csv")`
+3. `scripts.experiments.collect.main(<merged dir>, "benchmarks/results.csv")`
 
 Confirm the collect prints no `Incomplete benchmark run` line and that the row
 count matches problems × 2.
@@ -53,10 +53,10 @@ count matches problems × 2.
 ## Submitting
 
 ```bash
-python -m scripts.run_benchmarks --with-concrete
+python -m scripts.experiments.submit --with-concrete
 ```
 
-`--with-concrete` is almost always right: `report_benchmarks` pairs the two
+`--with-concrete` is almost always right: `scripts.experiments.report` pairs the two
 pipelines and drops any problem missing one, so abstract-only problems appear in
 no table.
 
@@ -105,7 +105,7 @@ B=benchmarks/downward-benchmarks/quantum-layout-sat23-strips
 python -m scripts.planner abstract --domain $B/domain_p14.pddl --problem $B/p14.pddl
 ```
 
-`fetch_benchmarks` guards on `squeue -u "$USER"`, the whole user rather than one
+`scripts.experiments.fetch` guards on `squeue -u "$USER"`, the whole user rather than one
 run, so neither run can be pulled until both drain. Give each its own `--into`.
 
 ## Before reporting on a run
@@ -125,6 +125,6 @@ look healthy.
 When results land, do all four without being asked:
 
 1. collect into `benchmarks/results.csv`
-2. `python -m scripts.report_benchmarks` to regenerate `benchmarks/reports.md`
+2. `python -m scripts.experiments.report` to regenerate `benchmarks/reports.md`
 3. commit both with the message `Update results`
 4. push

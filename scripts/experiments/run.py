@@ -12,7 +12,7 @@ from pathlib import Path
 from core.outcomes import STATUS_BY_EXIT_CODE
 from scripts.utils.arguments import positive_int
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RESULTS_DIR = PROJECT_ROOT / "benchmark-results"
 DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"

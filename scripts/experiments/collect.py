@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from scripts.run_benchmark import MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR, _human_status
+from scripts.experiments.run import MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR, _human_status
 
 # The raw run output stays in the untracked results directory; the collected CSV
 # is the artifact that gets committed and reported on.
