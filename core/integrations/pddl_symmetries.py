@@ -41,6 +41,9 @@ def _translator_command(domain_path, problem_path, time_limit, translator_path):
         "--bliss-time-limit",
         str(time_limit),
         "--stop-after-computing-symmetries",
+        # Only the static atoms of the initial state constrain the symmetry.
+        # The classes are coarser, which is what the abstraction wants.
+        "--do-not-stabilize-initial-state",
     ]
 
 
