@@ -96,6 +96,59 @@ def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
         return build_abstract_problem(config)
 
 
+INEQUALITY_DOMAIN = """
+(define (domain roads)
+  (:requirements :strips :typing :equality)
+  (:types place vehicle)
+  (:predicates
+    (at ?v - vehicle ?p - place)
+    (linked ?a ?b - place))
+  (:action drive
+    :parameters (?v - vehicle ?from ?to - place)
+    :precondition (and (at ?v ?from) (linked ?from ?to) (not (= ?from ?to)))
+    :effect (and (at ?v ?to) (not (at ?v ?from)))))
+"""
+
+INEQUALITY_PROBLEM = """
+(define (problem roads-task)
+  (:domain roads)
+  (:objects van truck - vehicle hall study attic - place)
+  (:init
+    (at van hall)
+    (at truck hall)
+    (linked hall study)
+    (linked study attic))
+  (:goal (at van attic)))
+"""
+
+
+class InequalityRelaxationTests(unittest.TestCase):
+    def test_relaxes_an_inequality_the_collapse_would_make_false(self):
+        source = parse_problem(INEQUALITY_DOMAIN, INEQUALITY_PROBLEM)
+
+        result = _build_from_problem(source, ["hall", "study"])
+
+        self.assertEqual([item.variables for item in result.relaxed_inequalities], [("?from", "?to")])
+
+    def test_the_collapsed_action_survives_the_collapse(self):
+        source = parse_problem(INEQUALITY_DOMAIN, INEQUALITY_PROBLEM)
+
+        result = _build_from_problem(source, ["hall", "study"])
+
+        drive = result.problem.action("drive")
+        abstract_object = result.problem.object("place_abs")
+        substitution = {drive.parameters[1]: abstract_object, drive.parameters[2]: abstract_object}
+        for precondition in drive.preconditions:
+            self.assertFalse(precondition.substitute(substitution).simplify().is_false())
+
+    def test_keeps_an_inequality_over_a_type_that_is_not_collapsed(self):
+        source = parse_problem(INEQUALITY_DOMAIN, INEQUALITY_PROBLEM)
+
+        result = _build_from_problem(source, ["van", "truck"])
+
+        self.assertEqual(result.relaxed_inequalities, ())
+
+
 class PositiveNormalFormTests(unittest.TestCase):
     def test_abstracts_a_negated_precondition_in_positive_normal_form(self):
         source = parse_problem(NEGATED_PRECONDITION_DOMAIN, NEGATED_PRECONDITION_PROBLEM)
