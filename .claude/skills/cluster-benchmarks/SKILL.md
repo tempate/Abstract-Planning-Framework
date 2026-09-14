@@ -79,11 +79,31 @@ its manifest while those jobs are still writing into it.
 ```bash
 git worktree add ../apf-<branch> <branch>
 cd ../apf-<branch> && git submodule update --init --recursive
+make -C lib/pddl-symmetries/src/translate/pybliss-0.73
+(cd lib/downward && ./build.py release)
+python scripts/install_plasp.py
 ```
 
-The submodule step is not optional. `git worktree add` leaves
+No step is optional. `git worktree add` leaves
 `benchmarks/downward-benchmarks`, `lib/downward` and `lib/pddl-symmetries` empty,
-so the runner finds no problems and submits nothing without saying why.
+so the runner finds no problems and submits nothing without saying why. All
+three of these are built or downloaded rather than checked in, so a fresh submodule
+checkout has none of them:
+
+| missing | how it fails |
+|---|---|
+| `pybind11_blissmodule.so` | every abstract job dies in symmetry discovery |
+| `lib/downward/builds/release` | exit code 36, `Could not find build 'release'` |
+| `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
+
+The tell for all three is a queue that drains far faster than 30 minutes a job.
+Smoke-test one problem before submitting the set, which catches them in a
+minute instead of after 142 dead jobs:
+
+```bash
+B=benchmarks/downward-benchmarks/quantum-layout-sat23-strips
+python -m scripts.planner abstract --domain $B/domain_p14.pddl --problem $B/p14.pddl
+```
 
 `fetch_benchmarks` guards on `squeue -u "$USER"`, the whole user rather than one
 run, so neither run can be pulled until both drain. Give each its own `--into`.
