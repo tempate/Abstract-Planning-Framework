@@ -99,7 +99,7 @@ class SymmetrySelectionTests(unittest.TestCase):
         # relax fewer deletes than the items, and neither counts.
         source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
 
-        selected, _ = _select_abstraction(source, [["item1", "item2"], ["gadget1", "gadget2", "gadget3"]])
+        selected = _select_abstraction(source, [["item1", "item2"], ["gadget1", "gadget2", "gadget3"]])
 
         self.assertEqual(set(selected.objects), {"gadget1", "gadget2", "gadget3"})
 
@@ -148,7 +148,7 @@ class SymmetrySelectionTests(unittest.TestCase):
   (:init (open depot-a) (open depot-b))
   (:goal (open depot-a)))
 """
-        selected, _ = _select_abstraction(parse_problem(domain, problem), [["depot-b", "depot-a"]])
+        selected = _select_abstraction(parse_problem(domain, problem), [["depot-b", "depot-a"]])
 
         self.assertEqual(set(selected.objects), {"depot-a", "depot-b"})
 
@@ -157,7 +157,7 @@ class SymmetrySelectionTests(unittest.TestCase):
             _select_abstraction(self.problem, [["cargo-a", "tool-a"]])
 
     def test_an_unusable_symmetry_class_leaves_the_usable_ones_selectable(self):
-        selected, _ = _select_abstraction(self.problem, [["cargo-a", "tool-a"], ["tool-a", "tool-b"]])
+        selected = _select_abstraction(self.problem, [["cargo-a", "tool-a"], ["tool-a", "tool-b"]])
 
         self.assertEqual(set(selected.objects), {"tool-a", "tool-b"})
 
@@ -228,7 +228,7 @@ class RealSymmetryIntegrationTests(unittest.TestCase):
     def test_gripper_symmetries_select_the_balls(self):
         problem_path = GRIPPER / "prob01.pddl"
         classes = find_symmetric_object_sets(GRIPPER / "domain.pddl", problem_path)
-        selected, _ = _select_abstraction(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
+        selected = _select_abstraction(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
 
         self.assertEqual({tuple(group) for group in classes}, {("ball1", "ball2", "ball3", "ball4"), ("left", "right")})
         # The goal names every ball, and the four of them still win over the two

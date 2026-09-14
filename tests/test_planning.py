@@ -31,9 +31,12 @@ def _stubbed_abstract_pipeline(generated):
         yield SimpleNamespace(sas_to_asp=sas_to_asp, refine=refine)
 
 
-def _generated_abstraction(relaxed_deletes=()):
+def _generated_abstraction(relaxed_deletes=(), relaxed_inequalities=()):
     return SimpleNamespace(
-        problem=Mock(), abstraction=Abstraction("item_abs", ("a", "b"), "item"), relaxed_deletes=relaxed_deletes
+        problem=Mock(),
+        abstraction=Abstraction("item_abs", ("a", "b"), "item"),
+        relaxed_deletes=relaxed_deletes,
+        relaxed_inequalities=relaxed_inequalities,
     )
 
 
