@@ -12,7 +12,7 @@ from unittest.mock import patch
 from benchmarks.suite import SUITE
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from scripts.experiments.collect import FIELDS, _preserved_concrete_rows, collect
-from scripts.planner import _update_result_progress
+from scripts.utils.reporting import update_result_progress
 from scripts.experiments.run import (
     DEFAULT_TIMEOUT,
     NO_SYMMETRIES_MESSAGE,
@@ -323,7 +323,7 @@ class BenchmarkTests(unittest.TestCase):
             running = json.loads(result_file.read_text(encoding="utf-8"))
             self.assertEqual(running["status"], "running")
             self.assertIsNone(running["progress"]["last_completed_phase"])
-            _update_result_progress(result_file, {"kind": "phase_completed", "phase": "concrete_fd"}, metrics)
+            update_result_progress(result_file, {"kind": "phase_completed", "phase": "concrete_fd"}, metrics)
             return subprocess.CompletedProcess(command, 2, stdout="planner failed before final metrics\n")
 
         with (
@@ -347,7 +347,7 @@ class BenchmarkTests(unittest.TestCase):
 
         def selected_then_killed(command, **kwargs):
             result_file = Path(kwargs["env"]["APF_BENCHMARK_RESULT_FILE"])
-            _update_result_progress(result_file, {"kind": "abstraction_selected"}, metrics)
+            update_result_progress(result_file, {"kind": "abstraction_selected"}, metrics)
             raise subprocess.TimeoutExpired(command, 10, output="Starting\n")
 
         with (
