@@ -8,7 +8,7 @@ from core.abstraction.collapse import AbstractionError, collapse_objects, valida
 from core.abstraction.heuristic import abstraction_score
 from core.abstraction.relaxation import find_relaxable_deletes
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
-from core.integrations.unified_planning import read_problem
+from core.integrations.unified_planning import read_problem, to_positive_normal_form
 from core.metrics import PlanningMetrics
 from core.outcomes import NoSymmetriesError
 from core.planning.config import AbstractPlanningConfig
@@ -39,6 +39,11 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     # Reject unsupported models before anything walks the actions, which only
     # the instantaneous ones are shaped for.
     validate_supported_problem(problem)
+
+    # Relaxing a delete is only an over-approximation while every condition is
+    # positive, so reach positive normal form before any delete is relaxed.
+    with metrics.measure("pnf_translation"):
+        problem = to_positive_normal_form(problem)
 
     if config.objects_to_abstract is None:
         with metrics.measure("symmetry_discovery"):
