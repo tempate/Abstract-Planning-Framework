@@ -1,11 +1,14 @@
-"""Unified Planning boundary for parsing and serializing paired PDDL tasks."""
+"""Unified Planning boundary for parsing, rewriting and serializing paired PDDL tasks."""
 
 from dataclasses import dataclass
 from pathlib import Path
 
+from unified_planning.engines import CompilationKind
 from unified_planning.environment import get_environment
 from unified_planning.io import PDDLReader, PDDLWriter
 from unified_planning.model import Problem
+from unified_planning.model.metrics import MinimizeActionCosts
+from unified_planning.shortcuts import Compiler
 
 
 class PddlError(ValueError):
@@ -44,3 +47,31 @@ def write_problem(problem: Problem):
         return PddlText(writer.get_domain(), writer.get_problem())
     except Exception as error:
         raise PddlError(f"Could not serialize PDDL task: {error}") from error
+
+
+def to_positive_normal_form(problem):
+    """Rewrite a problem so that no condition negates a fluent.
+
+    Every negated fluent gains a companion that carries its complement, which
+    the actions keep opposite, so relaxing a delete can no longer falsify a
+    condition and lose plans the concrete task has.
+    """
+    get_environment().credits_stream = None
+    try:
+        # Selected by name, not by problem kind: the kind lookup refuses a task
+        # over features the translation never touches, such as the undefined
+        # initial numeric every action-costs domain in the suite carries.
+        with Compiler(name="up_negative_conditions_remover") as compiler:
+            translated = compiler.compile(problem, CompilationKind.NEGATIVE_CONDITIONS_REMOVING).problem
+    except Exception as error:
+        raise PddlError(f"Could not translate the task to positive normal form: {error}") from error
+
+    # Unified Planning rebuilds a cost metric before it has mapped any new
+    # action to the one it came from, so the rebuilt metric still keys on the
+    # actions the translation replaced and the collapse cannot look them up.
+    # The pipeline searches for the shortest plan, not the cheapest, so drop
+    # the metric rather than key it back on.
+    if translated.quality_metrics and isinstance(translated.quality_metrics[0], MinimizeActionCosts):
+        translated.clear_quality_metrics()
+
+    return translated

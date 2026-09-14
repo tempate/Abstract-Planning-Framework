@@ -120,9 +120,14 @@ def _copy_initial_values(problem, collapsed_problem, rewrite):
         collapsed_value = rewrite(value)
         existing_value = collapsed_initial_values.get(collapsed_fluent)
         if existing_value is not None and existing_value != collapsed_value:
-            if existing_value.type.is_bool_type() and collapsed_value.type.is_bool_type():
-                raise AbstractionError("Object collapse creates contradictory initial facts")
-            raise AbstractionError(f"Object collapse creates conflicting initial values for {collapsed_fluent}")
+            if not existing_value.type.is_bool_type() or not collapsed_value.type.is_bool_type():
+                raise AbstractionError(f"Object collapse creates conflicting initial values for {collapsed_fluent}")
+            # The collapsed objects disagree on a fact, so the abstract object
+            # holds it: the abstract task only has to admit the concrete plans,
+            # and a fact that stays true only makes more actions applicable.
+            # In positive normal form the complement of a fluent disagrees
+            # wherever the fluent does, so this is the common case, not an edge.
+            collapsed_value = problem.environment.expression_manager.TRUE()
         collapsed_initial_values[collapsed_fluent] = collapsed_value
     for fluent, value in collapsed_initial_values.items():
         collapsed_problem.set_initial_value(fluent, value)
