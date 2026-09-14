@@ -1,8 +1,10 @@
 """Find resource ladders in the finite-domain representation of a task.
 
 The translator already groups mutually exclusive atoms into one variable, so a
-ladder shows up as a variable whose domain dwarfs the rest, and a resource is
-one nothing puts back: its domain transition graph has no cycle.
+ladder shows up as a variable whose domain dwarfs the rest. A resource is either
+one nothing puts back, whose domain transition graph has no cycle, or a
+renewable counter, which cycles but only ever steps to an adjacent count. A
+position cycles too and moves anywhere, which is what tells the two apart.
 """
 
 import statistics
@@ -64,7 +66,7 @@ def _whole_ladder(problem, objects):
 
 
 def _find_sas_ladders(task, outlier_ratio=3.0):
-    """Report the variables whose domain is an outlier and whose transitions never cycle."""
+    """Report the variables whose domain is an outlier and whose transitions hold a resource."""
     if len(task.variables) < 2:
         return ()
     threshold = outlier_ratio * _median_domain_size(task.variables)
@@ -73,7 +75,7 @@ def _find_sas_ladders(task, outlier_ratio=3.0):
     for index, variable in enumerate(task.variables):
         if len(variable.values) < 3 or len(variable.values) < threshold:
             continue
-        if _has_cycle(task.transitions[index]):
+        if _has_cycle(task.transitions[index]) and not _is_counter(task.transitions[index], len(variable.values)):
             continue
         found = _ladder_objects(variable.values)
         if found is None:
@@ -100,6 +102,41 @@ def _has_cycle(edges):
     except CycleError:
         return True
     return False
+
+
+def _is_counter(edges, size):
+    """Tell whether the values form a simple path, which is how a counter moves up and down."""
+    neighbours = {}
+    for tail, head in edges:
+        if tail != head:
+            neighbours.setdefault(tail, set()).add(head)
+            neighbours.setdefault(head, set()).add(tail)
+    if len(neighbours) != size:
+        return False
+
+    start = None
+    for value, near in neighbours.items():
+        if len(near) > 2:
+            return False
+        if len(near) == 1:
+            start = value
+    if start is None:
+        return False
+
+    # Every value has at most two neighbours, so walking from an end is the path.
+    seen = set()
+    current = start
+    while current is not None:
+        seen.add(current)
+        current = _next_value(neighbours[current], seen)
+    return len(seen) == size
+
+
+def _next_value(neighbours, seen):
+    for value in neighbours:
+        if value not in seen:
+            return value
+    return None
 
 
 def _ladder_objects(values):

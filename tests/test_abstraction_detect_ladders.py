@@ -53,6 +53,24 @@ class SasLadderTests(unittest.TestCase):
 
         self.assertEqual(_find_sas_ladders(read_sas(_task([FUEL, *peers], BURN))), ())
 
+    def test_a_counter_that_steps_between_adjacent_values_is_a_ladder(self):
+        # A renewable counter cycles, but only ever moves to the next count.
+        renewable = BURN + [("release", [(0, step - 1, step)]) for step in range(1, 8)]
+
+        ladders = _find_sas_ladders(read_sas(_task([FUEL, *SMALL], renewable)))
+
+        self.assertEqual(len(ladders), 1)
+        self.assertEqual(ladders[0].predicate, "fuel")
+
+    def test_a_position_that_moves_between_any_values_is_not_a_ladder(self):
+        places = ("var0", [f"Atom at(robot, l{step})" for step in range(8)])
+        roads = []
+        for step in range(1, 8):
+            roads.append((f"drive{step}", [(0, 0, step)]))
+            roads.append((f"back{step}", [(0, step, 0)]))
+
+        self.assertEqual(_find_sas_ladders(read_sas(_task([places, *SMALL], roads))), ())
+
     def test_a_variable_holding_one_predicate_over_two_objects_is_not_a_ladder(self):
         pairs = ("var0", [f"Atom road(l{step}, l{step + 1})" for step in range(8)])
 
