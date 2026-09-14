@@ -9,9 +9,10 @@ from unittest.mock import Mock, patch
 from core.abstraction.factory import Abstraction, AbstractionError, build_abstract_problem
 from core.integrations.clingo import ClingoSolveResult
 from core.integrations.unified_planning import read_problem
-from core.planning.abstract import _write_abstract_problem, compute_abstract_plan
+from core.planning.abstract import write_abstract_problem, compute_abstract_plan
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.concrete import compute_concrete_plan
+from core.planning.solvability import compute_abstract_verdict, compute_concrete_verdict
 from scripts.utils.arguments import positive_int
 
 
@@ -21,7 +22,7 @@ def _stubbed_abstract_pipeline(generated):
     with (
         patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
         patch("core.planning.abstract.build_abstract_problem", return_value=generated),
-        patch("core.planning.abstract._write_abstract_problem", return_value=("domain.pddl", "problem.pddl")),
+        patch("core.planning.abstract.write_abstract_problem", return_value=("domain.pddl", "problem.pddl")),
         patch("core.planning.abstract.pddl_to_sas", side_effect=["concrete.sas", "abstract.sas"]),
         patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]) as sas_to_asp,
         patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
@@ -101,6 +102,43 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         pddl_to_sas.assert_not_called()
 
 
+@contextmanager
+def _stubbed_decision(found):
+    """Run the abstract decision pipeline against stubbed integrations."""
+    with (
+        patch("core.planning.solvability.temp_run_dir") as temp_run_dir,
+        patch("core.planning.solvability.build_abstract_problem", return_value=_generated_abstraction()),
+        patch("core.planning.solvability.write_abstract_problem", return_value=("domain.pddl", "problem.pddl")),
+        patch("core.planning.solvability.has_plan", return_value=found),
+    ):
+        temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
+        yield
+
+
+class DecisionTests(unittest.TestCase):
+    @patch("core.planning.solvability.has_plan")
+    def test_searching_the_task_itself_settles_it(self, has_plan):
+        for found, verdict in ((True, "solvable"), (False, "unsolvable")):
+            with self.subTest(found=found):
+                has_plan.return_value = found
+
+                result = compute_concrete_verdict(PlanningConfig("domain.pddl", "problem.pddl"))
+
+                self.assertEqual(result["verdict"], verdict)
+
+    def test_an_abstract_plan_settles_nothing(self):
+        with _stubbed_decision(found=True):
+            result = compute_abstract_verdict(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+
+        self.assertEqual(result["verdict"], "unknown")
+
+    def test_an_abstraction_with_no_plan_proves_the_task_unsolvable(self):
+        with _stubbed_decision(found=False):
+            result = compute_abstract_verdict(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+
+        self.assertEqual(result["verdict"], "unsolvable")
+
+
 class PlanningConfigurationTests(unittest.TestCase):
     def test_abstract_configuration_extends_the_shared_one(self):
         abstract = AbstractPlanningConfig("domain.pddl", "problem.pddl")
@@ -134,7 +172,7 @@ class GeneratedAbstractionTests(unittest.TestCase):
             config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"], abstract_name="combined")
 
             abstract_problem = build_abstract_problem(config)
-            abstract_domain, abstract_problem_path = _write_abstract_problem(abstract_problem.problem, root / "run")
+            abstract_domain, abstract_problem_path = write_abstract_problem(abstract_problem.problem, root / "run")
             generated = read_problem(abstract_domain, abstract_problem_path)
 
         self.assertEqual(abstract_problem.abstraction.name, "combined")
