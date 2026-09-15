@@ -24,5 +24,5 @@ if (( $# > 0 )); then
 fi
 
 "$python_bin" -m scripts.planner abstract \
-    --domain benchmarks/downward-benchmarks/driverlog/domain.pddl \
-    --problem benchmarks/downward-benchmarks/driverlog/p07.pddl
+    --domain experiments/plan/downward-benchmarks/driverlog/domain.pddl \
+    --problem experiments/plan/downward-benchmarks/driverlog/p07.pddl
