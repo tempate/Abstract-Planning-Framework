@@ -13,7 +13,7 @@ from core.outcomes import STATUS_BY_EXIT_CODE
 from scripts.utils.arguments import positive_int
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RESULTS_DIR = PROJECT_ROOT / "benchmark-results"
+RESULTS_DIR = PROJECT_ROOT / "runs"
 DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"
 NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"

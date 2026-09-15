@@ -7,7 +7,7 @@ from scripts.experiments.collect import CSV_FILE, main as collect
 from scripts.experiments.run import RESULTS_DIR
 
 DEFAULT_HOST = "copperhead"
-DEFAULT_REMOTE_DIR = "/home/guests/dquilez/Abstract-Planning-Framework/benchmark-results/"
+DEFAULT_REMOTE_DIR = "/home/guests/dquilez/Abstract-Planning-Framework/runs/"
 
 
 def main():

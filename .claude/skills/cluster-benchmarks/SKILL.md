@@ -30,10 +30,10 @@ Then pull with `scripts.experiments.fetch`, which refuses while `squeue` is non-
 rsyncs, and collects in one step:
 
 ```bash
-python -m scripts.experiments.fetch --remote-dir <dir>/benchmark-results/ --into <scratch> --csv benchmarks/results.csv
+python -m scripts.experiments.fetch --remote-dir <dir>/runs/ --into <scratch> --csv benchmarks/results.csv
 ```
 
-`--into` must point **outside the repo**. Only `benchmark-results/` is
+`--into` must point **outside the repo**. Only `runs/` is
 gitignored, and rsync without `--delete` merges whatever is already there — two
 runs in one directory collect into one unreadable CSV.
 
@@ -72,7 +72,7 @@ not reproducible from a SHA, since the committed code submits the whole set.
 ## Running two branches at once
 
 One run per worktree, never two from one checkout. `_reset_results_dir()` deletes
-`benchmark-results/` before submitting and that path is `PROJECT_ROOT`-relative,
+`runs/` before submitting and that path is `PROJECT_ROOT`-relative,
 so a second submission from the same directory wipes the first run's results and
 its manifest while those jobs are still writing into it.
 

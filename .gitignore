@@ -4,5 +4,5 @@ temp/
 __pycache__/
 *.py[cod]
 *.so
-benchmark-results/
+runs/
 .claude/settings.local.json

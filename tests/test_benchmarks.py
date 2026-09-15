@@ -74,7 +74,7 @@ class BenchmarkTests(unittest.TestCase):
 
     def test_new_suite_run_removes_previous_results(self):
         with tempfile.TemporaryDirectory() as directory:
-            results = Path(directory) / "benchmark-results"
+            results = Path(directory) / "runs"
             old_run = results / "old-run" / "result.json"
             old_run.parent.mkdir(parents=True)
             old_run.write_text("old result\n", encoding="utf-8")
