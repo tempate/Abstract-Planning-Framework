@@ -6,9 +6,9 @@ from unified_planning.model import Problem
 
 from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
 from core.abstraction.heuristic import abstraction_score
-from core.abstraction.relaxation import find_relaxable_deletes
+from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
-from core.integrations.unified_planning import read_problem
+from core.integrations.unified_planning import read_problem, to_positive_normal_form
 from core.metrics import PlanningMetrics
 from core.outcomes import NoSymmetriesError
 from core.planning.config import AbstractPlanningConfig
@@ -28,6 +28,7 @@ class AbstractionResult:
     abstraction: Abstraction
     problem: Problem
     relaxed_deletes: tuple
+    relaxed_inequalities: tuple
 
 
 def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
@@ -50,18 +51,38 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
 
     with metrics.measure("abstraction"):
         if config.objects_to_abstract is None:
-            abstraction, relaxable_deletes = _select_abstraction(problem, symmetry_classes, config.abstract_name)
+            abstraction = _select_abstraction(problem, symmetry_classes, config.abstract_name)
         else:
             abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
-            relaxable_deletes = find_relaxable_deletes(problem, abstraction)
+
+        # The class has to be chosen before the inequalities can be relaxed,
+        # and they have to be relaxed before the translation, which rewrites
+        # every one of them into a disjunction over pairs of objects.
+        problem, relaxed_inequalities = relax_inequalities(problem, abstraction)
+
+    # Relaxing a delete is only an over-approximation while every condition is
+    # positive, so reach positive normal form before any delete is relaxed.
+    # With nothing to rewrite the translation still writes out the closed
+    # world, which nomystery's ternary sum predicate turns into 240k initial
+    # facts and 600 seconds, so skip what would only rebuild the problem.
+    with metrics.measure("pnf_translation"):
+        if problem.kind.has_negative_conditions():
+            problem = to_positive_normal_form(problem)
+
+    with metrics.measure("abstraction"):
+        relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
-    return AbstractionResult(abstraction=abstraction, problem=collapsed_problem, relaxed_deletes=relaxed_deletes)
+    return AbstractionResult(
+        abstraction=abstraction,
+        problem=collapsed_problem,
+        relaxed_deletes=relaxed_deletes,
+        relaxed_inequalities=relaxed_inequalities,
+    )
 
 
 def _select_abstraction(problem, symmetry_classes, abstract_name=None):
     """Select the largest class reported by PDDL Symmetries."""
     candidate = None
-    candidate_relaxable_deletes = ()
     candidate_score = None
     rejection = None
 
@@ -73,16 +94,14 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
             # reason for the case where none of them works.
             rejection = rejection or error
             continue
-        relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         score = abstraction_score(abstraction)
         if candidate_score is None or score < candidate_score:
             candidate = abstraction
-            candidate_relaxable_deletes = relaxable_deletes
             candidate_score = score
 
     if candidate is None:
         raise rejection
-    return candidate, candidate_relaxable_deletes
+    return candidate
 
 
 def _create_abstraction(problem, object_names, abstract_name):
