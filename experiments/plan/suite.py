@@ -18,6 +18,8 @@ from a collected run.
 
 from pathlib import Path
 
+from experiments import read_problems
+
 BENCHMARKS_DIR = Path(__file__).parent / "downward-benchmarks"
 SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
 
@@ -77,14 +79,4 @@ SUITE = [
 ]
 
 
-def _read_problems(path):
-    problems = set()
-    for line in Path(path).read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line and not line.startswith("#"):
-            domain, _, problem = line.partition("/")
-            problems.add((domain, problem))
-    return frozenset(problems)
-
-
-SYMMETRIC_PROBLEMS = _read_problems(SYMMETRIC_PROBLEMS_FILE)
+SYMMETRIC_PROBLEMS = read_problems(SYMMETRIC_PROBLEMS_FILE)
