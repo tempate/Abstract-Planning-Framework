@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solve
-from core.integrations.fast_downward import _get_command, pddl_to_sas
+from core.integrations.fast_downward import has_plan, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.integrations.paths import ABSTRACT_TIME_STEPS_ENCODING
 from core.outcomes import IntegrationError
@@ -142,13 +142,14 @@ reached(t).
 
 
 class FastDownwardHelperTests(unittest.TestCase):
-    def test_translation_command_uses_the_active_python_interpreter(self):
-        paths = {"domain": "domain.pddl", "problem": "problem.pddl", "sas": "output.sas"}
+    @patch("core.integrations.fast_downward.subprocess.run")
+    def test_fast_downward_runs_under_the_active_interpreter(self, run):
+        run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
 
-        command = _get_command(paths)
+        with tempfile.TemporaryDirectory() as directory:
+            pddl_to_sas(directory, "domain.pddl", "problem.pddl", "concrete")
 
-        self.assertEqual(command[0], sys.executable)
-        self.assertIn("--translate", command)
+        self.assertEqual(run.call_args.args[0][0], sys.executable)
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_pddl_to_sas_surfaces_external_tool_diagnostics(self, run):
@@ -167,6 +168,29 @@ class FastDownwardHelperTests(unittest.TestCase):
             self.assertIn(str(problem), command)
             self.assertFalse(Path(directory, "domain.pddl").exists())
             self.assertFalse(Path(directory, "problem.pddl").exists())
+
+    @patch("core.integrations.fast_downward.subprocess.run")
+    def test_the_search_keeps_its_files_inside_the_run_directory(self, run):
+        run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+
+        with tempfile.TemporaryDirectory() as directory:
+            has_plan(directory, "domain.pddl", "problem.pddl", "concrete")
+
+            command = run.call_args.args[0]
+            written = [command[i + 1] for i, part in enumerate(command) if part in ("--sas-file", "--plan-file")]
+
+        self.assertEqual(len(written), 2)
+        for path in written:
+            self.assertTrue(path.startswith(directory), f"{path} escapes the run directory")
+
+    @patch("core.integrations.fast_downward.subprocess.run")
+    def test_both_unsolvable_exit_codes_mean_no_plan(self, run):
+        for returncode in (10, 11):
+            with self.subTest(returncode=returncode):
+                run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr="")
+
+                with tempfile.TemporaryDirectory() as directory:
+                    self.assertFalse(has_plan(directory, "domain.pddl", "problem.pddl", "concrete"))
 
 
 class PlaspPostProcessingTests(unittest.TestCase):

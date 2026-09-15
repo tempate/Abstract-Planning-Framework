@@ -12,7 +12,7 @@ from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTask
 from core.planning.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-GRIPPER = PROJECT_ROOT / "benchmarks" / "downward-benchmarks" / "gripper"
+GRIPPER = PROJECT_ROOT / "experiments" / "plan" / "downward-benchmarks" / "gripper"
 
 SYMMETRY_DOMAIN = """
 (define (domain selection)

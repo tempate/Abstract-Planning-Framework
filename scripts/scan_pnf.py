@@ -10,10 +10,10 @@ import csv
 import re
 from pathlib import Path
 
-from benchmarks.suite import BENCHMARKS_DIR, SUITE
-from scripts.experiments.run import PROJECT_ROOT
+from experiments.plan.suite import BENCHMARKS_DIR, SUITE
+from experiments.run import PROJECT_ROOT
 
-DEFAULT_CSV = PROJECT_ROOT / "benchmarks" / "results.csv"
+DEFAULT_CSV = PROJECT_ROOT / "experiments" / "plan" / "results.csv"
 NEEDS_PNF = "needs PNF"
 INERT = "inert"
 POSITIVE = "already positive"
