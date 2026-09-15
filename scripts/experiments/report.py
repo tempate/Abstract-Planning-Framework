@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from scripts.run_benchmark import PROJECT_ROOT
+from scripts.experiments.run import PROJECT_ROOT
 
 DEFAULT_CSV = PROJECT_ROOT / "benchmarks" / "results.csv"
 REPORTS_FILE = PROJECT_ROOT / "benchmarks" / "reports.md"

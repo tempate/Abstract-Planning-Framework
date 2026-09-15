@@ -11,9 +11,9 @@ from unittest.mock import patch
 
 from benchmarks.suite import SUITE
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from scripts.collect_benchmarks import FIELDS, _preserved_concrete_rows, collect
-from scripts.planner import _update_result_progress
-from scripts.run_benchmark import (
+from scripts.experiments.collect import FIELDS, _preserved_concrete_rows, collect
+from scripts.utils.reporting import update_result_progress
+from scripts.experiments.run import (
     DEFAULT_TIMEOUT,
     NO_SYMMETRIES_MESSAGE,
     PROJECT_ROOT,
@@ -23,8 +23,8 @@ from scripts.run_benchmark import (
     _run_pipeline,
     _run_task,
 )
-from scripts.report_benchmarks import _head_to_head
-from scripts.run_benchmarks import (
+from scripts.experiments.report import _head_to_head
+from scripts.experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
     _argument_parser,
@@ -56,6 +56,15 @@ class BenchmarkTests(unittest.TestCase):
         suite = inspect.signature(_benchmark_tasks).parameters["suite"].default
 
         self.assertIs(suite, SUITE)
+
+    def test_the_run_names_the_partition_every_task_goes_to(self):
+        with tempfile.TemporaryDirectory() as directory:
+            definition_dir = Path(directory)
+
+            config_file = _write_copperbench_config([], definition_dir=definition_dir, partition="sunnycove")
+            config = json.loads(config_file.read_text(encoding="utf-8"))
+
+        self.assertEqual(config["partition"], "sunnycove")
 
     def test_cluster_resource_defaults(self):
         args = _argument_parser().parse_args([])
@@ -122,7 +131,7 @@ class BenchmarkTests(unittest.TestCase):
             worker[1:],
             [
                 "-m",
-                "scripts.run_benchmark",
+                "scripts.experiments.run",
                 "$1",
                 "--domain-name",
                 "$2",
@@ -245,7 +254,7 @@ class BenchmarkTests(unittest.TestCase):
         ]
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.run_benchmark.subprocess.run", side_effect=completed) as run,
+            patch("scripts.experiments.run.subprocess.run", side_effect=completed) as run,
         ):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
@@ -314,12 +323,12 @@ class BenchmarkTests(unittest.TestCase):
             running = json.loads(result_file.read_text(encoding="utf-8"))
             self.assertEqual(running["status"], "running")
             self.assertIsNone(running["progress"]["last_completed_phase"])
-            _update_result_progress(result_file, {"kind": "phase_completed", "phase": "concrete_fd"}, metrics)
+            update_result_progress(result_file, {"kind": "phase_completed", "phase": "concrete_fd"}, metrics)
             return subprocess.CompletedProcess(command, 2, stdout="planner failed before final metrics\n")
 
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.run_benchmark.subprocess.run", side_effect=complete),
+            patch("scripts.experiments.run.subprocess.run", side_effect=complete),
         ):
             result = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
@@ -338,12 +347,12 @@ class BenchmarkTests(unittest.TestCase):
 
         def selected_then_killed(command, **kwargs):
             result_file = Path(kwargs["env"]["APF_BENCHMARK_RESULT_FILE"])
-            _update_result_progress(result_file, {"kind": "abstraction_selected"}, metrics)
+            update_result_progress(result_file, {"kind": "abstraction_selected"}, metrics)
             raise subprocess.TimeoutExpired(command, 10, output="Starting\n")
 
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.run_benchmark.subprocess.run", side_effect=selected_then_killed),
+            patch("scripts.experiments.run.subprocess.run", side_effect=selected_then_killed),
         ):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=10)
             rows = collect(directory)
@@ -360,7 +369,7 @@ class BenchmarkTests(unittest.TestCase):
         )
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.run_benchmark.subprocess.run", return_value=failed),
+            patch("scripts.experiments.run.subprocess.run", return_value=failed),
         ):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
@@ -383,7 +392,7 @@ class BenchmarkTests(unittest.TestCase):
         )
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.run_benchmark.subprocess.run", return_value=failed),
+            patch("scripts.experiments.run.subprocess.run", return_value=failed),
         ):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
@@ -397,7 +406,7 @@ class BenchmarkTests(unittest.TestCase):
         ]
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.run_benchmark.subprocess.run", side_effect=timeouts) as run,
+            patch("scripts.experiments.run.subprocess.run", side_effect=timeouts) as run,
         ):
             abstract = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=1800)
             concrete = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=1800)
@@ -429,7 +438,7 @@ class BenchmarkTests(unittest.TestCase):
             subprocess.CompletedProcess([], 2, stdout=""),
             subprocess.TimeoutExpired([], 10, output="partial output"),
         ]
-        with patch("scripts.run_benchmark.subprocess.run", side_effect=completed):
+        with patch("scripts.experiments.run.subprocess.run", side_effect=completed):
             results = [_run_pipeline([], 10) for _ in completed]
 
         self.assertEqual(
@@ -445,7 +454,7 @@ class BenchmarkTests(unittest.TestCase):
         concrete_completed = subprocess.CompletedProcess([], 0, stdout="Plan found: yes\n")
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.run_benchmark.subprocess.run", side_effect=[no_symmetries, concrete_completed]) as run,
+            patch("scripts.experiments.run.subprocess.run", side_effect=[no_symmetries, concrete_completed]) as run,
         ):
             abstract = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             concrete = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)

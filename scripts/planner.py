@@ -1,20 +1,16 @@
 """Solve one PDDL task concretely or through an automatically generated abstraction."""
 
 import argparse
-import json
-import os
-from functools import partial
-from pathlib import Path
 
 from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
-from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.outcomes import PlanningOutcomeError
 from core.planning.abstract import compute_abstract_plan
 from core.planning.concrete import compute_concrete_plan
 from core.planning.config import DEFAULT_TIME_STEP, AbstractPlanningConfig, PlanningConfig
 
-from .utils.arguments import positive_int
+from .utils.arguments import abstraction_arguments, task_arguments
+from .utils.reporting import print_metrics, progress_callback
 
 
 def main():
@@ -34,8 +30,7 @@ def main():
 
 
 def _compute(args):
-    result_file = os.environ.get("APF_BENCHMARK_RESULT_FILE")
-    on_update = partial(_update_result_progress, result_file) if result_file else None
+    on_update = progress_callback()
     common = {"domain_path": args.domain, "problem_path": args.problem, "time_step": args.time_step}
     if args.mode == "concrete":
         return compute_concrete_plan(PlanningConfig(**common), on_update)
@@ -52,31 +47,12 @@ def _compute(args):
     raise ValueError(f"Unknown planning mode: {args.mode}")
 
 
-def _update_result_progress(result_file, event, metrics):
-    """Atomically store the latest planning progress in a benchmark result."""
-    result_file = Path(result_file)
-    try:
-        result = json.loads(result_file.read_text(encoding="utf-8"))
-        progress = result["progress"]
-        if event["kind"] == "phase_completed":
-            progress["last_completed_phase"] = event["phase"]
-        progress["last_update"] = event
-        progress["metrics"] = metrics
-        temporary = result_file.with_suffix(".tmp")
-        temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-        temporary.replace(result_file)
-    except (OSError, json.JSONDecodeError, KeyError, TypeError):
-        # Progress reporting must never turn a successful planning run into a
-        # failure. The benchmark wrapper will still write the final result.
-        return
-
-
 def print_planning_result(result):
     """Print a planning result."""
     print("\n=== RESULT ===")
     print(f"Horizon: {result['horizon']}")
     print(f"Plan found: {'yes' if result['plan'] is not None else 'no'}")
-    _print_metrics(result["metrics"])
+    print_metrics(result["metrics"])
 
     if result["plan"] is not None:
         print(f"\nPlan ({result['plan_length']} actions):")
@@ -89,38 +65,12 @@ def _time_step(atom):
     return int(str(atom).split(",")[-1].rstrip(")"))
 
 
-def _print_metrics(metrics):
-    print("\nMetrics:")
-    _print_metric_group("Durations (seconds)", metrics["durations"], DURATION_LABELS, lambda value: f"{value:.6f}")
-    _print_metric_group("Solver activity", metrics["counters"], COUNTER_LABELS, lambda value: str(int(value)))
-
-
-def _print_metric_group(title, values, labels, format_value):
-    present = [(labels[name], format_value(values[name])) for name in labels if name in values]
-    if not present:
-        return
-
-    width = max(len(label) for label, _ in present)
-    print(f"  {title}:")
-    for label, value in present:
-        print(f"    {label:<{width}}  {value}")
-
-
 def _argument_parser():
-    shared = argparse.ArgumentParser(add_help=False)
-    shared.add_argument("--domain", required=True, default=argparse.SUPPRESS, help="Concrete domain PDDL")
-    shared.add_argument("--problem", required=True, default=argparse.SUPPRESS, help="Concrete problem PDDL")
+    shared = task_arguments()
     shared.add_argument(
         "--time-step", action="store_true", default=DEFAULT_TIME_STEP, help="Enable time-step based encoding"
     )
-
-    # Abstract planning arguments
-    abstract = argparse.ArgumentParser(add_help=False)
-    abstract.add_argument("--objects-to-abstract", nargs="+", help="Objects to collapse; omit to use PDDL Symmetries")
-    abstract.add_argument("--abstract-name", help="Name of the collapsed object")
-    abstract.add_argument(
-        "--symmetry-time-limit", type=positive_int, default=300, help="Symmetry discovery time limit in seconds"
-    )
+    abstract = abstraction_arguments()
 
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_subparsers(dest="mode", required=True, title="planning modes")

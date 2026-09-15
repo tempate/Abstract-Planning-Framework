@@ -78,7 +78,7 @@ abstract Slurm task per problem, each capped at 30 minutes and 8192 MiB.
 `--with-concrete` submits the concrete baseline alongside it:
 
 ```bash
-python -m scripts.run_benchmarks
+python -m scripts.experiments.submit
 ```
 
 `benchmarks/suite.py` holds every domain variant in `SUITE`. A problem is only
@@ -92,7 +92,7 @@ phase so an interrupted worker keeps its partial timings. Collect them into
 results it did not cover:
 
 ```bash
-python -m scripts.collect_benchmarks
+python -m scripts.experiments.collect
 ```
 
 Print the coverage, head-to-head, timeout-phase, and refinement-outcome tables
@@ -100,7 +100,7 @@ for a collected CSV, over the problems both pipelines finished. The report also
 replaces `benchmarks/reports.md`, which holds the latest one:
 
 ```bash
-python -m scripts.report_benchmarks benchmarks/results.csv
+python -m scripts.experiments.report benchmarks/results.csv
 ```
 
 ## Tests

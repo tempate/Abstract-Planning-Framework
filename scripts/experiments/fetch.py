@@ -3,8 +3,8 @@
 import argparse
 import subprocess
 
-from scripts.collect_benchmarks import CSV_FILE, main as collect_benchmarks
-from scripts.run_benchmark import RESULTS_DIR
+from scripts.experiments.collect import CSV_FILE, main as collect
+from scripts.experiments.run import RESULTS_DIR
 
 DEFAULT_HOST = "copperhead"
 DEFAULT_REMOTE_DIR = "/home/guests/dquilez/Abstract-Planning-Framework/benchmark-results/"
@@ -18,7 +18,7 @@ def main():
         return
     _pull(args.host, args.remote_dir, args.into, args.dry_run)
     if not args.dry_run:
-        collect_benchmarks(args.into, args.csv)
+        collect(args.into, args.csv)
 
 
 def _argument_parser():
