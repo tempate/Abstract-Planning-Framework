@@ -10,7 +10,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from benchmarks.suite import SUITE
+from benchmarks.plan.suite import SUITE
 from scripts.experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from scripts.experiments.collect import FIELDS, _preserved_concrete_rows, collect

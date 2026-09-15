@@ -11,7 +11,8 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from benchmarks.suite import BENCHMARKS_DIR, SUITE, SYMMETRIC_PROBLEMS, UNSOLVABLE_BENCHMARKS_DIR, UNSOLVABLE_SUITE
+from benchmarks.plan import suite as plan_suite
+from benchmarks.unsolvability import suite as unsolvability_suite
 from scripts.experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR
 from scripts.utils.arguments import positive_int
 
@@ -30,8 +31,8 @@ def main():
         # The collection has no symmetries file, so every problem is submitted.
         tasks = list(
             _benchmark_tasks(
-                benchmarks_dir=UNSOLVABLE_BENCHMARKS_DIR,
-                suite=UNSOLVABLE_SUITE,
+                benchmarks_dir=unsolvability_suite.BENCHMARKS_DIR,
+                suite=unsolvability_suite.SUITE,
                 runnable=None,
                 with_concrete=args.with_concrete,
             )
@@ -163,7 +164,12 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir=BENCHMARKS_DIR, suite=SUITE, runnable=SYMMETRIC_PROBLEMS, with_concrete=False):
+def _benchmark_tasks(
+    benchmarks_dir=plan_suite.BENCHMARKS_DIR,
+    suite=plan_suite.SUITE,
+    runnable=plan_suite.SYMMETRIC_PROBLEMS,
+    with_concrete=False,
+):
     modes = ("abstract", "concrete") if with_concrete else ("abstract",)
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name

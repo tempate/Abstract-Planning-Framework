@@ -30,7 +30,7 @@ Then pull with `scripts.experiments.fetch`, which refuses while `squeue` is non-
 rsyncs, and collects in one step:
 
 ```bash
-python -m scripts.experiments.fetch --remote-dir <dir>/runs/ --into <scratch> --csv benchmarks/results.csv
+python -m scripts.experiments.fetch --remote-dir <dir>/runs/ --into <scratch> --csv benchmarks/plan/results.csv
 ```
 
 `--into` must point **outside the repo**. Only `runs/` is
@@ -45,7 +45,7 @@ the run did not cover. Merge the raw trees instead, then collect once:
 
 1. rsync both result directories into one scratch directory
 2. write a manifest whose `expected_results` is the union of both manifests
-3. `scripts.experiments.collect.main(<merged dir>, "benchmarks/results.csv")`
+3. `scripts.experiments.collect.main(<merged dir>, "benchmarks/plan/results.csv")`
 
 Confirm the collect prints no `Incomplete benchmark run` line and that the row
 count matches problems × 2.
@@ -116,7 +116,7 @@ run, so neither run can be pulled until both drain. Give each its own `--into`.
 ## Before reporting on a run
 
 ```bash
-awk -F, '$4=="running"' benchmarks/results.csv | wc -l
+awk -F, '$4=="running"' benchmarks/plan/results.csv | wc -l
 ```
 
 `running` rows are jobs killed without a terminal status, not live work. They
@@ -129,7 +129,7 @@ look healthy.
 
 When results land, do all four without being asked:
 
-1. collect into `benchmarks/results.csv`
-2. `python -m scripts.experiments.report` to regenerate `benchmarks/reports.md`
+1. collect into `benchmarks/plan/results.csv`
+2. `python -m scripts.experiments.report` to regenerate `benchmarks/plan/reports.md`
 3. commit both with the message `Update results`
 4. push

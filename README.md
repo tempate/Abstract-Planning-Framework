@@ -81,20 +81,20 @@ abstract Slurm task per problem, each capped at 30 minutes and 8192 MiB.
 python -m scripts.experiments.submit
 ```
 
-`benchmarks/suite.py` holds every domain variant in `SUITE`. A problem is only
-submitted when it is listed in `benchmarks/symmetries.txt`, where PDDL Symmetries
+`benchmarks/plan/suite.py` holds every domain variant in `SUITE`. A problem is only
+submitted when it is listed in `benchmarks/plan/symmetries.txt`, where PDDL Symmetries
 reported an abstraction class. That file header carries the command that
 regenerates it from a collected run.
 
-`--unsolvable` submits the other collection instead, `UNSOLVABLE_SUITE` over
-`benchmarks/unsolve-ipc-2016`, through `scripts.unsolvability`, which reports a
+`--unsolvable` submits the other collection instead, `benchmarks/unsolvability/suite.py` over
+`benchmarks/unsolvability/unsolve-ipc-2016`, through `scripts.unsolvability`, which reports a
 solvability verdict rather than a plan. It runs the probNN problems, the ones
 known to be unsolvable, and not the satprob twins or the unsettled
 unknownprob ones.
 
 Results and logs land in `runs/`, rewritten after every completed
 phase so an interrupted worker keeps its partial timings. Collect them into
-`benchmarks/results.csv`, which the run replaces except for the concrete
+`benchmarks/plan/results.csv`, which the run replaces except for the concrete
 results it did not cover:
 
 ```bash
@@ -103,10 +103,10 @@ python -m scripts.experiments.collect
 
 Print the coverage, head-to-head, timeout-phase, and refinement-outcome tables
 for a collected CSV, over the problems both pipelines finished. The report also
-replaces `benchmarks/reports.md`, which holds the latest one:
+replaces `benchmarks/plan/reports.md`, which holds the latest one:
 
 ```bash
-python -m scripts.experiments.report benchmarks/results.csv
+python -m scripts.experiments.report benchmarks/plan/results.csv
 ```
 
 ## Tests
