@@ -102,6 +102,7 @@ def _read_progress(result_file):
 
 def _run_pipeline(command, timeout, environment=None):
     started = time.perf_counter()
+    interrupted = False
     try:
         completed = subprocess.run(
             command,
@@ -122,7 +123,15 @@ def _run_pipeline(command, timeout, environment=None):
         if isinstance(output, bytes):
             output = output.decode(errors="replace")
         timed_out = True
-    status = _machine_status(return_code, timed_out, output)
+    except KeyboardInterrupt:
+        # runsolver enforces its memory limit by sending SIGINT. Uncaught it
+        # escapes before the result is written, leaving the "running" stub while
+        # Slurm still records the job COMPLETED.
+        return_code = None
+        output = ""
+        timed_out = False
+        interrupted = True
+    status = _machine_status(return_code, timed_out, output, interrupted)
     result = {
         "status": status,
         "return_code": return_code,
@@ -135,7 +144,9 @@ def _run_pipeline(command, timeout, environment=None):
     return result
 
 
-def _machine_status(return_code, timed_out, output):
+def _machine_status(return_code, timed_out, output, interrupted=False):
+    if interrupted:
+        return "interrupted"
     if timed_out:
         return "timed_out"
     if return_code is not None and return_code < 0:
@@ -166,6 +177,7 @@ def _human_status(result):
         "timed_out": "timed out",
         "running": "running",
         "missing": "missing",
+        "interrupted": "interrupted",
     }
     if status in labels:
         return labels[status]
