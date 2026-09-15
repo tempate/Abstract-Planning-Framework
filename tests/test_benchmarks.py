@@ -57,6 +57,15 @@ class BenchmarkTests(unittest.TestCase):
 
         self.assertIs(suite, SUITE)
 
+    def test_the_run_names_the_partition_every_task_goes_to(self):
+        with tempfile.TemporaryDirectory() as directory:
+            definition_dir = Path(directory)
+
+            config_file = _write_copperbench_config([], definition_dir=definition_dir, partition="sunnycove")
+            config = json.loads(config_file.read_text(encoding="utf-8"))
+
+        self.assertEqual(config["partition"], "sunnycove")
+
     def test_cluster_resource_defaults(self):
         args = _argument_parser().parse_args([])
 

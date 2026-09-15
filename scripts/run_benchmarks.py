@@ -16,6 +16,12 @@ from scripts.run_benchmark import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, 
 from scripts.utils.arguments import positive_int
 
 DEFAULT_MEMORY_LIMIT = 8 * 1024
+# CopperBench defaults to broadwell, so every run so far has gone there without
+# this repository saying so, and queued behind it while sunnycove sat idle. Two
+# things to know before raising --timeout or reading timings from an "any" run:
+# the partition caps a job at one hour, and it spans both CPU generations, so
+# wall-clock times are only comparable within one of them.
+DEFAULT_PARTITION = "any"
 
 
 def main():
@@ -30,6 +36,7 @@ def main():
             timeout=args.timeout,
             memory_limit=args.memory_limit,
             max_parallel_jobs=args.max_parallel_jobs,
+            partition=args.partition,
         )
         print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
@@ -73,13 +80,21 @@ def _argument_parser():
         help="Maximum number of CopperBench array tasks allowed to run concurrently",
     )
     parser.add_argument(
+        "--partition", default=DEFAULT_PARTITION, help="Slurm partition to run every task of this run on"
+    )
+    parser.add_argument(
         "--with-concrete", action="store_true", help="Also submit the concrete pipeline for every problem"
     )
     return parser
 
 
 def _write_copperbench_config(
-    tasks, definition_dir, timeout=DEFAULT_TIMEOUT, memory_limit=DEFAULT_MEMORY_LIMIT, max_parallel_jobs=None
+    tasks,
+    definition_dir,
+    timeout=DEFAULT_TIMEOUT,
+    memory_limit=DEFAULT_MEMORY_LIMIT,
+    max_parallel_jobs=None,
+    partition=DEFAULT_PARTITION,
 ):
     """Write the files CopperBench needs to submit one job per problem."""
     definition_dir = Path(definition_dir)
@@ -116,6 +131,7 @@ def _write_copperbench_config(
         "instances": instances_file.name,
         "timeout": timeout,
         "mem_limit": memory_limit,
+        "partition": partition,
         "request_cpus": 1,
         "working_dir": os.path.relpath(PROJECT_ROOT, definition_dir),
         "instances_are_parameters": True,
