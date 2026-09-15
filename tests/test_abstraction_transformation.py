@@ -96,6 +96,37 @@ def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
         return build_abstract_problem(config)
 
 
+NO_NEGATION_DOMAIN = """
+(define (domain arithmetic)
+  (:requirements :strips :typing)
+  (:types level item)
+  (:predicates
+    (sum ?a ?b ?c - level)
+    (held ?x - item)
+    (done))
+  (:action pick
+    :parameters (?x - item)
+    :precondition (held ?x)
+    :effect (done)))
+"""
+
+NO_NEGATION_PROBLEM = """
+(define (problem arithmetic-task)
+  (:domain arithmetic)
+  (:objects a b - item l1 l2 l3 l4 l5 - level)
+  (:init (held a) (held b) (sum l1 l1 l1))
+  (:goal (done)))
+"""
+
+NEGATED_GOAL_PROBLEM = """
+(define (problem arithmetic-task)
+  (:domain arithmetic)
+  (:objects a b - item l1 l2 l3 l4 l5 - level)
+  (:init (held a) (held b) (sum l1 l1 l1))
+  (:goal (and (done) (not (held a)))))
+"""
+
+
 INEQUALITY_DOMAIN = """
 (define (domain roads)
   (:requirements :strips :typing :equality)
@@ -458,3 +489,24 @@ class AbstractionTransformationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PositiveNormalFormSkipTests(unittest.TestCase):
+    def test_a_problem_with_no_negated_condition_does_not_gain_the_closed_world(self):
+        """The translation writes out every atom it leaves false, which costs
+        more than it buys when there is no negated condition to rewrite."""
+        problem = parse_problem(NO_NEGATION_DOMAIN, NO_NEGATION_PROBLEM)
+        before = len(problem.explicit_initial_values)
+
+        result = _build_from_problem(problem, ["a", "b"])
+
+        self.assertLessEqual(len(result.problem.explicit_initial_values), before)
+
+    def test_a_negated_goal_still_reaches_positive_normal_form(self):
+        """A relaxed delete can falsify a negated goal just as it can a negated
+        precondition, so the skip has to see goals too."""
+        problem = parse_problem(NO_NEGATION_DOMAIN, NEGATED_GOAL_PROBLEM)
+
+        result = _build_from_problem(problem, ["a", "b"])
+
+        self.assertFalse(result.problem.kind.has_negative_conditions())

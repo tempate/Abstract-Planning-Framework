@@ -62,8 +62,12 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
 
     # Relaxing a delete is only an over-approximation while every condition is
     # positive, so reach positive normal form before any delete is relaxed.
+    # With nothing to rewrite the translation still writes out the closed
+    # world, which nomystery's ternary sum predicate turns into 240k initial
+    # facts and 600 seconds, so skip what would only rebuild the problem.
     with metrics.measure("pnf_translation"):
-        problem = to_positive_normal_form(problem)
+        if problem.kind.has_negative_conditions():
+            problem = to_positive_normal_form(problem)
 
     with metrics.measure("abstraction"):
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)
