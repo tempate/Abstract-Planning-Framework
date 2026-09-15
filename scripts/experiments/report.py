@@ -9,9 +9,9 @@ from pathlib import Path
 
 from scripts.experiments.run import PROJECT_ROOT
 
-DEFAULT_CSV = PROJECT_ROOT / "benchmarks" / "results.csv"
-REPORTS_FILE = PROJECT_ROOT / "benchmarks" / "reports.md"
-UNSOLVABLE_REPORTS_FILE = PROJECT_ROOT / "benchmarks" / "unsolvable-reports.md"
+DEFAULT_CSV = PROJECT_ROOT / "benchmarks" / "plan" / "results.csv"
+REPORTS_FILE = PROJECT_ROOT / "benchmarks" / "plan" / "reports.md"
+UNSOLVABLE_REPORTS_FILE = PROJECT_ROOT / "benchmarks" / "unsolvability" / "reports.md"
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
 VERDICTS = ("unsolvable", "unknown", "solvable")

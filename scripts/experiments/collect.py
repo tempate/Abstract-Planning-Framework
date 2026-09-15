@@ -12,7 +12,7 @@ from scripts.experiments.run import MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR, _h
 
 # The raw run output stays in the untracked results directory; the collected CSV
 # is the artifact that gets committed and reported on.
-CSV_FILE = PROJECT_ROOT / "benchmarks" / "results.csv"
+CSV_FILE = PROJECT_ROOT / "benchmarks" / "plan" / "results.csv"
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
 FIELDS = (
     "domain",
