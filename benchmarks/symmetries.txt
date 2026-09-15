@@ -1,10 +1,6 @@
 # Problems for which PDDL Symmetries reported an abstraction class.
 # Regenerate from a collected run:
 #   awk -F, '$3=="abstract" && $4!="no symmetries" && NR>1 {print $1"/"$2}' results.csv | sort -u
-#
-# agricola's entries come from running PDDL Symmetries over the domain directly
-# rather than from a collected run: all 20 problems report three object classes.
-# The command above will not reproduce them until a run covers the domain.
 agricola-sat18-strips/p01.pddl
 agricola-sat18-strips/p02.pddl
 agricola-sat18-strips/p03.pddl
