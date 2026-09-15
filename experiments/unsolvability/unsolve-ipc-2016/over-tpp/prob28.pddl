@@ -1,4 +1,4 @@
-(define (problem tpp-problem-m18-g9-c0.99-s1026)
+(define (problem tpp-problem-m18-g9-c0_99-s1026)
 (:domain TPPLike-Metric)
 (:objects
 	market1 market2 market3 market4 market5 market6 market7 market8 market9 market10 market11 market12 market13 market14 market15 market16 market17 market18 - market
