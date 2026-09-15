@@ -1,14 +1,18 @@
 """The unsolvability benchmark suite, the FINAL domains of unsolve-ipc-2016.
 
-There is no symmetries file for this collection, so every problem known to be
-unsolvable runs, which is the probNN of each domain: satprobNN is the solvable
-twin beside it and unknownprobNN was never settled. Both are skipped by name in
-``experiments.submit``.
+The problems known to be unsolvable are the probNN of each domain: satprobNN is
+the solvable twin beside it and unknownprobNN was never settled. Both are skipped
+by name in ``experiments.submit``. Of those, ``SYMMETRIC_PROBLEMS`` lists the
+ones worth submitting, read from ``symmetries.txt``, whose header carries the
+command that regenerates it from a collected run.
 """
 
 from pathlib import Path
 
+from experiments import read_problems
+
 BENCHMARKS_DIR = Path(__file__).parent / "unsolve-ipc-2016"
+SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
 
 SUITE = [
     "bag-barman",
@@ -27,3 +31,6 @@ SUITE = [
     "sliding-tiles",
     "tetris",
 ]
+
+
+SYMMETRIC_PROBLEMS = read_problems(SYMMETRIC_PROBLEMS_FILE)
