@@ -90,7 +90,7 @@ python scripts/install_plasp.py
 ```
 
 No step is optional. `git worktree add` leaves
-`benchmarks/downward-benchmarks`, `lib/downward` and `lib/pddl-symmetries` empty,
+`experiments/plan/downward-benchmarks`, `lib/downward` and `lib/pddl-symmetries` empty,
 so the runner finds no problems and submits nothing without saying why. All
 three of these are built or downloaded rather than checked in, so a fresh submodule
 checkout has none of them:
@@ -106,7 +106,7 @@ Smoke-test one problem before submitting the set, which catches them in a
 minute instead of after 142 dead jobs:
 
 ```bash
-B=benchmarks/downward-benchmarks/quantum-layout-sat23-strips
+B=experiments/plan/downward-benchmarks/quantum-layout-sat23-strips
 python -m scripts.planner abstract --domain $B/domain_p14.pddl --problem $B/p14.pddl
 ```
 
