@@ -338,6 +338,26 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[0]["concrete_fd_seconds"], 2.5)
         self.assertEqual(rows[0]["last_completed_phase"], "concrete_fd")
 
+    def test_a_run_the_memory_limit_interrupts_is_recorded_with_its_phase(self):
+        metrics = {"durations": {"symmetry_discovery": 1.5}, "counters": {}}
+
+        def interrupt(command, **_kwargs):
+            result_file = Path(_kwargs["env"]["APF_BENCHMARK_RESULT_FILE"])
+            update_result_progress(result_file, {"kind": "phase_completed", "phase": "symmetry_discovery"}, metrics)
+            # runsolver sends SIGINT when the job outgrows its memory limit.
+            raise KeyboardInterrupt
+
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch("scripts.experiments.run.subprocess.run", side_effect=interrupt),
+        ):
+            result = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
+            rows = collect(directory)
+
+        self.assertEqual(result["status"], "interrupted")
+        self.assertEqual(rows[0]["last_completed_phase"], "symmetry_discovery")
+        self.assertNotEqual(rows[0]["status"], "running")
+
     def test_timed_out_run_still_records_the_collapsed_class(self):
         metrics = {
             "durations": {},
