@@ -2,7 +2,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from core.integrations.unified_planning import PddlError, parse_problem, read_problem, write_problem
+from core.integrations.unified_planning import (
+    PddlError,
+    parse_problem,
+    read_problem,
+    without_action_costs,
+    write_problem,
+)
 
 ROUND_TRIP_DOMAIN = """
 (define (domain travel)
@@ -44,6 +50,52 @@ SHARED_NAME_PROBLEM = """
   (:objects cart - cart)
   (:init (parked cart))
   (:goal (parked cart)))
+"""
+
+
+STATED_METRIC_DOMAIN = """
+(define (domain tally)
+  (:requirements :strips :typing :action-costs)
+  (:types counter)
+  (:predicates (done ?c - counter))
+  (:functions (total-cost) (step_cost ?c - counter))
+  (:action tick
+    :parameters (?c - counter)
+    :precondition (not (done ?c))
+    :effect (and (done ?c) (increase (total-cost) (step_cost ?c)))))
+"""
+
+STATED_METRIC_PROBLEM = """
+(define (problem tally-task)
+  (:domain tally)
+  (:objects first - counter)
+  (:init (= (total-cost) 0) (= (step_cost first) 3))
+  (:goal (done first))
+  (:metric minimize (total-cost)))
+"""
+
+MIXED_NUMERIC_DOMAIN = """
+(define (domain haulage)
+  (:requirements :strips :typing :action-costs)
+  (:types truck location)
+  (:predicates (at ?t - truck ?l - location))
+  (:functions (total-cost) (fuel ?t - truck))
+  (:action drive
+    :parameters (?t - truck ?from ?to - location)
+    :precondition (at ?t ?from)
+    :effect (and
+      (not (at ?t ?from))
+      (at ?t ?to)
+      (decrease (fuel ?t) 1)
+      (increase (total-cost) 1))))
+"""
+
+MIXED_NUMERIC_PROBLEM = """
+(define (problem haulage-task)
+  (:domain haulage)
+  (:objects lorry - truck depot site - location)
+  (:init (at lorry depot) (= (total-cost) 0) (= (fuel lorry) 5))
+  (:goal (at lorry site)))
 """
 
 
@@ -91,3 +143,35 @@ class UnifiedPlanningCodecTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WithoutActionCostsTests(unittest.TestCase):
+    def test_a_costed_domain_is_written_without_numeric_fluents(self):
+        problem = parse_problem(ROUND_TRIP_DOMAIN, ROUND_TRIP_PROBLEM)
+
+        written = write_problem(without_action_costs(problem))
+
+        self.assertNotIn(":numeric-fluents", written.domain)
+
+    def test_a_domain_stating_its_own_metric_is_written_without_numeric_fluents(self):
+        problem = parse_problem(STATED_METRIC_DOMAIN, STATED_METRIC_PROBLEM)
+
+        written = write_problem(without_action_costs(problem))
+
+        self.assertNotIn(":numeric-fluents", written.domain)
+
+    def test_the_other_numeric_effects_survive_as_they_were(self):
+        problem = parse_problem(MIXED_NUMERIC_DOMAIN, MIXED_NUMERIC_PROBLEM)
+
+        stripped = without_action_costs(problem)
+
+        numeric = [e for e in stripped.action("drive").effects if not e.fluent.fluent().type.is_bool_type()]
+        self.assertEqual(len(numeric), 1)
+        self.assertTrue(numeric[0].is_decrease())
+
+    def test_the_problem_it_was_given_keeps_its_costs(self):
+        problem = parse_problem(ROUND_TRIP_DOMAIN, ROUND_TRIP_PROBLEM)
+
+        without_action_costs(problem)
+
+        self.assertTrue(problem.quality_metrics)

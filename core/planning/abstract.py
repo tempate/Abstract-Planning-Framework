@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from core.integrations.fast_downward import pddl_to_sas
-from core.integrations.unified_planning import write_problem
+from core.integrations.unified_planning import without_action_costs, write_problem
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.metrics import PlanningMetrics
 from core.abstraction.factory import build_abstract_problem
@@ -86,7 +86,7 @@ def _write_abstract_problem(problem, base_dir):
     input_directory.mkdir(parents=True, exist_ok=True)
 
     # Write the abstract domain and problem files.
-    serialized = write_problem(problem)
+    serialized = write_problem(without_action_costs(problem))
 
     domain_path = input_directory / "domain.pddl"
     domain_path.write_text(serialized.domain, encoding="utf-8")
