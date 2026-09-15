@@ -1,6 +1,30 @@
 # Problems for which PDDL Symmetries reported an abstraction class.
 # Regenerate from a collected run:
 #   awk -F, '$3=="abstract" && $4!="no symmetries" && NR>1 {print $1"/"$2}' results.csv | sort -u
+#
+# agricola's entries come from running PDDL Symmetries over the domain directly
+# rather than from a collected run: all 20 problems report three object classes.
+# The command above will not reproduce them until a run covers the domain.
+agricola-sat18-strips/p01.pddl
+agricola-sat18-strips/p02.pddl
+agricola-sat18-strips/p03.pddl
+agricola-sat18-strips/p04.pddl
+agricola-sat18-strips/p05.pddl
+agricola-sat18-strips/p06.pddl
+agricola-sat18-strips/p07.pddl
+agricola-sat18-strips/p08.pddl
+agricola-sat18-strips/p09.pddl
+agricola-sat18-strips/p10.pddl
+agricola-sat18-strips/p11.pddl
+agricola-sat18-strips/p12.pddl
+agricola-sat18-strips/p13.pddl
+agricola-sat18-strips/p14.pddl
+agricola-sat18-strips/p15.pddl
+agricola-sat18-strips/p16.pddl
+agricola-sat18-strips/p17.pddl
+agricola-sat18-strips/p18.pddl
+agricola-sat18-strips/p19.pddl
+agricola-sat18-strips/p20.pddl
 airport/p01-airport1-p1.pddl
 airport/p02-airport1-p1.pddl
 airport/p03-airport1-p2.pddl
