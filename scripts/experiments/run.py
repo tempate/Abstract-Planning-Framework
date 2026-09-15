@@ -13,7 +13,7 @@ from core.outcomes import STATUS_BY_EXIT_CODE
 from scripts.utils.arguments import positive_int
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-RESULTS_DIR = PROJECT_ROOT / "benchmark-results"
+RESULTS_DIR = PROJECT_ROOT / "runs"
 DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"
 NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
@@ -91,6 +91,7 @@ def _read_progress(result_file):
 
 def _run_pipeline(command, timeout, environment=None):
     started = time.perf_counter()
+    interrupted = False
     try:
         completed = subprocess.run(
             command,
@@ -111,7 +112,18 @@ def _run_pipeline(command, timeout, environment=None):
         if isinstance(output, bytes):
             output = output.decode(errors="replace")
         timed_out = True
-    status = _machine_status(return_code, timed_out, output)
+    except KeyboardInterrupt:
+        # runsolver enforces its memory limit by sending SIGINT, which arrives
+        # here as a KeyboardInterrupt while the pipeline is being waited on.
+        # Left uncaught it escapes before the result is written, so the file
+        # keeps the "running" it was given at startup, and the job still exits
+        # cleanly enough for Slurm to record it COMPLETED. The run then reads
+        # as one that never happened rather than one that ran out of memory.
+        return_code = None
+        output = ""
+        timed_out = False
+        interrupted = True
+    status = _machine_status(return_code, timed_out, output, interrupted)
     result = {
         "status": status,
         "return_code": return_code,
@@ -124,7 +136,9 @@ def _run_pipeline(command, timeout, environment=None):
     return result
 
 
-def _machine_status(return_code, timed_out, output):
+def _machine_status(return_code, timed_out, output, interrupted=False):
+    if interrupted:
+        return "interrupted"
     if timed_out:
         return "timed_out"
     if return_code is not None and return_code < 0:
@@ -154,6 +168,7 @@ def _human_status(result):
         "timed_out": "timed out",
         "running": "running",
         "missing": "missing",
+        "interrupted": "interrupted",
     }
     if status in labels:
         return labels[status]
