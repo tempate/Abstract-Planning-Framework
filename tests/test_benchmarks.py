@@ -10,12 +10,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from benchmarks.plan.suite import SUITE
-from scripts.experiments.submit import _find_domain
+from experiments.plan.suite import SUITE
+from experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from scripts.experiments.collect import FIELDS, _preserved_concrete_rows, collect
+from experiments.collect import FIELDS, _preserved_concrete_rows, collect
 from scripts.utils.reporting import update_result_progress
-from scripts.experiments.run import (
+from experiments.run import (
     DEFAULT_TIMEOUT,
     NO_SYMMETRIES_MESSAGE,
     PROJECT_ROOT,
@@ -25,8 +25,8 @@ from scripts.experiments.run import (
     _run_pipeline,
     _run_task,
 )
-from scripts.experiments.report import _coverage, _head_to_head
-from scripts.experiments.submit import (
+from experiments.report import _coverage, _head_to_head
+from experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
     _argument_parser,
@@ -67,6 +67,10 @@ class BenchmarkTests(unittest.TestCase):
             config = json.loads(config_file.read_text(encoding="utf-8"))
 
         self.assertEqual(config["partition"], "sunnycove")
+
+    def test_the_project_root_is_the_repository_root(self):
+        """Guards the parents[N] depth, which moving the runner has broken twice."""
+        self.assertTrue((PROJECT_ROOT / "pyproject.toml").is_file(), f"{PROJECT_ROOT} is not the repository root")
 
     def test_cluster_resource_defaults(self):
         args = _argument_parser().parse_args([])
@@ -129,7 +133,7 @@ class BenchmarkTests(unittest.TestCase):
         self.assertNotIn("exclusive", config)
         self.assertEqual(config["max_parallel_jobs"], 12)
         self.assertEqual(config["working_dir"], os.path.relpath(PROJECT_ROOT, definition_dir))
-        self.assertIn("scripts.experiments.run", worker)
+        self.assertIn("experiments.run", worker)
         for placeholder in ("$1", "$2", "$3", "$4", "$timeout"):
             self.assertIn(placeholder, worker)
         self.assertEqual(
@@ -273,7 +277,7 @@ class BenchmarkTests(unittest.TestCase):
         ]
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=completed) as run,
+            patch("experiments.run.subprocess.run", side_effect=completed) as run,
         ):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
@@ -330,10 +334,7 @@ class BenchmarkTests(unittest.TestCase):
             update_result_progress(result_file, {"kind": "phase_completed", "phase": "concrete_fd"}, metrics)
             return subprocess.CompletedProcess(command, 2, stdout="planner failed before final metrics\n")
 
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=complete),
-        ):
+        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", side_effect=complete):
             result = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -376,7 +377,7 @@ class BenchmarkTests(unittest.TestCase):
 
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=selected_then_killed),
+            patch("experiments.run.subprocess.run", side_effect=selected_then_killed),
         ):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=10)
             rows = collect(directory)
@@ -391,10 +392,7 @@ class BenchmarkTests(unittest.TestCase):
         failed = subprocess.CompletedProcess(
             [], 2, stdout="usage: planner.py [-h]\nplanner.py: error: Unsupported quality metric\nStarting\n"
         )
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", return_value=failed),
-        ):
+        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", return_value=failed):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -414,10 +412,7 @@ class BenchmarkTests(unittest.TestCase):
                 "INFO     Planner time: 0.14s\n"
             ),
         )
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", return_value=failed),
-        ):
+        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", return_value=failed):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -430,7 +425,7 @@ class BenchmarkTests(unittest.TestCase):
         ]
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=timeouts) as run,
+            patch("experiments.run.subprocess.run", side_effect=timeouts) as run,
         ):
             abstract = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=1800)
             concrete = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=1800)
@@ -462,7 +457,7 @@ class BenchmarkTests(unittest.TestCase):
             subprocess.CompletedProcess([], 2, stdout=""),
             subprocess.TimeoutExpired([], 10, output="partial output"),
         ]
-        with patch("scripts.experiments.run.subprocess.run", side_effect=completed):
+        with patch("experiments.run.subprocess.run", side_effect=completed):
             results = [_run_pipeline([], 10) for _ in completed]
 
         self.assertEqual(
@@ -478,7 +473,7 @@ class BenchmarkTests(unittest.TestCase):
         concrete_completed = subprocess.CompletedProcess([], 0, stdout="Plan found: yes\n")
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=[no_symmetries, concrete_completed]) as run,
+            patch("experiments.run.subprocess.run", side_effect=[no_symmetries, concrete_completed]) as run,
         ):
             abstract = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             concrete = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)

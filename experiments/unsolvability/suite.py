@@ -3,7 +3,7 @@
 There is no symmetries file for this collection, so every problem known to be
 unsolvable runs, which is the probNN of each domain: satprobNN is the solvable
 twin beside it and unknownprobNN was never settled. Both are skipped by name in
-``scripts.experiments.submit``.
+``experiments.submit``.
 """
 
 from pathlib import Path
