@@ -28,12 +28,11 @@ DEFAULT_PARTITION = "any"
 def main():
     args = _argument_parser().parse_args()
     if args.unsolvable:
-        # The collection has no symmetries file, so every problem is submitted.
         tasks = list(
             _benchmark_tasks(
                 benchmarks_dir=unsolvability_suite.BENCHMARKS_DIR,
                 suite=unsolvability_suite.SUITE,
-                runnable=None,
+                runnable=unsolvability_suite.SYMMETRIC_PROBLEMS,
                 with_concrete=args.with_concrete,
             )
         )
