@@ -11,9 +11,9 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from benchmarks.plan import suite as plan_suite
-from benchmarks.unsolvability import suite as unsolvability_suite
-from scripts.experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR
+from experiments.plan import suite as plan_suite
+from experiments.unsolvability import suite as unsolvability_suite
+from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR
 from scripts.utils.arguments import positive_int
 
 DEFAULT_MEMORY_LIMIT = 8 * 1024
@@ -128,7 +128,7 @@ def _write_copperbench_config(
     worker = [
         sys.executable,
         "-m",
-        "scripts.experiments.run",
+        "experiments.run",
         "$1",
         "--domain-name",
         "$2",
