@@ -351,10 +351,7 @@ class BenchmarkTests(unittest.TestCase):
             # runsolver sends SIGINT when the job outgrows its memory limit.
             raise KeyboardInterrupt
 
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=interrupt),
-        ):
+        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", side_effect=interrupt):
             result = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
