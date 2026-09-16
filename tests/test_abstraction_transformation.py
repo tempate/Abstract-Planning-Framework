@@ -390,7 +390,7 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertEqual(decreased.fluent, level(abstract_object))
         self.assertIsInstance(result.problem.quality_metrics[0], MinimizeSequentialPlanLength)
 
-    def test_relaxes_a_delete_that_takes_more_than_the_collapsed_object(self):
+    def test_keeps_a_delete_that_takes_more_than_the_collapsed_object(self):
         domain = """
 (define (domain transit)
   (:requirements :strips :typing)
@@ -414,84 +414,44 @@ class AbstractionTransformationTests(unittest.TestCase):
 
         result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
 
-        # Keeping the delete would drop `at` for the collapsed object while the
-        # other objects it stands for are still there. Only the item argument
-        # matches; `?from` is a place and must not be picked up.
-        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["at"])
-        self.assertEqual([item.variables for item in result.relaxed_deletes], [("?x",)])
+        # `at` relates the collapsed object to the rest of the task, so the
+        # delete stays rather than being relaxed away with the unary ones.
+        self.assertEqual(result.relaxed_deletes, ())
         shift = result.problem.action("shift")
-        self.assertFalse(any(effect.value.is_false() for effect in shift.effects))
+        self.assertTrue(any(effect.value.is_false() for effect in shift.effects))
 
-    def test_relaxes_a_delete_that_names_a_collapsed_object_directly(self):
+    def test_relaxes_a_unary_delete_that_names_a_collapsed_object_directly(self):
         domain = """
 (define (domain depot)
   (:requirements :strips :typing)
   (:types item place)
   (:constants stage - place)
   (:predicates
-    (at ?x - item ?p - place)
+    (staged ?p - place)
     (ready ?x - item))
   (:action clear-stage
     :parameters (?x - item)
-    :precondition (at ?x stage)
-    :effect (and (ready ?x) (not (at ?x stage)))))
+    :precondition (staged stage)
+    :effect (and (ready ?x) (not (staged stage)))))
 """
         problem_text = """
 (define (problem depot-task)
   (:domain depot)
   (:objects crate - item dock - place)
-  (:init (at crate stage))
+  (:init (staged stage))
   (:goal (ready crate)))
 """
         source = parse_problem(domain, problem_text)
 
         result = _build_from_problem(source, ["stage", "dock"], "pooled-place")
 
-        # `?x` is an item, so only the named place matches.
-        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["at"])
+        # The atom is entirely about the collapsed class, so deleting it would
+        # claim none of the objects it stands for is staged.
+        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["staged"])
         self.assertEqual([item.variables for item in result.relaxed_deletes], [("stage",)])
         clear_stage = result.problem.action("clear-stage")
         self.assertFalse(any(effect.value.is_false() for effect in clear_stage.effects))
 
-    def test_relaxes_a_named_collapsed_object_a_static_precondition_rules_out(self):
-        domain = """
-(define (domain wiring)
-  (:requirements :strips :typing)
-  (:types port)
-  (:constants hub - port)
-  (:predicates
-    (linked ?a - port ?b - port)
-    (movable ?a - port)
-    (cut ?a - port))
-  (:action unlink
-    :parameters (?a - port)
-    :precondition (and (movable ?a) (linked ?a hub))
-    :effect (and (cut ?a) (not (linked ?a hub)))))
-"""
-        problem_text = """
-(define (problem wiring-task)
-  (:domain wiring)
-  (:objects spur gate - port)
-  (:init (movable gate) (linked gate hub) (linked spur hub))
-  (:goal (cut gate)))
-"""
-        source = parse_problem(domain, problem_text)
-
-        result = _build_from_problem(source, ["hub", "spur"], "pooled-port")
-
-        # `movable` is static and holds for no collapsed object, so `?a` cannot
-        # bind one. The named `hub` still makes the delete apply.
-        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["linked"])
-        self.assertEqual([item.variables for item in result.relaxed_deletes], [("?a", "hub")])
-        unlink = result.problem.action("unlink")
-        self.assertFalse(any(effect.value.is_false() for effect in unlink.effects))
-
-
-if __name__ == "__main__":
-    unittest.main()
-
-
-class PositiveNormalFormSkipTests(unittest.TestCase):
     def test_a_problem_with_no_negated_condition_does_not_gain_the_closed_world(self):
         """The translation writes out every atom it leaves false, which costs
         more than it buys when there is no negated condition to rewrite."""

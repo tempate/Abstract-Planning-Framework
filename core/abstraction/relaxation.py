@@ -26,6 +26,13 @@ def match_relaxable_delete(action, effect, objects_to_collapse):
     ):
         return None
 
+    # Only unary deletes are relaxed. A delete on a higher-arity predicate says
+    # something about the collapsed object's relation to the rest of the task,
+    # and keeping it holds the abstraction closer to the concrete problem than
+    # dropping every delete does.
+    if len(effect.fluent.args) != 1:
+        return None
+
     collapsed_type = objects_to_collapse[0].type
     variable_expressions = []
     variable_names = []
