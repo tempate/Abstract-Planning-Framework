@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-09-16 09:13 — benchmarks/results.csv
+2026-09-16 09:30 — benchmarks/results.csv
 
 ## Coverage
 
@@ -9,6 +9,9 @@ Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
 Plans found                                       114 (25.4%)         99 (22.1%)
 Timeouts                                          319 (71.2%)        337 (75.2%)
+Out of memory                                       13 (2.9%)          12 (2.7%)
+No plan found                                        2 (0.4%)           0 (0.0%)
+Others                                               0 (0.0%)           0 (0.0%)
 Total problems                                            448                448
 ```
 
