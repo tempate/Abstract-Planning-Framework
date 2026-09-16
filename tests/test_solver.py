@@ -7,12 +7,12 @@ from core.refinement.budgeted import solve_within_budget
 def program(switch_steps, rules):
     """Build the switch and budget rules that a mapping emits, plus a test's own rules."""
     lines = []
-    elements = []
+    off = []
     for step in switch_steps:
         lines.append(f"0 {{ switch({step}) }} 1.")
-        elements.append(f"{step} : not switch({step})")
+        off.append(f"{step} : not switch({step})")
     lines.append(f"{{ budget(0..{len(switch_steps)}) }}.")
-    lines.append(f":- budget(B), #count{{ {'; '.join(elements)} }} > B.")
+    lines.append(f":- budget(B), #count{{ {'; '.join(off)} }} != B.")
     lines.append(rules)
     return "\n".join(lines)
 
