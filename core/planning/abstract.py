@@ -32,6 +32,7 @@ def _compute_abstract_plan(config, base_dir, run_id, metrics):
     abstraction = abstract_problem.abstraction
     metrics.set_abstraction(abstraction.objects, abstraction.object_type)
     metrics.set_counter("relaxed_deletes", len(abstract_problem.relaxed_deletes))
+    metrics.set_counter("relaxed_inequalities", len(abstract_problem.relaxed_inequalities))
     print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
 
     concrete_sas, abstract_sas = _to_sas(base_dir, abstract_problem.problem, config, metrics)

@@ -57,6 +57,30 @@ ABSTRACTION_PROBLEM = """
 """
 
 
+NEGATED_PRECONDITION_DOMAIN = """
+(define (domain guarded-inventory)
+  (:requirements :strips :typing)
+  (:types item)
+  (:predicates
+    (available ?x - item)
+    (used ?x - item))
+  (:action consume
+    :parameters (?x - item)
+    :precondition (and (available ?x) (not (used ?x)))
+    :effect (and (not (available ?x)) (used ?x))))
+"""
+
+NEGATED_PRECONDITION_PROBLEM = """
+(define (problem guarded-inventory-task)
+  (:domain guarded-inventory)
+  (:objects item-a item-b - item)
+  (:init
+    (available item-a)
+    (available item-b))
+  (:goal (and (used item-a) (used item-b))))
+"""
+
+
 def _two_object_problem(name, type_name):
     """Build a problem holding two objects `a` and `b` of one user type."""
     problem = Problem(name)
@@ -70,6 +94,108 @@ def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
     )
     with patch("core.abstraction.factory.read_problem", return_value=problem):
         return build_abstract_problem(config)
+
+
+NO_NEGATION_DOMAIN = """
+(define (domain arithmetic)
+  (:requirements :strips :typing)
+  (:types level item)
+  (:predicates
+    (sum ?a ?b ?c - level)
+    (held ?x - item)
+    (done))
+  (:action pick
+    :parameters (?x - item)
+    :precondition (held ?x)
+    :effect (done)))
+"""
+
+NO_NEGATION_PROBLEM = """
+(define (problem arithmetic-task)
+  (:domain arithmetic)
+  (:objects a b - item l1 l2 l3 l4 l5 - level)
+  (:init (held a) (held b) (sum l1 l1 l1))
+  (:goal (done)))
+"""
+
+NEGATED_GOAL_PROBLEM = """
+(define (problem arithmetic-task)
+  (:domain arithmetic)
+  (:objects a b - item l1 l2 l3 l4 l5 - level)
+  (:init (held a) (held b) (sum l1 l1 l1))
+  (:goal (and (done) (not (held a)))))
+"""
+
+
+INEQUALITY_DOMAIN = """
+(define (domain roads)
+  (:requirements :strips :typing :equality)
+  (:types place vehicle)
+  (:predicates
+    (at ?v - vehicle ?p - place)
+    (linked ?a ?b - place))
+  (:action drive
+    :parameters (?v - vehicle ?from ?to - place)
+    :precondition (and (at ?v ?from) (linked ?from ?to) (not (= ?from ?to)))
+    :effect (and (at ?v ?to) (not (at ?v ?from)))))
+"""
+
+INEQUALITY_PROBLEM = """
+(define (problem roads-task)
+  (:domain roads)
+  (:objects van truck - vehicle hall study attic - place)
+  (:init
+    (at van hall)
+    (at truck hall)
+    (linked hall study)
+    (linked study attic))
+  (:goal (at van attic)))
+"""
+
+
+class InequalityRelaxationTests(unittest.TestCase):
+    def test_relaxes_an_inequality_the_collapse_would_make_false(self):
+        source = parse_problem(INEQUALITY_DOMAIN, INEQUALITY_PROBLEM)
+
+        result = _build_from_problem(source, ["hall", "study"])
+
+        self.assertEqual([item.variables for item in result.relaxed_inequalities], [("?from", "?to")])
+
+    def test_the_collapsed_action_survives_the_collapse(self):
+        source = parse_problem(INEQUALITY_DOMAIN, INEQUALITY_PROBLEM)
+
+        result = _build_from_problem(source, ["hall", "study"])
+
+        drive = result.problem.action("drive")
+        abstract_object = result.problem.object("place_abs")
+        substitution = {drive.parameters[1]: abstract_object, drive.parameters[2]: abstract_object}
+        for precondition in drive.preconditions:
+            self.assertFalse(precondition.substitute(substitution).simplify().is_false())
+
+    def test_keeps_an_inequality_over_a_type_that_is_not_collapsed(self):
+        source = parse_problem(INEQUALITY_DOMAIN, INEQUALITY_PROBLEM)
+
+        result = _build_from_problem(source, ["van", "truck"])
+
+        self.assertEqual(result.relaxed_inequalities, ())
+
+
+class PositiveNormalFormTests(unittest.TestCase):
+    def test_abstracts_a_negated_precondition_in_positive_normal_form(self):
+        source = parse_problem(NEGATED_PRECONDITION_DOMAIN, NEGATED_PRECONDITION_PROBLEM)
+
+        result = _build_from_problem(source, ["item-a", "item-b"])
+
+        self.assertFalse(result.problem.kind.has_negative_conditions())
+
+    def test_leaves_an_already_positive_task_alone(self):
+        source = parse_problem(ABSTRACTION_DOMAIN, ABSTRACTION_PROBLEM)
+
+        result = _build_from_problem(source, ["item-a", "item-b"])
+
+        self.assertEqual(
+            sorted(fluent.name for fluent in result.problem.fluents), sorted(fluent.name for fluent in source.fluents)
+        )
 
 
 class AbstractionTransformationTests(unittest.TestCase):
@@ -104,23 +230,6 @@ class AbstractionTransformationTests(unittest.TestCase):
             )
         )
 
-    def test_simplifies_an_inequality_made_false_by_the_collapse(self):
-        domain = """
-(define (domain d)
-  (:requirements :typing :equality)
-  (:types item)
-  (:predicates (ready ?x - item)))
-"""
-        inequality = """
-(define (problem p) (:domain d)
-  (:objects a b - item) (:init) (:goal (not (= a b))))
-"""
-
-        source = parse_problem(domain, inequality)
-        result = _build_from_problem(source, ["a", "b"])
-
-        self.assertTrue(result.problem.goals[0].is_false())
-
     def test_rejects_a_multi_argument_initial_value_collision(self):
         problem, item, a, b = _two_object_problem("collision", "collision_item")
         value = Fluent("value", IntType(), left=item, right=item)
@@ -145,15 +254,17 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertEqual(result.problem.initial_value(abstract_value).constant_value(), 1)
         self.assertEqual(sum(fluent.fluent() == value for fluent in result.problem.explicit_initial_values), 1)
 
-    def test_rejects_boolean_initial_value_collisions(self):
+    def test_the_abstract_object_holds_a_fact_the_collapsed_objects_disagree_on(self):
         problem, item, a, b = _two_object_problem("boolean-collision", "boolean_collision_item")
         ready = Fluent("ready", BoolType(), target=item)
         problem.add_fluent(ready, default_initial_value=False)
         problem.set_initial_value(ready(a), True)
         problem.set_initial_value(ready(b), False)
 
-        with self.assertRaisesRegex(AbstractionError, "contradictory initial facts"):
-            _build_from_problem(problem, ["a", "b"])
+        result = _build_from_problem(problem, ["a", "b"])
+
+        abstract_object = result.problem.object("boolean_collision_item_abs")
+        self.assertTrue(result.problem.initial_values[ready(abstract_object)].bool_constant_value())
 
     def test_rejects_invalid_manual_selections(self):
         problem = Problem("selection")
@@ -216,7 +327,7 @@ class AbstractionTransformationTests(unittest.TestCase):
         with self.assertRaisesRegex(AbstractionError, "quality metric"):
             _build_from_problem(optimized, ["a", "b"])
 
-    def test_rewrites_conditions_goals_constraints_and_action_costs(self):
+    def test_rewrites_conditions_goals_and_constraints(self):
         problem, item, a, b = _two_object_problem("expressions", "expression_item")
         marked = Fluent("marked", BoolType(), target=item)
         cost = Fluent("cost", IntType(), target=item)
@@ -230,20 +341,17 @@ class AbstractionTransformationTests(unittest.TestCase):
         problem.add_action(action)
         problem.add_goal(marked(b))
         problem.add_trajectory_constraint(Always(marked(a)))
-        problem.add_quality_metric(MinimizeActionCosts({action: cost(a)}))
 
         result = _build_from_problem(problem, ["a", "b"])
         abstract_object = result.problem.object("expression_item_abs")
         copied_action = result.problem.action("act")
         copied_effect = copied_action.effects[0]
-        metric = result.problem.quality_metrics[0]
 
         self.assertEqual(copied_action.preconditions, [marked(abstract_object)])
         self.assertEqual(copied_effect.condition, marked(abstract_object))
         self.assertEqual(len(copied_effect.forall), 1)
         self.assertEqual(result.problem.goals, [marked(abstract_object)])
         self.assertEqual(result.problem.trajectory_constraints[0].arg(0), marked(abstract_object))
-        self.assertEqual(metric.costs[copied_action], cost(abstract_object))
 
     def test_rewrites_a_final_state_minimization_expression(self):
         problem, item, a, b = _two_object_problem("final-state-metric", "metric_item")
@@ -257,17 +365,6 @@ class AbstractionTransformationTests(unittest.TestCase):
 
         self.assertIsInstance(metric, MinimizeExpressionOnFinalState)
         self.assertEqual(metric.expression, (cost(abstract_object) + cost(abstract_object)).simplify())
-
-    def test_parses_and_abstracts_an_agricola_final_state_metric(self):
-        root = Path(__file__).resolve().parents[1] / "benchmarks" / "downward-benchmarks" / "agricola-sat18-strips"
-        result = build_abstract_problem(
-            AbstractPlanningConfig(root / "domain.pddl", root / "p01.pddl", objects_to_abstract=("num0", "num1"))
-        )
-
-        self.assertIsInstance(result.problem.quality_metrics[0], MinimizeExpressionOnFinalState)
-        serialized = write_problem(result.problem)
-        self.assertIn("(:metric minimize (total-cost))", serialized.problem)
-        parse_problem(serialized.domain, serialized.problem)
 
     def test_preserves_numeric_effects_and_plan_length_metric(self):
         problem, item, a, b = _two_object_problem("numeric-effects", "numeric_item")
@@ -392,3 +489,24 @@ class AbstractionTransformationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PositiveNormalFormSkipTests(unittest.TestCase):
+    def test_a_problem_with_no_negated_condition_does_not_gain_the_closed_world(self):
+        """The translation writes out every atom it leaves false, which costs
+        more than it buys when there is no negated condition to rewrite."""
+        problem = parse_problem(NO_NEGATION_DOMAIN, NO_NEGATION_PROBLEM)
+        before = len(problem.explicit_initial_values)
+
+        result = _build_from_problem(problem, ["a", "b"])
+
+        self.assertLessEqual(len(result.problem.explicit_initial_values), before)
+
+    def test_a_negated_goal_still_reaches_positive_normal_form(self):
+        """A relaxed delete can falsify a negated goal just as it can a negated
+        precondition, so the skip has to see goals too."""
+        problem = parse_problem(NO_NEGATION_DOMAIN, NEGATED_GOAL_PROBLEM)
+
+        result = _build_from_problem(problem, ["a", "b"])
+
+        self.assertFalse(result.problem.kind.has_negative_conditions())

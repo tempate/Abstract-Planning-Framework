@@ -5,6 +5,7 @@ import os
 import shlex
 import subprocess
 import tempfile
+import re
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -23,7 +24,7 @@ from scripts.experiments.run import (
     _run_pipeline,
     _run_task,
 )
-from scripts.experiments.report import _head_to_head
+from scripts.experiments.report import _coverage, _head_to_head
 from scripts.experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
@@ -605,6 +606,27 @@ class ReportTests(unittest.TestCase):
 
         median = next(line for line in lines if line.startswith("Median runtime"))
         self.assertNotIn(" s", median)
+
+    def test_every_problem_is_accounted_for_in_the_coverage_table(self):
+        """The rows have to add up, or a reader cannot tell what became of the
+        problems that neither solved nor timed out."""
+        problems = [
+            {"abstract": {"status": "success"}, "concrete": {"status": "timed out"}},
+            {"abstract": {"status": "timed out"}, "concrete": {"status": "success"}},
+            {"abstract": {"status": "error (exit code 2)"}, "concrete": {"status": "interrupted"}},
+            {"abstract": {"status": "no plan found"}, "concrete": {"status": "killed (signal 9)"}},
+        ]
+
+        _title, lines = _coverage(problems)
+
+        counted = {"abstract": 0, "concrete": 0}
+        for label in ("Plans found", "Timeouts", "Out of memory", "No plan found", "Others"):
+            line = next(line for line in lines if line.startswith(label))
+            abstract, concrete = re.findall(r"(\d+) \(", line)
+            counted["abstract"] += int(abstract)
+            counted["concrete"] += int(concrete)
+
+        self.assertEqual(counted, {"abstract": len(problems), "concrete": len(problems)})
 
 
 if __name__ == "__main__":

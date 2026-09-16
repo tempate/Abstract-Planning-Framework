@@ -64,9 +64,29 @@ def _coverage(problems):
     found = _status_counts(problems, "success")
     timeouts = _status_counts(problems, "timed out")
 
+    # runsolver interrupts a task that reaches the memory limit, and the kernel
+    # kills one that outruns it outright, so both statuses are out of memory.
+    interrupted = _status_counts(problems, "interrupted")
+    killed = _status_counts(problems, "killed (signal 9)")
+    out_of_memory = {}
+    for mode in interrupted:
+        out_of_memory[mode] = interrupted[mode] + killed[mode]
+    no_plan = _status_counts(problems, "no plan found")
+
+    # Whatever the rows above leave out, errors among them, so the rows always
+    # add up to the total even when a status nobody has named yet turns up.
+    other = {}
+    for mode in found:
+        other[mode] = total - found[mode] - timeouts[mode] - out_of_memory[mode] - no_plan[mode]
+
     lines = _wide_header("Metric")
     lines.append(_wide("Plans found", _share(found["abstract"], total, 1), _share(found["concrete"], total, 1)))
     lines.append(_wide("Timeouts", _share(timeouts["abstract"], total, 1), _share(timeouts["concrete"], total, 1)))
+    lines.append(
+        _wide("Out of memory", _share(out_of_memory["abstract"], total, 1), _share(out_of_memory["concrete"], total, 1))
+    )
+    lines.append(_wide("No plan found", _share(no_plan["abstract"], total, 1), _share(no_plan["concrete"], total, 1)))
+    lines.append(_wide("Others", _share(other["abstract"], total, 1), _share(other["concrete"], total, 1)))
     lines.append(_wide("Total problems", total, total))
     return "Coverage", lines
 

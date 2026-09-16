@@ -6,6 +6,7 @@ from core.integrations.unified_planning import (
     PddlError,
     parse_problem,
     read_problem,
+    to_positive_normal_form,
     without_action_costs,
     write_problem,
 )
@@ -143,6 +144,62 @@ class UnifiedPlanningCodecTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+NEGATION_DOMAIN = """
+(define (domain doors)
+  (:requirements :strips :typing :equality)
+  (:types room)
+  (:predicates (at ?r - room) (locked ?r - room) (linked ?a ?b - room))
+  (:action move
+    :parameters (?from ?to - room)
+    :precondition (and (at ?from) (not (locked ?to)) (not (= ?from ?to)))
+    :effect (and (not (at ?from)) (at ?to)))
+  (:action lock
+    :parameters (?r - room)
+    :precondition (at ?r)
+    :effect (locked ?r)))
+"""
+
+NEGATION_PROBLEM = """
+(define (problem doors-task)
+  (:domain doors)
+  (:objects hall study - room)
+  (:init (at hall) (linked hall study))
+  (:goal (at study)))
+"""
+
+
+class PositiveNormalFormTests(unittest.TestCase):
+    def test_translation_leaves_no_condition_negating_a_fluent(self):
+        problem = parse_problem(NEGATION_DOMAIN, NEGATION_PROBLEM)
+
+        translated = to_positive_normal_form(problem)
+
+        self.assertFalse(translated.kind.has_negative_conditions())
+
+    def test_translation_keeps_the_actions_the_refinement_maps_back(self):
+        problem = parse_problem(NEGATION_DOMAIN, NEGATION_PROBLEM)
+
+        translated = to_positive_normal_form(problem)
+
+        self.assertEqual(
+            [(action.name, len(action.parameters)) for action in translated.actions],
+            [(action.name, len(action.parameters)) for action in problem.actions],
+        )
+
+    def test_the_complement_starts_opposite_to_the_fluent_it_mirrors(self):
+        problem = parse_problem(NEGATION_DOMAIN, NEGATION_PROBLEM)
+
+        translated = to_positive_normal_form(problem)
+
+        complements = [fluent for fluent in translated.fluents if fluent.name.startswith("not_locked")]
+        self.assertEqual(len(complements), 1)
+        values = translated.initial_values
+        for room in translated.objects(translated.user_type("room")):
+            locked = translated.environment.expression_manager.FluentExp(translated.fluent("locked"), (room,))
+            complement = translated.environment.expression_manager.FluentExp(complements[0], (room,))
+            self.assertNotEqual(values[locked].bool_constant_value(), values[complement].bool_constant_value())
 
 
 class WithoutActionCostsTests(unittest.TestCase):
