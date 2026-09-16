@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from core.integrations.clingo import IncrementalSolver
 from core.integrations.plasp import add_switch_to_asp_rule
 from core.plan import PlanAction
+from core.refinement.budgeted import solve_within_budget
 from core.refinement.mapping import build_mapping
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
@@ -98,6 +99,22 @@ switch(2).
         result = IncrementalSolver(program, horizon=2).control.solve()
 
         self.assertTrue(result.unsatisfiable)
+
+    def test_the_budget_switches_off_an_abstract_action_that_cannot_be_grounded(self):
+        abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item2",), 2))
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
+        # Only the second abstract action has a concrete counterpart, so the first
+        # one has to be switched off even though it is not the last.
+        program = add_switch_to_asp_rule(OCCURRENCE_ENCODING) + """
+action(action(("inspect","item2"))).
+""" + build_mapping(abstract_plan, abstraction)
+
+        success, plan, budget = solve_within_budget(IncrementalSolver(program, horizon=5))
+
+        self.assertTrue(success)
+        self.assertEqual(budget, 1)
+        self.assertIn('occurs(action(("inspect","item2")),4)', plan)
+        self.assertNotIn("switch(2)", plan)
 
     def _models(self, program, horizon):
         control = IncrementalSolver(program, horizon).control

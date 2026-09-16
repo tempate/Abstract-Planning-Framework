@@ -1,76 +1,78 @@
 import unittest
 
 from core.integrations.clingo import IncrementalSolver
-from core.refinement.decremental import solve_decrementally
+from core.refinement.budgeted import solve_within_budget
 
 
-class DecrementalSolverTests(unittest.TestCase):
-    def _solve(self, program):
-        return solve_decrementally(IncrementalSolver(program, horizon=1))
+def program(switch_steps, rules):
+    """Build the switch and budget rules that a mapping emits, plus a test's own rules."""
+    lines = []
+    elements = []
+    for step in switch_steps:
+        lines.append(f"0 {{ switch({step}) }} 1.")
+        elements.append(f"{step} : not switch({step})")
+    lines.append(f"{{ budget(0..{len(switch_steps)}) }}.")
+    lines.append(f":- budget(B), #count{{ {'; '.join(elements)} }} > B.")
+    lines.append(rules)
+    return "\n".join(lines)
+
+
+class BudgetedSolverTests(unittest.TestCase):
+    def _solve(self, switch_steps, rules):
+        return solve_within_budget(IncrementalSolver(program(switch_steps, rules), horizon=1))
 
     def test_returns_the_full_plan_without_relaxation_when_it_is_satisfiable(self):
-        success, plan, decrements = self._solve("""
-{ switch(1) }.
+        success, plan, budget = self._solve(
+            [2],
+            """
 selected(full).
 #show selected/1.
-""")
+""",
+        )
 
         self.assertTrue(success)
         self.assertEqual(plan, ["selected(full)"])
-        self.assertEqual(decrements, 0)
+        self.assertEqual(budget, 0)
 
-    def test_disables_switches_in_reverse_chronological_order(self):
-        success, plan, decrements = self._solve("""
-{ switch(1) }.
-{ switch(2) }.
+    def test_the_solver_chooses_which_switch_to_turn_off(self):
+        # Only the first switch may be off, which a search that relaxed the plan
+        # from the last switch backwards would reach a budget later.
+        success, plan, budget = self._solve(
+            [2, 4],
+            """
 :- switch(2).
-selected(fallback) :- not switch(2).
+selected(first_off) :- not switch(2), switch(4).
 #show selected/1.
-""")
+""",
+        )
 
         self.assertTrue(success)
-        self.assertEqual(plan, ["selected(fallback)"])
-        self.assertEqual(decrements, 1)
+        self.assertEqual(plan, ["selected(first_off)"])
+        self.assertEqual(budget, 1)
 
-    def test_reports_failure_after_all_switches_are_disabled(self):
-        success, plan, decrements = self._solve("""
-{ switch(1) }.
-:-.
-#show switch/1.
-""")
+    def test_reports_failure_after_the_largest_budget(self):
+        success, plan, budget = self._solve([2], ":-.\n#show switch/1.")
 
         self.assertFalse(success)
         self.assertIsNone(plan)
-        self.assertEqual(decrements, 1)
+        self.assertEqual(budget, 1)
 
-    def test_numeric_switch_order_is_used_instead_of_lexical_order(self):
-        success, plan, decrements = self._solve("""
-{ switch(2) }.
-{ switch(10) }.
-:- switch(10).
-selected(ten_disabled) :- not switch(10).
-#show selected/1.
-""")
-
-        self.assertTrue(success)
-        self.assertEqual(plan, ["selected(ten_disabled)"])
-        self.assertEqual(decrements, 1)
-
-    def test_reports_every_solver_attempt_and_decrement(self):
+    def test_reports_every_solver_attempt_and_budget(self):
         attempts = []
         solver = IncrementalSolver(
-            """
-{ switch(1) }.
-{ switch(2) }.
-:- switch(1).
+            program(
+                [2, 4],
+                """
 :- switch(2).
-selected(done) :- not switch(1), not switch(2).
+:- switch(4).
+selected(done) :- not switch(2), not switch(4).
 #show selected/1.
 """,
+            ),
             horizon=1,
         )
-        success, _plan, _decrements = solve_decrementally(
-            solver, on_attempt=lambda decrements, calls: attempts.append((decrements, calls))
+        success, _plan, _budget = solve_within_budget(
+            solver, on_attempt=lambda budget, calls: attempts.append((budget, calls))
         )
 
         self.assertTrue(success)

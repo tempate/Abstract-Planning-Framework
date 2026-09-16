@@ -31,8 +31,10 @@ def build_mapping(abstract_plan, abstraction):
     for time_step in range(1, mapped_horizon(_abstract_horizon(abstract_plan)) + 1, 2):
         mapping_rules.append(f"gap({time_step}).")
 
+    time_steps = []
     for action in sorted(abstract_plan, key=lambda action: action.time_step):
         time_step = concrete_time_step(action.time_step)
+        time_steps.append(time_step)
 
         # Add a switch for each time step to allow the abstract plan to be disabled.
         switch = f"switch({time_step})"
@@ -44,7 +46,26 @@ def build_mapping(abstract_plan, abstraction):
         rule = f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1 :- {switch}."
         mapping_rules.append(rule)
 
+    mapping_rules.extend(_budget_rules(time_steps))
+
     return "\n".join(mapping_rules)
+
+
+def _budget_rules(time_steps):
+    """Cap how many switches may be off, leaving the choice of which to the solver.
+
+    One ``budget/1`` atom per allowance lets a solve call pick the cap by
+    assumption, so raising it needs no regrounding.
+    """
+    rules = [f"{{ budget(0..{len(time_steps)}) }}."]
+    if not time_steps:
+        return rules
+
+    elements = []
+    for time_step in time_steps:
+        elements.append(f"{time_step} : not switch({time_step})")
+    rules.append(f":- budget(B), #count{{ {'; '.join(elements)} }} > B.")
+    return rules
 
 
 def _abstract_horizon(abstract_plan):
