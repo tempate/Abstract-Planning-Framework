@@ -1,13 +1,14 @@
 # Abstract Planning Framework
 
 An experimental framework for comparing classical planning with abstraction and
-decremental refinement across classical-planning benchmarks using Fast Downward,
+plan refinement across classical-planning benchmarks using Fast Downward,
 plasp, and Clingo.
 
 Fast Downward translates PDDL to SAS, plasp translates SAS to ASP facts, and the
 repository-owned encoding drives Clingo's incremental plan search. The `abstract`
-mode collapses a symmetric object class, solves the smaller task, and relaxes the
-resulting plan constraints in reverse order until the concrete task is solvable.
+mode collapses a symmetric object class, solves the smaller task, and gives up as
+few of the resulting abstract actions as it can while still solving the concrete
+task.
 
 ## Setup
 
