@@ -14,7 +14,7 @@ REPORTS_FILE = PROJECT_ROOT / "experiments" / "plan" / "reports.md"
 UNSOLVABLE_REPORTS_FILE = PROJECT_ROOT / "experiments" / "unsolvability" / "reports.md"
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
-VERDICTS = ("unsolvable", "unknown", "solvable")
+VERDICTS = ("unsolvable", "unknown")
 # A killed run reports the phase it completed last, so it died in the next one.
 KILLED_IN_PHASE = {
     "abstract_asp": "Searching for the abstract plan",
@@ -80,16 +80,29 @@ def _is_verdict_run(problems):
 
 def _verdicts(problems):
     total = len(problems)
+    decided = {"abstract": 0, "concrete": 0}
     lines = _wide_header("Verdict")
     for verdict in VERDICTS:
         counts = _verdict_counts(problems, verdict)
+        for mode in decided:
+            decided[mode] += counts[mode]
         abstract = _share(counts["abstract"], total, 1)
         concrete = _share(counts["concrete"], total, 1)
         lines.append(_wide(verdict.capitalize(), abstract, concrete))
 
-    # Everything that finished without deciding: no symmetries, or an error.
-    missing = _verdict_counts(problems, "")
-    lines.append(_wide("No verdict", _share(missing["abstract"], total, 1), _share(missing["concrete"], total, 1)))
+    timeouts = _status_counts(problems, "timed out")
+    out_of_memory = _out_of_memory(problems)
+
+    # Whatever the rows above leave out: no symmetries, or an error.
+    other = {}
+    for mode in decided:
+        other[mode] = total - decided[mode] - timeouts[mode] - out_of_memory[mode]
+
+    lines.append(_wide("Timeouts", _share(timeouts["abstract"], total, 1), _share(timeouts["concrete"], total, 1)))
+    lines.append(
+        _wide("Out of memory", _share(out_of_memory["abstract"], total, 1), _share(out_of_memory["concrete"], total, 1))
+    )
+    lines.append(_wide("Others", _share(other["abstract"], total, 1), _share(other["concrete"], total, 1)))
     lines.append(_wide("Total problems", total, total))
     return "Verdicts", lines
 
@@ -112,13 +125,14 @@ def _verdict_head_to_head(problems):
 
     counts = _verdict_counts(problems, "unsolvable")
     lines = _wide_header("Metric")
-    lines.append(_wide("Proved unsolvable", counts["abstract"], counts["concrete"]))
-    lines.append(_wide("Proved unsolvable by both", shared, shared))
+    lines.append(_wide("Proved unsolvable by both pipelines", shared, shared))
     faster_abstract = _share(faster["abstract"], shared, 1)
     faster_concrete = _share(faster["concrete"], shared, 1)
     lines.append(_wide("Faster when both proved it", faster_abstract, faster_concrete))
-    lines.append(_wide("Median runtime when both proved it", _median(abstract_times), _median(concrete_times)))
     lines.append(_wide("Proved it when the other did not", counts["abstract"] - shared, counts["concrete"] - shared))
+    lines.append(_wide("Median runtime when both proved it", _median(abstract_times), _median(concrete_times)))
+    total_runtimes = (_seconds(sum(abstract_times)), _seconds(sum(concrete_times)))
+    lines.append(_wide("Total runtime across shared proofs", *total_runtimes))
     return "Head to head", lines
 
 
@@ -136,13 +150,7 @@ def _coverage(problems):
     found = _status_counts(problems, "success")
     timeouts = _status_counts(problems, "timed out")
 
-    # runsolver interrupts a task that reaches the memory limit, and the kernel
-    # kills one that outruns it outright, so both statuses are out of memory.
-    interrupted = _status_counts(problems, "interrupted")
-    killed = _status_counts(problems, "killed (signal 9)")
-    out_of_memory = {}
-    for mode in interrupted:
-        out_of_memory[mode] = interrupted[mode] + killed[mode]
+    out_of_memory = _out_of_memory(problems)
     no_plan = _status_counts(problems, "no plan found")
 
     # Whatever the rows above leave out, errors among them, so the rows always
@@ -262,6 +270,17 @@ def _solved_by_both(modes):
 
 def _runtime(row):
     return float(row["wall_time_seconds"])
+
+
+def _out_of_memory(problems):
+    """runsolver interrupts a task that reaches the memory limit, and the kernel
+    kills one that outruns it outright, so both statuses are out of memory."""
+    interrupted = _status_counts(problems, "interrupted")
+    killed = _status_counts(problems, "killed (signal 9)")
+    counts = {}
+    for mode in interrupted:
+        counts[mode] = interrupted[mode] + killed[mode]
+    return counts
 
 
 def _status_counts(problems, status):

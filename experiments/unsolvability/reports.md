@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-09-16 09:15 — experiments/unsolvability/results.csv
+2026-09-16 09:47 — experiments/unsolvability/results.csv
 
 ## Verdicts
 
@@ -9,8 +9,9 @@ Verdict                                     Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
 Unsolvable                                          15 (7.5%)         67 (33.3%)
 Unknown                                            36 (17.9%)           0 (0.0%)
-Solvable                                             0 (0.0%)           0 (0.0%)
-No verdict                                        150 (74.6%)        134 (66.7%)
+Timeouts                                             3 (1.5%)           0 (0.0%)
+Out of memory                                      98 (48.8%)        114 (56.7%)
+Others                                             49 (24.4%)         20 (10.0%)
 Total problems                                            201                201
 ```
 
@@ -19,11 +20,11 @@ Total problems                                            201                201
 ```
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Proved unsolvable                                          15                 67
-Proved unsolvable by both                                  12                 12
+Proved unsolvable by both pipelines                        12                 12
 Faster when both proved it                          5 (41.7%)          7 (58.3%)
-Median runtime when both proved it                    15.87 s            14.14 s
 Proved it when the other did not                            3                 55
+Median runtime when both proved it                    15.87 s            14.14 s
+Total runtime across shared proofs                 1,090.49 s         1,761.18 s
 ```
 
 ## Where the timeouts died
