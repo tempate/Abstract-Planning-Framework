@@ -1,10 +1,6 @@
 # Problems for which PDDL Symmetries reported an abstraction class.
 # Regenerate from a collected run:
 #   awk -F, '$3=="abstract" && $4!="no symmetries" && NR>1 {print $1"/"$2}' results.csv | sort -u
-#
-# Run 6090773 reported a class for 120 of these and dropped the 139 it found none
-# for. The remaining 81 are kept unproven: their abstract job died before symmetry
-# discovery, on a PDDL parse error. Regenerate once that is fixed.
 bag-barman/prob03.pddl
 bag-barman/prob06.pddl
 bag-barman/prob09.pddl
@@ -18,21 +14,18 @@ bag-barman/prob17.pddl
 bag-barman/prob18.pddl
 bag-barman/prob19.pddl
 bag-barman/prob20.pddl
-bag-gripper/prob01.pddl
 bag-gripper/prob02.pddl
 bag-gripper/prob03.pddl
 bag-gripper/prob04.pddl
 bag-gripper/prob05.pddl
 bag-gripper/prob06.pddl
 bag-gripper/prob07.pddl
-bag-gripper/prob08.pddl
 bag-gripper/prob09.pddl
 bag-gripper/prob10.pddl
 bag-gripper/prob11.pddl
 bag-gripper/prob12.pddl
 bag-gripper/prob13.pddl
 bag-gripper/prob14.pddl
-bag-gripper/prob15.pddl
 bag-gripper/prob16.pddl
 bag-gripper/prob17.pddl
 bag-gripper/prob18.pddl
@@ -160,36 +153,6 @@ over-rovers/prob17.pddl
 over-rovers/prob18.pddl
 over-rovers/prob19.pddl
 over-rovers/prob20.pddl
-over-tpp/prob01.pddl
-over-tpp/prob02.pddl
-over-tpp/prob03.pddl
-over-tpp/prob04.pddl
-over-tpp/prob05.pddl
-over-tpp/prob06.pddl
-over-tpp/prob07.pddl
-over-tpp/prob08.pddl
-over-tpp/prob09.pddl
-over-tpp/prob10.pddl
-over-tpp/prob11.pddl
-over-tpp/prob12.pddl
-over-tpp/prob13.pddl
-over-tpp/prob14.pddl
-over-tpp/prob15.pddl
-over-tpp/prob16.pddl
-over-tpp/prob17.pddl
-over-tpp/prob18.pddl
-over-tpp/prob19.pddl
-over-tpp/prob20.pddl
-over-tpp/prob21.pddl
-over-tpp/prob22.pddl
-over-tpp/prob23.pddl
-over-tpp/prob24.pddl
-over-tpp/prob25.pddl
-over-tpp/prob26.pddl
-over-tpp/prob27.pddl
-over-tpp/prob28.pddl
-over-tpp/prob29.pddl
-over-tpp/prob30.pddl
 pegsol-row5/prob01.pddl
 tetris/prob06.pddl
 tetris/prob07.pddl
