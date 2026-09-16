@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from core.integrations.clingo import IncrementalSolver
 from core.integrations.plasp import add_switch_to_asp_rule
 from core.plan import PlanAction
-from core.refinement.budgeted import solve_within_budget
+from core.refinement.minimized import solve_fewest_switches_off
 from core.refinement.mapping import build_mapping
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
@@ -109,7 +109,7 @@ switch(2).
 action(action(("inspect","item2"))).
 """ + build_mapping(abstract_plan, abstraction)
 
-        success, plan, budget = solve_within_budget(IncrementalSolver(program, horizon=5))
+        success, plan, budget = solve_fewest_switches_off(IncrementalSolver(program, horizon=5))
 
         self.assertTrue(success)
         self.assertEqual(budget, 1)

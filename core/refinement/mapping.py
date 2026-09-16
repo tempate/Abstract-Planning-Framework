@@ -46,23 +46,20 @@ def build_mapping(abstract_plan, abstraction):
         rule = f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1 :- {switch}."
         mapping_rules.append(rule)
 
-    mapping_rules.extend(_budget_rules(time_steps))
+    mapping_rules.extend(_minimize_rules(time_steps))
 
     return "\n".join(mapping_rules)
 
 
-def _budget_rules(time_steps):
+def _minimize_rules(time_steps):
     rules = []
 
-    # Create all the possible budgets to avoid reconstructing the state.
-    # We can then pick the current budget using assumptions.
-    budget_objects = f"{{ budget(0..{len(time_steps)}) }}."
-    rules.append(budget_objects)
-
     if time_steps:
-        switches = "; ".join(f"{t} : not switch({t})" for t in time_steps)
-        turn_off_n_switches = f":- budget(B), #count{{ {switches} }} != B."
-        rules.append(turn_off_n_switches)
+        # Let the solver decide how many switches to turn off, but charge it one
+        # per switch so it prefers the abstract plan where the plan works.
+        switches = "; ".join(f"1,{t} : not switch({t})" for t in time_steps)
+        fewest_switches_off = f"#minimize{{ {switches} }}."
+        rules.append(fewest_switches_off)
 
     return rules
 

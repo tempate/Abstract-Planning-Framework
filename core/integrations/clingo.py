@@ -25,7 +25,10 @@ class IncrementalSolver:
         if horizon < 0:
             raise ValueError("Horizon must be nonnegative")
 
-        arguments = ["-t", str(THREADS), "--warn=none"]
+        # Core-guided optimization starts from every switch on and raises the cost
+        # only when a core proves it must, instead of descending from a first model
+        # that gave up most of the abstract plan.
+        arguments = ["-t", str(THREADS), "--warn=none", "--opt-strategy=usc"]
         self.control = clingo.Control(arguments)
         self.control.configuration.solve.models = 1
         self.control.add("base", [], asp)

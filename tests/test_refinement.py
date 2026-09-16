@@ -25,14 +25,14 @@ class RefinementTests(unittest.TestCase):
         return RefinementContext(**values)
 
     @patch("core.refinement.pipeline.IncrementalSolver")
-    @patch("core.refinement.pipeline.solve_within_budget", return_value=(True, ["occurs(concrete,1)"], 2))
+    @patch("core.refinement.pipeline.solve_fewest_switches_off", return_value=(True, ["occurs(concrete,1)"], 2))
     @patch("core.refinement.pipeline.build_mapping", return_value="mapping asp")
     @patch("core.refinement.pipeline.parse_plan_actions", return_value=(PlanAction("move", ("item_abs",), 1),))
     @patch(
         "core.refinement.pipeline.solve", return_value=ClingoSolveResult(["occurs(abstract,1)"], horizon=2, attempts=3)
     )
     def test_the_abstract_plan_is_mapped_and_its_horizon_is_reported(
-        self, solve, parse_plan_actions, build_mapping, solve_within_budget, incremental_solver
+        self, solve, parse_plan_actions, build_mapping, solve_fewest_switches_off, incremental_solver
     ):
         context = self._context()
 
@@ -47,7 +47,7 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(context.metrics.counters["decrements"], 2)
         self.assertEqual(context.metrics.counters["increments"], 0)
         self.assertEqual(context.metrics.counters["final_horizon"], 5)
-        self.assertEqual(context.metrics.counters["concrete_solve_calls"], 3)
+        self.assertEqual(context.metrics.counters["concrete_solve_calls"], 1)
         self.assertIn("abstract_solving", context.metrics.durations)
         # The guided search runs the mapping alongside the concrete program, and
         # starts from the mapped horizon that surrounds the two abstract actions
@@ -56,7 +56,7 @@ class RefinementTests(unittest.TestCase):
 
     @patch("core.refinement.pipeline.IncrementalSolver")
     @patch(
-        "core.refinement.pipeline.solve_within_budget",
+        "core.refinement.pipeline.solve_fewest_switches_off",
         return_value=(True, ['occurs(action(("move","a")),2)', 'occurs(action(("move","b")),4)'], 0),
     )
     @patch("core.refinement.pipeline.build_mapping", return_value="mapping asp")
@@ -65,7 +65,7 @@ class RefinementTests(unittest.TestCase):
         "core.refinement.pipeline.solve", return_value=ClingoSolveResult(["occurs(abstract,1)"], horizon=2, attempts=1)
     )
     def test_the_plan_length_counts_actions_instead_of_time_steps(
-        self, solve, parse_plan_actions, build_mapping, solve_within_budget, incremental_solver
+        self, solve, parse_plan_actions, build_mapping, solve_fewest_switches_off, incremental_solver
     ):
         result = refine(self._context())
 
@@ -75,12 +75,12 @@ class RefinementTests(unittest.TestCase):
 
     @patch("core.refinement.pipeline.disabled_switches", return_value=[])
     @patch("core.refinement.pipeline.IncrementalSolver")
-    @patch("core.refinement.pipeline.solve_within_budget", return_value=(False, None, 3))
+    @patch("core.refinement.pipeline.solve_fewest_switches_off", return_value=(False, None, 3))
     @patch("core.refinement.pipeline.build_mapping", return_value="mapping asp")
     @patch("core.refinement.pipeline.parse_plan_actions", return_value=())
     @patch("core.refinement.pipeline.solve", return_value=ClingoSolveResult(["abstract atom"], horizon=3, attempts=4))
     def test_unrefinable_plans_extend_the_search_above_the_abstract_horizon(
-        self, solve, parse_plan_actions, build_mapping, solve_within_budget, incremental_solver, disabled_switches
+        self, solve, parse_plan_actions, build_mapping, solve_fewest_switches_off, incremental_solver, disabled_switches
     ):
         solver = incremental_solver.return_value
         solver.search.return_value = ClingoSolveResult(["occurs(concrete,9)"], horizon=9, attempts=2)
@@ -94,12 +94,12 @@ class RefinementTests(unittest.TestCase):
         self.assertEqual(context.metrics.counters["decrements"], 3)
         self.assertEqual(context.metrics.counters["increments"], 2)
         self.assertEqual(context.metrics.counters["final_horizon"], 9)
-        self.assertEqual(context.metrics.counters["concrete_solve_calls"], 6)
+        self.assertEqual(context.metrics.counters["concrete_solve_calls"], 3)
         self.assertIn("extended_concrete_solving", context.metrics.durations)
         self.assertEqual(incremental_solver.call_args.args, ("concrete asp\nmapping asp", 7))
 
         # The extension continues on the solver the budgeted search used.
-        self.assertIs(solve_within_budget.call_args.args[0], solver)
+        self.assertIs(solve_fewest_switches_off.call_args.args[0], solver)
         solver.extend.assert_called_once_with()
         self.assertEqual(solver.search.call_args.args[0], [])
 
