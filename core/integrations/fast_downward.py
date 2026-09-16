@@ -1,49 +1,86 @@
-"""Fast Downward integration for translating PDDL tasks to SAS."""
+"""Fast Downward integration for translating PDDL tasks to SAS and searching them."""
 
 import os
 import subprocess
 import sys
 
 from core.integrations.paths import FAST_DOWNWARD_SCRIPT
-from core.outcomes import IntegrationError
+from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
 
+# Fast Downward's exit codes, documented at
+# https://www.fast-downward.org/latest/documentation/exit-codes/.
 _SUCCESS = 0
+_TRANSLATE_UNSOLVABLE = 10
+_SEARCH_UNSOLVABLE = 11
+# The driver reports a component killed by a signal as 256 minus the signal, so
+# 247 is a SIGKILL, which on these tasks is the kernel reclaiming the memory the
+# search asked for.
+_KILLED_OUT_OF_MEMORY = 247
+
+SEARCH = "astar(blind())"
 
 
 def pddl_to_sas(base_dir, domain_path, problem_path, label):
     """Translate a concrete or abstract PDDL task and return its SAS file."""
     os.makedirs(base_dir, exist_ok=True)
-
-    # Define the paths for the input and output files
-    paths = {
-        "domain": os.fspath(domain_path),
-        "problem": os.fspath(problem_path),
-        "sas": os.path.join(base_dir, "output.sas"),
-    }
-
-    # Run the Fast Downward translator
-    completed_process = subprocess.run(_get_command(paths), capture_output=True, text=True)
-
-    if completed_process.returncode != _SUCCESS:
-        diagnostics = "\n".join(
-            output.strip() for output in (completed_process.stdout, completed_process.stderr) if output.strip()
-        )
-        raise IntegrationError(
-            f"Fast Downward ({label}) failed with exit code {completed_process.returncode}:\n{diagnostics}"
-        )
-
-    return paths["sas"]
-
-
-def _get_command(paths):
-    """Get the Fast Downward translation command."""
-    return [
+    sas_path = os.path.join(base_dir, "output.sas")
+    command = [
         sys.executable,
         FAST_DOWNWARD_SCRIPT,
         "--sas-file",
-        paths["sas"],
+        sas_path,
         "--keep-sas-file",
         "--translate",
-        paths["domain"],
-        paths["problem"],
+        os.fspath(domain_path),
+        os.fspath(problem_path),
     ]
+    completed_process = subprocess.run(command, capture_output=True, text=True)
+
+    if completed_process.returncode == _TRANSLATE_UNSOLVABLE:
+        raise UnsolvableTaskError(f"Fast Downward ({label}) proved the task unsolvable while translating")
+
+    if completed_process.returncode != _SUCCESS:
+        _raise_failure(completed_process, label)
+
+    return sas_path
+
+
+def has_plan(base_dir, domain_path, problem_path, label):
+    """Translate and search one PDDL task, reporting only whether it has a plan."""
+    os.makedirs(base_dir, exist_ok=True)
+    plan_path = os.path.join(base_dir, f"{label}.plan")
+    # Both paths have to be named. Left to itself the driver writes and reads
+    # output.sas in the working directory, which every task of a cluster run
+    # shares, so concurrent tasks truncate and delete each other's file.
+    sas_path = os.path.join(base_dir, f"{label}.sas")
+    command = [
+        sys.executable,
+        FAST_DOWNWARD_SCRIPT,
+        "--sas-file",
+        sas_path,
+        "--plan-file",
+        plan_path,
+        os.fspath(domain_path),
+        os.fspath(problem_path),
+        "--search",
+        SEARCH,
+    ]
+    completed_process = subprocess.run(command, capture_output=True, text=True)
+
+    if completed_process.returncode == _SUCCESS:
+        return True
+    if completed_process.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
+        return False
+
+    _raise_failure(completed_process, label)
+
+
+def _raise_failure(completed_process, label):
+    """Report what Fast Downward said, as memory when that is what ran out."""
+    diagnostics = "\n".join(
+        output.strip() for output in (completed_process.stdout, completed_process.stderr) if output.strip()
+    )
+    message = f"Fast Downward ({label}) failed with exit code {completed_process.returncode}:\n{diagnostics}"
+    if completed_process.returncode == _KILLED_OUT_OF_MEMORY:
+        raise OutOfMemoryError(message)
+    raise IntegrationError(message)

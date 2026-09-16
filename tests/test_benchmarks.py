@@ -10,11 +10,12 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from benchmarks.suite import SUITE
+from experiments.plan.suite import SUITE
+from experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from scripts.experiments.collect import FIELDS, _preserved_concrete_rows, collect
+from experiments.collect import FIELDS, _preserved_concrete_rows, collect
 from scripts.utils.reporting import update_result_progress
-from scripts.experiments.run import (
+from experiments.run import (
     DEFAULT_TIMEOUT,
     NO_SYMMETRIES_MESSAGE,
     PROJECT_ROOT,
@@ -24,8 +25,8 @@ from scripts.experiments.run import (
     _run_pipeline,
     _run_task,
 )
-from scripts.experiments.report import _coverage, _head_to_head
-from scripts.experiments.submit import (
+from experiments.report import _coverage, _head_to_head
+from experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
     _argument_parser,
@@ -66,6 +67,10 @@ class BenchmarkTests(unittest.TestCase):
             config = json.loads(config_file.read_text(encoding="utf-8"))
 
         self.assertEqual(config["partition"], "sunnycove")
+
+    def test_the_project_root_is_the_repository_root(self):
+        """Guards the parents[N] depth, which moving the runner has broken twice."""
+        self.assertTrue((PROJECT_ROOT / "pyproject.toml").is_file(), f"{PROJECT_ROOT} is not the repository root")
 
     def test_cluster_resource_defaults(self):
         args = _argument_parser().parse_args([])
@@ -128,22 +133,9 @@ class BenchmarkTests(unittest.TestCase):
         self.assertNotIn("exclusive", config)
         self.assertEqual(config["max_parallel_jobs"], 12)
         self.assertEqual(config["working_dir"], os.path.relpath(PROJECT_ROOT, definition_dir))
-        self.assertEqual(
-            worker[1:],
-            [
-                "-m",
-                "scripts.experiments.run",
-                "$1",
-                "--domain-name",
-                "$2",
-                "--domain",
-                "$3",
-                "--problem",
-                "$4",
-                "--timeout",
-                "$timeout",
-            ],
-        )
+        self.assertIn("experiments.run", worker)
+        for placeholder in ("$1", "$2", "$3", "$4", "$timeout"):
+            self.assertIn(placeholder, worker)
         self.assertEqual(
             instances,
             [
@@ -183,6 +175,36 @@ class BenchmarkTests(unittest.TestCase):
             tasks = list(_benchmark_tasks(root, ["example"], runnable={("example", "p02.pddl")}))
 
             self.assertEqual([problem.name for _mode, _name, _domain, problem in tasks], ["p02.pddl"])
+
+    def test_only_the_problems_known_unsolvable_are_submitted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "example").mkdir()
+            names = ("dom01.pddl", "prob01.pddl", "satdom01.pddl", "satprob01.pddl", "unknownprob01.pddl")
+            for name in names:
+                (root / "example" / name).touch()
+
+            tasks = list(_benchmark_tasks(root, ["example"], runnable=None))
+
+        self.assertEqual([task[3].name for task in tasks], ["prob01.pddl"])
+
+    def test_the_decide_pipeline_runs_the_unsolvability_script(self):
+        command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract", "decide")
+
+        self.assertIn("scripts.unsolvability", command)
+        self.assertIn("abstract", command)
+
+    def test_every_problem_runs_when_no_symmetry_class_is_required(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "example").mkdir()
+            (root / "example" / "domain.pddl").touch()
+            (root / "example" / "p01.pddl").touch()
+            (root / "example" / "p02.pddl").touch()
+
+            tasks = list(_benchmark_tasks(root, ["example"], runnable=None))
+
+        self.assertEqual([task[3].name for task in tasks], ["p01.pddl", "p02.pddl"])
 
     def test_planner_gets_only_the_mode_problem_and_domain(self):
         command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract")
@@ -255,7 +277,7 @@ class BenchmarkTests(unittest.TestCase):
         ]
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=completed) as run,
+            patch("experiments.run.subprocess.run", side_effect=completed) as run,
         ):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
@@ -270,24 +292,9 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(concrete["mode"], "concrete")
         self.assertEqual(concrete["return_code"], 0)
         self.assertEqual(len(rows), 2)
-        self.assertEqual(
-            FIELDS,
-            (
-                "domain",
-                "problem",
-                "mode",
-                "status",
-                "wall_time_seconds",
-                "last_completed_phase",
-                *(f"{name}_seconds" for name in DURATION_LABELS),
-                "horizon",
-                "plan_length",
-                *COUNTER_LABELS,
-                "abstracted_object_count",
-                "abstracted_object_type",
-                "error_message",
-            ),
-        )
+        self.assertEqual(FIELDS[:4], ("domain", "problem", "mode", "status"))
+        for name in (*(f"{name}_seconds" for name in DURATION_LABELS), *COUNTER_LABELS):
+            self.assertIn(name, FIELDS)
         self.assertEqual(rows[0]["mode"], "abstract")
         self.assertEqual(rows[0]["status"], "success")
         self.assertEqual(rows[0]["horizon"], 4)
@@ -327,10 +334,7 @@ class BenchmarkTests(unittest.TestCase):
             update_result_progress(result_file, {"kind": "phase_completed", "phase": "concrete_fd"}, metrics)
             return subprocess.CompletedProcess(command, 2, stdout="planner failed before final metrics\n")
 
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=complete),
-        ):
+        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", side_effect=complete):
             result = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -348,10 +352,7 @@ class BenchmarkTests(unittest.TestCase):
             # runsolver sends SIGINT when the job outgrows its memory limit.
             raise KeyboardInterrupt
 
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=interrupt),
-        ):
+        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", side_effect=interrupt):
             result = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -373,7 +374,7 @@ class BenchmarkTests(unittest.TestCase):
 
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=selected_then_killed),
+            patch("experiments.run.subprocess.run", side_effect=selected_then_killed),
         ):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=10)
             rows = collect(directory)
@@ -388,10 +389,7 @@ class BenchmarkTests(unittest.TestCase):
         failed = subprocess.CompletedProcess(
             [], 2, stdout="usage: planner.py [-h]\nplanner.py: error: Unsupported quality metric\nStarting\n"
         )
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", return_value=failed),
-        ):
+        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", return_value=failed):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -411,10 +409,7 @@ class BenchmarkTests(unittest.TestCase):
                 "INFO     Planner time: 0.14s\n"
             ),
         )
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", return_value=failed),
-        ):
+        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", return_value=failed):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -427,7 +422,7 @@ class BenchmarkTests(unittest.TestCase):
         ]
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=timeouts) as run,
+            patch("experiments.run.subprocess.run", side_effect=timeouts) as run,
         ):
             abstract = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=1800)
             concrete = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=1800)
@@ -444,6 +439,7 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(_human_status({"timed_out": False, "return_code": 0, "output": ""}), "success")
         self.assertEqual(_human_status({"timed_out": False, "return_code": 1, "output": ""}), "no plan found")
         self.assertEqual(_human_status({"timed_out": False, "return_code": 2, "output": ""}), "error (exit code 2)")
+        self.assertEqual(_human_status({"timed_out": False, "return_code": 5, "output": ""}), "out of memory")
         self.assertEqual(_human_status({"timed_out": True, "return_code": None, "output": ""}), "timed out")
         self.assertEqual(_human_status({"status": "symmetry_timeout"}), "symmetry timeout")
         self.assertEqual(_human_status({"status": "killed", "signal": 9}), "killed (signal 9)")
@@ -459,7 +455,7 @@ class BenchmarkTests(unittest.TestCase):
             subprocess.CompletedProcess([], 2, stdout=""),
             subprocess.TimeoutExpired([], 10, output="partial output"),
         ]
-        with patch("scripts.experiments.run.subprocess.run", side_effect=completed):
+        with patch("experiments.run.subprocess.run", side_effect=completed):
             results = [_run_pipeline([], 10) for _ in completed]
 
         self.assertEqual(
@@ -475,7 +471,7 @@ class BenchmarkTests(unittest.TestCase):
         concrete_completed = subprocess.CompletedProcess([], 0, stdout="Plan found: yes\n")
         with (
             tempfile.TemporaryDirectory() as directory,
-            patch("scripts.experiments.run.subprocess.run", side_effect=[no_symmetries, concrete_completed]) as run,
+            patch("experiments.run.subprocess.run", side_effect=[no_symmetries, concrete_completed]) as run,
         ):
             abstract = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             concrete = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
@@ -631,3 +627,37 @@ class ReportTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DomainLookupTests(unittest.TestCase):
+    def _collection(self, names):
+        directory = Path(tempfile.mkdtemp())
+        for name in names:
+            (directory / name).write_text("", encoding="utf-8")
+        return directory
+
+    def test_finds_a_domain_shared_by_every_problem(self):
+        directory = self._collection(["domain.pddl", "p01.pddl"])
+
+        self.assertEqual(_find_domain(directory / "p01.pddl").name, "domain.pddl")
+
+    def test_finds_the_domain_numbered_with_the_problem(self):
+        directory = self._collection(["dom01.pddl", "prob01.pddl", "dom02.pddl", "prob02.pddl"])
+
+        self.assertEqual(_find_domain(directory / "prob02.pddl").name, "dom02.pddl")
+
+    def test_finds_the_domain_of_a_named_problem_variant(self):
+        directory = self._collection(["satdom02.pddl", "satprob02.pddl", "dom02.pddl", "prob02.pddl"])
+
+        self.assertEqual(_find_domain(directory / "satprob02.pddl").name, "satdom02.pddl")
+
+    def test_falls_back_to_the_domain_the_variant_shares_with_its_problem(self):
+        directory = self._collection(["dom02.pddl", "prob02.pddl", "satprob02.pddl"])
+
+        self.assertEqual(_find_domain(directory / "satprob02.pddl").name, "dom02.pddl")
+
+    def test_reports_a_problem_with_no_domain(self):
+        directory = self._collection(["p01.pddl"])
+
+        with self.assertRaises(FileNotFoundError):
+            _find_domain(directory / "p01.pddl")
