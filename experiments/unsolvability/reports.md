@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-09-16 09:49 — experiments/unsolvability/results.csv
+2026-09-16 09:54 — experiments/unsolvability/results.csv
 
 ## Verdicts
 
@@ -10,8 +10,8 @@ Verdict                                     Abstract pipeline  Concrete pipeline
 Unsolvable                                          15 (8.9%)         45 (26.8%)
 Unknown                                            36 (21.4%)           0 (0.0%)
 Timeouts                                             3 (1.8%)           0 (0.0%)
-Out of memory                                      98 (58.3%)        106 (63.1%)
-Others                                              16 (9.5%)         17 (10.1%)
+Out of memory                                     113 (67.3%)        123 (73.2%)
+Others                                               1 (0.6%)           0 (0.0%)
 Total problems                                            168                168
 ```
 

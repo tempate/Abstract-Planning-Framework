@@ -7,16 +7,16 @@ bag-barman,prob09.pddl,abstract,interrupted,610.0140603780746,abstract_pddl_writ
 bag-barman,prob09.pddl,concrete,success,53.00349422171712,total,51.165251,,,,,,51.157091,,,,,,,unsolvable,,,,,,,,,,,,,
 bag-barman,prob11.pddl,abstract,interrupted,562.7953823953867,abstract_pddl_writing,,1.2784884609282017,10.996371679008007,1.4491548873484135,32.27915697172284,5.069056078791618,,,,,,,,,,,69,6,,,,,,,3,cocktail,
 bag-barman,prob11.pddl,concrete,success,52.38277177885175,total,50.665263,,,,,,50.660491,,,,,,,unsolvable,,,,,,,,,,,,,
-bag-barman,prob12.pddl,abstract,error (exit code 2),551.9022131636739,abstract_pddl_writing,,1.3551741391420364,11.38290661200881,1.494286973029375,30.821992944926023,5.585253339260817,,,,,,,,,,,64,4,,,,,,,2,cocktail,Fast Downward (abstract) failed with exit code 247:
+bag-barman,prob12.pddl,abstract,out of memory,551.9022131636739,abstract_pddl_writing,,1.3551741391420364,11.38290661200881,1.494286973029375,30.821992944926023,5.585253339260817,,,,,,,,,,,64,4,,,,,,,2,cocktail,Fast Downward (abstract) failed with exit code 247:
 bag-barman,prob12.pddl,concrete,success,52.605260740965605,total,50.82363,,,,,,50.817307,,,,,,,unsolvable,,,,,,,,,,,,,
 bag-barman,prob13.pddl,abstract,interrupted,314.88940579723567,abstract_pddl_writing,,1.9219535756856203,18.93609390128404,4.355342996306717,51.825250579975545,9.911110187880695,,,,,,,,,,,88,4,,,,,,,2,cocktail,
 bag-barman,prob13.pddl,concrete,interrupted,821.8956091813743,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-bag-barman,prob14.pddl,abstract,error (exit code 2),793.214364245534,abstract_pddl_writing,,1.4248362109065056,19.040293339639902,3.1561361104249954,50.837636694312096,9.565065894275904,,,,,,,,,,,72,4,,,,,,,2,cocktail,Fast Downward (abstract) failed with exit code 247:
+bag-barman,prob14.pddl,abstract,out of memory,793.214364245534,abstract_pddl_writing,,1.4248362109065056,19.040293339639902,3.1561361104249954,50.837636694312096,9.565065894275904,,,,,,,,,,,72,4,,,,,,,2,cocktail,Fast Downward (abstract) failed with exit code 247:
 bag-barman,prob14.pddl,concrete,interrupted,856.6904163593426,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 bag-barman,prob15.pddl,abstract,interrupted,317.71673722565174,abstract_pddl_writing,,1.8129667975008488,18.776292361319065,4.368321355432272,51.825438249856234,9.758534390479326,,,,,,,,,,,88,4,,,,,,,2,cocktail,
-bag-barman,prob15.pddl,concrete,error (exit code 2),820.5202536247671,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+bag-barman,prob15.pddl,concrete,out of memory,820.5202536247671,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 bag-barman,prob16.pddl,abstract,interrupted,315.22201707586646,abstract_pddl_writing,,2.065972554497421,18.173644287511706,4.547226764261723,51.01005270052701,9.294504524208605,,,,,,,,,,,88,4,,,,,,,2,cocktail,
-bag-barman,prob16.pddl,concrete,error (exit code 2),837.7779719606042,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+bag-barman,prob16.pddl,concrete,out of memory,837.7779719606042,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 bag-barman,prob17.pddl,abstract,interrupted,408.01631216332316,abstract_pddl_writing,,1.7012636698782444,23.88217144459486,4.672123081982136,67.06867754086852,12.287577401846647,,,,,,,,,,,80,4,,,,,,,2,cocktail,
 bag-barman,prob17.pddl,concrete,interrupted,808.5125612951815,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 bag-barman,prob18.pddl,abstract,interrupted,404.5154859572649,abstract_pddl_writing,,1.6745500825345516,24.602154038846493,4.605534579604864,67.60413995012641,12.33800757303834,,,,,,,,,,,80,4,,,,,,,2,cocktail,
@@ -47,7 +47,7 @@ bag-gripper,prob12.pddl,abstract,timed out,1800.2898247763515,abstract_pddl_writ
 bag-gripper,prob12.pddl,concrete,success,122.89817874319851,total,121.122779,,,,,,121.104779,,,,,,,unsolvable,,,,,,,,,,,,,
 bag-gripper,prob13.pddl,abstract,interrupted,1292.2907519452274,abstract_pddl_writing,,7.5232266411185265,0.013894934207201004,26.166856952011585,1.0764602664858103,37.727034899406135,,,,,,,,,,,3,0,,,,,,,4,room,
 bag-gripper,prob13.pddl,concrete,interrupted,719.8620856888592,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-bag-gripper,prob14.pddl,abstract,error (exit code 2),658.125322598964,abstract_pddl_writing,,6.5581069849431515,0.01473318412899971,22.167998038232327,0.9036684595048428,49.5738285407424,,,,,,,,,,,3,0,,,,,,,3,room,Fast Downward (abstract) failed with exit code 247:
+bag-gripper,prob14.pddl,abstract,out of memory,658.125322598964,abstract_pddl_writing,,6.5581069849431515,0.01473318412899971,22.167998038232327,0.9036684595048428,49.5738285407424,,,,,,,,,,,3,0,,,,,,,3,room,Fast Downward (abstract) failed with exit code 247:
 bag-gripper,prob14.pddl,concrete,interrupted,611.0090972445905,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 bag-gripper,prob16.pddl,abstract,timed out,1800.349148735404,abstract_pddl_writing,,19.7549160271883,0.028881222009658813,67.50180299952626,2.8934320360422134,273.79905616492033,,,,,,,,,,,3,0,,,,,,,5,room,
 bag-gripper,prob16.pddl,concrete,interrupted,899.8051173835993,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -62,7 +62,7 @@ bag-gripper,prob20.pddl,concrete,interrupted,757.2781434096396,,,,,,,,,,,,,,,,,,
 bag-gripper,prob21.pddl,abstract,interrupted,817.2987276278436,abstract_pddl_writing,,15.842623551376164,0.023584851063787937,55.96677587367594,1.8858811045065522,183.4664301732555,,,,,,,,,,,3,0,,,,,,,3,room,
 bag-gripper,prob21.pddl,concrete,interrupted,670.9894513972104,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 bag-gripper,prob22.pddl,abstract,success,448.8979911971837,total,444.130564,5.17769,0.010415,54.827341,0.75768,36.290752,,347.007082,,,,,,unknown,,,3,0,,,,,,,5,room,
-bag-gripper,prob22.pddl,concrete,error (exit code 2),1048.9737784415483,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+bag-gripper,prob22.pddl,concrete,out of memory,1048.9737784415483,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 bag-gripper,prob23.pddl,abstract,interrupted,942.88088805601,abstract_pddl_writing,,1.3548289313912392,0.0050742290914058685,19.10724863782525,0.17814111709594727,2.5898820646107197,,,,,,,,,,,3,0,,,,,,,3,room,
 bag-gripper,prob23.pddl,concrete,interrupted,664.3150368854403,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 bag-gripper,prob24.pddl,abstract,interrupted,1102.83144890517,abstract_pddl_writing,,3.9846477955579758,0.009171456098556519,42.46779627725482,0.576565332710743,31.641072504222393,,,,,,,,,,,3,0,,,,,,,3,room,
@@ -93,21 +93,21 @@ bag-transport,prob11.pddl,abstract,interrupted,833.9518884066492,abstract_pddl_w
 bag-transport,prob11.pddl,concrete,interrupted,729.6165065206587,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 bag-transport,prob12.pddl,abstract,interrupted,853.2976544201374,abstract_pddl_writing,,0.39285164698958397,0.002934001386165619,0.3940369486808777,0.030018944293260574,0.04473085701465607,,,,,,,,,,,5,0,,,,,,,3,vehicle,
 bag-transport,prob12.pddl,concrete,interrupted,660.7163244513795,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-bag-transport,prob13.pddl,abstract,error (exit code 2),722.7545802332461,abstract_pddl_writing,,0.3665054924786091,0.002965230494737625,0.30004148185253143,0.02401011437177658,0.04407624527812004,,,,,,,,,,,5,0,,,,,,,2,vehicle,Fast Downward (abstract) failed with exit code 247:
+bag-transport,prob13.pddl,abstract,out of memory,722.7545802332461,abstract_pddl_writing,,0.3665054924786091,0.002965230494737625,0.30004148185253143,0.02401011437177658,0.04407624527812004,,,,,,,,,,,5,0,,,,,,,2,vehicle,Fast Downward (abstract) failed with exit code 247:
 bag-transport,prob13.pddl,concrete,interrupted,486.3997133523226,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 bag-transport,prob14.pddl,abstract,interrupted,574.0133305750787,abstract_pddl_writing,,0.3659994825720787,0.0027678795158863068,0.3025076761841774,0.031980689615011215,0.05152241513133049,,,,,,,,,,,5,0,,,,,,,3,vehicle,
 bag-transport,prob14.pddl,concrete,interrupted,480.86524652689695,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 bag-transport,prob15.pddl,abstract,interrupted,824.8262403905392,abstract_pddl_writing,,0.4894476793706417,0.003769461065530777,0.3634118214249611,0.038624901324510574,0.06805138662457466,,,,,,,,,,,5,0,,,,,,,2,vehicle,
 bag-transport,prob15.pddl,concrete,interrupted,409.4956808872521,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-bag-transport,prob16.pddl,abstract,error (exit code 2),537.2644899785519,abstract_pddl_writing,,0.351102352142334,0.0027787499129772186,0.3149651810526848,0.032487768679857254,0.04622405394911766,,,,,,,,,,,5,0,,,,,,,3,vehicle,Fast Downward (abstract) failed with exit code 247:
+bag-transport,prob16.pddl,abstract,out of memory,537.2644899785519,abstract_pddl_writing,,0.351102352142334,0.0027787499129772186,0.3149651810526848,0.032487768679857254,0.04622405394911766,,,,,,,,,,,5,0,,,,,,,3,vehicle,Fast Downward (abstract) failed with exit code 247:
 bag-transport,prob16.pddl,concrete,interrupted,480.20948442816734,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 bag-transport,prob17.pddl,abstract,interrupted,790.8176771774888,abstract_pddl_writing,,0.3771345391869545,0.002896636724472046,0.2617998793721199,0.025484733283519745,0.047655731439590454,,,,,,,,,,,5,0,,,,,,,2,vehicle,
 bag-transport,prob17.pddl,concrete,success,136.15430531650782,total,134.370376,,,,,,134.360333,,,,,,,unsolvable,,,,,,,,,,,,,
 bag-transport,prob18.pddl,abstract,interrupted,795.5976456962526,abstract_pddl_writing,,0.3816061168909073,0.0029288306832313538,0.25114166364073753,0.025201093405485153,0.048708170652389526,,,,,,,,,,,5,0,,,,,,,2,vehicle,
 bag-transport,prob18.pddl,concrete,interrupted,787.228306863457,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-bag-transport,prob19.pddl,abstract,error (exit code 2),567.7089416012168,abstract_pddl_writing,,0.459492739289999,0.003168094903230667,0.3599308878183365,0.03935407102108002,0.055051688104867935,,,,,,,,,,,5,0,,,,,,,3,vehicle,Fast Downward (abstract) failed with exit code 247:
+bag-transport,prob19.pddl,abstract,out of memory,567.7089416012168,abstract_pddl_writing,,0.459492739289999,0.003168094903230667,0.3599308878183365,0.03935407102108002,0.055051688104867935,,,,,,,,,,,5,0,,,,,,,3,vehicle,Fast Downward (abstract) failed with exit code 247:
 bag-transport,prob19.pddl,concrete,interrupted,484.7475281879306,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-bag-transport,prob20.pddl,abstract,error (exit code 2),320.037395237945,abstract_pddl_writing,,1.4325426882132888,0.005649334751069546,5.504831239581108,0.20901040825992823,0.4910681191831827,,,,,,,,,,,5,0,,,,,,,4,vehicle,Fast Downward (abstract) failed with exit code 247:
+bag-transport,prob20.pddl,abstract,out of memory,320.037395237945,abstract_pddl_writing,,1.4325426882132888,0.005649334751069546,5.504831239581108,0.20901040825992823,0.4910681191831827,,,,,,,,,,,5,0,,,,,,,4,vehicle,Fast Downward (abstract) failed with exit code 247:
 bag-transport,prob20.pddl,concrete,interrupted,255.7442003712058,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 bag-transport,prob21.pddl,abstract,interrupted,323.7963960841298,abstract_pddl_writing,,1.720768604427576,0.006918679922819138,7.013870321214199,0.2237420566380024,0.4032320976257324,,,,,,,,,,,5,0,,,,,,,4,vehicle,
 bag-transport,prob21.pddl,concrete,interrupted,194.5322497151792,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -158,10 +158,10 @@ cave-diving,prob14.pddl,concrete,success,510.4528494477272,total,508.366531,,,,,
 cave-diving,prob15.pddl,abstract,success,2.5148467533290386,total,0.637022,0.195193,0.003133,0.145913,0.010559,0.018465,,0.220462,,,,,,unsolvable,,,11,0,,,,,,,4,diver,
 cave-diving,prob15.pddl,concrete,success,2.476789329200983,total,0.321259,,,,,,0.314777,,,,,,,unsolvable,,,,,,,,,,,,,
 cave-diving,prob16.pddl,abstract,interrupted,616.4251868277788,abstract_pddl_writing,,0.2947934754192829,0.0037913545966148376,1.8050719164311886,0.03159481659531593,0.08813311532139778,,,,,,,,,,,19,0,,,,,,,12,diver,
-cave-diving,prob16.pddl,concrete,error (exit code 2),334.12040627375245,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+cave-diving,prob16.pddl,concrete,out of memory,334.12040627375245,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 cave-diving,prob17.pddl,abstract,interrupted,725.2401016345248,abstract_pddl_writing,,0.3271655272692442,0.004325662739574909,1.367343783378601,0.03252780623733997,0.06332196481525898,,,,,,,,,,,19,0,,,,,,,12,diver,
 cave-diving,prob17.pddl,concrete,interrupted,322.3157477118075,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-cave-diving,prob18.pddl,abstract,error (exit code 2),676.4834093805403,abstract_pddl_writing,,0.32908897567540407,0.004774028435349464,1.050254262983799,0.02994675002992153,0.042400271631777287,,,,,,,,,,,19,0,,,,,,,12,diver,Fast Downward (abstract) failed with exit code 247:
+cave-diving,prob18.pddl,abstract,out of memory,676.4834093805403,abstract_pddl_writing,,0.32908897567540407,0.004774028435349464,1.050254262983799,0.02994675002992153,0.042400271631777287,,,,,,,,,,,19,0,,,,,,,12,diver,Fast Downward (abstract) failed with exit code 247:
 cave-diving,prob18.pddl,concrete,interrupted,349.97128374129534,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 cave-diving,prob19.pddl,abstract,interrupted,963.9108020626009,abstract_pddl_writing,,0.3237108886241913,0.005304999649524689,0.4931788071990013,0.02772573009133339,0.028270598500967026,,,,,,,,,,,19,0,,,,,,,12,diver,
 cave-diving,prob19.pddl,concrete,interrupted,320.9169010715559,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -172,7 +172,7 @@ cave-diving,prob21.pddl,concrete,interrupted,367.9153027907014,,,,,,,,,,,,,,,,,,
 cave-diving,prob22.pddl,abstract,success,4.947054646909237,total,2.687871,0.23003,0.003686,0.547835,0.02022,0.124523,,1.723726,,,,,,unknown,,,15,0,,,,,,,8,diver,
 cave-diving,prob22.pddl,concrete,interrupted,370.2141396086663,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 cave-diving,prob23.pddl,abstract,success,4.131060119718313,total,2.304715,0.214941,0.00368,0.42434,0.019232,0.038698,,1.565826,,,,,,unknown,,,15,0,,,,,,,8,diver,
-cave-diving,prob23.pddl,concrete,error (exit code 2),324.2066472917795,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+cave-diving,prob23.pddl,concrete,out of memory,324.2066472917795,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 cave-diving,prob24.pddl,abstract,success,4.955968156456947,total,1.960324,0.213481,0.003531,0.269656,0.017315,0.023216,,1.399373,,,,,,unknown,,,15,0,,,,,,,8,diver,
 cave-diving,prob24.pddl,concrete,interrupted,373.1734031178057,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 cave-diving,prob25.pddl,abstract,success,2.917470194399357,total,1.127534,0.205913,0.003576,0.169347,0.016722,0.019941,,0.67519,,,,,,unsolvable,,,15,0,,,,,,,8,diver,
@@ -198,25 +198,25 @@ document-transfer,prob09.pddl,concrete,interrupted,312.17617136985064,,,,,,,,,,,
 document-transfer,prob10.pddl,abstract,interrupted,343.237816195935,abstract_pddl_writing,,0.21397505700588226,0.0023629292845726013,0.2709948234260082,0.05181274563074112,0.13350317254662514,,,,,,,,,,,3,0,,,,,,,22,document,
 document-transfer,prob10.pddl,concrete,interrupted,236.06205204874277,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 document-transfer,prob11.pddl,abstract,success,2.738873463124037,total,0.919268,0.221591,0.003011,0.273515,0.055496,0.034421,,0.293582,,,,,,unknown,,,3,0,,,,,,,34,document,
-document-transfer,prob11.pddl,concrete,error (exit code 2),209.17002911120653,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+document-transfer,prob11.pddl,concrete,out of memory,209.17002911120653,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 document-transfer,prob12.pddl,abstract,interrupted,373.2375831231475,abstract_pddl_writing,,0.23057213425636292,0.0016923807561397552,0.376116257160902,0.10111570730805397,0.14051388204097748,,,,,,,,,,,3,0,,,,,,,46,document,
-document-transfer,prob12.pddl,concrete,error (exit code 2),249.30692674592137,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+document-transfer,prob12.pddl,concrete,out of memory,249.30692674592137,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 document-transfer,prob13.pddl,abstract,success,2.4993247874081135,total,0.677663,0.171018,0.001889,0.15682,0.019105,0.051924,,0.246748,,,,,,unknown,,,3,0,,,,,,,12,document,
 document-transfer,prob13.pddl,concrete,interrupted,348.4190208092332,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 document-transfer,prob14.pddl,abstract,success,2.504583101719618,total,0.687361,0.173953,0.002069,0.174944,0.021767,0.027015,,0.25968,,,,,,unknown,,,3,0,,,,,,,14,document,
 document-transfer,prob14.pddl,concrete,interrupted,291.50039902329445,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-document-transfer,prob15.pddl,abstract,error (exit code 2),334.04395224153996,abstract_pddl_writing,,0.3645213320851326,0.0018268488347530365,0.6739252023398876,0.1921992301940918,0.11440407484769821,,,,,,,,,,,3,0,,,,,,,63,document,Fast Downward (abstract) failed with exit code 247:
+document-transfer,prob15.pddl,abstract,out of memory,334.04395224153996,abstract_pddl_writing,,0.3645213320851326,0.0018268488347530365,0.6739252023398876,0.1921992301940918,0.11440407484769821,,,,,,,,,,,3,0,,,,,,,63,document,Fast Downward (abstract) failed with exit code 247:
 document-transfer,prob15.pddl,concrete,interrupted,227.61790288984776,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-document-transfer,prob16.pddl,abstract,error (exit code 2),348.4508877284825,abstract_pddl_writing,,0.33991124108433723,0.002019733190536499,0.5505914986133575,0.15811414271593094,0.10503020137548447,,,,,,,,,,,3,0,,,,,,,55,document,Fast Downward (abstract) failed with exit code 247:
+document-transfer,prob16.pddl,abstract,out of memory,348.4508877284825,abstract_pddl_writing,,0.33991124108433723,0.002019733190536499,0.5505914986133575,0.15811414271593094,0.10503020137548447,,,,,,,,,,,3,0,,,,,,,55,document,Fast Downward (abstract) failed with exit code 247:
 document-transfer,prob16.pddl,concrete,interrupted,224.61522674188018,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-document-transfer,prob17.pddl,abstract,error (exit code 2),268.50978703796864,abstract_pddl_writing,,0.2874160632491112,0.0017682798206806183,0.5229580104351044,0.15829621255397797,0.11338981240987778,,,,,,,,,,,3,0,,,,,,,53,document,Fast Downward (abstract) failed with exit code 247:
+document-transfer,prob17.pddl,abstract,out of memory,268.50978703796864,abstract_pddl_writing,,0.2874160632491112,0.0017682798206806183,0.5229580104351044,0.15829621255397797,0.11338981240987778,,,,,,,,,,,3,0,,,,,,,53,document,Fast Downward (abstract) failed with exit code 247:
 document-transfer,prob17.pddl,concrete,interrupted,219.41940227150917,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 document-transfer,prob18.pddl,abstract,interrupted,364.91794065386057,abstract_pddl_writing,,0.19118156284093857,0.002308238297700882,0.21340134367346764,0.032191574573516846,0.04102402552962303,,,,,,,,,,,3,0,,,,,,,19,document,
-document-transfer,prob18.pddl,concrete,error (exit code 2),232.34424840658903,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+document-transfer,prob18.pddl,concrete,out of memory,232.34424840658903,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 document-transfer,prob19.pddl,abstract,success,2.4415310621261597,total,0.600466,0.156681,0.001984,0.133547,0.013348,0.013832,,0.247831,,,,,,unknown,,,3,0,,,,,,,12,document,
 document-transfer,prob19.pddl,concrete,interrupted,367.91708755493164,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 document-transfer,prob20.pddl,abstract,interrupted,377.2539816983044,abstract_pddl_writing,,0.24127851519733667,0.0017339158803224564,0.41008597519248724,0.10852830950170755,0.14887788984924555,,,,,,,,,,,3,0,,,,,,,49,document,
-document-transfer,prob20.pddl,concrete,error (exit code 2),266.55429732427,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+document-transfer,prob20.pddl,concrete,out of memory,266.55429732427,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 over-nomystery,prob01.pddl,abstract,success,30.77490158379078,total,28.579213,0.935886,0.003352,0.16871,0.141858,2.569249,,24.739337,,,,,,unsolvable,,,2,0,,,,,,,3,package,
 over-nomystery,prob01.pddl,concrete,success,3.546567589044571,total,1.544204,,,,,,1.541665,,,,,,,unsolvable,,,,,,,,,,,,,
 over-nomystery,prob02.pddl,abstract,interrupted,529.2401652820408,abstract_pddl_writing,,0.9137181788682938,0.003504432737827301,0.21699978038668633,0.09432841837406158,1.902635708451271,,,,,,,,,,,2,0,,,,,,,2,package,
@@ -228,20 +228,20 @@ over-nomystery,prob04.pddl,concrete,interrupted,334.99552899971604,,,,,,,,,,,,,,
 over-nomystery,prob05.pddl,abstract,interrupted,348.2952987253666,abstract_pddl_writing,,7.090967129915953,0.013702776283025742,0.9014326557517052,0.8726292736828327,61.8992900326848,,,,,,,,,,,2,0,,,,,,,3,package,
 over-nomystery,prob05.pddl,concrete,interrupted,313.6776893027127,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-nomystery,prob06.pddl,abstract,interrupted,526.7919155173004,abstract_pddl_writing,,4.148474309593439,0.007856231182813644,0.40646713599562645,0.5066325478255749,25.915491074323654,,,,,,,,,,,2,0,,,,,,,3,package,
-over-nomystery,prob06.pddl,concrete,error (exit code 2),512.9580890126526,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+over-nomystery,prob06.pddl,concrete,out of memory,512.9580890126526,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 over-nomystery,prob07.pddl,abstract,interrupted,401.7039572633803,abstract_pddl_writing,,3.2985661923885345,0.006726276129484177,0.41889842599630356,0.36426805332303047,18.66009907051921,,,,,,,,,,,2,0,,,,,,,2,package,
 over-nomystery,prob07.pddl,concrete,interrupted,421.5106107071042,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-over-nomystery,prob08.pddl,abstract,error (exit code 2),406.7319936910644,abstract_pddl_writing,,11.297728899866343,0.017720283940434456,1.1378485159948468,1.4243392143398523,120.59182479046285,,,,,,,,,,,2,0,,,,,,,3,package,Fast Downward (abstract) failed with exit code 247:
+over-nomystery,prob08.pddl,abstract,out of memory,406.7319936910644,abstract_pddl_writing,,11.297728899866343,0.017720283940434456,1.1378485159948468,1.4243392143398523,120.59182479046285,,,,,,,,,,,2,0,,,,,,,3,package,Fast Downward (abstract) failed with exit code 247:
 over-nomystery,prob08.pddl,concrete,interrupted,361.37566527724266,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-nomystery,prob09.pddl,abstract,killed (signal 9),609.5610663527623,abstract_pddl_writing,,30.21939292922616,0.04030982404947281,3.0773287350311875,4.0434289909899235,490.92542002070695,,,,,,,,,,,2,0,,,,,,,4,package,
 over-nomystery,prob09.pddl,concrete,interrupted,322.46975041925907,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-nomystery,prob10.pddl,abstract,interrupted,647.9561120308936,abstract_pddl_writing,,31.089742101728916,0.04302429407835007,3.1987472847104073,3.767240598797798,525.6262685470283,,,,,,,,,,,2,0,,,,,,,3,package,
 over-nomystery,prob10.pddl,concrete,interrupted,289.0922365523875,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-nomystery,prob11.pddl,abstract,interrupted,517.2378551289439,abstract_pddl_writing,,5.233569465577602,0.009403109550476074,0.49521562829613686,0.6672534421086311,38.77168286964297,,,,,,,,,,,2,0,,,,,,,3,package,
-over-nomystery,prob11.pddl,concrete,error (exit code 2),494.3337675035,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+over-nomystery,prob11.pddl,concrete,out of memory,494.3337675035,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 over-nomystery,prob12.pddl,abstract,interrupted,337.9425623193383,abstract_pddl_writing,,3.6486310102045536,0.008994292467832565,0.4316607564687729,0.5027489773929119,28.194056633859873,,,,,,,,,,,2,0,,,,,,,2,package,
-over-nomystery,prob12.pddl,concrete,error (exit code 2),412.2923105582595,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
-over-nomystery,prob13.pddl,abstract,error (exit code 2),476.18504214659333,abstract_pddl_writing,,15.825724337249994,0.023169953376054764,1.4966667294502258,1.8802707567811012,190.56396389380097,,,,,,,,,,,2,0,,,,,,,3,package,Fast Downward (abstract) failed with exit code 247:
+over-nomystery,prob12.pddl,concrete,out of memory,412.2923105582595,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+over-nomystery,prob13.pddl,abstract,out of memory,476.18504214659333,abstract_pddl_writing,,15.825724337249994,0.023169953376054764,1.4966667294502258,1.8802707567811012,190.56396389380097,,,,,,,,,,,2,0,,,,,,,3,package,Fast Downward (abstract) failed with exit code 247:
 over-nomystery,prob13.pddl,concrete,interrupted,360.8119627982378,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-nomystery,prob14.pddl,abstract,killed (signal 9),722.380240120925,abstraction,,42.133532212115824,0.06441165786236525,4.310575467534363,5.628189734183252,,,,,,,,,,,,2,0,,,,,,,4,package,
 over-nomystery,prob14.pddl,concrete,interrupted,325.820776139386,,,,,,,,,,,,,,,,,,,,,,,,,,,,
@@ -250,7 +250,7 @@ over-nomystery,prob15.pddl,concrete,interrupted,287.1357062123716,,,,,,,,,,,,,,,
 over-nomystery,prob16.pddl,abstract,interrupted,520.4159003570676,abstract_pddl_writing,,5.4490693882107735,0.010871730744838715,0.5392205379903316,0.6857283040881157,42.99740365892649,,,,,,,,,,,2,0,,,,,,,3,package,
 over-nomystery,prob16.pddl,concrete,interrupted,479.90200773254037,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-nomystery,prob17.pddl,abstract,interrupted,398.91604597866535,abstract_pddl_writing,,4.54589469358325,0.00866737961769104,0.48195876739919186,0.5058789430186152,28.91881271917373,,,,,,,,,,,2,0,,,,,,,2,package,
-over-nomystery,prob17.pddl,concrete,error (exit code 2),408.02529848739505,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+over-nomystery,prob17.pddl,concrete,out of memory,408.02529848739505,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 over-nomystery,prob18.pddl,abstract,interrupted,469.0234472891316,abstract_pddl_writing,,15.217975301668048,0.026439846493303776,1.426375363022089,1.9300257777795196,196.7845104681328,,,,,,,,,,,2,0,,,,,,,3,package,
 over-nomystery,prob18.pddl,concrete,interrupted,363.23021622374654,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-nomystery,prob19.pddl,abstract,killed (signal 9),730.6938520595431,abstraction,,40.776531126350164,0.05828562006354332,4.087852951139212,5.563564740121365,,,,,,,,,,,,2,0,,,,,,,4,package,
@@ -259,10 +259,10 @@ over-nomystery,prob20.pddl,abstract,killed (signal 9),642.8723192103207,abstract
 over-nomystery,prob20.pddl,concrete,interrupted,293.68268282338977,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-nomystery,prob21.pddl,abstract,interrupted,455.60425809025764,abstract_pddl_writing,,7.095116440206766,0.012988347560167313,0.6909143589437008,0.8869409523904324,62.77829407900572,,,,,,,,,,,2,0,,,,,,,3,package,
 over-nomystery,prob21.pddl,concrete,interrupted,464.0856953971088,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-over-nomystery,prob22.pddl,abstract,error (exit code 2),361.4014001823962,abstract_pddl_writing,,10.397589098662138,0.01580077037215233,0.9470713473856449,1.1558729894459248,104.57964326441288,,,,,,,,,,,2,0,,,,,,,2,package,Fast Downward (abstract) failed with exit code 247:
+over-nomystery,prob22.pddl,abstract,out of memory,361.4014001823962,abstract_pddl_writing,,10.397589098662138,0.01580077037215233,0.9470713473856449,1.1558729894459248,104.57964326441288,,,,,,,,,,,2,0,,,,,,,2,package,Fast Downward (abstract) failed with exit code 247:
 over-nomystery,prob22.pddl,concrete,interrupted,431.31551656499505,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-nomystery,prob23.pddl,abstract,interrupted,590.8162877820432,abstract_pddl_writing,,23.527938678860664,0.037588153034448624,2.1944239921867847,3.0973106995224953,341.92357606068254,,,,,,,,,,,2,0,,,,,,,4,package,
-over-nomystery,prob23.pddl,concrete,error (exit code 2),405.44516422227025,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+over-nomystery,prob23.pddl,concrete,out of memory,405.44516422227025,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 over-nomystery,prob24.pddl,abstract,killed (signal 9),728.64819939062,abstraction,,38.539209235459566,0.061700914055109024,3.591260436922312,5.32131926715374,,,,,,,,,,,,2,0,,,,,,,4,package,
 over-nomystery,prob24.pddl,concrete,interrupted,374.34023139998317,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-rovers,prob01.pddl,abstract,success,7.5868044793605804,total,5.315619,0.797403,0.006028,0.176103,0.085436,1.457894,,2.752871,,,,,,unsolvable,,,0,0,,,,,,,2,objective,
@@ -274,8 +274,8 @@ over-rovers,prob04.pddl,concrete,success,65.19104308262467,total,63.155935,,,,,,
 over-rovers,prob05.pddl,abstract,success,9.877552811056376,total,6.374089,0.685521,0.005234,0.209722,0.078963,0.63619,,4.713196,,,,,,unsolvable,,,1,0,,,,,,,3,camera,
 over-rovers,prob05.pddl,concrete,success,34.23006047680974,total,32.45046,,,,,,32.444437,,,,,,,unsolvable,,,,,,,,,,,,,
 over-rovers,prob06.pddl,abstract,success,1067.2181854872033,total,1064.326751,1.419527,0.006287,0.271398,0.160498,3.878814,,1058.540651,,,,,,unsolvable,,,1,0,,,,,,,2,camera,
-over-rovers,prob06.pddl,concrete,error (exit code 2),1443.8240389749408,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
-over-rovers,prob07.pddl,abstract,error (exit code 2),911.2232304178178,abstract_pddl_writing,,3.2066529616713524,0.009204652160406113,0.4874308444559574,0.35908958688378334,14.97022781521082,,,,,,,,,,,1,0,,,,,,,2,camera,Fast Downward (abstract) failed with exit code 247:
+over-rovers,prob06.pddl,concrete,out of memory,1443.8240389749408,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+over-rovers,prob07.pddl,abstract,out of memory,911.2232304178178,abstract_pddl_writing,,3.2066529616713524,0.009204652160406113,0.4874308444559574,0.35908958688378334,14.97022781521082,,,,,,,,,,,1,0,,,,,,,2,camera,Fast Downward (abstract) failed with exit code 247:
 over-rovers,prob07.pddl,concrete,interrupted,1131.6607601121068,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-rovers,prob08.pddl,abstract,success,24.639323439449072,total,21.853081,1.140359,0.006061,0.287018,0.116353,1.687887,,18.574921,,,,,,unsolvable,,,1,0,,,,,,,2,camera,
 over-rovers,prob08.pddl,concrete,success,68.42958431690931,total,66.648632,,,,,,66.643444,,,,,,,unsolvable,,,,,,,,,,,,,
@@ -286,9 +286,9 @@ over-rovers,prob10.pddl,concrete,success,1247.9661838784814,total,1246.207049,,,
 over-rovers,prob11.pddl,abstract,interrupted,804.9461213517934,abstract_pddl_writing,,1.2024273537099361,0.006521678529679775,0.3378100646659732,0.12976747006177902,1.7965132696554065,,,,,,,,,,,1,0,,,,,,,2,camera,
 over-rovers,prob11.pddl,concrete,interrupted,843.8134607970715,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-rovers,prob12.pddl,abstract,interrupted,894.127592343837,abstract_pddl_writing,,1.7093405239284039,0.00685635581612587,0.4039866514503956,0.1902701035141945,4.0349325723946095,,,,,,,,,,,1,0,,,,,,,2,camera,
-over-rovers,prob12.pddl,concrete,error (exit code 2),1149.5014041438699,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+over-rovers,prob12.pddl,concrete,out of memory,1149.5014041438699,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 over-rovers,prob13.pddl,abstract,interrupted,875.6883403481916,abstract_pddl_writing,,3.382297378964722,0.009437430649995804,0.621030910871923,0.37185066379606724,14.572560356929898,,,,,,,,,,,1,0,,,,,,,2,camera,
-over-rovers,prob13.pddl,concrete,error (exit code 2),1250.831640958786,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
+over-rovers,prob13.pddl,concrete,out of memory,1250.831640958786,,,,,,,,,,,,,,,,,,,,,,,,,,,,Fast Downward (concrete) failed with exit code 247:
 over-rovers,prob14.pddl,abstract,interrupted,939.7799899578094,abstract_pddl_writing,,2.4730202592909336,0.00834309309720993,0.618015181273222,0.36896470561623573,9.341038022190332,,,,,,,,,,,1,0,,,,,,,4,camera,
 over-rovers,prob14.pddl,concrete,interrupted,1307.5791413960978,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-rovers,prob15.pddl,abstract,interrupted,845.0924008712173,abstract_pddl_writing,,3.4027871638536453,0.009337760508060455,0.7158399894833565,0.4337225630879402,15.091593094170094,,,,,,,,,,,1,0,,,,,,,3,camera,
