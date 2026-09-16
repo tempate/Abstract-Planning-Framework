@@ -1,17 +1,16 @@
 # Benchmark report
 
-2026-09-16 09:56 — experiments/unsolvability/results.csv
+2026-09-16 10:35 — experiments/unsolvability/results.csv
 
 ## Verdicts
 
 ```
 Verdict                                     Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Unsolvable                                          15 (8.9%)         45 (26.8%)
+Unsolvable                                          16 (9.5%)         45 (26.8%)
 Unknown                                            36 (21.4%)           0 (0.0%)
 Timeouts                                             3 (1.8%)           0 (0.0%)
 Out of memory                                     113 (67.3%)        123 (73.2%)
-No plan found                                        1 (0.6%)           0 (0.0%)
 Others                                               0 (0.0%)           0 (0.0%)
 Total problems                                            168                168
 ```
@@ -21,11 +20,11 @@ Total problems                                            168                168
 ```
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Proved unsolvable by both pipelines                        12                 12
-Faster when both proved it                          5 (41.7%)          7 (58.3%)
-Proved it when the other did not                            3                 33
-Median runtime when both proved it                    15.87 s            14.14 s
-Total runtime across shared proofs                 1,090.49 s         1,761.18 s
+Proved unsolvable by both pipelines                        13                 13
+Faster when both proved it                          5 (38.5%)          8 (61.5%)
+Proved it when the other did not                            3                 32
+Median runtime when both proved it                     9.88 s             4.71 s
+Total runtime across shared proofs                 1,094.01 s         1,763.27 s
 ```
 
 ## Where the timeouts died

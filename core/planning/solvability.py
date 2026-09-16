@@ -3,6 +3,7 @@
 from core.abstraction.factory import build_abstract_problem
 from core.integrations.fast_downward import has_plan
 from core.metrics import PlanningMetrics
+from core.outcomes import UnsolvableTaskError
 from core.planning.abstract import report_abstraction, write_abstract_problem
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.execution import temp_run_dir
@@ -33,14 +34,19 @@ def compute_abstract_verdict(config: AbstractPlanningConfig, on_update=None):
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
-            abstract_problem = build_abstract_problem(config, metrics)
-            report_abstraction(abstract_problem, metrics)
+            try:
+                abstract_problem = build_abstract_problem(config, metrics)
+                report_abstraction(abstract_problem, metrics)
 
-            with metrics.measure("abstract_pddl_writing"):
-                domain_path, problem_path = write_abstract_problem(abstract_problem.problem, base_dir)
+                with metrics.measure("abstract_pddl_writing"):
+                    domain_path, problem_path = write_abstract_problem(abstract_problem.problem, base_dir)
 
-            with metrics.measure("abstract_fd"):
-                found = has_plan(base_dir, domain_path, problem_path, "abstract")
+                with metrics.measure("abstract_fd"):
+                    found = has_plan(base_dir, domain_path, problem_path, "abstract")
+            except UnsolvableTaskError:
+                # Symmetry discovery reads the concrete task, so proving it
+                # unsolvable there is the verdict, not a failure to reach one.
+                found = False
 
     return _result(config, run_id, UNKNOWN if found else UNSOLVABLE, metrics)
 

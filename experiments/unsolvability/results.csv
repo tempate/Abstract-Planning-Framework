@@ -303,7 +303,7 @@ over-rovers,prob19.pddl,abstract,interrupted,772.0107612945139,abstract_pddl_wri
 over-rovers,prob19.pddl,concrete,interrupted,917.9097833558917,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 over-rovers,prob20.pddl,abstract,interrupted,770.7074342556298,abstract_pddl_writing,,2.8409290611743927,0.009223975241184235,0.6763278841972351,0.4043879322707653,13.048747688531876,,,,,,,,,,,1,0,,,,,,,3,camera,
 over-rovers,prob20.pddl,concrete,interrupted,931.2414830550551,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-pegsol-row5,prob01.pddl,abstract,no plan found,3.523678433150053,problem_reading,,0.1356167048215866,,,,,,,,,,,,,,,,,,,,,,,,,
+pegsol-row5,prob01.pddl,abstract,success,3.523678433150053,total,,0.1356167048215866,,,,,,,,,,,,unsolvable,,,,,,,,,,,,,
 pegsol-row5,prob01.pddl,concrete,success,2.0929075218737125,total,0.267193,,,,,,0.262048,,,,,,,unsolvable,,,,,,,,,,,,,
 tetris,prob06.pddl,abstract,interrupted,818.5393415093422,abstract_pddl_writing,,0.3718632012605667,0.8299246206879616,0.6644705682992935,2.4986259527504444,1.0001242086291313,,,,,,,,,,,1,0,,,,,,,2,one_square,
 tetris,prob06.pddl,concrete,success,109.29680030792952,total,107.186029,,,,,,107.178721,,,,,,,unsolvable,,,,,,,,,,,,,

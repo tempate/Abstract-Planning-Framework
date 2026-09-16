@@ -1,6 +1,8 @@
 # Problems for which PDDL Symmetries reported an abstraction class.
 # Regenerate from a collected run:
 #   awk -F, '$3=="abstract" && $4!="no symmetries" && NR>1 {print $1"/"$2}' results.csv | sort -u
+# mystery/prob07 and mystery/prob18 are left out: both are unsolvable, so a
+# regeneration that re-adds them has to drop them again.
 agricola-sat18-strips/p01.pddl
 agricola-sat18-strips/p02.pddl
 agricola-sat18-strips/p03.pddl
@@ -240,7 +242,6 @@ mprime/prob33.pddl
 mprime/prob34.pddl
 mystery/prob02.pddl
 mystery/prob05.pddl
-mystery/prob07.pddl
 mystery/prob08.pddl
 mystery/prob09.pddl
 mystery/prob10.pddl
@@ -250,7 +251,6 @@ mystery/prob14.pddl
 mystery/prob15.pddl
 mystery/prob16.pddl
 mystery/prob17.pddl
-mystery/prob18.pddl
 mystery/prob21.pddl
 mystery/prob24.pddl
 mystery/prob27.pddl

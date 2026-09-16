@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 from core.abstraction.factory import Abstraction, AbstractionError, build_abstract_problem
 from core.integrations.clingo import ClingoSolveResult
 from core.integrations.unified_planning import read_problem
+from core.outcomes import UnsolvableTaskError
 from core.planning.abstract import write_abstract_problem, compute_abstract_plan
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.concrete import compute_concrete_plan
@@ -107,12 +108,14 @@ def _stubbed_decision(found):
     """Run the abstract decision pipeline against stubbed integrations."""
     with (
         patch("core.planning.solvability.temp_run_dir") as temp_run_dir,
-        patch("core.planning.solvability.build_abstract_problem", return_value=_generated_abstraction()),
+        patch(
+            "core.planning.solvability.build_abstract_problem", return_value=_generated_abstraction()
+        ) as build_abstract_problem,
         patch("core.planning.solvability.write_abstract_problem", return_value=("domain.pddl", "problem.pddl")),
         patch("core.planning.solvability.has_plan", return_value=found),
     ):
         temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
-        yield
+        yield SimpleNamespace(build_abstract_problem=build_abstract_problem)
 
 
 class DecisionTests(unittest.TestCase):
@@ -134,6 +137,14 @@ class DecisionTests(unittest.TestCase):
 
     def test_an_abstraction_with_no_plan_proves_the_task_unsolvable(self):
         with _stubbed_decision(found=False):
+            result = compute_abstract_verdict(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+
+        self.assertEqual(result["verdict"], "unsolvable")
+
+    def test_an_integration_proving_the_task_unsolvable_settles_it(self):
+        with _stubbed_decision(found=True) as stubs:
+            stubs.build_abstract_problem.side_effect = UnsolvableTaskError("no relaxed solution")
+
             result = compute_abstract_verdict(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unsolvable")

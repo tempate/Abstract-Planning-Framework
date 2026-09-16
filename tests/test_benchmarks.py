@@ -616,7 +616,7 @@ class ReportTests(unittest.TestCase):
         _title, lines = _coverage(problems)
 
         counted = {"abstract": 0, "concrete": 0}
-        for label in ("Plans found", "Timeouts", "Out of memory", "No plan found", "Others"):
+        for label in ("Plans found", "Timeouts", "Out of memory", "Others"):
             line = next(line for line in lines if line.startswith(label))
             abstract, concrete = re.findall(r"(\d+) \(", line)
             counted["abstract"] += int(abstract)
