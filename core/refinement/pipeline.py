@@ -6,7 +6,7 @@ from core.abstraction.factory import Abstraction
 from core.integrations.clingo import IncrementalSolver, parse_plan_actions, plan_length, solve
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
-from core.refinement.decremental import disabled_switches, solve_decrementally
+from core.refinement.minimized import disabled_switches, solve_fewest_switches_off
 from core.refinement.mapping import build_mapping, mapped_horizon
 
 
@@ -68,9 +68,10 @@ def _solve_concrete_plan(context, asp):
 
     with context.metrics.measure("guided_concrete_solving"):
         solver = IncrementalSolver(asp, context.horizon)
-        refined, plan, decrements = solve_decrementally(solver, record_attempt)
+        refined, plan, decrements = solve_fewest_switches_off(solver, record_attempt)
 
-    _publish_counters(context, decrements=decrements, increments=0, solve_calls=decrements + 1)
+    # The guided search is one optimizing solve, however much it gave up.
+    _publish_counters(context, decrements=decrements, increments=0, solve_calls=1)
     if refined:
         return plan
 
@@ -81,7 +82,8 @@ def _solve_concrete_plan(context, asp):
 def _extend_concrete_search(context, solver, decrements):
     """Search above the mapped horizon without abstract-plan constraints."""
     mapped = context.horizon
-    guided_solve_calls = decrements + 1
+    # The guided search is one optimizing solve, however much it gave up.
+    guided_solve_calls = 1
 
     def record_attempt(horizon, solve_calls):
         context.horizon = horizon
@@ -91,7 +93,7 @@ def _extend_concrete_search(context, solver, decrements):
 
     # Every switch is off, so no abstract action constrains the search any more.
     # The mapped gaps stay optional, which only admits shorter plans than the
-    # plain concrete program, and the decremental search's grounding is kept.
+    # plain concrete program, and the guided search's grounding is kept.
     solver.extend()
     solve_result = solver.search(disabled_switches(solver), record_attempt)
 
