@@ -25,6 +25,14 @@ class NoSymmetriesError(PlanningOutcomeError):
     label = "No symmetries"
 
 
+class OutOfMemoryError(PlanningOutcomeError):
+    """Raised when a planning task is killed for outgrowing the memory it has."""
+
+    status = "out_of_memory"
+    exit_code = 5
+    label = "Out of memory"
+
+
 class IntegrationError(PlanningOutcomeError):
     """Raised when an external planning integration fails."""
 
@@ -43,4 +51,5 @@ STATUS_BY_EXIT_CODE = {
     IntegrationError.exit_code: IntegrationError.status,
     SymmetryTimeoutError.exit_code: SymmetryTimeoutError.status,
     NoSymmetriesError.exit_code: NoSymmetriesError.status,
+    OutOfMemoryError.exit_code: OutOfMemoryError.status,
 }

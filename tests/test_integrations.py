@@ -9,7 +9,7 @@ from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solv
 from core.integrations.fast_downward import has_plan, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.integrations.paths import ABSTRACT_TIME_STEPS_ENCODING
-from core.outcomes import IntegrationError
+from core.outcomes import IntegrationError, OutOfMemoryError
 from core.plan import PlanAction
 
 
@@ -182,6 +182,16 @@ class FastDownwardHelperTests(unittest.TestCase):
         self.assertEqual(len(written), 2)
         for path in written:
             self.assertTrue(path.startswith(directory), f"{path} escapes the run directory")
+
+    @patch("core.integrations.fast_downward.subprocess.run")
+    def test_a_search_killed_for_memory_is_told_apart_from_other_failures(self, run):
+        run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=247, stdout="search exit code: -9", stderr=""
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(OutOfMemoryError):
+                has_plan(directory, "domain.pddl", "problem.pddl", "abstract")
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_both_unsolvable_exit_codes_mean_no_plan(self, run):

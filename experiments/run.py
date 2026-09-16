@@ -178,6 +178,7 @@ def _human_status(result):
         "running": "running",
         "missing": "missing",
         "interrupted": "interrupted",
+        "out_of_memory": "out of memory",
     }
     if status in labels:
         return labels[status]

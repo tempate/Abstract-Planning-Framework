@@ -273,13 +273,15 @@ def _runtime(row):
 
 
 def _out_of_memory(problems):
-    """runsolver interrupts a task that reaches the memory limit, and the kernel
-    kills one that outruns it outright, so both statuses are out of memory."""
+    """runsolver interrupts a task that reaches the memory limit, the kernel kills
+    one that outruns it outright, and Fast Downward reports its own search being
+    killed, so all three statuses are out of memory."""
     interrupted = _status_counts(problems, "interrupted")
     killed = _status_counts(problems, "killed (signal 9)")
+    reported = _status_counts(problems, "out of memory")
     counts = {}
     for mode in interrupted:
-        counts[mode] = interrupted[mode] + killed[mode]
+        counts[mode] = interrupted[mode] + killed[mode] + reported[mode]
     return counts
 
 

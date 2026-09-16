@@ -439,6 +439,7 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(_human_status({"timed_out": False, "return_code": 0, "output": ""}), "success")
         self.assertEqual(_human_status({"timed_out": False, "return_code": 1, "output": ""}), "no plan found")
         self.assertEqual(_human_status({"timed_out": False, "return_code": 2, "output": ""}), "error (exit code 2)")
+        self.assertEqual(_human_status({"timed_out": False, "return_code": 5, "output": ""}), "out of memory")
         self.assertEqual(_human_status({"timed_out": True, "return_code": None, "output": ""}), "timed out")
         self.assertEqual(_human_status({"status": "symmetry_timeout"}), "symmetry timeout")
         self.assertEqual(_human_status({"status": "killed", "signal": 9}), "killed (signal 9)")

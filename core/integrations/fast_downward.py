@@ -5,13 +5,17 @@ import subprocess
 import sys
 
 from core.integrations.paths import FAST_DOWNWARD_SCRIPT
-from core.outcomes import IntegrationError, UnsolvableTaskError
+from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
 
 # Fast Downward's exit codes, documented at
 # https://www.fast-downward.org/latest/documentation/exit-codes/.
 _SUCCESS = 0
 _TRANSLATE_UNSOLVABLE = 10
 _SEARCH_UNSOLVABLE = 11
+# The driver reports a component killed by a signal as 256 minus the signal, so
+# 247 is a SIGKILL, which on these tasks is the kernel reclaiming the memory the
+# search asked for.
+_KILLED_OUT_OF_MEMORY = 247
 
 SEARCH = "astar(blind())"
 
@@ -36,12 +40,7 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
         raise UnsolvableTaskError(f"Fast Downward ({label}) proved the task unsolvable while translating")
 
     if completed_process.returncode != _SUCCESS:
-        diagnostics = "\n".join(
-            output.strip() for output in (completed_process.stdout, completed_process.stderr) if output.strip()
-        )
-        raise IntegrationError(
-            f"Fast Downward ({label}) failed with exit code {completed_process.returncode}:\n{diagnostics}"
-        )
+        _raise_failure(completed_process, label)
 
     return sas_path
 
@@ -73,9 +72,15 @@ def has_plan(base_dir, domain_path, problem_path, label):
     if completed_process.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
         return False
 
+    _raise_failure(completed_process, label)
+
+
+def _raise_failure(completed_process, label):
+    """Report what Fast Downward said, as memory when that is what ran out."""
     diagnostics = "\n".join(
         output.strip() for output in (completed_process.stdout, completed_process.stderr) if output.strip()
     )
-    raise IntegrationError(
-        f"Fast Downward ({label}) failed with exit code {completed_process.returncode}:\n{diagnostics}"
-    )
+    message = f"Fast Downward ({label}) failed with exit code {completed_process.returncode}:\n{diagnostics}"
+    if completed_process.returncode == _KILLED_OUT_OF_MEMORY:
+        raise OutOfMemoryError(message)
+    raise IntegrationError(message)
