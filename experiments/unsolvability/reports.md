@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-09-16 09:56 — experiments/unsolvability/results.csv
+2026-09-16 10:29 — experiments/unsolvability/results.csv
 
 ## Verdicts
 
@@ -11,8 +11,7 @@ Unsolvable                                          15 (8.9%)         45 (26.8%)
 Unknown                                            36 (21.4%)           0 (0.0%)
 Timeouts                                             3 (1.8%)           0 (0.0%)
 Out of memory                                     113 (67.3%)        123 (73.2%)
-No plan found                                        1 (0.6%)           0 (0.0%)
-Others                                               0 (0.0%)           0 (0.0%)
+Others                                               1 (0.6%)           0 (0.0%)
 Total problems                                            168                168
 ```
 

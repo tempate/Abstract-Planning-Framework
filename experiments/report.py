@@ -92,18 +92,16 @@ def _verdicts(problems):
 
     timeouts = _status_counts(problems, "timed out")
     out_of_memory = _out_of_memory(problems)
-    no_plan = _status_counts(problems, "no plan found")
 
     # Whatever the rows above leave out: no symmetries, or an error.
     other = {}
     for mode in decided:
-        other[mode] = total - decided[mode] - timeouts[mode] - out_of_memory[mode] - no_plan[mode]
+        other[mode] = total - decided[mode] - timeouts[mode] - out_of_memory[mode]
 
     lines.append(_wide("Timeouts", _share(timeouts["abstract"], total, 1), _share(timeouts["concrete"], total, 1)))
     lines.append(
         _wide("Out of memory", _share(out_of_memory["abstract"], total, 1), _share(out_of_memory["concrete"], total, 1))
     )
-    lines.append(_wide("No plan found", _share(no_plan["abstract"], total, 1), _share(no_plan["concrete"], total, 1)))
     lines.append(_wide("Others", _share(other["abstract"], total, 1), _share(other["concrete"], total, 1)))
     lines.append(_wide("Total problems", total, total))
     return "Verdicts", lines
@@ -153,13 +151,12 @@ def _coverage(problems):
     timeouts = _status_counts(problems, "timed out")
 
     out_of_memory = _out_of_memory(problems)
-    no_plan = _status_counts(problems, "no plan found")
 
     # Whatever the rows above leave out, errors among them, so the rows always
     # add up to the total even when a status nobody has named yet turns up.
     other = {}
     for mode in found:
-        other[mode] = total - found[mode] - timeouts[mode] - out_of_memory[mode] - no_plan[mode]
+        other[mode] = total - found[mode] - timeouts[mode] - out_of_memory[mode]
 
     lines = _wide_header("Metric")
     lines.append(_wide("Plans found", _share(found["abstract"], total, 1), _share(found["concrete"], total, 1)))
@@ -167,7 +164,6 @@ def _coverage(problems):
     lines.append(
         _wide("Out of memory", _share(out_of_memory["abstract"], total, 1), _share(out_of_memory["concrete"], total, 1))
     )
-    lines.append(_wide("No plan found", _share(no_plan["abstract"], total, 1), _share(no_plan["concrete"], total, 1)))
     lines.append(_wide("Others", _share(other["abstract"], total, 1), _share(other["concrete"], total, 1)))
     lines.append(_wide("Total problems", total, total))
     return "Coverage", lines
