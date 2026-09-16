@@ -52,19 +52,18 @@ def build_mapping(abstract_plan, abstraction):
 
 
 def _budget_rules(time_steps):
-    """Cap how many switches may be off, leaving the choice of which to the solver.
+    rules = []
 
-    One ``budget/1`` atom per allowance lets a solve call pick the cap by
-    assumption, so raising it needs no regrounding.
-    """
-    rules = [f"{{ budget(0..{len(time_steps)}) }}."]
-    if not time_steps:
-        return rules
+    # Create all the possible budgets to avoid reconstructing the state.
+    # We can then pick the current budget using assumptions.
+    budget_objects = f"{{ budget(0..{len(time_steps)}) }}."
+    rules.append(budget_objects)
 
-    elements = []
-    for time_step in time_steps:
-        elements.append(f"{time_step} : not switch({time_step})")
-    rules.append(f":- budget(B), #count{{ {'; '.join(elements)} }} > B.")
+    if time_steps:
+        switches = "; ".join(f"{t} : not switch({t})" for t in time_steps)
+        turn_off_n_switches = f":- budget(B), #count{{ {switches} }} != B."
+        rules.append(turn_off_n_switches)
+
     return rules
 
 
