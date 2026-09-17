@@ -86,7 +86,12 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
     candidate_score = None
     rejection = None
 
-    for symmetry_class in symmetry_classes:
+    # PDDL Symmetries prints its classes in an order that varies between
+    # processes, and the first class with the best score wins, so two runs of
+    # one problem could collapse different classes of the same size.
+    ordered_classes = sorted(sorted(symmetry_class) for symmetry_class in symmetry_classes)
+
+    for symmetry_class in ordered_classes:
         try:
             abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
         except AbstractionError as error:
