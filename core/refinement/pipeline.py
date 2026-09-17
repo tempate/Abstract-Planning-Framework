@@ -16,7 +16,6 @@ class RefinementContext:
 
     config: AbstractPlanningConfig
     abstraction: Abstraction
-    relaxed_deletes: tuple
     run_id: str
     metrics: PlanningMetrics
     concrete_asp: str
@@ -117,12 +116,6 @@ def _build_result(context, plan):
         context.metrics.set_counter("plan_length", plan_length(plan))
 
     return {
-        "abstraction": {
-            "abstract_symbol": context.abstraction.name,
-            "objects_to_abstract": list(context.abstraction.objects),
-            "object_type": context.abstraction.object_type,
-            "relaxed_deletes": len(context.relaxed_deletes),
-        },
         "configuration": context.config.as_dict(),
         "plan": plan,
         "success": plan is not None,

@@ -14,7 +14,6 @@ class RefinementTests(unittest.TestCase):
         values = {
             "config": AbstractPlanningConfig("domain.pddl", "problem.pddl"),
             "abstraction": Abstraction("item_abs", ("a", "b"), "item"),
-            "relaxed_deletes": (object(), object()),
             "concrete_asp": "concrete asp",
             "abstract_asp": "abstract asp",
             "horizon": 3,
