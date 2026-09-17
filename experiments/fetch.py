@@ -7,7 +7,6 @@ from experiments.collect import CSV_FILE, main as collect
 from experiments.run import RESULTS_DIR
 
 DEFAULT_HOST = "copperhead"
-DEFAULT_REMOTE_DIR = "/home/guests/dquilez/Abstract-Planning-Framework/runs/"
 
 
 def main():
@@ -24,7 +23,9 @@ def main():
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default=DEFAULT_HOST, help="SSH host running the benchmarks")
-    parser.add_argument("--remote-dir", default=DEFAULT_REMOTE_DIR, help="Results directory on that host")
+    # Every branch runs in its own worktree, so there is no one directory to
+    # default to, and pulling the wrong one collects another branch's run.
+    parser.add_argument("--remote-dir", required=True, help="Results directory on that host, ~/apf/<branch>/runs/")
     parser.add_argument("--into", default=RESULTS_DIR, help="Local directory to pull the results into")
     parser.add_argument("--csv", default=CSV_FILE, help="CSV file to collect the results into")
     parser.add_argument("--force", action="store_true", help="Pull even while jobs are still queued")
