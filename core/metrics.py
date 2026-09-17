@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 DURATION_LABELS = {
     "total": "Total",
     "problem_reading": "Problem reading",
-    "pnf_translation": "Positive normal form translation",
+    "pnf_translation": "PNF translation",
     "symmetry_discovery": "Symmetry discovery",
     "abstraction": "Abstraction",
     "abstract_pddl_writing": "Abstract PDDL writing",

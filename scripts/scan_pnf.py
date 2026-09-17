@@ -1,4 +1,4 @@
-"""Report which suite domains must reach positive normal form before deletes are relaxed.
+"""Report which suite domains must reach PNF before deletes are relaxed.
 
 Relaxing a delete can only change a task when some condition tests the deleted
 fluent negatively, so a domain is safe unless it negates a predicate that some

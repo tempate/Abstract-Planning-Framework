@@ -61,7 +61,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
         problem, relaxed_inequalities = relax_inequalities(problem, abstraction)
 
     # Relaxing a delete is only an over-approximation while every condition is
-    # positive, so reach positive normal form before any delete is relaxed.
+    # positive, so reach PNF before any delete is relaxed.
     # With nothing to rewrite the translation still writes out the closed
     # world, which nomystery's ternary sum predicate turns into 240k initial
     # facts and 600 seconds, so skip what would only rebuild the problem.
