@@ -32,12 +32,10 @@ jobs:
           python-version: "3.13"
           architecture: x64
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-dev.txt
+          cache-dependency-path: pyproject.toml
 
       - name: Install Python dependencies
-        run: python -m pip install -r requirements-dev.txt
+        run: python -m pip install -e ".[dev]"
 
       - name: Check Black formatting
         run: python -m black --check .

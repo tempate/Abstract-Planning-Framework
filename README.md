@@ -25,7 +25,7 @@ Then set up a virtual environment for the Python packages:
 ```bash
 python -m venv venv
 source venv/bin/activate
-python -m pip install -r requirements.txt
+python -m pip install -e .
 ```
 
 Automatic object selection additionally requires the pybliss extension:
@@ -37,8 +37,7 @@ make -C lib/pddl-symmetries/src/translate/pybliss-0.73
 For development tools and automatic formatting:
 
 ```bash
-python -m pip install -r requirements-dev.txt
-python -m pip install pre-commit
+python -m pip install -e ".[dev]"
 pre-commit install
 ```
 
