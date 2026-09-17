@@ -43,7 +43,7 @@ def _solve_abstract_plan(context):
     """Search for the shortest abstract plan and read the horizon it maps to."""
 
     def record_attempt(horizon, solve_calls):
-        context.metrics.set_counter("abstract_horizon", horizon)
+        context.metrics.set_counter("abstract_plan_length", horizon)
         context.metrics.set_counter("abstract_solve_calls", solve_calls)
 
     with context.metrics.measure("abstract_solving"):
@@ -52,7 +52,7 @@ def _solve_abstract_plan(context):
     # The concrete search runs on the mapped time line, which surrounds every
     # abstract action with a gap for one optional concrete action.
     context.horizon = mapped_horizon(solve_result.horizon)
-    context.metrics.set_counter("abstract_horizon", solve_result.horizon)
+    context.metrics.set_counter("abstract_plan_length", solve_result.horizon)
     context.metrics.set_counter("abstract_solve_calls", solve_result.attempts)
 
     return parse_plan_actions(solve_result.plan)

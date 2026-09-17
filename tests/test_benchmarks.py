@@ -254,7 +254,7 @@ class BenchmarkTests(unittest.TestCase):
             "  Solver activity:\n"
             "    Refinement decrements  2\n"
             "    Horizon increments     1\n"
-            "    Abstract horizon       3\n"
+            "    Abstract plan length    3\n"
             "    Final horizon          4\n"
             "    Abstract solver calls  1\n"
             "    Concrete solver calls  4\n"
@@ -302,7 +302,7 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[0]["increments"], 1)
         self.assertEqual(rows[0]["total_seconds"], 1.25)
         self.assertEqual(rows[0]["abstract_solving_seconds"], 0.5)
-        self.assertEqual(rows[0]["abstract_horizon"], 3)
+        self.assertEqual(rows[0]["abstract_plan_length"], 3)
         self.assertEqual(rows[0]["concrete_solve_calls"], 4)
         self.assertEqual(rows[0]["abstracted_object_count"], 2)
         self.assertEqual(rows[0]["abstracted_object_type"], "package")

@@ -41,7 +41,7 @@ class RefinementTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ["occurs(concrete,1)"])
         self.assertEqual(result["run_id"], "run-123")
-        self.assertEqual(context.metrics.counters["abstract_horizon"], 2)
+        self.assertEqual(context.metrics.counters["abstract_plan_length"], 2)
         self.assertEqual(context.metrics.counters["abstract_solve_calls"], 3)
         self.assertEqual(context.metrics.counters["decrements"], 2)
         self.assertEqual(context.metrics.counters["increments"], 0)
