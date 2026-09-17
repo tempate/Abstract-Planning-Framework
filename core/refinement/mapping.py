@@ -27,6 +27,10 @@ def build_mapping(abstract_plan, abstraction):
     for object_name in abstraction.objects:
         mapping_rules.append(f"concrete_object({_quote(object_name)}).")
 
+    # The encodings show occurs/2 only, so the switches have to be shown
+    # explicitly for the caller to read how much of the abstract plan was kept.
+    mapping_rules.append("#show switch/1.")
+
     # Mark the odd time steps as gaps so the encoding lets them stay empty.
     for time_step in range(1, mapped_horizon(_abstract_horizon(abstract_plan)) + 1, 2):
         mapping_rules.append(f"gap({time_step}).")
@@ -37,6 +41,12 @@ def build_mapping(abstract_plan, abstraction):
         # Add a switch for each time step to allow the abstract plan to be disabled.
         switch = f"switch({time_step})"
         mapping_rules.append(f"0 {{ {switch} }} 1.")
+
+        # Branch on the switches first and try them on, so the solver starts from
+        # the whole abstract plan and drops only the steps a conflict forces it
+        # to drop.  Left to itself it would switch everything off, since that is
+        # the cheapest way to satisfy a choice rule.
+        mapping_rules.append(f"#heuristic {switch}. [1,true]")
 
         # Add a rule to map the abstract action to a concrete candidate action.
         # If the switch is on, then the action at the time step must hold for some grounding.

@@ -6,8 +6,8 @@ from core.abstraction.factory import Abstraction
 from core.integrations.clingo import IncrementalSolver, parse_plan_actions, plan_length, solve
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
-from core.refinement.decremental import disabled_switches, solve_decrementally
 from core.refinement.mapping import build_mapping, mapped_horizon
+from core.refinement.switches import disabled_switches, switches_off
 
 
 @dataclass
@@ -62,15 +62,17 @@ def _solve_concrete_plan(context, asp):
     # Publish the counters before searching so an interrupted run still has them.
     _publish_counters(context, decrements=0, increments=0, solve_calls=0)
 
-    def record_attempt(decrements, solve_calls):
-        _publish_counters(context, decrements=decrements, increments=0, solve_calls=solve_calls)
-
+    # The switches are free choices, so one call covers every way of following
+    # part of the abstract plan.  The heuristic decides them true first, which
+    # is what keeps the guidance: the solver gives an action up only where a
+    # conflict makes it.
     with context.metrics.measure("guided_concrete_solving"):
-        solver = IncrementalSolver(asp, context.horizon)
-        refined, plan, decrements = solve_decrementally(solver, record_attempt)
+        solver = IncrementalSolver(asp, context.horizon, domain_heuristic=True)
+        plan = solver.solve()
 
-    _publish_counters(context, decrements=decrements, increments=0, solve_calls=decrements + 1)
-    if refined:
+    decrements = switches_off(solver, plan)
+    _publish_counters(context, decrements=decrements, increments=0, solve_calls=1)
+    if plan is not None:
         return plan
 
     with context.metrics.measure("extended_concrete_solving"):
@@ -80,7 +82,7 @@ def _solve_concrete_plan(context, asp):
 def _extend_concrete_search(context, solver, decrements):
     """Search above the mapped horizon without abstract-plan constraints."""
     mapped = context.horizon
-    guided_solve_calls = decrements + 1
+    guided_solve_calls = 1
 
     def record_attempt(horizon, solve_calls):
         context.horizon = horizon
@@ -90,7 +92,7 @@ def _extend_concrete_search(context, solver, decrements):
 
     # Every switch is off, so no abstract action constrains the search any more.
     # The mapped gaps stay optional, which only admits shorter plans than the
-    # plain concrete program, and the decremental search's grounding is kept.
+    # plain concrete program, and the guided search's grounding is kept.
     solver.extend()
     solve_result = solver.search(disabled_switches(solver), record_attempt)
 

@@ -21,11 +21,14 @@ class ClingoSolveResult:
 class IncrementalSolver:
     """One Clingo control whose horizon can be raised without regrounding."""
 
-    def __init__(self, asp, horizon=0):
+    def __init__(self, asp, horizon=0, domain_heuristic=False):
         if horizon < 0:
             raise ValueError("Horizon must be nonnegative")
 
         arguments = ["-t", str(THREADS), "--warn=none"]
+        # Without this the #heuristic directives in the program are read and ignored.
+        if domain_heuristic:
+            arguments.append("--heuristic=Domain")
         self.control = clingo.Control(arguments)
         self.control.configuration.solve.models = 1
         self.control.add("base", [], asp)
