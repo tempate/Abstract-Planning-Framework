@@ -2,6 +2,7 @@ venv/
 .venv/
 temp/
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *.so
 runs/
