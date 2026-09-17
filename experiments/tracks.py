@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+import experiments.resources as resources
 from experiments.symmetries import suite as symmetries
 from experiments.unsolvability import suite as unsolvability
 
@@ -18,19 +19,23 @@ class Track:
     suite: list[str]
     benchmarks_dir: Path
     driver: str
+    # Where the problems worth submitting are listed, beside the results.
+    runnable_name: str = "symmetries.txt"
+    # Passed to the driver's abstract mode only; concrete has no class to choose.
+    abstract_arguments: tuple[str, ...] = ()
 
     @property
     def results_file(self):
         return self.directory / "results.csv"
 
     @property
-    def symmetries_file(self):
-        return self.directory / "symmetries.txt"
+    def runnable_file(self):
+        return self.directory / self.runnable_name
 
     def runnable(self):
-        """The (domain, problem) pairs worth submitting: those the symmetries file records a class for."""
+        """The (domain, problem) pairs worth submitting: those the runnable file lists."""
         problems = set()
-        for line in self.symmetries_file.read_text(encoding="utf-8").splitlines():
+        for line in self.runnable_file.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if line and not line.startswith("#"):
                 domain, _, problem = line.partition("/")
@@ -44,6 +49,16 @@ TRACKS = {
         suite=symmetries.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
+    ),
+    # The symmetry track's problems, restricted to the ones numeric-fast-downward
+    # finds a resource for, and planned from that resource's objects.
+    "resources": Track(
+        directory=Path(resources.__file__).parent,
+        suite=symmetries.SUITE,
+        benchmarks_dir=BENCHMARKS / "downward-benchmarks",
+        driver="scripts.planner",
+        runnable_name="resources.txt",
+        abstract_arguments=("--abstraction-source", "resources"),
     ),
     "unsolvability": Track(
         directory=Path(unsolvability.__file__).parent,

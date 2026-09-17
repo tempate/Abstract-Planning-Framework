@@ -27,7 +27,7 @@ class ResourceVariable:
     objects: tuple[str, ...]
 
 
-def detect_resources(base_dir, domain_path, problem_path):
+def detect_resources(base_dir, domain_path, problem_path, timeout=None):
     """Return the resource variables of one PDDL task, widest first."""
     if not os.path.exists(NUMERIC_FAST_DOWNWARD_BIN):
         raise IntegrationError(
@@ -50,7 +50,10 @@ def detect_resources(base_dir, domain_path, problem_path):
         "--search",
         DETECTION_SEARCH,
     ]
-    completed_process = subprocess.run(command, cwd=base_dir, capture_output=True, text=True)
+    try:
+        completed_process = subprocess.run(command, cwd=base_dir, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as expired:
+        raise IntegrationError(f"Resource detection timed out after {timeout}s") from expired
 
     if _SUMMARY.search(completed_process.stdout) is None:
         diagnostics = "\n".join(

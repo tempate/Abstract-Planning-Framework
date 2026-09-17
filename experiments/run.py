@@ -165,7 +165,10 @@ def _machine_status(return_code, timed_out, interrupted=False):
 
 
 def _planner_command(domain, problem, mode, track=DEFAULT_TRACK):
-    return [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
+    command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
+    if mode == "abstract":
+        command.extend(TRACKS[track].abstract_arguments)
+    return command
 
 
 def _human_status(result):
