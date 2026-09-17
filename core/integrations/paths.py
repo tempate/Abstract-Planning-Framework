@@ -11,7 +11,6 @@ def _project_path(*parts):
 
 PLASP_BIN = _project_path("lib", "plasp", "bin", "plasp")
 EXACT_HORIZON_ENCODING = _project_path("core", "encodings", "exact-sequential-incremental.lp")
-ABSTRACT_TIME_STEPS_ENCODING = _project_path("core", "encodings", "abstract-time-steps-incremental.lp")
 ACTION_PER_TIME_STEP_ENCODING = _project_path("core", "encodings", "action-per-time-step.lp")
 
 FAST_DOWNWARD_SCRIPT = _project_path("lib", "downward", "fast-downward.py")

@@ -8,7 +8,6 @@ from unittest.mock import patch
 from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solve
 from core.integrations.fast_downward import has_plan, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
-from core.integrations.paths import ABSTRACT_TIME_STEPS_ENCODING
 from core.outcomes import IntegrationError, OutOfMemoryError
 from core.plan import PlanAction
 
@@ -131,14 +130,6 @@ reached(t).
         self.assertIs(solver.control, control)
         self.assertEqual(solver.horizon, 2)
         self.assertEqual(set(solver.solve()), {"reached(0)", "reached(1)", "reached(2)"})
-
-    def test_abstract_time_shows_can_be_grounded_at_multiple_steps(self):
-        time_encoding = Path(ABSTRACT_TIME_STEPS_ENCODING).read_text(encoding="utf-8")
-        program = "#program step(t).\noccurs(a,t).\n" + time_encoding + "\n#program base.\naction(a).\n"
-
-        plan = IncrementalSolver(program, horizon=2).solve()
-
-        self.assertEqual(set(plan), {"occurs(a,1)", "occurs(a,2)", "occurs_sometime(a)"})
 
 
 class FastDownwardHelperTests(unittest.TestCase):

@@ -61,11 +61,11 @@ def _to_sas(base_dir, problem, config, metrics):
 def _to_asp(concrete_sas, abstract_sas, config, metrics):
     """Translate both SAS files into their ASP programs."""
     with metrics.measure("concrete_asp"):
-        concrete_asp = sas_to_asp(concrete_sas, abstract_time_steps=config.time_step)
+        concrete_asp = sas_to_asp(concrete_sas)
         concrete_asp = add_switch_to_asp_rule(concrete_asp)
 
     with metrics.measure("abstract_asp"):
-        abstract_asp = sas_to_asp(abstract_sas, abstract_time_steps=config.time_step)
+        abstract_asp = sas_to_asp(abstract_sas)
 
     return concrete_asp, abstract_asp
 

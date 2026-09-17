@@ -25,7 +25,7 @@ def _compute_concrete_plan(config, base_dir, run_id, metrics):
 
     # Generate the ASP representation of the concrete problem.
     with metrics.measure("concrete_asp"):
-        asp = sas_to_asp(sas_file, abstract_time_steps=config.time_step)
+        asp = sas_to_asp(sas_file)
 
     # Solve the concrete problem, raising the horizon until a plan is found.
     def record_attempt(_horizon, solve_calls):

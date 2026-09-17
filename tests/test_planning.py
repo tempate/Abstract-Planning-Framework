@@ -77,16 +77,6 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(context.concrete_asp, "guarded concrete asp")
         self.assertEqual(context.abstract_asp, "abstract asp")
 
-    def test_time_step_reaches_both_asp_translations(self):
-        for time_step in (False, True):
-            with self.subTest(time_step=time_step):
-                config = AbstractPlanningConfig("domain.pddl", "problem.pddl", time_step=time_step)
-                with _stubbed_abstract_pipeline(_generated_abstraction()) as stubs:
-                    compute_abstract_plan(config)
-
-                for translation in stubs.sas_to_asp.call_args_list:
-                    self.assertEqual(translation.kwargs["abstract_time_steps"], time_step)
-
     def test_an_abstraction_failure_aborts_before_translation(self):
         with (
             patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
@@ -152,7 +142,6 @@ class PlanningConfigurationTests(unittest.TestCase):
         abstract = AbstractPlanningConfig("domain.pddl", "problem.pddl")
 
         self.assertIsInstance(abstract, PlanningConfig)
-        self.assertFalse(abstract.time_step)
         self.assertIsNone(abstract.abstract_name)
         self.assertIsNone(abstract.objects_to_abstract)
 
