@@ -103,6 +103,17 @@ class SymmetrySelectionTests(unittest.TestCase):
 
         self.assertEqual(set(selected.objects), {"gadget1", "gadget2", "gadget3"})
 
+    def test_a_tie_is_settled_the_same_way_whatever_order_the_classes_arrive_in(self):
+        # PDDL Symmetries prints its classes in a hash-dependent order, so a tie
+        # on size must not be settled by whichever one it happened to print first.
+        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
+        tied = [["item1", "item2"], ["gadget1", "gadget2"]]
+
+        forwards = _select_abstraction(source, tied)
+        backwards = _select_abstraction(source, list(reversed(tied)))
+
+        self.assertEqual(set(forwards.objects), set(backwards.objects))
+
     def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self):
         classes = [
             ["cargo-a", "cargo-b", "cargo-c"],
