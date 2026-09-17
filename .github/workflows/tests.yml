@@ -40,14 +40,8 @@ jobs:
       - name: Check Black formatting
         run: python -m black --check .
 
-      - name: Install plasp
-        run: python scripts/install_plasp.py
-
-      - name: Build Fast Downward
-        run: python lib/downward/build.py release
-
-      - name: Build PDDL Symmetries
-        run: make -C lib/pddl-symmetries/src/translate/pybliss-0.73
+      - name: Build what the planner needs
+        run: python -m scripts.setup
 
       - name: Run all tests
         run: python -m unittest discover -s tests -p 'test_*.py' -v

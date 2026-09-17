@@ -11,33 +11,22 @@ resulting plan constraints in reverse order until the concrete task is solvable.
 
 ## Setup
 
-Fast Downward, PDDL Symmetries, and the benchmark collection are Git submodules.
-Initialize them, install the pinned plasp release, and build Fast Downward:
-
-```bash
-git submodule update --init --recursive
-python scripts/install_plasp.py
-python lib/downward/build.py release
-```
-
-Then set up a virtual environment for the Python packages:
-
 ```bash
 python -m venv venv
 source venv/bin/activate
-python -m pip install -e .
-```
-
-Automatic object selection additionally requires the pybliss extension:
-
-```bash
-make -C lib/pddl-symmetries/src/translate/pybliss-0.73
-```
-
-For development tools and automatic formatting:
-
-```bash
 python -m pip install -e ".[dev]"
+python -m scripts.setup
+```
+
+`scripts/setup.py` initializes the submodules and builds the three things pip
+does not install: the pybliss extension, the Fast Downward release build, and
+the pinned plasp binary. It skips whatever is already there and fails naming
+anything still missing, because all three otherwise fail at planning time
+rather than at setup time.
+
+For automatic formatting on commit:
+
+```bash
 pre-commit install
 ```
 
