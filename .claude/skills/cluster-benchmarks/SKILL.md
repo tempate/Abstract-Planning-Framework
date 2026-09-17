@@ -5,19 +5,24 @@ description: Submit benchmark runs to the SLURM cluster and pull the results bac
 
 # Cluster benchmark runs
 
-Benchmarks run on `copperhead` over plain non-interactive ssh. The checkout is
-`/home/guests/dquilez/Abstract-Planning-Framework`, and every command there needs
-the conda env first:
+Benchmarks run on `copperhead` over plain non-interactive ssh, and every command
+there needs the conda env first:
 
 ```bash
 source ~/miniconda3/etc/profile.d/conda.sh && conda activate apf
 ```
 
+Checkouts are worktrees of the bare repo `~/apf/.bare`, one per branch at
+`~/apf/<branch>`. In each of them `lib/downward`, `lib/pddl-symmetries`,
+`experiments/plan/downward-benchmarks` and `lib/plasp/bin` are symlinks into
+`~/apf/.shared`, which holds the only built copy. Nothing is built per worktree,
+so a branch that moved a submodule pointer would silently run the shared
+version — we build one copy because no branch here moves one.
+
 ## Pulling a finished run
 
-**Find the checkout that produced it before trusting anything.** An empty queue
-says a run finished, not which code ran it. Past runs have lived in sibling
-clones (`...-Framework-sas`) as well as the main checkout:
+**Find the worktree that produced it before trusting anything.** An empty queue
+says a run finished, not which code ran it:
 
 ```bash
 ssh -o BatchMode=yes copperhead 'cd <dir> && git rev-parse --abbrev-ref HEAD && git rev-parse --short HEAD'
@@ -82,16 +87,16 @@ so a second submission from the same directory wipes the first run's results and
 its manifest while those jobs are still writing into it.
 
 ```bash
-git worktree add ../apf-<branch> <branch>
-cd ../apf-<branch> && python -m scripts.setup
+ssh -o BatchMode=yes copperhead '~/apf/new-worktree.sh <branch>'
 ```
 
-`scripts/setup.py` does the submodules and all three builds, skips what is
-already there, and fails naming anything still missing. `git worktree add` leaves
-`experiments/plan/downward-benchmarks`, `lib/downward` and `lib/pddl-symmetries` empty,
-so the runner finds no problems and submits nothing without saying why. All
-three of these are built or downloaded rather than checked in, so a fresh submodule
-checkout has none of them:
+That fetches, adds `~/apf/<branch>`, replaces the three empty submodule
+directories with links into `~/apf/.shared`, and asserts every artifact is
+reachable before it prints `ready:`. Two seconds, no build.
+
+Plain `git worktree add` leaves `experiments/plan/downward-benchmarks`,
+`lib/downward` and `lib/pddl-symmetries` empty, so the runner finds no problems
+and submits nothing without saying why. None of these are checked in:
 
 | missing | how it fails |
 |---|---|
@@ -100,13 +105,15 @@ checkout has none of them:
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
 
 The tell for all three is a queue that drains far faster than 30 minutes a job.
-Smoke-test one problem before submitting the set, which catches them in a
-minute instead of after 142 dead jobs:
+Smoke-test before submitting the set, which catches them in a minute instead of
+after 142 dead jobs:
 
 ```bash
-B=experiments/plan/downward-benchmarks/quantum-layout-sat23-strips
-python -m scripts.planner abstract --domain $B/domain_p14.pddl --problem $B/p14.pddl
+./examples/abstract.sh   # driverlog p07: collapses three packages, plan length 15
 ```
+
+Pick a problem the branch solves quickly. A refinement branch can time out on a
+hard one for its own reasons, which says nothing about the worktree.
 
 `experiments.fetch` guards on `squeue -u "$USER"`, the whole user rather than one
 run, so neither run can be pulled until both drain. Give each its own `--into`.
