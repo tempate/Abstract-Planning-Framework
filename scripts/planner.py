@@ -50,12 +50,17 @@ def _compute(args):
 def print_planning_result(result):
     """Print a planning result."""
     print("\n=== RESULT ===")
-    print(f"Horizon: {result['horizon']}")
     print(f"Plan found: {'yes' if result['plan'] is not None else 'no'}")
+
+    # The horizon surrounds every abstract action with a gap for one optional
+    # concrete action, so it roughly doubles the plan a reader wants to see.
+    length = result["metrics"]["counters"].get("plan_length")
+    if result["plan"] is not None:
+        print(f"Plan length: {length}")
     print_metrics(result["metrics"])
 
     if result["plan"] is not None:
-        print(f"\nPlan ({result['plan_length']} actions):")
+        print(f"\nPlan ({length} actions):")
         plan_actions = [atom for atom in result["plan"] if atom.startswith("occurs(")]
         for atom in sorted(plan_actions, key=_time_step):
             print(" ", atom)

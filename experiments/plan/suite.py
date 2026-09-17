@@ -6,7 +6,7 @@ cannot read commented out. Two markers flag a domain whose results are not
 sound yet, both derived from the PDDL by ``python -m scripts.scan_pnf``:
 ``# PNF.`` negates a predicate some action also deletes, so relaxing that
 delete can falsify the negation and lose plans, and the problem has to reach
-positive normal form first; ``# Inequality.`` negates only ``(= ?x ?y)``, which
+PNF first; ``# Inequality.`` negates only ``(= ?x ?y)``, which
 no relaxed delete reaches, but which collapsing two objects into one symbol
 does, by making the two sides equal.
 

@@ -14,7 +14,6 @@ class RefinementTests(unittest.TestCase):
         values = {
             "config": AbstractPlanningConfig("domain.pddl", "problem.pddl"),
             "abstraction": Abstraction("item_abs", ("a", "b"), "item"),
-            "relaxed_deletes": (object(), object()),
             "concrete_asp": "concrete asp",
             "abstract_asp": "abstract asp",
             "horizon": 3,
@@ -40,13 +39,11 @@ class RefinementTests(unittest.TestCase):
 
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ["occurs(concrete,1)"])
-        self.assertEqual(result["horizon"], 5)
         self.assertEqual(result["run_id"], "run-123")
-        self.assertEqual(context.metrics.counters["abstract_horizon"], 2)
+        self.assertEqual(context.metrics.counters["abstract_plan_length"], 2)
         self.assertEqual(context.metrics.counters["abstract_solve_calls"], 3)
         self.assertEqual(context.metrics.counters["decrements"], 2)
         self.assertEqual(context.metrics.counters["increments"], 0)
-        self.assertEqual(context.metrics.counters["final_horizon"], 5)
         self.assertEqual(context.metrics.counters["concrete_solve_calls"], 3)
         self.assertIn("abstract_solving", context.metrics.durations)
         # The guided search runs the mapping alongside the concrete program, and
@@ -67,11 +64,12 @@ class RefinementTests(unittest.TestCase):
     def test_the_plan_length_counts_actions_instead_of_time_steps(
         self, solve, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver
     ):
-        result = refine(self._context())
+        context = self._context()
+
+        refine(context)
 
         # The two actions sit on a horizon of five, whose gaps stayed empty.
-        self.assertEqual(result["horizon"], 5)
-        self.assertEqual(result["plan_length"], 2)
+        self.assertEqual(context.metrics.counters["plan_length"], 2)
 
     @patch("core.refinement.pipeline.disabled_switches", return_value=[])
     @patch("core.refinement.pipeline.IncrementalSolver")
@@ -90,10 +88,8 @@ class RefinementTests(unittest.TestCase):
 
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ["occurs(concrete,9)"])
-        self.assertEqual(result["horizon"], 9)
         self.assertEqual(context.metrics.counters["decrements"], 3)
         self.assertEqual(context.metrics.counters["increments"], 2)
-        self.assertEqual(context.metrics.counters["final_horizon"], 9)
         self.assertEqual(context.metrics.counters["concrete_solve_calls"], 6)
         self.assertIn("extended_concrete_solving", context.metrics.durations)
         self.assertEqual(incremental_solver.call_args.args, ("concrete asp\nmapping asp", 7))

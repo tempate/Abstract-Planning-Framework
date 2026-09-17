@@ -67,7 +67,7 @@ def to_positive_normal_form(problem):
         with Compiler(name="up_negative_conditions_remover") as compiler:
             translated = compiler.compile(problem, CompilationKind.NEGATIVE_CONDITIONS_REMOVING).problem
     except Exception as error:
-        raise PddlError(f"Could not translate the task to positive normal form: {error}") from error
+        raise PddlError(f"Could not translate the task to PNF: {error}") from error
 
     # Unified Planning rebuilds a cost metric before it has mapped any new
     # action to the one it came from, so the rebuilt metric still keys on the

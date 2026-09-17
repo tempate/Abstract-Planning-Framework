@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 DURATION_LABELS = {
     "total": "Total",
     "problem_reading": "Problem reading",
-    "pnf_translation": "Positive normal form translation",
+    "pnf_translation": "PNF translation",
     "symmetry_discovery": "Symmetry discovery",
     "abstraction": "Abstraction",
     "abstract_pddl_writing": "Abstract PDDL writing",
@@ -26,8 +26,8 @@ COUNTER_LABELS = {
     "relaxed_inequalities": "Relaxed inequalities",
     "decrements": "Refinement decrements",
     "increments": "Horizon increments",
-    "abstract_horizon": "Abstract horizon",
-    "final_horizon": "Final horizon",
+    "abstract_plan_length": "Abstract plan length",
+    "plan_length": "Plan length",
     "abstract_solve_calls": "Abstract solver calls",
     "concrete_solve_calls": "Concrete solver calls",
 }

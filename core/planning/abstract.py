@@ -33,7 +33,6 @@ def _compute_abstract_plan(config, base_dir, run_id, metrics):
     context = RefinementContext(
         config=config,
         abstraction=abstract_problem.abstraction,
-        relaxed_deletes=abstract_problem.relaxed_deletes,
         run_id=run_id,
         metrics=metrics,
         concrete_asp=concrete_asp,

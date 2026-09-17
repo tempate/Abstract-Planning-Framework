@@ -125,7 +125,7 @@ def _copy_initial_values(problem, collapsed_problem, rewrite):
             # The collapsed objects disagree on a fact, so the abstract object
             # holds it: the abstract task only has to admit the concrete plans,
             # and a fact that stays true only makes more actions applicable.
-            # In positive normal form the complement of a fluent disagrees
+            # In PNF the complement of a fluent disagrees
             # wherever the fluent does, so this is the common case, not an edge.
             collapsed_value = problem.environment.expression_manager.TRUE()
         collapsed_initial_values[collapsed_fluent] = collapsed_value

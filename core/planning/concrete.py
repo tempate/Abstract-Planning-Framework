@@ -28,21 +28,19 @@ def _compute_concrete_plan(config, base_dir, run_id, metrics):
         asp = sas_to_asp(sas_file, abstract_time_steps=config.time_step)
 
     # Solve the concrete problem, raising the horizon until a plan is found.
-    def record_attempt(horizon, solve_calls):
-        metrics.set_counter("final_horizon", horizon)
+    def record_attempt(_horizon, solve_calls):
         metrics.set_counter("concrete_solve_calls", solve_calls)
 
     with metrics.measure("guided_concrete_solving"):
         solve_result = solve(asp, on_attempt=record_attempt)
 
-    metrics.set_counter("final_horizon", solve_result.horizon)
     metrics.set_counter("concrete_solve_calls", solve_result.attempts)
+    if solve_result.plan is not None:
+        metrics.set_counter("plan_length", plan_length(solve_result.plan))
 
     return {
         "configuration": config.as_dict(),
-        "horizon": solve_result.horizon,
         "plan": solve_result.plan,
-        "plan_length": None if solve_result.plan is None else plan_length(solve_result.plan),
         "success": solve_result.plan is not None,
         "run_id": run_id,
     }
