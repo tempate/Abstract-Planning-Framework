@@ -1,0 +1,3 @@
+# Problems with a resource variable the detector found objects for.
+# Regenerate with:
+#   python -m scripts.scan_resources

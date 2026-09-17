@@ -195,6 +195,15 @@ class BenchmarkTests(unittest.TestCase):
         self.assertIn("scripts.unsolvability", command)
         self.assertIn("abstract", command)
 
+    def test_the_resources_pipeline_tells_the_planner_which_class_to_collapse(self):
+        abstract = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract", "resources")
+        concrete = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "concrete", "resources")
+
+        self.assertIn("scripts.planner", abstract)
+        self.assertEqual(abstract[-2:], ["--abstraction-source", "resources"])
+        # The concrete pipeline has no class to choose and rejects the option.
+        self.assertNotIn("--abstraction-source", concrete)
+
     def test_every_problem_runs_when_no_symmetry_class_is_required(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

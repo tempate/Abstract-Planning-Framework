@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
 
+from experiments.resources import suite as resources_suite
 from experiments.symmetries import suite as symmetries_suite
 from experiments.unsolvability import suite as unsolvability_suite
 
@@ -26,6 +27,7 @@ class Track:
 
 TRACKS = {
     "symmetries": Track(suite=symmetries_suite, pipeline="plan"),
+    "resources": Track(suite=resources_suite, pipeline="resources"),
     "unsolvability": Track(suite=unsolvability_suite, pipeline="decide"),
 }
 DEFAULT_TRACK = "symmetries"
