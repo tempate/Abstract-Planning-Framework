@@ -5,7 +5,6 @@ from dataclasses import asdict, dataclass
 from os import PathLike
 
 Path = str | PathLike[str]
-DEFAULT_TIME_STEP = False
 
 
 @dataclass(frozen=True)
@@ -14,7 +13,6 @@ class PlanningConfig:
 
     domain_path: Path
     problem_path: Path
-    time_step: bool = DEFAULT_TIME_STEP
 
     def as_dict(self):
         values = asdict(self)

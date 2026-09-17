@@ -7,7 +7,7 @@ from core.abstraction.factory import AbstractionError
 from core.outcomes import PlanningOutcomeError
 from core.planning.abstract import compute_abstract_plan
 from core.planning.concrete import compute_concrete_plan
-from core.planning.config import DEFAULT_TIME_STEP, AbstractPlanningConfig, PlanningConfig
+from core.planning.config import AbstractPlanningConfig, PlanningConfig
 
 from .utils.arguments import abstraction_arguments, task_arguments
 from .utils.reporting import print_metrics, progress_callback
@@ -31,7 +31,7 @@ def main():
 
 def _compute(args):
     on_update = progress_callback()
-    common = {"domain_path": args.domain, "problem_path": args.problem, "time_step": args.time_step}
+    common = {"domain_path": args.domain, "problem_path": args.problem}
     if args.mode == "concrete":
         return compute_concrete_plan(PlanningConfig(**common), on_update)
     if args.mode == "abstract":
@@ -72,9 +72,6 @@ def _time_step(atom):
 
 def _argument_parser():
     shared = task_arguments()
-    shared.add_argument(
-        "--time-step", action="store_true", default=DEFAULT_TIME_STEP, help="Enable time-step based encoding"
-    )
     abstract = abstraction_arguments()
 
     parser = argparse.ArgumentParser(description=__doc__)

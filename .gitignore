@@ -2,6 +2,8 @@ venv/
 .venv/
 temp/
 __pycache__/
+.pytest_cache/
+*.egg-info/
 *.py[cod]
 *.so
 runs/
