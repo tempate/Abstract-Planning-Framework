@@ -1,0 +1,43 @@
+Build the LP layer without CPLEX.
+
+OsiIPCpxSolverInterface guards on USE_LP alone, so enabling any LP solver pulls
+in CPLEX headers, and resource_detection hard-codes CPLEX rather than reading
+the lpsolver option. Both are fixed here to let the detector run on COIN's Clp.
+
+diff --git a/src/search/lp/OsiIPCpxSolverInterface.cc b/src/search/lp/OsiIPCpxSolverInterface.cc
+index 3e57d92..839ccdc 100644
+--- a/src/search/lp/OsiIPCpxSolverInterface.cc
++++ b/src/search/lp/OsiIPCpxSolverInterface.cc
+@@ -1,5 +1,5 @@
+ #include "OsiIPCpxSolverInterface.h"
+-#ifdef USE_LP
++#if defined(USE_LP) && defined(COIN_HAS_CPX)
+ 
+ using namespace std;
+ 
+diff --git a/src/search/lp/OsiIPCpxSolverInterface.h b/src/search/lp/OsiIPCpxSolverInterface.h
+index 2898fd2..c3098e9 100644
+--- a/src/search/lp/OsiIPCpxSolverInterface.h
++++ b/src/search/lp/OsiIPCpxSolverInterface.h
+@@ -1,7 +1,7 @@
+ #ifndef OsiIPCpxSolverInterface_h
+ #define OsiIPCpxSolverInterface_h
+ 
+-#ifdef USE_LP
++#if defined(USE_LP) && defined(COIN_HAS_CPX)
+ 
+ #include "OsiSolverInterface.hpp"
+ #include "OsiCpxSolverInterface.hpp"
+diff --git a/src/search/resource_detection/resource_detection.cc b/src/search/resource_detection/resource_detection.cc
+index ededdc4..b548b0c 100644
+--- a/src/search/resource_detection/resource_detection.cc
++++ b/src/search/resource_detection/resource_detection.cc
+@@ -244,7 +244,7 @@ bool ResourceDetection::same_order(pair<set<int>,set<int>> &reference, pair<set<
+ }
+ bool ResourceDetection::solve_lp(TaskProxy & task_proxy, int id_var, vector<double> &solution){
+     
+-    lp::LPSolver lp_solver(lp::LPSolverType::CPLEX,lp::LPConstraintType::LP);
++    lp::LPSolver lp_solver(lp::LPSolverType::CLP,lp::LPConstraintType::LP);
+     vector<lp::LPVariable> variables;
+     vector<lp::LPConstraint> constraints;
+     double infinity = lp_solver.get_infinity();
