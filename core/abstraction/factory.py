@@ -1,5 +1,6 @@
 """Build planning abstractions from PDDL Symmetries classes."""
 
+import tempfile
 from dataclasses import dataclass
 
 from unified_planning.model import Problem
@@ -7,11 +8,12 @@ from unified_planning.model import Problem
 from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
 from core.abstraction.heuristic import abstraction_score
 from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities
+from core.integrations.numeric_fast_downward import detect_resources
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import read_problem, to_positive_normal_form
 from core.metrics import PlanningMetrics
 from core.outcomes import NoSymmetriesError
-from core.planning.config import AbstractPlanningConfig
+from core.planning.config import RESOURCES, AbstractPlanningConfig
 
 __all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "NoSymmetriesError", "build_abstract_problem"]
 
@@ -42,16 +44,11 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     validate_supported_problem(problem)
 
     if config.objects_to_abstract is None:
-        with metrics.measure("symmetry_discovery"):
-            symmetry_classes = find_symmetric_object_sets(
-                config.domain_path, config.problem_path, config.symmetry_time_limit
-            )
-        if not symmetry_classes:
-            raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")
+        candidate_classes = _candidate_classes(config, metrics)
 
     with metrics.measure("abstraction"):
         if config.objects_to_abstract is None:
-            abstraction = _select_abstraction(problem, symmetry_classes, config.abstract_name)
+            abstraction = _select_abstraction(problem, candidate_classes, config.abstract_name)
         else:
             abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
 
@@ -80,8 +77,27 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     )
 
 
+def _candidate_classes(config, metrics):
+    """Find the object classes this run may collapse, from the source it was given."""
+    if config.abstraction_source == RESOURCES:
+        with metrics.measure("resource_detection"):
+            with tempfile.TemporaryDirectory(prefix="apf-resources-") as directory:
+                resources = detect_resources(directory, config.domain_path, config.problem_path)
+        if not resources:
+            raise NoSymmetriesError("Resource detection found no abstractable object classes")
+        return [resource.objects for resource in resources]
+
+    with metrics.measure("symmetry_discovery"):
+        symmetry_classes = find_symmetric_object_sets(
+            config.domain_path, config.problem_path, config.symmetry_time_limit
+        )
+    if not symmetry_classes:
+        raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")
+    return symmetry_classes
+
+
 def _select_abstraction(problem, symmetry_classes, abstract_name=None):
-    """Select the largest class reported by PDDL Symmetries."""
+    """Select the largest of the candidate classes."""
     candidate = None
     candidate_score = None
     rejection = None

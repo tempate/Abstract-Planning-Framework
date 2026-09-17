@@ -37,14 +37,16 @@ def detect_resources(base_dir, domain_path, problem_path):
 
     os.makedirs(base_dir, exist_ok=True)
     # The engine writes output.sas and four PDDL files under fixed names in the
-    # working directory, so it gets a directory of its own.
+    # working directory, so it gets a directory of its own -- which is why the
+    # task has to be named absolutely, the caller's relative paths being
+    # meaningless from there.
     command = [
         sys.executable,
         NUMERIC_FAST_DOWNWARD_SCRIPT,
         "--build",
         BUILD,
-        os.fspath(domain_path),
-        os.fspath(problem_path),
+        os.path.abspath(domain_path),
+        os.path.abspath(problem_path),
         "--search",
         DETECTION_SEARCH,
     ]
