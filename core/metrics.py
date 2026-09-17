@@ -27,6 +27,7 @@ COUNTER_LABELS = {
     "decrements": "Refinement decrements",
     "increments": "Horizon increments",
     "abstract_plan_length": "Abstract plan length",
+    "plan_length": "Plan length",
     "abstract_solve_calls": "Abstract solver calls",
     "concrete_solve_calls": "Concrete solver calls",
 }

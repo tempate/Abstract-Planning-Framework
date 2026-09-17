@@ -23,7 +23,6 @@ FIELDS = (
     "last_completed_phase",
     *DURATION_FIELDS,
     "verdict",
-    "plan_length",
     *COUNTER_LABELS,
     "abstracted_object_count",
     "abstracted_object_type",
@@ -94,7 +93,6 @@ def _values(result):
         "last_completed_phase": progress.get("last_completed_phase", ""),
         **{f"{name}_seconds": durations.get(name, "") for name in DURATION_LABELS},
         "verdict": _value(output, "Verdict"),
-        "plan_length": _plan_length(output),
         **_counter_values(output, counters),
         **_abstraction_values(output, metrics.get("abstraction")),
         "error_message": _error_message(result),
@@ -109,6 +107,9 @@ def _counter_values(output, counters):
             values[name] = counters[name]
         elif name in ("decrements", "increments"):
             values[name] = _value(output, name.title(), int)
+        elif name == "plan_length":
+            # Runs from before this was a counter only printed the plan itself.
+            values[name] = _plan_length(output)
         else:
             values[name] = ""
     return values

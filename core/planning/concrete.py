@@ -35,11 +35,12 @@ def _compute_concrete_plan(config, base_dir, run_id, metrics):
         solve_result = solve(asp, on_attempt=record_attempt)
 
     metrics.set_counter("concrete_solve_calls", solve_result.attempts)
+    if solve_result.plan is not None:
+        metrics.set_counter("plan_length", plan_length(solve_result.plan))
 
     return {
         "configuration": config.as_dict(),
         "plan": solve_result.plan,
-        "plan_length": None if solve_result.plan is None else plan_length(solve_result.plan),
         "success": solve_result.plan is not None,
         "run_id": run_id,
     }

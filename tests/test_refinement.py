@@ -65,10 +65,12 @@ class RefinementTests(unittest.TestCase):
     def test_the_plan_length_counts_actions_instead_of_time_steps(
         self, solve, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver
     ):
-        result = refine(self._context())
+        context = self._context()
+
+        refine(context)
 
         # The two actions sit on a horizon of five, whose gaps stayed empty.
-        self.assertEqual(result["plan_length"], 2)
+        self.assertEqual(context.metrics.counters["plan_length"], 2)
 
     @patch("core.refinement.pipeline.disabled_switches", return_value=[])
     @patch("core.refinement.pipeline.IncrementalSolver")

@@ -113,6 +113,9 @@ def _publish_counters(context, *, decrements, increments, solve_calls):
 
 
 def _build_result(context, plan):
+    if plan is not None:
+        context.metrics.set_counter("plan_length", plan_length(plan))
+
     return {
         "abstraction": {
             "abstract_symbol": context.abstraction.name,
@@ -122,7 +125,6 @@ def _build_result(context, plan):
         },
         "configuration": context.config.as_dict(),
         "plan": plan,
-        "plan_length": None if plan is None else plan_length(plan),
         "success": plan is not None,
         "run_id": context.run_id,
     }
