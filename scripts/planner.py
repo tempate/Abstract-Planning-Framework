@@ -50,8 +50,12 @@ def _compute(args):
 def print_planning_result(result):
     """Print a planning result."""
     print("\n=== RESULT ===")
-    print(f"Horizon: {result['horizon']}")
     print(f"Plan found: {'yes' if result['plan'] is not None else 'no'}")
+
+    # The horizon surrounds every abstract action with a gap for one optional
+    # concrete action, so it roughly doubles the plan a reader wants to see.
+    if result["plan"] is not None:
+        print(f"Plan length: {result['plan_length']}")
     print_metrics(result["metrics"])
 
     if result["plan"] is not None:
