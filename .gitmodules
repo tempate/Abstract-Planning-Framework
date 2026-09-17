@@ -8,3 +8,6 @@
 	path = experiments/benchmarks/downward-benchmarks
 	url = https://github.com/tempate/downward-benchmarks.git
 	branch = fix/domain-predicate-typos
+[submodule "lib/numeric-fast-downward"]
+	path = lib/numeric-fast-downward
+	url = https://github.com/dgnad/numeric-fast-downward.git
