@@ -35,6 +35,7 @@ def _compute(args):
                 objects_to_abstract=args.objects_to_abstract,
                 abstract_name=args.abstract_name,
                 symmetry_time_limit=args.symmetry_time_limit,
+                abstraction_source=args.abstraction_source,
             ),
             on_update,
         )
