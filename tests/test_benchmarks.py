@@ -297,7 +297,6 @@ class BenchmarkTests(unittest.TestCase):
             self.assertIn(name, FIELDS)
         self.assertEqual(rows[0]["mode"], "abstract")
         self.assertEqual(rows[0]["status"], "success")
-        self.assertEqual(rows[0]["horizon"], 4)
         self.assertEqual(rows[0]["plan_length"], 2)
         self.assertEqual(rows[0]["decrements"], 2)
         self.assertEqual(rows[0]["increments"], 1)
@@ -309,7 +308,6 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[0]["abstracted_object_type"], "package")
         self.assertEqual(rows[1]["mode"], "concrete")
         self.assertEqual(rows[1]["status"], "success")
-        self.assertEqual(rows[1]["horizon"], 6)
         self.assertEqual(rows[1]["plan_length"], 3)
         self.assertEqual(rows[1]["total_seconds"], 2.5)
         self.assertEqual(rows[1]["concrete_fd_seconds"], 1.0)
@@ -507,9 +505,7 @@ class BenchmarkTests(unittest.TestCase):
 
         self.assertEqual(len(rows), 2)
         self.assertEqual(rows[0]["mode"], "abstract")
-        self.assertEqual(rows[0]["horizon"], 4)
         self.assertEqual(rows[1]["mode"], "concrete")
-        self.assertEqual(rows[1]["horizon"], 6)
 
     def test_the_manifest_marks_every_mode_that_produced_no_result(self):
         expected_statuses = {

@@ -57,11 +57,9 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         result = compute_concrete_plan(config)
 
         self.assertTrue(result["success"])
-        self.assertEqual(result["horizon"], 3)
         self.assertEqual(result["plan"], ["occurs(action,3)"])
         self.assertEqual(result["run_id"], "run-123")
         self.assertEqual(result["configuration"], config.as_dict())
-        self.assertEqual(result["metrics"]["counters"]["final_horizon"], 3)
         self.assertEqual(result["metrics"]["counters"]["concrete_solve_calls"], 4)
         self.assertEqual(sas_to_asp.call_args.args[0], "concrete.sas")
 

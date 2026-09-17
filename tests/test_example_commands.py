@@ -23,7 +23,6 @@ def _argument_after(command, option):
 class PlannerOutputTests(unittest.TestCase):
     def test_metrics_are_grouped_and_human_readable(self):
         result = {
-            "horizon": 5,
             "plan": ["occurs(move,5)"],
             "plan_length": 1,
             "success": True,

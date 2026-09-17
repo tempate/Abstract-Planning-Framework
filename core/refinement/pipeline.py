@@ -109,7 +109,6 @@ def _publish_counters(context, *, decrements, increments, solve_calls):
     """Report the concrete search's progress so far."""
     context.metrics.set_counter("decrements", decrements)
     context.metrics.set_counter("increments", increments)
-    context.metrics.set_counter("final_horizon", context.horizon)
     context.metrics.set_counter("concrete_solve_calls", solve_calls)
 
 
@@ -122,7 +121,6 @@ def _build_result(context, plan):
             "relaxed_deletes": len(context.relaxed_deletes),
         },
         "configuration": context.config.as_dict(),
-        "horizon": context.horizon,
         "plan": plan,
         "plan_length": None if plan is None else plan_length(plan),
         "success": plan is not None,

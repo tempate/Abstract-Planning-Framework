@@ -17,9 +17,9 @@ class PlanningMetricsTests(unittest.TestCase):
         self.assertEqual(metrics.durations["concrete_fd"], 3.5)
 
     def test_snapshot_separates_durations_and_counters(self):
-        metrics = PlanningMetrics(durations={"total": 1.25}, counters={"final_horizon": 4})
+        metrics = PlanningMetrics(durations={"total": 1.25}, counters={"abstract_horizon": 4})
 
-        self.assertEqual(metrics.as_dict(), {"durations": {"total": 1.25}, "counters": {"final_horizon": 4}})
+        self.assertEqual(metrics.as_dict(), {"durations": {"total": 1.25}, "counters": {"abstract_horizon": 4}})
 
     def test_the_collapsed_class_reaches_the_snapshot_as_it_is_selected(self):
         updates = []
