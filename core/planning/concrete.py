@@ -1,11 +1,12 @@
 """Orchestrate concrete planning from PDDL translation through ASP solving."""
 
-from core.integrations.clingo import plan_length, solve
+from core.integrations.clingo import plan_length
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.planning.config import PlanningConfig
 from core.planning.execution import temp_run_dir
+from core.search.incremental import IncrementalSolver
 
 
 def compute_concrete_plan(config: PlanningConfig, on_update=None):
@@ -32,7 +33,8 @@ def _compute_concrete_plan(config, base_dir, run_id, metrics):
         metrics.set_counter("concrete_solve_calls", solve_calls)
 
     with metrics.measure("guided_concrete_solving"):
-        solve_result = solve(asp, on_attempt=record_attempt)
+        solver = IncrementalSolver(asp)
+        solve_result = solver.search(on_attempt=record_attempt)
 
     metrics.set_counter("concrete_solve_calls", solve_result.attempts)
     if solve_result.plan is not None:

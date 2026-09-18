@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
-from core.integrations.clingo import IncrementalSolver
+from core.search.incremental import IncrementalSolver
 from core.integrations.plasp import add_switch_to_asp_rule
 from core.plan import PlanAction
 from core.refinement.mapping import build_mapping
