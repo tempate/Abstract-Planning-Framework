@@ -11,7 +11,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR
+from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 from scripts.utils.arguments import positive_int
 
@@ -32,7 +32,7 @@ def main():
             benchmarks_dir=track.suite.BENCHMARKS_DIR,
             suite=track.suite.SUITE,
             runnable=track.suite.SYMMETRIC_PROBLEMS,
-            with_concrete=args.with_concrete,
+            modes=args.modes,
         )
     )
     pipeline = track.pipeline
@@ -93,7 +93,11 @@ def _argument_parser():
         "--partition", default=DEFAULT_PARTITION, help="Slurm partition to run every task of this run on"
     )
     parser.add_argument(
-        "--with-concrete", action="store_true", help="Also submit the concrete pipeline for every problem"
+        "--modes",
+        nargs="+",
+        choices=MODES,
+        default=["abstract"],
+        help="Ways to solve every problem, one cluster job each",
     )
     parser.add_argument(
         "--track",
@@ -160,8 +164,7 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir, suite, runnable, with_concrete=False):
-    modes = ("abstract", "concrete") if with_concrete else ("abstract",)
+def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstract",)):
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):

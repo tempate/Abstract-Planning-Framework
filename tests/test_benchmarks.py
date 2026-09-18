@@ -174,8 +174,12 @@ class BenchmarkTests(unittest.TestCase):
                 list(_benchmark_tasks(root, ["example"], runnable)), [("abstract", "example", domain, problem)]
             )
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable, with_concrete=True)),
-                [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
+                list(_benchmark_tasks(root, ["example"], runnable, modes=("abstract", "concrete", "lama"))),
+                [
+                    ("abstract", "example", domain, problem),
+                    ("concrete", "example", domain, problem),
+                    ("lama", "example", domain, problem),
+                ],
             )
 
     def test_only_problems_with_an_abstraction_class_are_submitted(self):
