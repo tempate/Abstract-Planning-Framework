@@ -33,7 +33,19 @@ COUNTER_LABELS = {
     "plan_length": "Plan length",
     "abstract_solve_calls": "Abstract solver calls",
     "concrete_solve_calls": "Concrete solver calls",
+    "problem_object_count": "Problem objects",
+    "init_predicates_on_class": "Initial predicates on the class",
+    "actions_binding_class": "Actions binding the class",
+    "unary_relaxed_deletes": "Relaxed unary deletes",
+    "class_deletes": "Deletes on the class",
+    "class_inequalities": "Inequalities on the class",
+    "concrete_sas_variables": "Concrete SAS variables",
+    "concrete_sas_operators": "Concrete SAS operators",
+    "abstract_sas_variables": "Abstract SAS variables",
+    "abstract_sas_operators": "Abstract SAS operators",
 }
+
+RATIO_LABELS = {"shared_initial_state": "Shared initial state", "shared_goal": "Shared goal"}
 
 
 @dataclass
@@ -42,6 +54,7 @@ class PlanningMetrics:
 
     durations: dict[str, float] = field(default_factory=dict)
     counters: dict[str, int] = field(default_factory=dict)
+    ratios: dict[str, float] = field(default_factory=dict)
     abstraction: dict | None = None
     _clock: Callable[[], float] = field(default=time.perf_counter, repr=False)
     on_update: Callable[[dict, dict], None] | None = field(default=None, repr=False)
@@ -69,6 +82,13 @@ class PlanningMetrics:
         self.counters[name] = value
         self._report({"kind": "counter_updated", "counter": name})
 
+    def set_ratio(self, name: str, value: float) -> None:
+        """Set a named fraction between zero and one."""
+        if name not in RATIO_LABELS:
+            raise ValueError(f"Unknown ratio metric: {name}")
+        self.ratios[name] = value
+        self._report({"kind": "ratio_updated", "ratio": name})
+
     def set_abstraction(self, objects, object_type: str) -> None:
         """Record the collapsed object class."""
         self.abstraction = {"objects": sorted(objects), "object_type": object_type}
@@ -78,7 +98,8 @@ class PlanningMetrics:
         """Return a JSON-serializable snapshot in a stable order."""
         durations = {name: self.durations[name] for name in DURATION_LABELS if name in self.durations}
         counters = {name: self.counters[name] for name in COUNTER_LABELS if name in self.counters}
-        snapshot = {"durations": durations, "counters": counters}
+        ratios = {name: self.ratios[name] for name in RATIO_LABELS if name in self.ratios}
+        snapshot = {"durations": durations, "counters": counters, "ratios": ratios}
         if self.abstraction is not None:
             snapshot["abstraction"] = self.abstraction
         return snapshot

@@ -26,6 +26,7 @@ def _stubbed_abstract_pipeline(generated):
         patch("core.planning.abstract.build_abstract_problem", return_value=generated),
         patch("core.planning.abstract.write_abstract_problem", return_value=("domain.pddl", "problem.pddl")),
         patch("core.planning.abstract.pddl_to_sas", side_effect=["concrete.sas", "abstract.sas"]),
+        patch("core.planning.abstract.sas_size", return_value=(3, 9)),
         patch("core.planning.abstract.sas_to_asp", side_effect=["concrete asp", "abstract asp"]) as sas_to_asp,
         patch("core.planning.abstract.add_switch_to_asp_rule", return_value="guarded concrete asp"),
         patch("core.planning.abstract.refine", return_value={"success": True}) as refine,
@@ -34,12 +35,13 @@ def _stubbed_abstract_pipeline(generated):
         yield SimpleNamespace(sas_to_asp=sas_to_asp, refine=refine)
 
 
-def _generated_abstraction(relaxed_deletes=(), relaxed_inequalities=()):
+def _generated_abstraction(relaxed_deletes=(), relaxed_inequalities=(), statistics=None):
     return SimpleNamespace(
         problem=Mock(),
         abstraction=Abstraction("item_abs", ("a", "b"), "item"),
         relaxed_deletes=relaxed_deletes,
         relaxed_inequalities=relaxed_inequalities,
+        statistics=statistics or {"counters": {}, "ratios": {}},
     )
 
 

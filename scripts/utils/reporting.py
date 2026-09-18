@@ -5,7 +5,7 @@ import os
 from functools import partial
 from pathlib import Path
 
-from core.metrics import COUNTER_LABELS, DURATION_LABELS
+from core.metrics import COUNTER_LABELS, DURATION_LABELS, RATIO_LABELS
 
 
 def progress_callback():
@@ -34,10 +34,11 @@ def update_result_progress(result_file, event, metrics):
 
 
 def print_metrics(metrics):
-    """Print the durations and counters of a finished run."""
+    """Print the durations, counters and ratios of a finished run."""
     print("\nMetrics:")
     _print_metric_group("Durations (seconds)", metrics["durations"], DURATION_LABELS, lambda value: f"{value:.6f}")
     _print_metric_group("Solver activity", metrics["counters"], COUNTER_LABELS, lambda value: str(int(value)))
+    _print_metric_group("Class shape", metrics.get("ratios", {}), RATIO_LABELS, lambda value: f"{value:.6f}")
 
 
 def _print_metric_group(title, values, labels, format_value):

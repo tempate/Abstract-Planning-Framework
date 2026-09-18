@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-from core.integrations.fast_downward import pddl_to_sas
+from core.integrations.fast_downward import pddl_to_sas, sas_size
 from core.integrations.unified_planning import without_action_costs, write_problem
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.metrics import PlanningMetrics
@@ -46,6 +46,7 @@ def _to_sas(base_dir, problem, config, metrics):
     with metrics.measure("concrete_fd"):
         concrete_dir = os.path.join(base_dir, "concrete")
         concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
+    _report_sas_size("concrete", concrete_sas, metrics)
 
     # Write the temporary problem files
     with metrics.measure("abstract_pddl_writing"):
@@ -54,8 +55,20 @@ def _to_sas(base_dir, problem, config, metrics):
     with metrics.measure("abstract_fd"):
         abstract_dir = os.path.join(base_dir, "abstract")
         abstract_sas = pddl_to_sas(abstract_dir, domain_path, problem_path, "abstract")
+    _report_sas_size("abstract", abstract_sas, metrics)
 
     return concrete_sas, abstract_sas
+
+
+def _report_sas_size(label, sas_path, metrics):
+    """Record how big a task the translator produced, which is what the collapse shrinks.
+
+    A file cut short declares neither count, and a size nobody read is better
+    left out of the results than written down as a zero.
+    """
+    for name, value in zip(("variables", "operators"), sas_size(sas_path)):
+        if value is not None:
+            metrics.set_counter(f"{label}_sas_{name}", value)
 
 
 def _to_asp(concrete_sas, abstract_sas, config, metrics):
@@ -81,6 +94,10 @@ def report_abstraction(abstract_problem, metrics):
     metrics.set_abstraction(abstraction.objects, abstraction.object_type)
     metrics.set_counter("relaxed_deletes", len(abstract_problem.relaxed_deletes))
     metrics.set_counter("relaxed_inequalities", len(abstract_problem.relaxed_inequalities))
+    for name, value in abstract_problem.statistics["counters"].items():
+        metrics.set_counter(name, value)
+    for name, value in abstract_problem.statistics["ratios"].items():
+        metrics.set_ratio(name, value)
     print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
 
 
