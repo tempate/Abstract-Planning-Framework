@@ -539,7 +539,7 @@ class BenchmarkTests(unittest.TestCase):
     def test_a_run_is_collected_into_the_results_of_its_track(self):
         task = [("concrete", "example", Path("domain.pddl"), Path("p01.pddl"))]
         with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
-            _write_manifest(task, plan, track="plan")
+            _write_manifest(task, plan, track="symmetries")
             _write_manifest(task, decide, track="unsolvability")
 
             self.assertEqual(_track_results_file([decide]), TRACKS["unsolvability"].results_file)

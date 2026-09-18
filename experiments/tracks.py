@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from experiments.plan import suite as plan
+from experiments.symmetries import suite as symmetries
 from experiments.unsolvability import suite as unsolvability
 
 # The benchmark collections. A track says which of their problems it runs; it
@@ -39,9 +39,9 @@ class Track:
 
 
 TRACKS = {
-    "plan": Track(
-        directory=Path(plan.__file__).parent,
-        suite=plan.SUITE,
+    "symmetries": Track(
+        directory=Path(symmetries.__file__).parent,
+        suite=symmetries.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
     ),
@@ -52,4 +52,4 @@ TRACKS = {
         driver="scripts.unsolvability",
     ),
 }
-DEFAULT_TRACK = "plan"
+DEFAULT_TRACK = "symmetries"

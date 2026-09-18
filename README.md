@@ -59,11 +59,12 @@ alone.
 ```bash
 python -m experiments.submit
 python -m experiments.collect
-python -m experiments.report experiments/plan/results.csv
+python -m experiments.report experiments/symmetries/results.csv
 ```
 
-- `experiments/plan/suite.py` holds the domains, but a problem is submitted only
-  when `experiments/plan/symmetries.txt` records an abstraction class for it.
+- `experiments/symmetries/suite.py` holds the domains, but a problem is submitted
+  only when `experiments/symmetries/symmetries.txt` records an abstraction class
+  for it.
   That file's header carries the command that regenerates it.
 - `--track unsolvability` submits `experiments/unsolvability/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
@@ -73,8 +74,8 @@ python -m experiments.report experiments/plan/results.csv
 - `collect` rewrites the `results.csv` of the track the run's manifest names,
   replacing only the (domain, problem, mode) results the run holds, so a
   baseline or a gap-filling run can be collected on its own.
-  `report` rewrites `experiments/plan/reports.md`, comparing only the problems
-  every mode finished and saying how many it dropped.
+  `report` rewrites `experiments/symmetries/reports.md`, comparing only the
+  problems every mode finished and saying how many it dropped.
 
 ## Tests
 
