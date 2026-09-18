@@ -41,6 +41,8 @@ python -m scripts.planner --help
 ```
 
 - `concrete` solves the PDDL task directly.
+- `lama` solves it with plain Fast Downward (`--alias lama-first`), as an
+  external baseline to compare the other two against.
 - `abstract` collapses a symmetric object class, solves the abstraction, and uses
   its plan to guide the concrete search. It asks PDDL Symmetries for the class;
   pass `--objects-to-abstract NAME...` to choose one yourself. Finding no
@@ -50,8 +52,9 @@ python -m scripts.planner --help
 
 Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
-abstract Slurm task per problem, each capped at 30 minutes and 8192 MiB.
-`--with-concrete` submits the baseline alongside it.
+Slurm task per mode and problem, each capped at 30 minutes and 8192 MiB.
+`--modes abstract concrete lama` submits all three; the default is `abstract`
+alone.
 
 ```bash
 python -m experiments.submit
@@ -62,13 +65,15 @@ python -m experiments.report experiments/plan/results.csv
 - `experiments/plan/suite.py` holds the domains, but a problem is submitted only
   when `experiments/plan/symmetries.txt` records an abstraction class for it.
   That file's header carries the command that regenerates it.
-- `--unsolvable` submits `experiments/unsolvability/` over unsolve-ipc-2016
+- `--track unsolvability` submits `experiments/unsolvability/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
   a plan. Only the probNN problems run, the ones known to be unsolvable.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
-- `collect` rewrites `experiments/plan/results.csv`, keeping only the concrete
-  results the run did not cover. `report` rewrites `experiments/plan/reports.md`.
+- `collect` rewrites `experiments/plan/results.csv`, keeping the results of the
+  modes the run did not submit, so a baseline can be measured on its own.
+  `report` rewrites `experiments/plan/reports.md`, comparing only the problems
+  every mode finished and saying how many it dropped.
 
 ## Tests
 

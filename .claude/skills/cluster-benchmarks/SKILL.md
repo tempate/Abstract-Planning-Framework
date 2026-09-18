@@ -45,25 +45,31 @@ runs in one directory collect into one unreadable CSV.
 ## Merging a gap-filling run
 
 Collecting a partial run straight into `results.csv` **silently drops the
-existing abstract rows**: `_preserved_concrete_rows` keeps only `concrete` rows
-the run did not cover. Merge the raw trees instead, then collect once:
+existing abstract rows**: `_preserved_rows` keeps the modes the run did not
+submit, and the run owns the ones it did. Merge the raw trees instead, then collect once:
 
 1. rsync both result directories into one scratch directory
 2. write a manifest whose `expected_results` is the union of both manifests
 3. `experiments.collect.main(<merged dir>, "experiments/plan/results.csv")`
 
 Confirm the collect prints no `Incomplete benchmark run` line and that the row
-count matches problems × 2.
+count matches problems × the modes submitted.
 
 ## Submitting
 
 ```bash
-python -m experiments.submit --with-concrete
+python -m experiments.submit --modes abstract concrete lama
 ```
 
-`--with-concrete` is almost always right: `experiments.report` pairs the two
-pipelines and drops any problem missing one, so abstract-only problems appear in
-no table.
+Submit every mode you want compared: `experiments.report` pairs **all** of them
+and drops any problem missing one, so a mode left out of a run shrinks every
+table. `lama` is plain Fast Downward, the external baseline. Pin `--partition`
+for any run whose timings are published — the default `any` spans two CPU
+generations, and that is hard to defend against an external planner.
+
+`--track unsolvability` takes only `abstract` and `concrete`: `scripts.unsolvability`
+has no `lama` subcommand, and its concrete mode already is a plain Fast Downward
+search.
 
 `--track unsolvability` swaps the suite for unsolve-ipc-2016 and the planner for
 `scripts.unsolvability`, which reports a verdict instead of a plan. The CSV
