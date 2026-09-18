@@ -1,6 +1,8 @@
 # Benchmark report
 
-2026-09-16 10:35 — experiments/unsolvability/results.csv
+2026-09-18 11:18 — experiments/unsolvability/results.csv
+
+168 problems compared over abstract, concrete
 
 ## Verdicts
 
@@ -15,12 +17,12 @@ Others                                               0 (0.0%)           0 (0.0%)
 Total problems                                            168                168
 ```
 
-## Head to head
+## Head to head: abstract vs Concrete pipeline
 
 ```
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Proved unsolvable by both pipelines                        13                 13
+Proved unsolvable by both                                  13                 13
 Faster when both proved it                          5 (38.5%)          8 (61.5%)
 Proved it when the other did not                            3                 32
 Median runtime when both proved it                     9.88 s             4.71 s

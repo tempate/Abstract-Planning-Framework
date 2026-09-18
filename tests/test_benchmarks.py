@@ -1,4 +1,6 @@
+import contextlib
 import csv
+import io
 import json
 import os
 import shlex
@@ -13,7 +15,7 @@ from experiments.plan.suite import SUITE
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 from experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from experiments.collect import FIELDS, _preserved_concrete_rows, collect
+from experiments.collect import FIELDS, _preserved_rows, collect
 from scripts.utils.reporting import update_result_progress
 from experiments.run import (
     DEFAULT_TIMEOUT,
@@ -25,7 +27,8 @@ from experiments.run import (
     _run_pipeline,
     _run_task,
 )
-from experiments.report import _coverage, _head_to_head
+import experiments.report
+from experiments.report import _coverage, _finished_problems, _head_to_head
 from experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
@@ -53,6 +56,17 @@ class BenchmarkTests(unittest.TestCase):
         path = Path(directory) / "example" / "p01" / f"{mode}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(result), encoding="utf-8")
+
+    def test_every_mode_becomes_its_own_row(self):
+        """A mode the collector does not know is filed as an abstract result and
+        then dropped, silently, because the real abstract result sorts first."""
+        with tempfile.TemporaryDirectory() as directory:
+            for mode in ("abstract", "concrete", "lama"):
+                self._write_result(directory, mode)
+
+            rows = collect(directory)
+
+        self.assertEqual({row["mode"] for row in rows}, {"abstract", "concrete", "lama"})
 
     def test_the_default_track_runs_the_whole_symmetry_suite_through_the_planner(self):
         track = TRACKS[DEFAULT_TRACK]
@@ -160,8 +174,12 @@ class BenchmarkTests(unittest.TestCase):
                 list(_benchmark_tasks(root, ["example"], runnable)), [("abstract", "example", domain, problem)]
             )
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable, with_concrete=True)),
-                [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
+                list(_benchmark_tasks(root, ["example"], runnable, modes=("abstract", "concrete", "lama"))),
+                [
+                    ("abstract", "example", domain, problem),
+                    ("concrete", "example", domain, problem),
+                    ("lama", "example", domain, problem),
+                ],
             )
 
     def test_only_problems_with_an_abstraction_class_are_submitted(self):
@@ -555,7 +573,7 @@ class CollectedCsvTests(unittest.TestCase):
             csv_file = self._write_csv(directory, [("example", "p01.pddl", "concrete", "success")])
             collected = self._collected([("example", "p01.pddl", "abstract", "success")])
 
-            preserved = _preserved_concrete_rows(collected, csv_file)
+            preserved = _preserved_rows(collected, csv_file)
 
         self.assertEqual([row["mode"] for row in preserved], ["concrete"])
         self.assertEqual(preserved[0]["status"], "success")
@@ -567,26 +585,73 @@ class CollectedCsvTests(unittest.TestCase):
                 csv_file = self._write_csv(directory, rows)
                 collected = self._collected([("example", "p01.pddl", "concrete", status)])
 
-                preserved = _preserved_concrete_rows(collected, csv_file)
+                preserved = _preserved_rows(collected, csv_file)
 
                 self.assertEqual(preserved, [])
 
-    def test_abstract_results_the_run_did_not_cover_are_dropped(self):
+    def test_a_mode_the_run_submitted_does_not_keep_its_old_results(self):
+        """Otherwise a problem dropped from the suite would keep reporting the
+        result of an encoding that is no longer the one being measured."""
         with tempfile.TemporaryDirectory() as directory:
             csv_file = self._write_csv(directory, [("example", "p01.pddl", "abstract", "success")])
+            collected = self._collected([("example", "p02.pddl", "abstract", "success")])
 
-            preserved = _preserved_concrete_rows(self._collected([]), csv_file)
+            preserved = _preserved_rows(collected, csv_file)
 
         self.assertEqual(preserved, [])
 
+    def test_the_modes_the_run_left_alone_keep_their_results(self):
+        """A baseline can be measured on its own without erasing the pipelines
+        it is there to be compared against."""
+        with tempfile.TemporaryDirectory() as directory:
+            csv_file = self._write_csv(
+                directory,
+                [
+                    ("example", "p01.pddl", "abstract", "success"),
+                    ("example", "p01.pddl", "concrete", "success"),
+                    ("example", "p01.pddl", "lama", "timed out"),
+                ],
+            )
+            collected = self._collected([("example", "p01.pddl", "lama", "success")])
+
+            preserved = _preserved_rows(collected, csv_file)
+
+        self.assertEqual({row["mode"] for row in preserved}, {"abstract", "concrete"})
+
     def test_a_first_run_has_nothing_to_keep(self):
         with tempfile.TemporaryDirectory() as directory:
-            preserved = _preserved_concrete_rows(self._collected([]), Path(directory) / "results.csv")
+            preserved = _preserved_rows(self._collected([]), Path(directory) / "results.csv")
 
         self.assertEqual(preserved, [])
 
 
 class ReportTests(unittest.TestCase):
+    def test_running_the_report_writes_it_beside_the_results(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                for mode in ("abstract", "concrete"):
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {
+                            "domain": "example",
+                            "problem": "p01.pddl",
+                            "mode": mode,
+                            "status": "success",
+                            "wall_time_seconds": "1.0",
+                            "decrements": "0",
+                            "increments": "0",
+                            "relaxed_deletes": "0",
+                        }
+                    )
+
+            with patch("sys.argv", ["report", str(results)]), contextlib.redirect_stdout(io.StringIO()):
+                experiments.report.main()
+
+            self.assertTrue((Path(directory) / "reports.md").is_file())
+
     def test_the_report_survives_a_run_with_no_shared_solves(self):
         problems = [
             {
@@ -595,7 +660,7 @@ class ReportTests(unittest.TestCase):
             }
         ]
 
-        _title, lines = _head_to_head(problems)
+        _title, lines = _head_to_head(problems, "concrete")
 
         median = next(line for line in lines if line.startswith("Median runtime"))
         self.assertNotIn(" s", median)
@@ -603,23 +668,67 @@ class ReportTests(unittest.TestCase):
     def test_every_problem_is_accounted_for_in_the_coverage_table(self):
         """The rows have to add up, or a reader cannot tell what became of the
         problems that neither solved nor timed out."""
-        problems = [
-            {"abstract": {"status": "success"}, "concrete": {"status": "timed out"}},
-            {"abstract": {"status": "timed out"}, "concrete": {"status": "success"}},
-            {"abstract": {"status": "error (exit code 2)"}, "concrete": {"status": "interrupted"}},
-            {"abstract": {"status": "no plan found"}, "concrete": {"status": "killed (signal 9)"}},
-        ]
+        modes = ("abstract", "concrete", "lama")
+        statuses = (
+            ("success", "timed out", "success"),
+            ("timed out", "success", "no plan found"),
+            ("error (exit code 2)", "interrupted", "success"),
+            ("no plan found", "killed (signal 9)", "out of memory"),
+        )
+        problems = [dict(zip(modes, ({"status": status} for status in row))) for row in statuses]
 
-        _title, lines = _coverage(problems)
+        _title, lines = _coverage(problems, modes)
 
-        counted = {"abstract": 0, "concrete": 0}
+        counted = [0] * len(modes)
         for label in ("Plans found", "Timeouts", "Out of memory", "Others"):
             line = next(line for line in lines if line.startswith(label))
-            abstract, concrete = re.findall(r"(\d+) \(", line)
-            counted["abstract"] += int(abstract)
-            counted["concrete"] += int(concrete)
+            for index, count in enumerate(re.findall(r"(\d+) \(", line)):
+                counted[index] += int(count)
 
-        self.assertEqual(counted, {"abstract": len(problems), "concrete": len(problems)})
+        self.assertEqual(counted, [len(problems)] * len(modes))
+
+    def test_a_baseline_is_compared_against_the_abstract_pipeline_alone(self):
+        """Intersecting all three would drop the problems one baseline missed out
+        of the others' comparison, moving numbers for an unrelated reason."""
+        problems = [
+            {
+                "abstract": {"status": "success", "wall_time_seconds": "1.0"},
+                "concrete": {"status": "success", "wall_time_seconds": "2.0"},
+                "lama": {"status": "success", "wall_time_seconds": "3.0"},
+            },
+            {
+                "abstract": {"status": "success", "wall_time_seconds": "1.0"},
+                "concrete": {"status": "success", "wall_time_seconds": "2.0"},
+                "lama": {"status": "timed out", "wall_time_seconds": "1800.0"},
+            },
+        ]
+
+        _title, concrete = _head_to_head(problems, "concrete")
+        _title, lama = _head_to_head(problems, "lama")
+
+        self.assertIn("2", next(line for line in concrete if line.startswith("Plans found by both")))
+        self.assertIn("1", next(line for line in lama if line.startswith("Plans found by both")))
+
+    def test_the_report_covers_the_modes_the_results_hold(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                rows = [("p01.pddl", "abstract"), ("p01.pddl", "concrete"), ("p01.pddl", "lama")]
+                # p02 never ran the baseline, so no mode can be compared on it.
+                rows += [("p02.pddl", "abstract"), ("p02.pddl", "concrete")]
+                for problem, mode in rows:
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {"domain": "example", "problem": problem, "mode": mode, "status": "success"}
+                    )
+
+            modes, problems, dropped = _finished_problems(results)
+
+        self.assertEqual(modes, ("abstract", "concrete", "lama"))
+        self.assertEqual(len(problems), 1)
+        self.assertEqual(dropped, 1)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ from core.integrations.clingo import ClingoSolveResult
 from core.integrations.unified_planning import read_problem
 from core.outcomes import UnsolvableTaskError
 from core.planning.abstract import write_abstract_problem, compute_abstract_plan
+from core.planning.baseline import compute_baseline_plan
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.concrete import compute_concrete_plan
 from core.planning.solvability import compute_abstract_verdict, compute_concrete_verdict
@@ -62,6 +63,30 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(result["configuration"], config.as_dict())
         self.assertEqual(result["metrics"]["counters"]["concrete_solve_calls"], 4)
         self.assertEqual(sas_to_asp.call_args.args[0], "concrete.sas")
+
+
+class BaselinePlanningOrchestrationTests(unittest.TestCase):
+    @patch("core.planning.baseline.find_plan")
+    def test_the_plan_length_is_reported_rather_than_counted_from_the_output(self, find_plan):
+        find_plan.return_value = ["(walk a b)", "(drive b c)"]
+        config = PlanningConfig("domain.pddl", "problem.pddl")
+
+        result = compute_baseline_plan(config)
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["configuration"], config.as_dict())
+        # The plan carries no occurs/2 atoms for the collector to count.
+        self.assertEqual(result["metrics"]["counters"]["plan_length"], 2)
+
+    @patch("core.planning.baseline.find_plan")
+    def test_an_unsolvable_task_is_not_a_plan(self, find_plan):
+        find_plan.return_value = None
+
+        result = compute_baseline_plan(PlanningConfig("domain.pddl", "problem.pddl"))
+
+        self.assertFalse(result["success"])
+        self.assertIsNone(result["plan"])
+        self.assertNotIn("plan_length", result["metrics"]["counters"])
 
 
 class AbstractPlanningOrchestrationTests(unittest.TestCase):

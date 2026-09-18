@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.integrations.clingo import IncrementalSolver, parse_plan_actions, solve
-from core.integrations.fast_downward import has_plan, pddl_to_sas
+from core.integrations.fast_downward import find_plan, has_plan, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.outcomes import IntegrationError, OutOfMemoryError
 from core.plan import PlanAction
@@ -166,6 +166,56 @@ class FastDownwardHelperTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             has_plan(directory, "domain.pddl", "problem.pddl", "concrete")
+
+            command = run.call_args.args[0]
+            written = [command[i + 1] for i, part in enumerate(command) if part in ("--sas-file", "--plan-file")]
+
+        self.assertEqual(len(written), 2)
+        for path in written:
+            self.assertTrue(path.startswith(directory), f"{path} escapes the run directory")
+
+    @patch("core.integrations.fast_downward.subprocess.run")
+    def test_the_baseline_reads_the_actions_of_the_plan_it_wrote(self, run):
+        def write_plan(command, **_):
+            plan_path = command[command.index("--plan-file") + 1]
+            Path(plan_path).write_text("(walk a b)\n(drive b c)\n; cost = 2 (unit cost)\n", encoding="utf-8")
+            return subprocess.CompletedProcess(args=command, returncode=0, stdout="", stderr="")
+
+        run.side_effect = write_plan
+
+        with tempfile.TemporaryDirectory() as directory:
+            plan = find_plan(directory, "domain.pddl", "problem.pddl", "lama")
+
+        # The trailing cost comment is not an action.
+        self.assertEqual(plan, ["(walk a b)", "(drive b c)"])
+
+    @patch("core.integrations.fast_downward.subprocess.run")
+    def test_a_goal_that_already_holds_is_solved_rather_than_unsolvable(self, run):
+        def write_plan(command, **_):
+            plan_path = command[command.index("--plan-file") + 1]
+            Path(plan_path).write_text("; cost = 0 (unit cost)\n", encoding="utf-8")
+            return subprocess.CompletedProcess(args=command, returncode=0, stdout="", stderr="")
+
+        run.side_effect = write_plan
+
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertEqual(find_plan(directory, "domain.pddl", "problem.pddl", "lama"), [])
+
+    @patch("core.integrations.fast_downward.subprocess.run")
+    def test_the_baseline_reports_no_plan_when_the_task_is_unsolvable(self, run):
+        with tempfile.TemporaryDirectory() as directory:
+            for exit_code in (10, 11):
+                run.return_value = subprocess.CompletedProcess(args=[], returncode=exit_code, stdout="", stderr="")
+                self.assertIsNone(find_plan(directory, "domain.pddl", "problem.pddl", "lama"))
+
+    @patch("core.integrations.fast_downward.subprocess.run")
+    def test_the_baseline_keeps_its_files_inside_the_run_directory(self, run):
+        run.side_effect = lambda command, **_: subprocess.CompletedProcess(
+            args=command, returncode=10, stdout="", stderr=""
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            find_plan(directory, "domain.pddl", "problem.pddl", "lama")
 
             command = run.call_args.args[0]
             written = [command[i + 1] for i, part in enumerate(command) if part in ("--sas-file", "--plan-file")]

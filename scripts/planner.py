@@ -6,6 +6,7 @@ from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
 from core.outcomes import PlanningOutcomeError
 from core.planning.abstract import compute_abstract_plan
+from core.planning.baseline import compute_baseline_plan
 from core.planning.concrete import compute_concrete_plan
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 
@@ -34,6 +35,8 @@ def _compute(args):
     common = {"domain_path": args.domain, "problem_path": args.problem}
     if args.mode == "concrete":
         return compute_concrete_plan(PlanningConfig(**common), on_update)
+    if args.mode == "lama":
+        return compute_baseline_plan(PlanningConfig(**common), on_update)
     if args.mode == "abstract":
         return compute_abstract_plan(
             AbstractPlanningConfig(
@@ -61,9 +64,14 @@ def print_planning_result(result):
 
     if result["plan"] is not None:
         print(f"\nPlan ({length} actions):")
-        plan_actions = [atom for atom in result["plan"] if atom.startswith("occurs(")]
-        for atom in sorted(plan_actions, key=_time_step):
-            print(" ", atom)
+        for action in _ordered_actions(result["plan"]):
+            print(" ", action)
+
+
+def _ordered_actions(plan):
+    """Order a plan for reading: our own by time step, an external one as given."""
+    occurrences = [atom for atom in plan if atom.startswith("occurs(")]
+    return sorted(occurrences, key=_time_step) if occurrences else plan
 
 
 def _time_step(atom):
@@ -80,6 +88,12 @@ def _argument_parser():
         "concrete",
         parents=[shared],
         help="Solve the task directly",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
+        "lama",
+        parents=[shared],
+        help="Solve with plain Fast Downward as a baseline",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
