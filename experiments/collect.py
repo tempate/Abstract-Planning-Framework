@@ -14,9 +14,6 @@ from experiments.tracks import DEFAULT_TRACK, TRACKS
 # The raw run output stays in the untracked results directory; the collected CSV
 # is the artifact that gets committed and reported on.
 CSV_FILE = TRACKS[DEFAULT_TRACK].results_file
-# The baselines do not change when our encoding does, so a run that submitted
-# only the abstract mode keeps the ones already collected.
-PRESERVED_MODES = ("concrete", "lama")
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
 FIELDS = (
     "domain",
@@ -191,26 +188,25 @@ def _key(row):
     return (row["domain"], row["problem"], row["mode"])
 
 
-def _preserved_baseline_rows(collected, csv_file=CSV_FILE):
-    """Read the baseline results a run did not cover, so it cannot erase them.
+def _preserved_rows(collected, csv_file=CSV_FILE):
+    """Read the results of the modes this run left alone, so it cannot erase them.
 
-    The runner submits the abstract pipeline alone by default, so its results
-    directory holds no baseline run to collect. Abstract rows still come from
-    the run alone, which keeps the CSV in step with the encoding that produced
-    them.
+    A run submits the modes it is interested in, and the others keep whatever
+    the CSV already holds: submitting only a baseline must not drop the
+    abstract results, and re-running the abstract pipeline must not leave
+    behind rows from the encoding before it.  What a run submitted is what it
+    collected, the manifest included, so the modes it did not is the rest.
     """
     csv_file = Path(csv_file)
     if not csv_file.is_file():
         return []
 
-    collected_keys = set()
-    for row in collected:
-        collected_keys.add(_key(row))
+    submitted = {row["mode"] for row in collected}
 
     preserved = []
     with csv_file.open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
-            if row["mode"] not in PRESERVED_MODES or _key(row) in collected_keys:
+            if row["mode"] in submitted:
                 continue
             kept = {}
             for field in FIELDS:
@@ -221,7 +217,7 @@ def _preserved_baseline_rows(collected, csv_file=CSV_FILE):
 
 def main(results_dir=RESULTS_DIR, csv_file=CSV_FILE):
     collected = collect(results_dir)
-    preserved = _preserved_baseline_rows(collected, csv_file)
+    preserved = _preserved_rows(collected, csv_file)
     rows = sorted(collected + preserved, key=_key)
     csv_file = Path(csv_file)
     csv_file.parent.mkdir(parents=True, exist_ok=True)
@@ -234,7 +230,7 @@ def main(results_dir=RESULTS_DIR, csv_file=CSV_FILE):
         details = ", ".join(f"{mode}: {count}" for mode, count in sorted(missing.items()))
         print(f"Incomplete benchmark run: {sum(missing.values())} expected results are missing ({details})")
     if preserved:
-        print(f"Kept {len(preserved)} baseline results the run did not cover")
+        print(f"Kept {len(preserved)} results from modes the run did not submit")
     print(f"Collected {len(rows)} results in {csv_file}")
 
 

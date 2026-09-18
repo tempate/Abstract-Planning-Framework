@@ -15,7 +15,7 @@ from experiments.plan.suite import SUITE
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 from experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from experiments.collect import FIELDS, _preserved_baseline_rows, collect
+from experiments.collect import FIELDS, _preserved_rows, collect
 from scripts.utils.reporting import update_result_progress
 from experiments.run import (
     DEFAULT_TIMEOUT,
@@ -573,7 +573,7 @@ class CollectedCsvTests(unittest.TestCase):
             csv_file = self._write_csv(directory, [("example", "p01.pddl", "concrete", "success")])
             collected = self._collected([("example", "p01.pddl", "abstract", "success")])
 
-            preserved = _preserved_baseline_rows(collected, csv_file)
+            preserved = _preserved_rows(collected, csv_file)
 
         self.assertEqual([row["mode"] for row in preserved], ["concrete"])
         self.assertEqual(preserved[0]["status"], "success")
@@ -585,36 +585,42 @@ class CollectedCsvTests(unittest.TestCase):
                 csv_file = self._write_csv(directory, rows)
                 collected = self._collected([("example", "p01.pddl", "concrete", status)])
 
-                preserved = _preserved_baseline_rows(collected, csv_file)
+                preserved = _preserved_rows(collected, csv_file)
 
                 self.assertEqual(preserved, [])
 
-    def test_abstract_results_the_run_did_not_cover_are_dropped(self):
+    def test_a_mode_the_run_submitted_does_not_keep_its_old_results(self):
+        """Otherwise a problem dropped from the suite would keep reporting the
+        result of an encoding that is no longer the one being measured."""
         with tempfile.TemporaryDirectory() as directory:
             csv_file = self._write_csv(directory, [("example", "p01.pddl", "abstract", "success")])
+            collected = self._collected([("example", "p02.pddl", "abstract", "success")])
 
-            preserved = _preserved_baseline_rows(self._collected([]), csv_file)
+            preserved = _preserved_rows(collected, csv_file)
 
         self.assertEqual(preserved, [])
 
-    def test_every_baseline_the_run_did_not_cover_is_kept(self):
+    def test_the_modes_the_run_left_alone_keep_their_results(self):
+        """A baseline can be measured on its own without erasing the pipelines
+        it is there to be compared against."""
         with tempfile.TemporaryDirectory() as directory:
             csv_file = self._write_csv(
                 directory,
                 [
                     ("example", "p01.pddl", "abstract", "success"),
                     ("example", "p01.pddl", "concrete", "success"),
-                    ("example", "p01.pddl", "lama", "success"),
+                    ("example", "p01.pddl", "lama", "timed out"),
                 ],
             )
+            collected = self._collected([("example", "p01.pddl", "lama", "success")])
 
-            preserved = _preserved_baseline_rows(self._collected([]), csv_file)
+            preserved = _preserved_rows(collected, csv_file)
 
-        self.assertEqual({row["mode"] for row in preserved}, {"concrete", "lama"})
+        self.assertEqual({row["mode"] for row in preserved}, {"abstract", "concrete"})
 
     def test_a_first_run_has_nothing_to_keep(self):
         with tempfile.TemporaryDirectory() as directory:
-            preserved = _preserved_baseline_rows(self._collected([]), Path(directory) / "results.csv")
+            preserved = _preserved_rows(self._collected([]), Path(directory) / "results.csv")
 
         self.assertEqual(preserved, [])
 
