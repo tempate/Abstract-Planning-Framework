@@ -2,7 +2,7 @@
 
 The problems known to be unsolvable are the probNN of each domain: satprobNN is
 the solvable twin beside it and unknownprobNN was never settled. Both are skipped
-by name in ``experiments.submit``. Of those, ``SYMMETRIC_PROBLEMS`` lists the
+by name in ``experiments.submit``. Of those, ``RUNNABLE_PROBLEMS`` lists the
 ones worth submitting, read from ``symmetries.txt``, whose header carries the
 command that regenerates it from a collected run.
 """
@@ -12,7 +12,7 @@ from pathlib import Path
 from experiments import UNSOLVE_IPC_DIR, read_problems
 
 BENCHMARKS_DIR = UNSOLVE_IPC_DIR
-SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
+RUNNABLE_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
 
 SUITE = [
     "bag-barman",
@@ -33,4 +33,4 @@ SUITE = [
 ]
 
 
-SYMMETRIC_PROBLEMS = read_problems(SYMMETRIC_PROBLEMS_FILE)
+RUNNABLE_PROBLEMS = read_problems(RUNNABLE_PROBLEMS_FILE)

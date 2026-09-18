@@ -16,7 +16,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = PROJECT_ROOT / "runs"
 DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"
-PIPELINE_MODULES = {"plan": "scripts.planner", "decide": "scripts.unsolvability"}
+PIPELINE_MODULES = {"plan": "scripts.planner", "decide": "scripts.unsolvability", "resources": "scripts.planner"}
+# The resources pipeline is the same planner, told where to take its class from.
+PIPELINE_ARGUMENTS = {"resources": ("--abstraction-source", "resources")}
 NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
 SYMMETRY_TIMEOUT_MESSAGE = "PDDL Symmetries exceeded its"
 
@@ -42,7 +44,7 @@ def _argument_parser():
         "--pipeline",
         choices=tuple(PIPELINE_MODULES),
         default="plan",
-        help="plan searches for a plan; decide only reports whether the task is solvable",
+        help="plan and resources search for a plan, from different classes; decide only reports solvability",
     )
     return parser
 
@@ -162,7 +164,11 @@ def _machine_status(return_code, timed_out, output, interrupted=False):
 
 def _planner_command(domain, problem, mode, pipeline="plan"):
     module = PIPELINE_MODULES[pipeline]
-    return [sys.executable, "-m", module, mode, "--problem", str(problem), "--domain", str(domain)]
+    command = [sys.executable, "-m", module, mode, "--problem", str(problem), "--domain", str(domain)]
+    # Only the abstract mode has a class to choose; concrete takes no such option.
+    if mode == "abstract":
+        command.extend(PIPELINE_ARGUMENTS.get(pipeline, ()))
+    return command
 
 
 def _human_status(result):

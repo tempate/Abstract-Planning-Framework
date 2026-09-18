@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-09-17 13:07 — experiments/plan/results.csv
+2026-09-17 13:07 — experiments/symmetries/results.csv
 
 ## Coverage
 

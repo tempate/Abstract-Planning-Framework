@@ -10,6 +10,7 @@ DURATION_LABELS = {
     "problem_reading": "Problem reading",
     "pnf_translation": "PNF translation",
     "symmetry_discovery": "Symmetry discovery",
+    "resource_detection": "Resource detection",
     "abstraction": "Abstraction",
     "abstract_pddl_writing": "Abstract PDDL writing",
     "concrete_fd": "Concrete Fast Downward",

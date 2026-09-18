@@ -56,19 +56,19 @@ abstract Slurm task per problem, each capped at 30 minutes and 8192 MiB.
 ```bash
 python -m experiments.submit
 python -m experiments.collect
-python -m experiments.report experiments/plan/results.csv
+python -m experiments.report experiments/symmetries/results.csv
 ```
 
-- `experiments/plan/suite.py` holds the domains, but a problem is submitted only
-  when `experiments/plan/symmetries.txt` records an abstraction class for it.
+- `experiments/symmetries/suite.py` holds the domains, but a problem is submitted only
+  when `experiments/symmetries/symmetries.txt` records an abstraction class for it.
   That file's header carries the command that regenerates it.
 - `--unsolvable` submits `experiments/unsolvability/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
   a plan. Only the probNN problems run, the ones known to be unsolvable.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
-- `collect` rewrites `experiments/plan/results.csv`, keeping only the concrete
-  results the run did not cover. `report` rewrites `experiments/plan/reports.md`.
+- `collect` rewrites `experiments/symmetries/results.csv`, keeping only the concrete
+  results the run did not cover. `report` rewrites `experiments/symmetries/reports.md`.
 
 ## Tests
 

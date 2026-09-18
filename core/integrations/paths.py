@@ -16,3 +16,6 @@ ACTION_PER_TIME_STEP_ENCODING = _project_path("core", "encodings", "action-per-t
 FAST_DOWNWARD_SCRIPT = _project_path("lib", "downward", "fast-downward.py")
 
 PDDL_SYMMETRIES_TRANSLATOR = _project_path("lib", "pddl-symmetries", "src", "translate", "translate.py")
+
+NUMERIC_FAST_DOWNWARD_SCRIPT = _project_path("lib", "numeric-fast-downward", "fast-downward.py")
+NUMERIC_FAST_DOWNWARD_BIN = _project_path("lib", "numeric-fast-downward", "builds", "release64", "bin", "downward")

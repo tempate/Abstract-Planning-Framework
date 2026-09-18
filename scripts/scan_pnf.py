@@ -10,10 +10,10 @@ import csv
 import re
 from pathlib import Path
 
-from experiments.plan.suite import BENCHMARKS_DIR, SUITE
-from experiments.run import PROJECT_ROOT
+from experiments.symmetries.suite import BENCHMARKS_DIR, SUITE
+from experiments.tracks import DEFAULT_TRACK, TRACKS
 
-DEFAULT_CSV = PROJECT_ROOT / "experiments" / "plan" / "results.csv"
+DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
 NEEDS_PNF = "needs PNF"
 INERT = "inert"
 POSITIVE = "already positive"

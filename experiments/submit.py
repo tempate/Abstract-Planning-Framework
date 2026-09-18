@@ -31,7 +31,7 @@ def main():
         _benchmark_tasks(
             benchmarks_dir=track.suite.BENCHMARKS_DIR,
             suite=track.suite.SUITE,
-            runnable=track.suite.SYMMETRIC_PROBLEMS,
+            runnable=track.suite.RUNNABLE_PROBLEMS,
             with_concrete=args.with_concrete,
         )
     )

@@ -6,6 +6,10 @@ from os import PathLike
 
 Path = str | PathLike[str]
 
+SYMMETRIES = "symmetries"
+RESOURCES = "resources"
+ABSTRACTION_SOURCES = (SYMMETRIES, RESOURCES)
+
 
 @dataclass(frozen=True)
 class PlanningConfig:
@@ -28,6 +32,7 @@ class AbstractPlanningConfig(PlanningConfig):
     objects_to_abstract: Sequence[str] | None = None
     abstract_name: str | None = None
     symmetry_time_limit: int = 300
+    abstraction_source: str = SYMMETRIES
 
     def __post_init__(self):
         if self.objects_to_abstract is not None:
