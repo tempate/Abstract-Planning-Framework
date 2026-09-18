@@ -9,9 +9,9 @@ command that regenerates it from a collected run.
 
 from pathlib import Path
 
-from experiments import read_problems
+from experiments import UNSOLVE_IPC_DIR, read_problems
 
-BENCHMARKS_DIR = Path(__file__).parent / "unsolve-ipc-2016"
+BENCHMARKS_DIR = UNSOLVE_IPC_DIR
 SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
 
 SUITE = [
