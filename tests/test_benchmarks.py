@@ -18,8 +18,10 @@ from experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from experiments.collect import FIELDS, _preserved_rows, collect
 from scripts.utils.reporting import update_result_progress
+from experiments import write_classes
 from experiments.run import (
     DEFAULT_TIMEOUT,
+    _class_objects,
     NO_SYMMETRIES_MESSAGE,
     PROJECT_ROOT,
     _argument_parser as _benchmark_argument_parser,
@@ -201,15 +203,37 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(config["max_parallel_jobs"], 12)
         self.assertEqual(config["working_dir"], os.path.relpath(PROJECT_ROOT, definition_dir))
         self.assertIn("experiments.run", worker)
-        for placeholder in ("$1", "$2", "$3", "$4", "$5", "$6", "$timeout"):
+        for placeholder in ("$1", "$2", "$3", "$4", "$5", "$timeout"):
             self.assertIn(placeholder, worker)
         self.assertEqual(
             instances,
             [
-                f"abstract example {domain.resolve()} {problem.resolve()} 0 a,b",
-                f"concrete example {domain.resolve()} {problem.resolve()} - -",
+                f"abstract example {domain.resolve()} {problem.resolve()} 0",
+                f"concrete example {domain.resolve()} {problem.resolve()} -",
             ],
         )
+
+    def test_no_instance_parameter_contains_a_comma(self):
+        """CopperBench splits a parameter on commas, and the extra pieces land
+        on the end of the worker command as unrecognized arguments."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "project"
+            project.mkdir()
+            domain, problem = project / "domain.pddl", project / "p01.pddl"
+            domain.touch()
+            problem.touch()
+            definition_dir = root / "definition"
+            definition_dir.mkdir()
+
+            _write_copperbench_config(
+                [Task("abstract", "example", domain, problem, 0, ("a", "b", "c"))],
+                definition_dir=definition_dir,
+                classes_file=root / "classes.json",
+            )
+            instances = (definition_dir / "instances.txt").read_text(encoding="utf-8")
+
+        self.assertNotIn(",", instances)
 
     def test_discovers_the_problem_and_its_domain(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -274,6 +298,25 @@ class BenchmarkTests(unittest.TestCase):
             tasks = list(_benchmark_tasks(_suite(root, ["example"], None)))
 
         self.assertEqual([task.problem.name for task in tasks], ["p01.pddl", "p02.pddl"])
+
+    def test_the_worker_reads_its_class_out_of_the_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = Path(directory) / "classes.json"
+            write_classes({"example/p01.pddl": [["a", "b"], ["c", "d", "e"]]}, manifest)
+
+            objects = _class_objects(manifest, "example", Path("p01.pddl"), 1)
+            none = _class_objects(manifest, "example", Path("p01.pddl"), None)
+
+        self.assertEqual(objects, ("c", "d", "e"))
+        self.assertIsNone(none)
+
+    def test_a_class_the_manifest_does_not_have_stops_the_job(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = Path(directory) / "classes.json"
+            write_classes({"example/p01.pddl": [["a", "b"]]}, manifest)
+
+            with self.assertRaises(SystemExit):
+                _class_objects(manifest, "example", Path("p01.pddl"), 7)
 
     def test_the_planner_is_told_which_objects_to_collapse(self):
         command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract", "plan", ("a", "b"))

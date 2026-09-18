@@ -55,6 +55,7 @@ def main():
             max_parallel_jobs=args.max_parallel_jobs,
             partition=args.partition,
             pipeline=pipeline,
+            classes_file=track.classes_file,
         )
         print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem, per class where known)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
@@ -125,6 +126,7 @@ def _write_copperbench_config(
     max_parallel_jobs=None,
     partition=DEFAULT_PARTITION,
     pipeline="plan",
+    classes_file=None,
 ):
     """Write the files CopperBench needs to submit one job per problem."""
     definition_dir = Path(definition_dir)
@@ -147,8 +149,8 @@ def _write_copperbench_config(
         "$4",
         "--symmetry-class",
         "$5",
-        "--symmetry-class-objects",
-        "$6",
+        "--classes",
+        str(classes_file),
         "--timeout",
         "$timeout",
         "--pipeline",
@@ -158,13 +160,11 @@ def _write_copperbench_config(
 
     instances = []
     for task in tasks:
-        # CopperBench substitutes positionally, so a task with no class to
-        # collapse still fills both fields.
+        # Only the index travels. CopperBench splits an instance parameter on
+        # commas, so the objects cannot ride along; the worker reads them out
+        # of the manifest instead.
         index = NO_CLASS if task.index is None else task.index
-        objects = NO_CLASS if task.objects is None else ",".join(task.objects)
-        instances.append(
-            f"{task.mode} {task.domain_name} {task.domain.resolve()} {task.problem.resolve()} {index} {objects}"
-        )
+        instances.append(f"{task.mode} {task.domain_name} {task.domain.resolve()} {task.problem.resolve()} {index}")
     instances_file.write_text("\n".join(instances) + "\n", encoding="utf-8")
 
     config = {
