@@ -1,4 +1,4 @@
-"""Run one concrete or abstract benchmark, for a plan or for a solvability verdict."""
+"""Run one benchmark mode, for a plan or for a solvability verdict."""
 
 import argparse
 import json
@@ -16,6 +16,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = PROJECT_ROOT / "runs"
 DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"
+# Every way one problem gets solved, in the order a report reads them.
+MODES = ("abstract", "concrete", "lama")
 PIPELINE_MODULES = {"plan": "scripts.planner", "decide": "scripts.unsolvability"}
 NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
 SYMMETRY_TIMEOUT_MESSAGE = "PDDL Symmetries exceeded its"
@@ -31,7 +33,7 @@ def main():
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("concrete", "abstract"), help="Whether to abstract the task first")
+    parser.add_argument("mode", choices=MODES, help="How to solve the task")
     parser.add_argument("--domain-name", required=True, help="Benchmark-suite domain name")
     parser.add_argument("--domain", required=True, type=Path, help="Domain PDDL file")
     parser.add_argument("--problem", required=True, type=Path, help="Problem PDDL file")

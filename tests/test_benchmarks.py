@@ -15,7 +15,7 @@ from experiments.plan.suite import SUITE
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 from experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from experiments.collect import FIELDS, _preserved_concrete_rows, collect
+from experiments.collect import FIELDS, _preserved_baseline_rows, collect
 from scripts.utils.reporting import update_result_progress
 from experiments.run import (
     DEFAULT_TIMEOUT,
@@ -56,6 +56,17 @@ class BenchmarkTests(unittest.TestCase):
         path = Path(directory) / "example" / "p01" / f"{mode}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(result), encoding="utf-8")
+
+    def test_every_mode_becomes_its_own_row(self):
+        """A mode the collector does not know is filed as an abstract result and
+        then dropped, silently, because the real abstract result sorts first."""
+        with tempfile.TemporaryDirectory() as directory:
+            for mode in ("abstract", "concrete", "lama"):
+                self._write_result(directory, mode)
+
+            rows = collect(directory)
+
+        self.assertEqual({row["mode"] for row in rows}, {"abstract", "concrete", "lama"})
 
     def test_the_default_track_runs_the_whole_symmetry_suite_through_the_planner(self):
         track = TRACKS[DEFAULT_TRACK]
@@ -558,7 +569,7 @@ class CollectedCsvTests(unittest.TestCase):
             csv_file = self._write_csv(directory, [("example", "p01.pddl", "concrete", "success")])
             collected = self._collected([("example", "p01.pddl", "abstract", "success")])
 
-            preserved = _preserved_concrete_rows(collected, csv_file)
+            preserved = _preserved_baseline_rows(collected, csv_file)
 
         self.assertEqual([row["mode"] for row in preserved], ["concrete"])
         self.assertEqual(preserved[0]["status"], "success")
@@ -570,7 +581,7 @@ class CollectedCsvTests(unittest.TestCase):
                 csv_file = self._write_csv(directory, rows)
                 collected = self._collected([("example", "p01.pddl", "concrete", status)])
 
-                preserved = _preserved_concrete_rows(collected, csv_file)
+                preserved = _preserved_baseline_rows(collected, csv_file)
 
                 self.assertEqual(preserved, [])
 
@@ -578,13 +589,28 @@ class CollectedCsvTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             csv_file = self._write_csv(directory, [("example", "p01.pddl", "abstract", "success")])
 
-            preserved = _preserved_concrete_rows(self._collected([]), csv_file)
+            preserved = _preserved_baseline_rows(self._collected([]), csv_file)
 
         self.assertEqual(preserved, [])
 
+    def test_every_baseline_the_run_did_not_cover_is_kept(self):
+        with tempfile.TemporaryDirectory() as directory:
+            csv_file = self._write_csv(
+                directory,
+                [
+                    ("example", "p01.pddl", "abstract", "success"),
+                    ("example", "p01.pddl", "concrete", "success"),
+                    ("example", "p01.pddl", "lama", "success"),
+                ],
+            )
+
+            preserved = _preserved_baseline_rows(self._collected([]), csv_file)
+
+        self.assertEqual({row["mode"] for row in preserved}, {"concrete", "lama"})
+
     def test_a_first_run_has_nothing_to_keep(self):
         with tempfile.TemporaryDirectory() as directory:
-            preserved = _preserved_concrete_rows(self._collected([]), Path(directory) / "results.csv")
+            preserved = _preserved_baseline_rows(self._collected([]), Path(directory) / "results.csv")
 
         self.assertEqual(preserved, [])
 

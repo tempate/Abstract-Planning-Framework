@@ -8,12 +8,15 @@ import re
 from pathlib import Path
 
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from experiments.run import MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR, _human_status
+from experiments.run import MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR, _human_status
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 # The raw run output stays in the untracked results directory; the collected CSV
 # is the artifact that gets committed and reported on.
 CSV_FILE = TRACKS[DEFAULT_TRACK].results_file
+# The baselines do not change when our encoding does, so a run that submitted
+# only the abstract mode keeps the ones already collected.
+PRESERVED_MODES = ("concrete", "lama")
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
 FIELDS = (
     "domain",
@@ -47,7 +50,7 @@ def collect(results_dir=RESULTS_DIR):
             continue
 
         mode = result.get("mode")
-        if mode in ("abstract", "concrete"):
+        if mode in MODES:
             results[(result["domain"], result["problem"], mode)] = result
         else:
             # Results produced before modes became separate jobs stored the
@@ -71,11 +74,7 @@ def collect(results_dir=RESULTS_DIR):
 
 def _manifest_keys(manifest):
     entries = json.loads(manifest.read_text(encoding="utf-8"))["expected_results"]
-    return {
-        (entry["domain"], entry["problem"], entry["mode"])
-        for entry in entries
-        if entry["mode"] in ("abstract", "concrete")
-    }
+    return {(entry["domain"], entry["problem"], entry["mode"]) for entry in entries if entry["mode"] in MODES}
 
 
 def _missing_values():
@@ -192,11 +191,11 @@ def _key(row):
     return (row["domain"], row["problem"], row["mode"])
 
 
-def _preserved_concrete_rows(collected, csv_file=CSV_FILE):
-    """Read the concrete results a run did not cover, so it cannot erase the baseline.
+def _preserved_baseline_rows(collected, csv_file=CSV_FILE):
+    """Read the baseline results a run did not cover, so it cannot erase them.
 
     The runner submits the abstract pipeline alone by default, so its results
-    directory holds no concrete run to collect. Abstract rows still come from
+    directory holds no baseline run to collect. Abstract rows still come from
     the run alone, which keeps the CSV in step with the encoding that produced
     them.
     """
@@ -211,7 +210,7 @@ def _preserved_concrete_rows(collected, csv_file=CSV_FILE):
     preserved = []
     with csv_file.open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
-            if row["mode"] != "concrete" or _key(row) in collected_keys:
+            if row["mode"] not in PRESERVED_MODES or _key(row) in collected_keys:
                 continue
             kept = {}
             for field in FIELDS:
@@ -222,7 +221,7 @@ def _preserved_concrete_rows(collected, csv_file=CSV_FILE):
 
 def main(results_dir=RESULTS_DIR, csv_file=CSV_FILE):
     collected = collect(results_dir)
-    preserved = _preserved_concrete_rows(collected, csv_file)
+    preserved = _preserved_baseline_rows(collected, csv_file)
     rows = sorted(collected + preserved, key=_key)
     csv_file = Path(csv_file)
     csv_file.parent.mkdir(parents=True, exist_ok=True)
@@ -235,7 +234,7 @@ def main(results_dir=RESULTS_DIR, csv_file=CSV_FILE):
         details = ", ".join(f"{mode}: {count}" for mode, count in sorted(missing.items()))
         print(f"Incomplete benchmark run: {sum(missing.values())} expected results are missing ({details})")
     if preserved:
-        print(f"Kept {len(preserved)} concrete results the run did not cover")
+        print(f"Kept {len(preserved)} baseline results the run did not cover")
     print(f"Collected {len(rows)} results in {csv_file}")
 
 
