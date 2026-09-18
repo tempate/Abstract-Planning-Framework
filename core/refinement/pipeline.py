@@ -6,8 +6,9 @@ from core.abstraction.factory import Abstraction
 from core.integrations.clingo import parse_plan_actions, plan_length
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
-from core.refinement.decremental import disabled_switches, solve_decrementally
 from core.refinement.mapping import build_mapping, mapped_horizon
+from core.refinement.switches import collect_switches, disabled_switches
+from core.search.relaxing import RelaxingSolver
 from core.search.incremental import IncrementalSolver
 
 
@@ -68,11 +69,11 @@ def _solve_concrete_plan(context, asp):
         _publish_counters(context, decrements=decrements, increments=0, solve_calls=solve_calls)
 
     with context.metrics.measure("guided_concrete_solving"):
-        solver = IncrementalSolver(asp, context.horizon)
-        refined, plan, decrements = solve_decrementally(solver, record_attempt)
+        solver = RelaxingSolver(asp, context.horizon)
+        plan, decrements = solver.relax(collect_switches(solver), record_attempt)
 
     _publish_counters(context, decrements=decrements, increments=0, solve_calls=decrements + 1)
-    if refined:
+    if plan is not None:
         return plan
 
     with context.metrics.measure("extended_concrete_solving"):
@@ -92,7 +93,7 @@ def _extend_concrete_search(context, solver, decrements):
 
     # Every switch is off, so no abstract action constrains the search any more.
     # The mapped gaps stay optional, which only admits shorter plans than the
-    # plain concrete program, and the decremental search's grounding is kept.
+    # plain concrete program, and the relaxing search's grounding is kept.
     solver.extend()
     solve_result = solver.search(disabled_switches(solver), record_attempt)
 
