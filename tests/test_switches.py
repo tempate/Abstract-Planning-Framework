@@ -1,6 +1,6 @@
 import unittest
 
-from core.refinement.switches import collect_switches, disabled_switches
+from core.refinement.switches import collect_switches
 from core.search.incremental import IncrementalSolver
 
 PROGRAM = """
@@ -14,13 +14,6 @@ class SwitchTests(unittest.TestCase):
         switches = collect_switches(IncrementalSolver(PROGRAM))
 
         self.assertEqual([str(switch) for switch in switches], ["switch(2)", "switch(10)"])
-
-    def test_disabling_turns_every_switch_off(self):
-        assumptions = disabled_switches(IncrementalSolver(PROGRAM))
-
-        self.assertEqual(
-            [(str(switch), value) for switch, value in assumptions], [("switch(2)", False), ("switch(10)", False)]
-        )
 
 
 if __name__ == "__main__":

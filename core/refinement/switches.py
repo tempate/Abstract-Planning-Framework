@@ -10,8 +10,3 @@ def collect_switches(solver):
 
     switches.sort(key=lambda item: item[0])
     return [symbol for _, symbol in switches]
-
-
-def disabled_switches(solver):
-    """Return assumptions that turn the whole abstract plan off."""
-    return [(symbol, False) for symbol in collect_switches(solver)]

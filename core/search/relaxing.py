@@ -1,33 +1,39 @@
 """Solving that relaxes assumptions until the program becomes satisfiable."""
 
-from core.search.incremental import IncrementalSolver
+from dataclasses import dataclass
+
+from core.search.incremental import IncrementalSolver, SolveResult
+
+
+@dataclass(frozen=True)
+class RelaxedResult(SolveResult):
+    """A plan, and how many assumptions had to be given up to reach it."""
+
+    dropped: int
 
 
 class RelaxingSolver(IncrementalSolver):
     """An incremental solver that relaxes the assumptions it cannot satisfy."""
 
-    def relax(self, symbols, on_attempt=None):
-        """Assume every symbol, then drop them from the last until a plan appears.
-
-        Returns the plan and how many symbols were given up, or no plan and all of
-        them when even the empty assumption set is unsatisfiable.  ``on_attempt``
-        receives the number dropped so far and the number of solver calls made.
-        """
+    def search(self, symbols=(), on_attempt=None):
+        """Assume every symbol, give them up in the order given, then raise the horizon."""
         assumptions = {symbol: True for symbol in symbols}
+        dropped = 0
+        attempts = 0
 
-        if on_attempt is not None:
-            on_attempt(0, 1)
-        plan = self.solve(list(assumptions.items()))
-        if plan is not None:
-            return plan, 0
-
-        for dropped, symbol in enumerate(reversed(symbols), start=1):
-            assumptions[symbol] = False
-
+        while True:
+            attempts += 1
             if on_attempt is not None:
-                on_attempt(dropped, dropped + 1)
+                on_attempt(self.horizon, dropped, attempts)
+
             plan = self.solve(list(assumptions.items()))
             if plan is not None:
-                return plan, dropped
+                return RelaxedResult(plan, self.horizon, attempts, dropped)
 
-        return None, len(symbols)
+            if dropped < len(symbols):
+                assumptions[symbols[dropped]] = False
+                dropped += 1
+            else:
+                # Nothing constrains the search any more, so the only way left to
+                # satisfy the program is to give it another time step.
+                self.extend()

@@ -7,6 +7,7 @@ from core.plan import PlanAction
 from core.planning.config import AbstractPlanningConfig
 from core.refinement.pipeline import RefinementContext, refine
 from core.search.incremental import SolveResult
+from core.search.relaxing import RelaxedResult
 
 
 class RefinementTests(unittest.TestCase):
@@ -32,7 +33,9 @@ class RefinementTests(unittest.TestCase):
         self, parse_plan_actions, build_mapping, incremental_solver, relaxing_solver, collect_switches
     ):
         incremental_solver.return_value.search.return_value = SolveResult(["occurs(abstract,1)"], horizon=2, attempts=3)
-        relaxing_solver.return_value.relax.return_value = (["occurs(concrete,1)"], 2)
+        relaxing_solver.return_value.search.return_value = RelaxedResult(
+            ["occurs(concrete,1)"], horizon=5, attempts=3, dropped=2
+        )
         context = self._context()
 
         result = refine(context)
@@ -60,9 +63,8 @@ class RefinementTests(unittest.TestCase):
         self, parse_plan_actions, build_mapping, incremental_solver, relaxing_solver, collect_switches
     ):
         incremental_solver.return_value.search.return_value = SolveResult(["occurs(abstract,1)"], horizon=2, attempts=1)
-        relaxing_solver.return_value.relax.return_value = (
-            ['occurs(action(("move","a")),2)', 'occurs(action(("move","b")),4)'],
-            0,
+        relaxing_solver.return_value.search.return_value = RelaxedResult(
+            ['occurs(action(("move","a")),2)', 'occurs(action(("move","b")),4)'], horizon=5, attempts=1, dropped=0
         )
         context = self._context()
 
@@ -71,25 +73,18 @@ class RefinementTests(unittest.TestCase):
         # The two actions sit on a horizon of five, whose gaps stayed empty.
         self.assertEqual(context.metrics.counters["plan_length"], 2)
 
-    @patch("core.refinement.pipeline.disabled_switches", return_value=[])
     @patch("core.refinement.pipeline.collect_switches", return_value=[])
     @patch("core.refinement.pipeline.RelaxingSolver")
     @patch("core.refinement.pipeline.IncrementalSolver")
     @patch("core.refinement.pipeline.build_mapping", return_value="mapping asp")
     @patch("core.refinement.pipeline.parse_plan_actions", return_value=())
-    def test_unrefinable_plans_extend_the_search_above_the_abstract_horizon(
-        self,
-        parse_plan_actions,
-        build_mapping,
-        incremental_solver,
-        relaxing_solver,
-        collect_switches,
-        disabled_switches,
+    def test_a_search_above_the_mapped_horizon_is_reported_as_increments(
+        self, parse_plan_actions, build_mapping, incremental_solver, relaxing_solver, collect_switches
     ):
         incremental_solver.return_value.search.return_value = SolveResult(["abstract atom"], horizon=3, attempts=4)
-        solver = relaxing_solver.return_value
-        solver.relax.return_value = (None, 3)
-        solver.search.return_value = SolveResult(["occurs(concrete,9)"], horizon=9, attempts=2)
+        relaxing_solver.return_value.search.return_value = RelaxedResult(
+            ["occurs(concrete,9)"], horizon=9, attempts=6, dropped=3
+        )
 
         context = self._context()
         result = refine(context)
@@ -97,14 +92,10 @@ class RefinementTests(unittest.TestCase):
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ["occurs(concrete,9)"])
         self.assertEqual(context.metrics.counters["decrements"], 3)
+        # The mapped horizon of seven was raised to nine.
         self.assertEqual(context.metrics.counters["increments"], 2)
         self.assertEqual(context.metrics.counters["concrete_solve_calls"], 6)
-        self.assertIn("extended_concrete_solving", context.metrics.durations)
         self.assertEqual(relaxing_solver.call_args.args, ("concrete asp\nmapping asp", 7))
-
-        # The extension continues on the solver the relaxing search used.
-        solver.extend.assert_called_once_with()
-        self.assertEqual(solver.search.call_args.args[0], [])
 
 
 if __name__ == "__main__":

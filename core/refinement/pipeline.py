@@ -7,7 +7,7 @@ from core.integrations.clingo import parse_plan_actions, plan_length
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.refinement.mapping import build_mapping, mapped_horizon
-from core.refinement.switches import collect_switches, disabled_switches
+from core.refinement.switches import collect_switches
 from core.search.relaxing import RelaxingSolver
 from core.search.incremental import IncrementalSolver
 
@@ -37,7 +37,15 @@ def refine(context: RefinementContext):
     asp = "\n".join((context.concrete_asp, mapping))
     plan = _solve_concrete_plan(context, asp)
 
-    return _build_result(context, plan)
+    if plan is not None:
+        context.metrics.set_counter("plan_length", plan_length(plan))
+
+    return {
+        "configuration": context.config.as_dict(),
+        "plan": plan,
+        "success": plan is not None,
+        "run_id": context.run_id,
+    }
 
 
 def _solve_abstract_plan(context):
@@ -62,49 +70,25 @@ def _solve_abstract_plan(context):
 
 def _solve_concrete_plan(context, asp):
     """Refine the abstract plan, then search above its horizon if it does not refine."""
+    mapped = context.horizon
+
     # Publish the counters before searching so an interrupted run still has them.
     _publish_counters(context, decrements=0, increments=0, solve_calls=0)
 
-    def record_attempt(decrements, solve_calls):
-        _publish_counters(context, decrements=decrements, increments=0, solve_calls=solve_calls)
+    def record_attempt(horizon, dropped, solve_calls):
+        context.horizon = horizon
+        _publish_counters(context, decrements=dropped, increments=horizon - mapped, solve_calls=solve_calls)
 
     with context.metrics.measure("guided_concrete_solving"):
-        solver = RelaxingSolver(asp, context.horizon)
-        plan, decrements = solver.relax(collect_switches(solver), record_attempt)
+        solver = RelaxingSolver(asp, mapped)
+        # Give up the abstract plan from its end, so what survives is a prefix of it.
+        result = solver.search(list(reversed(collect_switches(solver))), record_attempt)
 
-    _publish_counters(context, decrements=decrements, increments=0, solve_calls=decrements + 1)
-    if plan is not None:
-        return plan
-
-    with context.metrics.measure("extended_concrete_solving"):
-        return _extend_concrete_search(context, solver, decrements)
-
-
-def _extend_concrete_search(context, solver, decrements):
-    """Search above the mapped horizon without abstract-plan constraints."""
-    mapped = context.horizon
-    guided_solve_calls = decrements + 1
-
-    def record_attempt(horizon, solve_calls):
-        context.horizon = horizon
-        _publish_counters(
-            context, decrements=decrements, increments=horizon - mapped, solve_calls=guided_solve_calls + solve_calls
-        )
-
-    # Every switch is off, so no abstract action constrains the search any more.
-    # The mapped gaps stay optional, which only admits shorter plans than the
-    # plain concrete program, and the relaxing search's grounding is kept.
-    solver.extend()
-    solve_result = solver.search(disabled_switches(solver), record_attempt)
-
-    context.horizon = solve_result.horizon
+    context.horizon = result.horizon
     _publish_counters(
-        context,
-        decrements=decrements,
-        increments=context.horizon - mapped,
-        solve_calls=guided_solve_calls + solve_result.attempts,
+        context, decrements=result.dropped, increments=result.horizon - mapped, solve_calls=result.attempts
     )
-    return solve_result.plan
+    return result.plan
 
 
 def _publish_counters(context, *, decrements, increments, solve_calls):
@@ -112,15 +96,3 @@ def _publish_counters(context, *, decrements, increments, solve_calls):
     context.metrics.set_counter("decrements", decrements)
     context.metrics.set_counter("increments", increments)
     context.metrics.set_counter("concrete_solve_calls", solve_calls)
-
-
-def _build_result(context, plan):
-    if plan is not None:
-        context.metrics.set_counter("plan_length", plan_length(plan))
-
-    return {
-        "configuration": context.config.as_dict(),
-        "plan": plan,
-        "success": plan is not None,
-        "run_id": context.run_id,
-    }
