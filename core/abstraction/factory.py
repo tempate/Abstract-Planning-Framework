@@ -14,7 +14,14 @@ from core.metrics import PlanningMetrics
 from core.outcomes import NoSymmetriesError
 from core.planning.config import AbstractPlanningConfig
 
-__all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "NoSymmetriesError", "build_abstract_problem"]
+__all__ = [
+    "Abstraction",
+    "AbstractionError",
+    "AbstractionResult",
+    "NoSymmetriesError",
+    "build_abstract_problem",
+    "usable_abstractions",
+]
 
 
 @dataclass(frozen=True)
@@ -88,33 +95,35 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     )
 
 
-def _select_abstraction(problem, symmetry_classes, abstract_name=None):
-    """Select the largest class reported by PDDL Symmetries."""
-    candidate = None
-    candidate_score = None
-    rejection = None
+def usable_abstractions(problem, symmetry_classes, abstract_name=None):
+    """Build an abstraction per collapsible class, and say why one was refused.
 
-    # PDDL Symmetries prints its classes in an order that varies between
-    # processes, and the first class with the best score wins, so two runs of
-    # one problem could collapse different classes of the same size.
+    PDDL Symmetries prints its classes in an order that varies between
+    processes, so they are canonicalized here. Everything that identifies a
+    class by its position reads that one order.
+    """
     ordered_classes = sorted(sorted(symmetry_class) for symmetry_class in symmetry_classes)
 
+    abstractions = []
+    rejection = None
     for symmetry_class in ordered_classes:
         try:
-            abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
+            abstractions.append(_create_abstraction(problem, symmetry_class, abstract_name))
         except AbstractionError as error:
             # One unusable class does not make the others unusable, so keep the
             # reason for the case where none of them works.
             rejection = rejection or error
-            continue
-        score = abstraction_score(abstraction)
-        if candidate_score is None or score < candidate_score:
-            candidate = abstraction
-            candidate_score = score
+    return abstractions, rejection
 
-    if candidate is None:
+
+def _select_abstraction(problem, symmetry_classes, abstract_name=None):
+    """Select the largest class reported by PDDL Symmetries."""
+    abstractions, rejection = usable_abstractions(problem, symmetry_classes, abstract_name)
+    if not abstractions:
         raise rejection
-    return candidate
+    # min keeps the first best, and the order is canonical, so two runs of one
+    # problem cannot collapse different classes of the same size.
+    return min(abstractions, key=abstraction_score)
 
 
 def _create_abstraction(problem, object_names, abstract_name):
