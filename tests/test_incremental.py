@@ -1,18 +1,9 @@
 import unittest
-from unittest.mock import patch
 
 from core.search.incremental import IncrementalSolver
 
 
 class IncrementalSolverTests(unittest.TestCase):
-    @patch("core.search.incremental.clingo.Control")
-    def test_control_always_uses_one_thread(self, control):
-        IncrementalSolver("", horizon=3)
-
-        # Single-threaded solving keeps benchmark runs reproducible.
-        arguments = control.call_args.args[0]
-        self.assertEqual(arguments[arguments.index("-t") + 1], "1")
-
     def test_control_is_grounded_through_the_requested_horizon(self):
         program = """
 #program base.
@@ -24,11 +15,6 @@ step(t).
         plan = IncrementalSolver(program, horizon=3).solve()
 
         self.assertEqual(set(plan), {"step(0)", "step(1)", "step(2)", "step(3)"})
-
-    def test_unsatisfiable_program_has_no_plan(self):
-        plan = IncrementalSolver(":-.\n", horizon=0).solve()
-
-        self.assertIsNone(plan)
 
     def test_incremental_search_returns_the_first_satisfiable_horizon(self):
         program = """

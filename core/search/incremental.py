@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import clingo
 
-THREADS = 1
+from core.search.solver import Solver
 
 
 @dataclass(frozen=True)
@@ -16,18 +16,14 @@ class SolveResult:
     attempts: int
 
 
-class IncrementalSolver:
+class IncrementalSolver(Solver):
     """One Clingo control whose horizon can be raised without regrounding."""
 
     def __init__(self, asp, horizon=0):
         if horizon < 0:
             raise ValueError("Horizon must be nonnegative")
 
-        arguments = ["-t", str(THREADS), "--warn=none"]
-        self.control = clingo.Control(arguments)
-        self.control.configuration.solve.models = 1
-        self.control.add("base", [], asp)
-        self.control.ground([("base", [])])
+        super().__init__(asp)
 
         for time_step in range(1, horizon + 1):
             self.control.ground([("step", [clingo.Number(time_step)])])
@@ -35,14 +31,7 @@ class IncrementalSolver:
         self.horizon = horizon
         self._check_goal()
 
-    def solve(self, assumptions=None):
-        """Return the shown atoms from the first plan at the current horizon."""
-        with self.control.solve(yield_=True, assumptions=assumptions or []) as handle:
-            for plan in handle:
-                return [str(atom) for atom in plan.symbols(shown=True)]
-        return None
-
-    def search(self, assumptions=None, on_attempt=None):
+    def search(self, assumptions=(), on_attempt=None):
         """Raise the horizon until the program becomes satisfiable.
 
         ``on_attempt`` receives the horizon being tried and the number of solver
