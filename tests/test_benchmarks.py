@@ -1,4 +1,6 @@
+import contextlib
 import csv
+import io
 import json
 import os
 import shlex
@@ -25,6 +27,7 @@ from experiments.run import (
     _run_pipeline,
     _run_task,
 )
+import experiments.report
 from experiments.report import _coverage, _head_to_head
 from experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
@@ -587,6 +590,32 @@ class CollectedCsvTests(unittest.TestCase):
 
 
 class ReportTests(unittest.TestCase):
+    def test_running_the_report_writes_it_beside_the_results(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                for mode in ("abstract", "concrete"):
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {
+                            "domain": "example",
+                            "problem": "p01.pddl",
+                            "mode": mode,
+                            "status": "success",
+                            "wall_time_seconds": "1.0",
+                            "decrements": "0",
+                            "increments": "0",
+                            "relaxed_deletes": "0",
+                        }
+                    )
+
+            with patch("sys.argv", ["report", str(results)]), contextlib.redirect_stdout(io.StringIO()):
+                experiments.report.main()
+
+            self.assertTrue((Path(directory) / "reports.md").is_file())
+
     def test_the_report_survives_a_run_with_no_shared_solves(self):
         problems = [
             {

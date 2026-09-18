@@ -7,6 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from experiments.run import PROJECT_ROOT
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
