@@ -7,7 +7,7 @@ import json
 import re
 from pathlib import Path
 
-from core.metrics import COUNTER_LABELS, DURATION_LABELS
+from core.metrics import COUNTER_LABELS, DURATION_LABELS, RATIO_LABELS
 from experiments.run import MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR, _human_status
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
@@ -19,12 +19,14 @@ FIELDS = (
     "domain",
     "problem",
     "mode",
+    "symmetry_class",
     "status",
     "wall_time_seconds",
     "last_completed_phase",
     *DURATION_FIELDS,
     "verdict",
     *COUNTER_LABELS,
+    *RATIO_LABELS,
     "abstracted_object_count",
     "abstracted_object_type",
     "error_message",
@@ -48,13 +50,13 @@ def collect(results_dir=RESULTS_DIR):
 
         mode = result.get("mode")
         if mode in MODES:
-            results[(result["domain"], result["problem"], mode)] = result
+            results[(result["domain"], result["problem"], mode, _class_of(result))] = result
         else:
             # Results produced before modes became separate jobs stored the
             # concrete comparison inside the abstract result.
-            results.setdefault((result["domain"], result["problem"], "abstract"), result)
+            results.setdefault((result["domain"], result["problem"], "abstract", ""), result)
             if "concrete" in result:
-                results.setdefault((result["domain"], result["problem"], "concrete"), result["concrete"])
+                results.setdefault((result["domain"], result["problem"], "concrete", ""), result["concrete"])
 
     keys = set(results)
     manifest = results_dir / MANIFEST_NAME
@@ -62,20 +64,30 @@ def collect(results_dir=RESULTS_DIR):
         keys.update(_manifest_keys(manifest))
 
     rows = []
-    for domain, problem, mode in sorted(keys):
-        result = results.get((domain, problem, mode))
+    for domain, problem, mode, symmetry_class in sorted(keys):
+        result = results.get((domain, problem, mode, symmetry_class))
         values = _missing_values() if result is None else _values(result)
-        rows.append({"domain": domain, "problem": problem, "mode": mode, **values})
+        rows.append({"domain": domain, "problem": problem, "mode": mode, "symmetry_class": symmetry_class, **values})
     return rows
+
+
+def _class_of(result):
+    """Read the collapsed class index, blank for a mode that collapses nothing."""
+    symmetry_class = result.get("symmetry_class")
+    return "" if symmetry_class is None else str(symmetry_class)
 
 
 def _manifest_keys(manifest):
     entries = json.loads(manifest.read_text(encoding="utf-8"))["expected_results"]
-    return {(entry["domain"], entry["problem"], entry["mode"]) for entry in entries if entry["mode"] in MODES}
+    return {
+        (entry["domain"], entry["problem"], entry["mode"], _class_of(entry))
+        for entry in entries
+        if entry["mode"] in MODES
+    }
 
 
 def _missing_values():
-    return {field: "" for field in FIELDS[4:]} | {"status": "missing"}
+    return {field: "" for field in FIELDS[5:]} | {"status": "missing"}
 
 
 def _values(result):
@@ -84,6 +96,7 @@ def _values(result):
     metrics = _metrics(output, progress)
     durations = metrics.get("durations", {})
     counters = metrics.get("counters", {})
+    ratios = metrics.get("ratios", {})
     return {
         "status": _human_status(result),
         "wall_time_seconds": result["wall_time_seconds"],
@@ -91,6 +104,7 @@ def _values(result):
         **{f"{name}_seconds": durations.get(name, "") for name in DURATION_LABELS},
         "verdict": _value(output, "Verdict"),
         **_counter_values(output, counters),
+        **{name: ratios.get(name, "") for name in RATIO_LABELS},
         **_abstraction_values(output, metrics.get("abstraction")),
         "error_message": _error_message(result),
     }
@@ -127,6 +141,7 @@ def _metrics(output, progress=None):
     metrics = {
         "durations": _metric_group(output, DURATION_LABELS, float),
         "counters": _metric_group(output, COUNTER_LABELS, int),
+        "ratios": _metric_group(output, RATIO_LABELS, float),
     }
     if metrics["durations"] or metrics["counters"]:
         return metrics
@@ -185,7 +200,7 @@ def _error_message(result):
 
 
 def _key(row):
-    return (row["domain"], row["problem"], row["mode"])
+    return (row["domain"], row["problem"], row["mode"], row["symmetry_class"])
 
 
 def _preserved_rows(collected, csv_file=CSV_FILE):
