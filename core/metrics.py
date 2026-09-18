@@ -14,6 +14,7 @@ DURATION_LABELS = {
     "abstract_pddl_writing": "Abstract PDDL writing",
     "concrete_fd": "Concrete Fast Downward",
     "abstract_fd": "Abstract Fast Downward",
+    "lama_fd": "LAMA-first Fast Downward",
     "concrete_asp": "Concrete SAS-to-ASP",
     "abstract_asp": "Abstract SAS-to-ASP",
     "abstract_solving": "Abstract plan solving",

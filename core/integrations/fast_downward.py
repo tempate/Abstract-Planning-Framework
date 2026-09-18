@@ -18,6 +18,7 @@ _SEARCH_UNSOLVABLE = 11
 _KILLED_OUT_OF_MEMORY = 247
 
 SEARCH = "astar(blind())"
+LAMA_FIRST = "lama-first"
 
 
 def pddl_to_sas(base_dir, domain_path, problem_path, label):
@@ -47,6 +48,34 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
 
 def has_plan(base_dir, domain_path, problem_path, label):
     """Translate and search one PDDL task, reporting only whether it has a plan."""
+    completed_process, _ = _search(base_dir, domain_path, problem_path, label, search=("--search", SEARCH))
+
+    if completed_process.returncode == _SUCCESS:
+        return True
+    if completed_process.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
+        return False
+
+    _raise_failure(completed_process, label)
+
+
+def find_plan(base_dir, domain_path, problem_path, label):
+    """Search one PDDL task with LAMA-first, returning its plan or None."""
+    completed_process, plan_path = _search(base_dir, domain_path, problem_path, label, driver=("--alias", LAMA_FIRST))
+
+    if completed_process.returncode == _SUCCESS:
+        return _read_plan(plan_path)
+    if completed_process.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
+        return None
+
+    _raise_failure(completed_process, label)
+
+
+def _search(base_dir, domain_path, problem_path, label, driver=(), search=()):
+    """Translate and search one task, returning the process and its plan file.
+
+    The driver reads its own options before the task and passes on whatever
+    follows it, so an alias and a search configuration go on opposite sides.
+    """
     os.makedirs(base_dir, exist_ok=True)
     plan_path = os.path.join(base_dir, f"{label}.plan")
     # Both paths have to be named. Left to itself the driver writes and reads
@@ -60,19 +89,18 @@ def has_plan(base_dir, domain_path, problem_path, label):
         sas_path,
         "--plan-file",
         plan_path,
+        *driver,
         os.fspath(domain_path),
         os.fspath(problem_path),
-        "--search",
-        SEARCH,
+        *search,
     ]
-    completed_process = subprocess.run(command, capture_output=True, text=True)
+    return subprocess.run(command, capture_output=True, text=True), plan_path
 
-    if completed_process.returncode == _SUCCESS:
-        return True
-    if completed_process.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
-        return False
 
-    _raise_failure(completed_process, label)
+def _read_plan(plan_path):
+    """Read the actions of a plan file, which ends in a comment naming its cost."""
+    with open(plan_path, encoding="utf-8") as plan_file:
+        return [line.strip() for line in plan_file if line.strip() and not line.startswith(";")]
 
 
 def _raise_failure(completed_process, label):
