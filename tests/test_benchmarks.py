@@ -28,7 +28,7 @@ from experiments.run import (
     _run_task,
 )
 import experiments.report
-from experiments.report import _coverage, _head_to_head
+from experiments.report import _coverage, _finished_problems, _head_to_head
 from experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
@@ -660,7 +660,7 @@ class ReportTests(unittest.TestCase):
             }
         ]
 
-        _title, lines = _head_to_head(problems)
+        _title, lines = _head_to_head(problems, "concrete")
 
         median = next(line for line in lines if line.startswith("Median runtime"))
         self.assertNotIn(" s", median)
@@ -668,23 +668,67 @@ class ReportTests(unittest.TestCase):
     def test_every_problem_is_accounted_for_in_the_coverage_table(self):
         """The rows have to add up, or a reader cannot tell what became of the
         problems that neither solved nor timed out."""
-        problems = [
-            {"abstract": {"status": "success"}, "concrete": {"status": "timed out"}},
-            {"abstract": {"status": "timed out"}, "concrete": {"status": "success"}},
-            {"abstract": {"status": "error (exit code 2)"}, "concrete": {"status": "interrupted"}},
-            {"abstract": {"status": "no plan found"}, "concrete": {"status": "killed (signal 9)"}},
-        ]
+        modes = ("abstract", "concrete", "lama")
+        statuses = (
+            ("success", "timed out", "success"),
+            ("timed out", "success", "no plan found"),
+            ("error (exit code 2)", "interrupted", "success"),
+            ("no plan found", "killed (signal 9)", "out of memory"),
+        )
+        problems = [dict(zip(modes, ({"status": status} for status in row))) for row in statuses]
 
-        _title, lines = _coverage(problems)
+        _title, lines = _coverage(problems, modes)
 
-        counted = {"abstract": 0, "concrete": 0}
+        counted = [0] * len(modes)
         for label in ("Plans found", "Timeouts", "Out of memory", "Others"):
             line = next(line for line in lines if line.startswith(label))
-            abstract, concrete = re.findall(r"(\d+) \(", line)
-            counted["abstract"] += int(abstract)
-            counted["concrete"] += int(concrete)
+            for index, count in enumerate(re.findall(r"(\d+) \(", line)):
+                counted[index] += int(count)
 
-        self.assertEqual(counted, {"abstract": len(problems), "concrete": len(problems)})
+        self.assertEqual(counted, [len(problems)] * len(modes))
+
+    def test_a_baseline_is_compared_against_the_abstract_pipeline_alone(self):
+        """Intersecting all three would drop the problems one baseline missed out
+        of the others' comparison, moving numbers for an unrelated reason."""
+        problems = [
+            {
+                "abstract": {"status": "success", "wall_time_seconds": "1.0"},
+                "concrete": {"status": "success", "wall_time_seconds": "2.0"},
+                "lama": {"status": "success", "wall_time_seconds": "3.0"},
+            },
+            {
+                "abstract": {"status": "success", "wall_time_seconds": "1.0"},
+                "concrete": {"status": "success", "wall_time_seconds": "2.0"},
+                "lama": {"status": "timed out", "wall_time_seconds": "1800.0"},
+            },
+        ]
+
+        _title, concrete = _head_to_head(problems, "concrete")
+        _title, lama = _head_to_head(problems, "lama")
+
+        self.assertIn("2", next(line for line in concrete if line.startswith("Plans found by both")))
+        self.assertIn("1", next(line for line in lama if line.startswith("Plans found by both")))
+
+    def test_the_report_covers_the_modes_the_results_hold(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                rows = [("p01.pddl", "abstract"), ("p01.pddl", "concrete"), ("p01.pddl", "lama")]
+                # p02 never ran the baseline, so no mode can be compared on it.
+                rows += [("p02.pddl", "abstract"), ("p02.pddl", "concrete")]
+                for problem, mode in rows:
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {"domain": "example", "problem": problem, "mode": mode, "status": "success"}
+                    )
+
+            modes, problems, dropped = _finished_problems(results)
+
+        self.assertEqual(modes, ("abstract", "concrete", "lama"))
+        self.assertEqual(len(problems), 1)
+        self.assertEqual(dropped, 1)
 
 
 if __name__ == "__main__":
