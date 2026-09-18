@@ -23,6 +23,10 @@ class Track:
     def results_file(self):
         return self.directory / "results.csv"
 
+    @property
+    def classes_file(self):
+        return self.directory / "classes.json"
+
 
 TRACKS = {
     "plan": Track(suite=plan_suite, pipeline="plan"),
