@@ -9,10 +9,11 @@ from pathlib import Path
 
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from experiments.run import MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR, _human_status
+from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 # The raw run output stays in the untracked results directory; the collected CSV
 # is the artifact that gets committed and reported on.
-CSV_FILE = PROJECT_ROOT / "experiments" / "plan" / "results.csv"
+CSV_FILE = TRACKS[DEFAULT_TRACK].results_file
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
 FIELDS = (
     "domain",

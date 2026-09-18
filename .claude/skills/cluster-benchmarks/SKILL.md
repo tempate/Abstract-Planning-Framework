@@ -14,7 +14,7 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate apf
 
 Checkouts are worktrees of the bare repo `~/apf/.bare`, one per branch at
 `~/apf/<branch>`. In each of them `lib/downward`, `lib/pddl-symmetries`,
-`experiments/plan/downward-benchmarks` and `lib/plasp/bin` are symlinks into
+`experiments/benchmarks/downward-benchmarks` and `lib/plasp/bin` are symlinks into
 `~/apf/.shared`, which holds the only built copy. Nothing is built per worktree,
 so a branch that moved a submodule pointer would silently run the shared
 version — we build one copy because no branch here moves one.
@@ -65,7 +65,7 @@ python -m experiments.submit --with-concrete
 pipelines and drops any problem missing one, so abstract-only problems appear in
 no table.
 
-`--unsolvable` swaps the suite for unsolve-ipc-2016 and the planner for
+`--track unsolvability` swaps the suite for unsolve-ipc-2016 and the planner for
 `scripts.unsolvability`, which reports a verdict instead of a plan. The CSV
 carries it in the `verdict` column. Only the probNN problems run, the ones known
 unsolvable; satprob and unknownprob are skipped.
@@ -94,7 +94,7 @@ That fetches, adds `~/apf/<branch>`, replaces the three empty submodule
 directories with links into `~/apf/.shared`, and asserts every artifact is
 reachable before it prints `ready:`. Two seconds, no build.
 
-Plain `git worktree add` leaves `experiments/plan/downward-benchmarks`,
+Plain `git worktree add` leaves `experiments/benchmarks/downward-benchmarks`,
 `lib/downward` and `lib/pddl-symmetries` empty, so the runner finds no problems
 and submits nothing without saying why. None of these are checked in:
 
@@ -116,7 +116,16 @@ Pick a problem the branch solves quickly. A refinement branch can time out on a
 hard one for its own reasons, which says nothing about the worktree.
 
 `experiments.fetch` guards on `squeue -u "$USER"`, the whole user rather than one
-run, so neither run can be pulled until both drain. Give each its own `--into`.
+run, so neither run can be pulled until both drain. Give each its own `--into`,
+and `--remote-dir ~/apf/<branch>/runs/` is required because there is no longer
+one checkout to default to.
+
+Removing a worktree afterwards needs `--force`, since the four symlinks read as
+local modifications:
+
+```bash
+ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare worktree remove --force ~/apf/<branch>'
+```
 
 ## Before reporting on a run
 

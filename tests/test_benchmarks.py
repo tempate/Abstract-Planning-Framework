@@ -1,5 +1,4 @@
 import csv
-import inspect
 import json
 import os
 import shlex
@@ -11,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from experiments.plan.suite import SUITE
+from experiments.tracks import DEFAULT_TRACK, TRACKS
 from experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from experiments.collect import FIELDS, _preserved_concrete_rows, collect
@@ -54,10 +54,11 @@ class BenchmarkTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(result), encoding="utf-8")
 
-    def test_benchmark_runner_defaults_to_the_whole_suite(self):
-        suite = inspect.signature(_benchmark_tasks).parameters["suite"].default
+    def test_the_default_track_runs_the_whole_symmetry_suite_through_the_planner(self):
+        track = TRACKS[DEFAULT_TRACK]
 
-        self.assertIs(suite, SUITE)
+        self.assertIs(track.suite.SUITE, SUITE)
+        self.assertEqual(track.pipeline, "plan")
 
     def test_the_run_names_the_partition_every_task_goes_to(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -18,9 +18,9 @@ from a collected run.
 
 from pathlib import Path
 
-from experiments import read_problems
+from experiments import DOWNWARD_BENCHMARKS_DIR, read_problems
 
-BENCHMARKS_DIR = Path(__file__).parent / "downward-benchmarks"
+BENCHMARKS_DIR = DOWNWARD_BENCHMARKS_DIR
 SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
 
 SUITE = [

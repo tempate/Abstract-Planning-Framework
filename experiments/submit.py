@@ -11,9 +11,8 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from experiments.plan import suite as plan_suite
-from experiments.unsolvability import suite as unsolvability_suite
 from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, PROJECT_ROOT, RESULTS_DIR
+from experiments.tracks import DEFAULT_TRACK, TRACKS
 from scripts.utils.arguments import positive_int
 
 DEFAULT_MEMORY_LIMIT = 8 * 1024
@@ -27,19 +26,16 @@ DEFAULT_PARTITION = "any"
 
 def main():
     args = _argument_parser().parse_args()
-    if args.unsolvable:
-        tasks = list(
-            _benchmark_tasks(
-                benchmarks_dir=unsolvability_suite.BENCHMARKS_DIR,
-                suite=unsolvability_suite.SUITE,
-                runnable=unsolvability_suite.SYMMETRIC_PROBLEMS,
-                with_concrete=args.with_concrete,
-            )
+    track = TRACKS[args.track]
+    tasks = list(
+        _benchmark_tasks(
+            benchmarks_dir=track.suite.BENCHMARKS_DIR,
+            suite=track.suite.SUITE,
+            runnable=track.suite.SYMMETRIC_PROBLEMS,
+            with_concrete=args.with_concrete,
         )
-        pipeline = "decide"
-    else:
-        tasks = list(_benchmark_tasks(with_concrete=args.with_concrete))
-        pipeline = "plan"
+    )
+    pipeline = track.pipeline
     _reset_results_dir()
     _write_manifest(tasks, pipeline=pipeline)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
@@ -100,9 +96,10 @@ def _argument_parser():
         "--with-concrete", action="store_true", help="Also submit the concrete pipeline for every problem"
     )
     parser.add_argument(
-        "--unsolvable",
-        action="store_true",
-        help="Submit the unsolve-ipc-2016 collection for a solvability verdict instead of a plan",
+        "--track",
+        choices=sorted(TRACKS),
+        default=DEFAULT_TRACK,
+        help="Benchmark track to submit: its problems, and the driver that runs them",
     )
     return parser
 
@@ -163,12 +160,7 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(
-    benchmarks_dir=plan_suite.BENCHMARKS_DIR,
-    suite=plan_suite.SUITE,
-    runnable=plan_suite.SYMMETRIC_PROBLEMS,
-    with_concrete=False,
-):
+def _benchmark_tasks(benchmarks_dir, suite, runnable, with_concrete=False):
     modes = ("abstract", "concrete") if with_concrete else ("abstract",)
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
