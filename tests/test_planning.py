@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from core.abstraction.factory import Abstraction, AbstractionError, build_abstract_problem
-from core.integrations.clingo import ClingoSolveResult
+from core.search.incremental import SolveResult
 from core.integrations.unified_planning import read_problem
 from core.outcomes import UnsolvableTaskError
 from core.planning.abstract import write_abstract_problem, compute_abstract_plan
@@ -44,15 +44,17 @@ def _generated_abstraction(relaxed_deletes=(), relaxed_inequalities=()):
 
 
 class ConcretePlanningOrchestrationTests(unittest.TestCase):
-    @patch("core.planning.concrete.solve")
+    @patch("core.planning.concrete.IncrementalSolver")
     @patch("core.planning.concrete.sas_to_asp")
     @patch("core.planning.concrete.pddl_to_sas")
     @patch("core.planning.concrete.temp_run_dir")
-    def test_the_solver_result_becomes_the_planning_result(self, temp_run_dir, pddl_to_sas, sas_to_asp, solve):
+    def test_the_solver_result_becomes_the_planning_result(
+        self, temp_run_dir, pddl_to_sas, sas_to_asp, incremental_solver
+    ):
         temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
         pddl_to_sas.return_value = "concrete.sas"
         sas_to_asp.return_value = "asp program"
-        solve.return_value = ClingoSolveResult(["occurs(action,3)"], horizon=3, attempts=4)
+        incremental_solver.return_value.search.return_value = SolveResult(["occurs(action,3)"], horizon=3, attempts=4)
         config = PlanningConfig("domain.pddl", "problem.pddl")
 
         result = compute_concrete_plan(config)

@@ -1,12 +1,12 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from core.abstraction.factory import Abstraction
-from core.integrations.clingo import ClingoSolveResult
 from core.metrics import PlanningMetrics
 from core.plan import PlanAction
 from core.planning.config import AbstractPlanningConfig
 from core.refinement.pipeline import RefinementContext, refine
+from core.search.incremental import SolveResult
 
 
 class RefinementTests(unittest.TestCase):
@@ -23,16 +23,22 @@ class RefinementTests(unittest.TestCase):
         values.update(changes)
         return RefinementContext(**values)
 
+    def _solvers(self, incremental_solver, abstract_result):
+        """Hand out one mock per construction: the abstract search, then the concrete one."""
+        abstract_solver = Mock()
+        abstract_solver.search.return_value = abstract_result
+        concrete_solver = Mock()
+        incremental_solver.side_effect = [abstract_solver, concrete_solver]
+        return abstract_solver, concrete_solver
+
     @patch("core.refinement.pipeline.IncrementalSolver")
     @patch("core.refinement.pipeline.solve_decrementally", return_value=(True, ["occurs(concrete,1)"], 2))
     @patch("core.refinement.pipeline.build_mapping", return_value="mapping asp")
     @patch("core.refinement.pipeline.parse_plan_actions", return_value=(PlanAction("move", ("item_abs",), 1),))
-    @patch(
-        "core.refinement.pipeline.solve", return_value=ClingoSolveResult(["occurs(abstract,1)"], horizon=2, attempts=3)
-    )
     def test_the_abstract_plan_is_mapped_and_its_horizon_is_reported(
-        self, solve, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver
+        self, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver
     ):
+        self._solvers(incremental_solver, SolveResult(["occurs(abstract,1)"], horizon=2, attempts=3))
         context = self._context()
 
         result = refine(context)
@@ -58,12 +64,10 @@ class RefinementTests(unittest.TestCase):
     )
     @patch("core.refinement.pipeline.build_mapping", return_value="mapping asp")
     @patch("core.refinement.pipeline.parse_plan_actions", return_value=())
-    @patch(
-        "core.refinement.pipeline.solve", return_value=ClingoSolveResult(["occurs(abstract,1)"], horizon=2, attempts=1)
-    )
     def test_the_plan_length_counts_actions_instead_of_time_steps(
-        self, solve, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver
+        self, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver
     ):
+        self._solvers(incremental_solver, SolveResult(["occurs(abstract,1)"], horizon=2, attempts=1))
         context = self._context()
 
         refine(context)
@@ -76,12 +80,11 @@ class RefinementTests(unittest.TestCase):
     @patch("core.refinement.pipeline.solve_decrementally", return_value=(False, None, 3))
     @patch("core.refinement.pipeline.build_mapping", return_value="mapping asp")
     @patch("core.refinement.pipeline.parse_plan_actions", return_value=())
-    @patch("core.refinement.pipeline.solve", return_value=ClingoSolveResult(["abstract atom"], horizon=3, attempts=4))
     def test_unrefinable_plans_extend_the_search_above_the_abstract_horizon(
-        self, solve, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver, disabled_switches
+        self, parse_plan_actions, build_mapping, solve_decrementally, incremental_solver, disabled_switches
     ):
-        solver = incremental_solver.return_value
-        solver.search.return_value = ClingoSolveResult(["occurs(concrete,9)"], horizon=9, attempts=2)
+        _abstract, solver = self._solvers(incremental_solver, SolveResult(["abstract atom"], horizon=3, attempts=4))
+        solver.search.return_value = SolveResult(["occurs(concrete,9)"], horizon=9, attempts=2)
 
         context = self._context()
         result = refine(context)

@@ -3,11 +3,12 @@
 from dataclasses import dataclass
 
 from core.abstraction.factory import Abstraction
-from core.integrations.clingo import IncrementalSolver, parse_plan_actions, plan_length, solve
+from core.integrations.clingo import parse_plan_actions, plan_length
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.refinement.decremental import disabled_switches, solve_decrementally
 from core.refinement.mapping import build_mapping, mapped_horizon
+from core.search.incremental import IncrementalSolver
 
 
 @dataclass
@@ -46,7 +47,8 @@ def _solve_abstract_plan(context):
         context.metrics.set_counter("abstract_solve_calls", solve_calls)
 
     with context.metrics.measure("abstract_solving"):
-        solve_result = solve(context.abstract_asp, on_attempt=record_attempt)
+        solver = IncrementalSolver(context.abstract_asp)
+        solve_result = solver.search(on_attempt=record_attempt)
 
     # The concrete search runs on the mapped time line, which surrounds every
     # abstract action with a gap for one optional concrete action.

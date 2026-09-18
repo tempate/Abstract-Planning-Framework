@@ -1,6 +1,6 @@
 import unittest
 
-from core.integrations.clingo import IncrementalSolver
+from core.search.incremental import IncrementalSolver
 from core.refinement.decremental import solve_decrementally
 
 
