@@ -67,6 +67,24 @@ table. `lama` is plain Fast Downward, the external baseline. Pin `--partition`
 for any run whose timings are published — the default `any` spans two CPU
 generations, and that is hard to defend against an external planner.
 
+`abstract` submits **one job per symmetry class**, read from
+`experiments/plan/classes.json`, so the job count runs well above one per
+problem. Check it before submitting:
+
+```bash
+python -c 'import json; d = json.load(open("experiments/plan/classes.json")); print(sum(len(v) for k, v in d.items() if k != "_comment"))'
+```
+
+Regenerate that file with `python -m experiments.classes --jobs 2`, about 15
+minutes locally, and only when the suite or the detector changed: a class is
+named in `results.csv` by its position in it, so regenerating renumbers every
+result already collected.
+
+`experiments.report` does not know about the class column. It pairs every
+abstract row against `concrete` and `lama`, so several classes of one problem
+multiply the baselines and each table comes out wrong. Read `results.csv`
+directly for a per-class run.
+
 `--track unsolvability` takes only `abstract` and `concrete`: `scripts.unsolvability`
 has no `lama` subcommand, and its concrete mode already is a plain Fast Downward
 search.

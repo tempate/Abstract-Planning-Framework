@@ -9,6 +9,7 @@ import tempfile
 import re
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from experiments.plan.suite import SUITE
@@ -17,8 +18,10 @@ from experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from experiments.collect import FIELDS, _preserved_rows, collect
 from scripts.utils.reporting import update_result_progress
+from experiments import write_classes
 from experiments.run import (
     DEFAULT_TIMEOUT,
+    _class_objects,
     NO_SYMMETRIES_MESSAGE,
     PROJECT_ROOT,
     _argument_parser as _benchmark_argument_parser,
@@ -32,6 +35,7 @@ from experiments.report import _coverage, _finished_problems, _head_to_head
 from experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
+    Task,
     _argument_parser,
     _benchmark_tasks,
     _reset_results_dir,
@@ -40,22 +44,69 @@ from experiments.submit import (
 )
 
 
+def _suite(benchmarks_dir, domains, runnable):
+    """Stand in for a track's suite module."""
+    return SimpleNamespace(BENCHMARKS_DIR=benchmarks_dir, SUITE=domains, SYMMETRIC_PROBLEMS=runnable)
+
+
 class BenchmarkTests(unittest.TestCase):
     @staticmethod
-    def _write_result(directory, mode, status="success"):
+    def _write_result(directory, mode, status="success", symmetry_class=None):
         result = {
             "domain": "example",
             "problem": "p01.pddl",
             "mode": mode,
+            "symmetry_class": symmetry_class,
             "status": status,
             "return_code": 0,
             "timed_out": False,
             "wall_time_seconds": 1.0,
             "output": "Plan found: yes\n",
         }
-        path = Path(directory) / "example" / "p01" / f"{mode}.json"
+        stem = mode if symmetry_class is None else f"{mode}-{symmetry_class}"
+        path = Path(directory) / "example" / "p01" / f"{stem}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(result), encoding="utf-8")
+
+    def test_every_class_of_one_problem_becomes_its_own_row(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self._write_result(directory, "abstract", symmetry_class=0)
+            self._write_result(directory, "abstract", symmetry_class=1)
+            self._write_result(directory, "concrete")
+
+            rows = collect(directory)
+
+        self.assertEqual(
+            {(row["mode"], row["symmetry_class"]) for row in rows},
+            {("abstract", "0"), ("abstract", "1"), ("concrete", "")},
+        )
+
+    def test_a_problem_is_submitted_once_per_symmetry_class(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "example").mkdir()
+            (root / "example" / "domain.pddl").touch()
+            (root / "example" / "p01.pddl").touch()
+            suite = _suite(root, ["example"], None)
+            classes = {"example/p01.pddl": [["a", "b"], ["c", "d", "e"]]}
+
+            tasks = list(_benchmark_tasks(suite, modes=("abstract", "lama"), classes=classes))
+
+        self.assertEqual(
+            [(task.mode, task.index, task.objects) for task in tasks],
+            [("abstract", 0, ("a", "b")), ("abstract", 1, ("c", "d", "e")), ("lama", None, None)],
+        )
+
+    def test_a_problem_with_no_known_class_is_not_submitted_abstractly(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "example").mkdir()
+            (root / "example" / "domain.pddl").touch()
+            (root / "example" / "p01.pddl").touch()
+
+            tasks = list(_benchmark_tasks(_suite(root, ["example"], None), classes={}))
+
+        self.assertEqual(tasks, [])
 
     def test_every_mode_becomes_its_own_row(self):
         """A mode the collector does not know is filed as an abstract result and
@@ -129,7 +180,10 @@ class BenchmarkTests(unittest.TestCase):
             definition_dir.mkdir()
 
             config_file = _write_copperbench_config(
-                [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
+                [
+                    Task("abstract", "example", domain, problem, 0, ("a", "b")),
+                    Task("concrete", "example", domain, problem, None, None),
+                ],
                 definition_dir=definition_dir,
                 timeout=1800,
                 memory_limit=4096,
@@ -149,15 +203,37 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(config["max_parallel_jobs"], 12)
         self.assertEqual(config["working_dir"], os.path.relpath(PROJECT_ROOT, definition_dir))
         self.assertIn("experiments.run", worker)
-        for placeholder in ("$1", "$2", "$3", "$4", "$timeout"):
+        for placeholder in ("$1", "$2", "$3", "$4", "$5", "$timeout"):
             self.assertIn(placeholder, worker)
         self.assertEqual(
             instances,
             [
-                f"abstract example {domain.resolve()} {problem.resolve()}",
-                f"concrete example {domain.resolve()} {problem.resolve()}",
+                f"abstract example {domain.resolve()} {problem.resolve()} 0",
+                f"concrete example {domain.resolve()} {problem.resolve()} -",
             ],
         )
+
+    def test_no_instance_parameter_contains_a_comma(self):
+        """CopperBench splits a parameter on commas, and the extra pieces land
+        on the end of the worker command as unrecognized arguments."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            project = root / "project"
+            project.mkdir()
+            domain, problem = project / "domain.pddl", project / "p01.pddl"
+            domain.touch()
+            problem.touch()
+            definition_dir = root / "definition"
+            definition_dir.mkdir()
+
+            _write_copperbench_config(
+                [Task("abstract", "example", domain, problem, 0, ("a", "b", "c"))],
+                definition_dir=definition_dir,
+                classes_file=root / "classes.json",
+            )
+            instances = (definition_dir / "instances.txt").read_text(encoding="utf-8")
+
+        self.assertNotIn(",", instances)
 
     def test_discovers_the_problem_and_its_domain(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -169,16 +245,14 @@ class BenchmarkTests(unittest.TestCase):
             domain.touch()
             problem.touch()
 
-            runnable = {("example", "p01.pddl")}
+            suite = _suite(root, ["example"], {("example", "p01.pddl")})
+            self.assertEqual(list(_benchmark_tasks(suite)), [Task("abstract", "example", domain, problem, None, None)])
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable)), [("abstract", "example", domain, problem)]
-            )
-            self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable, modes=("abstract", "concrete", "lama"))),
+                list(_benchmark_tasks(suite, modes=("abstract", "concrete", "lama"))),
                 [
-                    ("abstract", "example", domain, problem),
-                    ("concrete", "example", domain, problem),
-                    ("lama", "example", domain, problem),
+                    Task("abstract", "example", domain, problem, None, None),
+                    Task("concrete", "example", domain, problem, None, None),
+                    Task("lama", "example", domain, problem, None, None),
                 ],
             )
 
@@ -191,9 +265,9 @@ class BenchmarkTests(unittest.TestCase):
             (benchmark / "p01.pddl").touch()
             (benchmark / "p02.pddl").touch()
 
-            tasks = list(_benchmark_tasks(root, ["example"], runnable={("example", "p02.pddl")}))
+            tasks = list(_benchmark_tasks(_suite(root, ["example"], {("example", "p02.pddl")})))
 
-            self.assertEqual([problem.name for _mode, _name, _domain, problem in tasks], ["p02.pddl"])
+            self.assertEqual([task.problem.name for task in tasks], ["p02.pddl"])
 
     def test_only_the_problems_known_unsolvable_are_submitted(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -203,9 +277,9 @@ class BenchmarkTests(unittest.TestCase):
             for name in names:
                 (root / "example" / name).touch()
 
-            tasks = list(_benchmark_tasks(root, ["example"], runnable=None))
+            tasks = list(_benchmark_tasks(_suite(root, ["example"], None)))
 
-        self.assertEqual([task[3].name for task in tasks], ["prob01.pddl"])
+        self.assertEqual([task.problem.name for task in tasks], ["prob01.pddl"])
 
     def test_the_decide_pipeline_runs_the_unsolvability_script(self):
         command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract", "decide")
@@ -221,9 +295,33 @@ class BenchmarkTests(unittest.TestCase):
             (root / "example" / "p01.pddl").touch()
             (root / "example" / "p02.pddl").touch()
 
-            tasks = list(_benchmark_tasks(root, ["example"], runnable=None))
+            tasks = list(_benchmark_tasks(_suite(root, ["example"], None)))
 
-        self.assertEqual([task[3].name for task in tasks], ["p01.pddl", "p02.pddl"])
+        self.assertEqual([task.problem.name for task in tasks], ["p01.pddl", "p02.pddl"])
+
+    def test_the_worker_reads_its_class_out_of_the_manifest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = Path(directory) / "classes.json"
+            write_classes({"example/p01.pddl": [["a", "b"], ["c", "d", "e"]]}, manifest)
+
+            objects = _class_objects(manifest, "example", Path("p01.pddl"), 1)
+            none = _class_objects(manifest, "example", Path("p01.pddl"), None)
+
+        self.assertEqual(objects, ("c", "d", "e"))
+        self.assertIsNone(none)
+
+    def test_a_class_the_manifest_does_not_have_stops_the_job(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = Path(directory) / "classes.json"
+            write_classes({"example/p01.pddl": [["a", "b"]]}, manifest)
+
+            with self.assertRaises(SystemExit):
+                _class_objects(manifest, "example", Path("p01.pddl"), 7)
+
+    def test_the_planner_is_told_which_objects_to_collapse(self):
+        command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract", "plan", ("a", "b"))
+
+        self.assertEqual(command[-3:], ["--objects-to-abstract", "a", "b"])
 
     def test_planner_gets_only_the_mode_problem_and_domain(self):
         command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract")
@@ -250,8 +348,8 @@ class BenchmarkTests(unittest.TestCase):
             result.touch()
 
             self.assertEqual(
-                list(_benchmark_tasks(benchmarks, ["example"], {("example", "p01.pddl")})),
-                [("abstract", "example", domain, problem)],
+                list(_benchmark_tasks(_suite(benchmarks, ["example"], {("example", "p01.pddl")}))),
+                [Task("abstract", "example", domain, problem, None, None)],
             )
 
     def test_collector_ignores_copperbench_metadata_next_to_results(self):
@@ -311,7 +409,7 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(concrete["mode"], "concrete")
         self.assertEqual(concrete["return_code"], 0)
         self.assertEqual(len(rows), 2)
-        self.assertEqual(FIELDS[:4], ("domain", "problem", "mode", "status"))
+        self.assertEqual(FIELDS[:5], ("domain", "problem", "mode", "symmetry_class", "status"))
         for name in (*(f"{name}_seconds" for name in DURATION_LABELS), *COUNTER_LABELS):
             self.assertIn(name, FIELDS)
         self.assertEqual(rows[0]["mode"], "abstract")
@@ -536,8 +634,8 @@ class BenchmarkTests(unittest.TestCase):
             with self.subTest(completed=completed), tempfile.TemporaryDirectory() as directory:
                 problem = Path("p01.pddl")
                 tasks = [
-                    ("abstract", "example", Path("domain.pddl"), problem),
-                    ("concrete", "example", Path("domain.pddl"), problem),
+                    Task("abstract", "example", Path("domain.pddl"), problem, None, None),
+                    Task("concrete", "example", Path("domain.pddl"), problem, None, None),
                 ]
                 manifest = _write_manifest(tasks, directory)
                 for mode in completed:

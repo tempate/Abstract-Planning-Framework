@@ -7,13 +7,21 @@ from unified_planning.model import Problem
 from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
 from core.abstraction.heuristic import abstraction_score
 from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities
+from core.abstraction.statistics import describe_class, describe_relaxation
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import read_problem, to_positive_normal_form
 from core.metrics import PlanningMetrics
 from core.outcomes import NoSymmetriesError
 from core.planning.config import AbstractPlanningConfig
 
-__all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "NoSymmetriesError", "build_abstract_problem"]
+__all__ = [
+    "Abstraction",
+    "AbstractionError",
+    "AbstractionResult",
+    "NoSymmetriesError",
+    "build_abstract_problem",
+    "usable_abstractions",
+]
 
 
 @dataclass(frozen=True)
@@ -29,6 +37,7 @@ class AbstractionResult:
     problem: Problem
     relaxed_deletes: tuple
     relaxed_inequalities: tuple
+    statistics: dict
 
 
 def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
@@ -55,6 +64,10 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
         else:
             abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
 
+        # Described before the inequalities go, since relaxing them rewrites
+        # the preconditions this reads.
+        statistics = describe_class(problem, abstraction)
+
         # The class has to be chosen before the inequalities can be relaxed,
         # and they have to be relaxed before the translation, which rewrites
         # every one of them into a disjunction over pairs of objects.
@@ -72,41 +85,45 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     with metrics.measure("abstraction"):
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
+        statistics["counters"].update(describe_relaxation(problem, abstraction, relaxed_deletes))
     return AbstractionResult(
         abstraction=abstraction,
         problem=collapsed_problem,
         relaxed_deletes=relaxed_deletes,
         relaxed_inequalities=relaxed_inequalities,
+        statistics=statistics,
     )
 
 
-def _select_abstraction(problem, symmetry_classes, abstract_name=None):
-    """Select the largest class reported by PDDL Symmetries."""
-    candidate = None
-    candidate_score = None
-    rejection = None
+def usable_abstractions(problem, symmetry_classes, abstract_name=None):
+    """Build an abstraction per collapsible class, and say why one was refused.
 
-    # PDDL Symmetries prints its classes in an order that varies between
-    # processes, and the first class with the best score wins, so two runs of
-    # one problem could collapse different classes of the same size.
+    PDDL Symmetries prints its classes in an order that varies between
+    processes, so they are canonicalized here. Everything that identifies a
+    class by its position reads that one order.
+    """
     ordered_classes = sorted(sorted(symmetry_class) for symmetry_class in symmetry_classes)
 
+    abstractions = []
+    rejection = None
     for symmetry_class in ordered_classes:
         try:
-            abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
+            abstractions.append(_create_abstraction(problem, symmetry_class, abstract_name))
         except AbstractionError as error:
             # One unusable class does not make the others unusable, so keep the
             # reason for the case where none of them works.
             rejection = rejection or error
-            continue
-        score = abstraction_score(abstraction)
-        if candidate_score is None or score < candidate_score:
-            candidate = abstraction
-            candidate_score = score
+    return abstractions, rejection
 
-    if candidate is None:
+
+def _select_abstraction(problem, symmetry_classes, abstract_name=None):
+    """Select the largest class reported by PDDL Symmetries."""
+    abstractions, rejection = usable_abstractions(problem, symmetry_classes, abstract_name)
+    if not abstractions:
         raise rejection
-    return candidate
+    # min keeps the first best, and the order is canonical, so two runs of one
+    # problem cannot collapse different classes of the same size.
+    return min(abstractions, key=abstraction_score)
 
 
 def _create_abstraction(problem, object_names, abstract_name):

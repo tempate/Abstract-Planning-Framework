@@ -8,10 +8,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR
+from experiments import read_classes
+from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, NO_CLASS, PROJECT_ROOT, RESULTS_DIR
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 from scripts.utils.arguments import positive_int
 
@@ -24,17 +26,23 @@ DEFAULT_MEMORY_LIMIT = 8 * 1024
 DEFAULT_PARTITION = "any"
 
 
+@dataclass(frozen=True)
+class Task:
+    """One cluster job: how to solve which problem, collapsing which class."""
+
+    mode: str
+    domain_name: str
+    domain: Path
+    problem: Path
+    index: int | None
+    objects: tuple[str, ...] | None
+
+
 def main():
     args = _argument_parser().parse_args()
     track = TRACKS[args.track]
-    tasks = list(
-        _benchmark_tasks(
-            benchmarks_dir=track.suite.BENCHMARKS_DIR,
-            suite=track.suite.SUITE,
-            runnable=track.suite.SYMMETRIC_PROBLEMS,
-            modes=args.modes,
-        )
-    )
+    classes = read_classes(track.classes_file) if "abstract" in args.modes else None
+    tasks = list(_benchmark_tasks(track.suite, modes=args.modes, classes=classes))
     pipeline = track.pipeline
     _reset_results_dir()
     _write_manifest(tasks, pipeline=pipeline)
@@ -47,8 +55,9 @@ def main():
             max_parallel_jobs=args.max_parallel_jobs,
             partition=args.partition,
             pipeline=pipeline,
+            classes_file=track.classes_file,
         )
-        print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
+        print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem, per class where known)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
 
 
@@ -65,7 +74,8 @@ def _reset_results_dir(results_dir=RESULTS_DIR):
 def _write_manifest(tasks, results_dir=RESULTS_DIR, pipeline="plan"):
     """Record every result expected from a submitted benchmark run."""
     expected_results = [
-        {"domain": domain_name, "problem": problem.name, "mode": mode} for mode, domain_name, _domain, problem in tasks
+        {"domain": task.domain_name, "problem": task.problem.name, "mode": task.mode, "symmetry_class": task.index}
+        for task in tasks
     ]
     manifest = {"version": 1, "pipeline": pipeline, "expected_results": expected_results}
     path = Path(results_dir) / MANIFEST_NAME
@@ -116,6 +126,7 @@ def _write_copperbench_config(
     max_parallel_jobs=None,
     partition=DEFAULT_PARTITION,
     pipeline="plan",
+    classes_file=None,
 ):
     """Write the files CopperBench needs to submit one job per problem."""
     definition_dir = Path(definition_dir)
@@ -136,6 +147,10 @@ def _write_copperbench_config(
         "$3",
         "--problem",
         "$4",
+        "--symmetry-class",
+        "$5",
+        "--classes",
+        str(classes_file),
         "--timeout",
         "$timeout",
         "--pipeline",
@@ -144,8 +159,12 @@ def _write_copperbench_config(
     configs_file.write_text(shlex.join(worker) + "\n", encoding="utf-8")
 
     instances = []
-    for mode, domain_name, domain, problem in tasks:
-        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()}")
+    for task in tasks:
+        # Only the index travels. CopperBench splits an instance parameter on
+        # commas, so the objects cannot ride along; the worker reads them out
+        # of the manifest instead.
+        index = NO_CLASS if task.index is None else task.index
+        instances.append(f"{task.mode} {task.domain_name} {task.domain.resolve()} {task.problem.resolve()} {index}")
     instances_file.write_text("\n".join(instances) + "\n", encoding="utf-8")
 
     config = {
@@ -164,17 +183,32 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstract",)):
-    for domain_name in reversed(suite):
-        directory = Path(benchmarks_dir) / domain_name
+def _benchmark_problems(suite):
+    """Walk the problems a track submits, with the domain file each one needs."""
+    runnable = suite.SYMMETRIC_PROBLEMS
+    for domain_name in reversed(suite.SUITE):
+        directory = Path(suite.BENCHMARKS_DIR) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
             if _is_domain_file(problem.name) or _has_other_status(problem.name):
                 continue
             if runnable is not None and (domain_name, problem.name) not in runnable:
                 continue
-            domain = _find_domain(problem)
-            for mode in modes:
-                yield mode, domain_name, domain, problem
+            yield domain_name, _find_domain(problem), problem
+
+
+def _benchmark_tasks(suite, modes=("abstract",), classes=None):
+    """Enumerate the jobs to submit: one per mode, and one per class for the abstract one.
+
+    A problem missing from the class manifest contributes no abstract job, the
+    same way a problem with no symmetry class never had one.
+    """
+    for domain_name, domain, problem in _benchmark_problems(suite):
+        for mode in modes:
+            if mode == "abstract" and classes is not None:
+                for index, objects in enumerate(classes.get(f"{domain_name}/{problem.name}", [])):
+                    yield Task(mode, domain_name, domain, problem, index, tuple(objects))
+            else:
+                yield Task(mode, domain_name, domain, problem, None, None)
 
 
 def _is_domain_file(name):

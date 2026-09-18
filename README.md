@@ -54,9 +54,11 @@ Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
 Slurm task per mode and problem, each capped at 30 minutes and 8192 MiB.
 `--modes abstract concrete lama` submits all three; the default is `abstract`
-alone.
+alone. The abstract mode runs **one task per symmetry class**, so a problem with
+three classes is collapsed three ways and compared.
 
 ```bash
+python -m experiments.classes          # only when the suite or the detector changed
 python -m experiments.submit
 python -m experiments.collect
 python -m experiments.report experiments/plan/results.csv
@@ -65,6 +67,11 @@ python -m experiments.report experiments/plan/results.csv
 - `experiments/plan/suite.py` holds the domains, but a problem is submitted only
   when `experiments/plan/symmetries.txt` records an abstraction class for it.
   That file's header carries the command that regenerates it.
+- `experiments/plan/classes.json` holds each problem's classes, discovered once
+  so no planning job pays for detection. A class is identified in `results.csv`
+  by its position in that list, so regenerating the file renumbers past results.
+  Without it every problem gets a single abstract task and the planner picks the
+  class itself.
 - `--track unsolvability` submits `experiments/unsolvability/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
   a plan. Only the probNN problems run, the ones known to be unsolvable.

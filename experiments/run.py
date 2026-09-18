@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from core.outcomes import STATUS_BY_EXIT_CODE
+from experiments import read_classes
 from scripts.utils.arguments import positive_int
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +20,9 @@ MANIFEST_NAME = "manifest.json"
 # Every way one problem gets solved, in the order a report reads them.
 MODES = ("abstract", "concrete", "lama")
 PIPELINE_MODULES = {"plan": "scripts.planner", "decide": "scripts.unsolvability"}
+# What a job with no class to collapse passes, since the cluster substitutes
+# its arguments positionally and cannot leave one out.
+NO_CLASS = "-"
 NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
 SYMMETRY_TIMEOUT_MESSAGE = "PDDL Symmetries exceeded its"
 
@@ -26,7 +30,14 @@ SYMMETRY_TIMEOUT_MESSAGE = "PDDL Symmetries exceeded its"
 def main():
     args = _argument_parser().parse_args()
     result = _run_task(
-        args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout, pipeline=args.pipeline
+        args.mode,
+        args.domain_name,
+        args.domain,
+        args.problem,
+        timeout=args.timeout,
+        pipeline=args.pipeline,
+        symmetry_class=args.symmetry_class,
+        objects_to_abstract=_class_objects(args.classes, args.domain_name, args.problem, args.symmetry_class),
     )
     print(f"{args.domain_name}/{args.problem.name}: {_task_status(args.mode, result)}", flush=True)
 
@@ -46,11 +57,50 @@ def _argument_parser():
         default="plan",
         help="plan searches for a plan; decide only reports whether the task is solvable",
     )
+    # The cluster substitutes positionally, so a job with no class to collapse
+    # still passes NO_CLASS rather than leaving the argument out.
+    parser.add_argument(
+        "--symmetry-class", type=_optional_index, default=None, help=f"Index of the collapsed class, or {NO_CLASS}"
+    )
+    # The objects themselves are looked up rather than passed: CopperBench
+    # splits an instance parameter on commas, so a class of two objects arrived
+    # as two parameters and the second landed on the end of the worker command.
+    parser.add_argument("--classes", type=Path, help="Class manifest naming the objects of each class")
     return parser
 
 
-def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, pipeline="plan"):
-    result_file = Path(results_dir) / domain_name / problem.stem / f"{mode}.json"
+def _optional_index(value):
+    return None if value == NO_CLASS else int(value)
+
+
+def _class_objects(classes_file, domain_name, problem, symmetry_class):
+    """Name the objects of one class, or None where the planner picks its own."""
+    if symmetry_class is None or classes_file is None:
+        return None
+    classes = read_classes(classes_file)
+    if classes is None:
+        raise SystemExit(f"Class manifest does not exist: {classes_file}")
+    key = f"{domain_name}/{problem.name}"
+    try:
+        return tuple(classes[key][symmetry_class])
+    except (KeyError, IndexError):
+        raise SystemExit(f"{key} has no symmetry class {symmetry_class} in {classes_file}") from None
+
+
+def _run_task(
+    mode,
+    domain_name,
+    domain,
+    problem,
+    results_dir=RESULTS_DIR,
+    timeout=None,
+    pipeline="plan",
+    symmetry_class=None,
+    objects_to_abstract=None,
+):
+    # One class per file, or two classes of one problem overwrite each other.
+    stem = mode if symmetry_class is None else f"{mode}-{symmetry_class}"
+    result_file = Path(results_dir) / domain_name / problem.stem / f"{stem}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
     started_at = datetime.now(timezone.utc).isoformat()
     initial = {
@@ -60,6 +110,7 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
         "wall_time_seconds": 0.0,
         "output": "",
         "mode": mode,
+        "symmetry_class": symmetry_class,
         "pipeline": pipeline,
         "domain": domain_name,
         "problem": problem.name,
@@ -70,12 +121,13 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
 
     environment = os.environ.copy()
     environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
-    command = _planner_command(domain, problem, mode, pipeline)
+    command = _planner_command(domain, problem, mode, pipeline, objects_to_abstract)
     result = _run_pipeline(command, timeout, environment)
     progress = _read_progress(result_file)
     result.update(
         {
             "mode": mode,
+            "symmetry_class": symmetry_class,
             "pipeline": pipeline,
             "domain": domain_name,
             "problem": problem.name,
@@ -162,9 +214,12 @@ def _machine_status(return_code, timed_out, output, interrupted=False):
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
-def _planner_command(domain, problem, mode, pipeline="plan"):
+def _planner_command(domain, problem, mode, pipeline="plan", objects_to_abstract=None):
     module = PIPELINE_MODULES[pipeline]
-    return [sys.executable, "-m", module, mode, "--problem", str(problem), "--domain", str(domain)]
+    command = [sys.executable, "-m", module, mode, "--problem", str(problem), "--domain", str(domain)]
+    if objects_to_abstract:
+        command += ["--objects-to-abstract", *objects_to_abstract]
+    return command
 
 
 def _human_status(result):

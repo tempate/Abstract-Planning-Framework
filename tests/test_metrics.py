@@ -19,7 +19,9 @@ class PlanningMetricsTests(unittest.TestCase):
     def test_snapshot_separates_durations_and_counters(self):
         metrics = PlanningMetrics(durations={"total": 1.25}, counters={"abstract_plan_length": 4})
 
-        self.assertEqual(metrics.as_dict(), {"durations": {"total": 1.25}, "counters": {"abstract_plan_length": 4}})
+        self.assertEqual(
+            metrics.as_dict(), {"durations": {"total": 1.25}, "counters": {"abstract_plan_length": 4}, "ratios": {}}
+        )
 
     def test_the_collapsed_class_reaches_the_snapshot_as_it_is_selected(self):
         updates = []
