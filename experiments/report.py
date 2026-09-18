@@ -7,11 +7,9 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from experiments.run import PROJECT_ROOT
+from experiments.tracks import DEFAULT_TRACK, TRACKS
 
-DEFAULT_CSV = PROJECT_ROOT / "experiments" / "plan" / "results.csv"
-REPORTS_FILE = PROJECT_ROOT / "experiments" / "plan" / "reports.md"
-UNSOLVABLE_REPORTS_FILE = PROJECT_ROOT / "experiments" / "unsolvability" / "reports.md"
+DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
 VERDICTS = ("unsolvable", "unknown")
@@ -31,7 +29,6 @@ def main():
         # other tables have anything to say about one. It also gets its own
         # report file, or it would replace the one the plan runs write.
         sections = [_verdicts(problems), _verdict_head_to_head(problems), _timeout_phases(problems)]
-        reports_file = UNSOLVABLE_REPORTS_FILE
     else:
         sections = [
             _coverage(problems),
@@ -40,7 +37,7 @@ def main():
             _refinement_outcomes(problems),
             _relaxed_deletes(problems),
         ]
-        reports_file = REPORTS_FILE
+    reports_file = Path(args.results).parent / "reports.md"
     _print_report(sections)
     _write_report(sections, args.results, reports_file)
     print(f"\nWrote this report to {_relative(reports_file)}")
@@ -340,7 +337,7 @@ def _print_report(sections):
         print("\n".join(lines))
 
 
-def _write_report(sections, results_file, reports_file=REPORTS_FILE):
+def _write_report(sections, results_file, reports_file):
     """Replace the report file with the latest report."""
     report = ["# Benchmark report", "", f"{datetime.now().strftime('%Y-%m-%d %H:%M')} — {_relative(results_file)}", ""]
     for title, lines in sections:
