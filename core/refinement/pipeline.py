@@ -52,7 +52,12 @@ def _solve_abstract_plan(context):
     """Search for the shortest abstract plan and read the horizon it maps to."""
 
     def record_attempt(horizon, solve_calls):
-        context.metrics.set_counters({"abstract_plan_length": horizon, "abstract_solve_calls": solve_calls})
+        context.metrics.set_counters(
+            {
+                "abstract_plan_length": horizon,
+                "abstract_solve_calls": solve_calls,
+            }
+        )
 
     with context.metrics.measure("abstract_solving"):
         solver = IncrementalSolver(context.abstract_asp)
@@ -62,7 +67,10 @@ def _solve_abstract_plan(context):
     # abstract action with a gap for one optional concrete action.
     context.horizon = mapped_horizon(solve_result.horizon)
     context.metrics.set_counters(
-        {"abstract_plan_length": solve_result.horizon, "abstract_solve_calls": solve_result.attempts}
+        {
+            "abstract_plan_length": solve_result.horizon,
+            "abstract_solve_calls": solve_result.attempts,
+        }
     )
 
     return parse_plan_actions(solve_result.plan)
@@ -94,5 +102,9 @@ def _solve_concrete_plan(context, asp):
 def _publish_counters(context, *, decrements, increments, solve_calls):
     """Report the concrete search's progress so far."""
     context.metrics.set_counters(
-        {"decrements": decrements, "increments": increments, "concrete_solve_calls": solve_calls}
+        {
+            "decrements": decrements,
+            "increments": increments,
+            "concrete_solve_calls": solve_calls,
+        }
     )
