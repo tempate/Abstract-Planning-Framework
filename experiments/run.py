@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -105,30 +106,31 @@ def _read_progress(result_file):
 def _run_pipeline(command, timeout, environment=None):
     started = time.perf_counter()
     interrupted = False
+    # Its own session, so that the timeout can take down everything the planner
+    # spawned. Killing the process we started leaves Fast Downward, its
+    # translator, plasp and symmetry discovery holding the CPU they were given.
+    process = subprocess.Popen(
+        command,
+        cwd=PROJECT_ROOT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        env=environment,
+        start_new_session=True,
+    )
     try:
-        completed = subprocess.run(
-            command,
-            cwd=PROJECT_ROOT,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            check=False,
-            timeout=timeout,
-            env=environment,
-        )
-        return_code = completed.returncode
-        output = completed.stdout or ""
+        output = process.communicate(timeout=timeout)[0] or ""
+        return_code = process.returncode
         timed_out = False
-    except subprocess.TimeoutExpired as error:
+    except subprocess.TimeoutExpired:
         return_code = None
-        output = error.stdout or ""
-        if isinstance(output, bytes):
-            output = output.decode(errors="replace")
+        output = _kill_process_group(process)
         timed_out = True
     except KeyboardInterrupt:
         # runsolver enforces its memory limit by sending SIGINT. Uncaught it
         # escapes before the result is written, leaving the "running" stub while
         # Slurm still records the job COMPLETED.
+        _kill_process_group(process)
         return_code = None
         output = ""
         timed_out = False
@@ -144,6 +146,17 @@ def _run_pipeline(command, timeout, environment=None):
     if status == "killed":
         result["signal"] = -return_code
     return result
+
+
+def _kill_process_group(process):
+    """Kill everything the pipeline spawned, and read what it had written."""
+    try:
+        # start_new_session made the process its own leader, so its pid is the
+        # group every descendant inherited.
+        os.killpg(process.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        process.kill()
+    return process.communicate()[0] or ""
 
 
 def _machine_status(return_code, timed_out, output, interrupted=False):

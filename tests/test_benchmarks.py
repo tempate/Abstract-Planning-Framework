@@ -5,7 +5,9 @@ import json
 import os
 import shlex
 import subprocess
+import sys
 import tempfile
+import time
 import re
 import unittest
 from pathlib import Path
@@ -38,6 +40,60 @@ from experiments.submit import (
     _write_copperbench_config,
     _write_manifest,
 )
+
+
+class _FakeProcess:
+    """One recorded outcome, shaped like the Popen the worker waits on."""
+
+    def __init__(self, command, outcome):
+        self.args = command
+        # Never a real group: the worker signals this pid on a timeout.
+        self.pid = -1
+        self.returncode = None
+        self.timeouts = []
+        self._outcome = outcome
+
+    def communicate(self, timeout=None):
+        # The kill path waits a second time, so every wait is recorded.
+        self.timeouts.append(timeout)
+        outcome = self._outcome
+        if isinstance(outcome, BaseException):
+            # The worker kills the group and reads what the process had left.
+            left = getattr(outcome, "output", "") or ""
+            if isinstance(left, bytes):
+                left = left.decode()
+            self._outcome = subprocess.CompletedProcess(self.args, None, stdout=left)
+            raise outcome
+        self.returncode = outcome.returncode
+        return outcome.stdout, None
+
+    def kill(self):
+        pass
+
+
+@contextlib.contextmanager
+def _fake_planner(outcomes):
+    """Replace the planner subprocess with recorded outcomes.
+
+    `outcomes` is one CompletedProcess, a sequence of them, or a callable taking
+    the command and the spawn arguments. os.killpg goes too, so that the fake
+    pid cannot reach a group this test may signal.
+    """
+    pending = iter(outcomes if isinstance(outcomes, (list, tuple)) else [outcomes])
+
+    def spawn(command, **kwargs):
+        try:
+            outcome = outcomes(command, **kwargs) if callable(outcomes) else next(pending)
+        except BaseException as error:  # noqa: BLE001 - replayed where the worker expects it
+            outcome = error
+        process = _FakeProcess(command, outcome)
+        spawned.append(process)
+        return process
+
+    spawned = []
+    with patch("experiments.run.subprocess.Popen", side_effect=spawn) as popen, patch("experiments.run.os.killpg"):
+        popen.processes = spawned
+        yield popen
 
 
 class BenchmarkTests(unittest.TestCase):
@@ -294,10 +350,7 @@ class BenchmarkTests(unittest.TestCase):
             subprocess.CompletedProcess([], 0, stdout=abstract_output),
             subprocess.CompletedProcess([], 0, stdout=concrete_output),
         ]
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("experiments.run.subprocess.run", side_effect=completed) as run,
-        ):
+        with tempfile.TemporaryDirectory() as directory, _fake_planner(completed) as run:
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
@@ -351,7 +404,7 @@ class BenchmarkTests(unittest.TestCase):
             update_result_progress(result_file, {"kind": "phase_completed", "phase": "concrete_fd"}, metrics)
             return subprocess.CompletedProcess(command, 2, stdout="planner failed before final metrics\n")
 
-        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", side_effect=complete):
+        with tempfile.TemporaryDirectory() as directory, _fake_planner(complete):
             result = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -369,7 +422,7 @@ class BenchmarkTests(unittest.TestCase):
             # runsolver sends SIGINT when the job outgrows its memory limit.
             raise KeyboardInterrupt
 
-        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", side_effect=interrupt):
+        with tempfile.TemporaryDirectory() as directory, _fake_planner(interrupt):
             result = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -389,10 +442,7 @@ class BenchmarkTests(unittest.TestCase):
             update_result_progress(result_file, {"kind": "abstraction_selected"}, metrics)
             raise subprocess.TimeoutExpired(command, 10, output="Starting\n")
 
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("experiments.run.subprocess.run", side_effect=selected_then_killed),
-        ):
+        with tempfile.TemporaryDirectory() as directory, _fake_planner(selected_then_killed):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=10)
             rows = collect(directory)
 
@@ -406,7 +456,7 @@ class BenchmarkTests(unittest.TestCase):
         failed = subprocess.CompletedProcess(
             [], 2, stdout="usage: planner.py [-h]\nplanner.py: error: Unsupported quality metric\nStarting\n"
         )
-        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", return_value=failed):
+        with tempfile.TemporaryDirectory() as directory, _fake_planner(failed):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -426,7 +476,7 @@ class BenchmarkTests(unittest.TestCase):
                 "INFO     Planner time: 0.14s\n"
             ),
         )
-        with tempfile.TemporaryDirectory() as directory, patch("experiments.run.subprocess.run", return_value=failed):
+        with tempfile.TemporaryDirectory() as directory, _fake_planner(failed):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
@@ -437,10 +487,7 @@ class BenchmarkTests(unittest.TestCase):
             subprocess.TimeoutExpired([], 1800, output="Starting abstract\n"),
             subprocess.TimeoutExpired([], 1800, output=b"Starting concrete\n"),
         ]
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("experiments.run.subprocess.run", side_effect=timeouts) as run,
-        ):
+        with tempfile.TemporaryDirectory() as directory, _fake_planner(timeouts) as run:
             abstract = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=1800)
             concrete = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=1800)
 
@@ -448,9 +495,25 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(abstract["output"], "Starting abstract\n")
         self.assertTrue(concrete["timed_out"])
         self.assertEqual(concrete["output"], "Starting concrete\n")
-        self.assertEqual(run.call_count, 2)
-        self.assertEqual(run.call_args_list[0].kwargs["timeout"], 1800)
-        self.assertEqual(run.call_args_list[1].kwargs["timeout"], 1800)
+        self.assertEqual([process.timeouts[0] for process in run.processes], [1800, 1800])
+
+    def test_a_timeout_takes_down_what_the_pipeline_spawned(self):
+        # No mocks: what outlives a timeout is the planner's own children, and
+        # only a real process tree shows whether they were reaped.
+        with tempfile.TemporaryDirectory() as directory:
+            survivor = Path(directory) / "survivor.txt"
+            outlives_its_parent = f"import time; time.sleep(1.5); open({str(survivor)!r}, 'w').write('alive')"
+            spawns_it = (
+                f"import subprocess, sys, time;"
+                f" subprocess.Popen([sys.executable, '-c', {outlives_its_parent!r}]);"
+                f" time.sleep(1.5)"
+            )
+
+            result = _run_pipeline([sys.executable, "-c", spawns_it], timeout=0.5)
+
+            self.assertTrue(result["timed_out"])
+            time.sleep(2)
+            self.assertFalse(survivor.exists(), "a grandchild outlived the timeout")
 
     def test_benchmark_status_is_human_readable(self):
         self.assertEqual(_human_status({"timed_out": False, "return_code": 0, "output": ""}), "success")
@@ -472,7 +535,7 @@ class BenchmarkTests(unittest.TestCase):
             subprocess.CompletedProcess([], 2, stdout=""),
             subprocess.TimeoutExpired([], 10, output="partial output"),
         ]
-        with patch("experiments.run.subprocess.run", side_effect=completed):
+        with _fake_planner(completed):
             results = [_run_pipeline([], 10) for _ in completed]
 
         self.assertEqual(
@@ -486,10 +549,7 @@ class BenchmarkTests(unittest.TestCase):
     def test_no_symmetries_does_not_prevent_the_separate_concrete_run(self):
         no_symmetries = subprocess.CompletedProcess([], 2, stdout=f"planner.py: error: {NO_SYMMETRIES_MESSAGE}\n")
         concrete_completed = subprocess.CompletedProcess([], 0, stdout="Plan found: yes\n")
-        with (
-            tempfile.TemporaryDirectory() as directory,
-            patch("experiments.run.subprocess.run", side_effect=[no_symmetries, concrete_completed]) as run,
-        ):
+        with tempfile.TemporaryDirectory() as directory, _fake_planner([no_symmetries, concrete_completed]) as run:
             abstract = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             concrete = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
