@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 import shlex
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -52,7 +51,7 @@ def main():
             "A worktree made without new-worktree.sh leaves the benchmark submodule empty."
         )
     if not args.dry_run:
-        _reset_results_dir()
+        _set_aside_results_dir()
         _write_manifest(tasks, pipeline=pipeline)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
         config_file = _write_copperbench_config(
@@ -94,14 +93,26 @@ def _check_worktree_is_built(project_root=PROJECT_ROOT):
         )
 
 
-def _reset_results_dir(results_dir=RESULTS_DIR):
-    """Replace the previous benchmark results with an empty directory."""
+def _set_aside_results_dir(results_dir=RESULTS_DIR):
+    """Give the run an empty directory, keeping what the previous one left.
+
+    Until a run is pulled, its results directory is the only copy of it, and a
+    submission used to delete the lot. It is renamed instead. The directory
+    still has to start empty, because collect reads every result under it, so a
+    previous run left in place would land in the new one's CSV.
+    """
     results_dir = Path(results_dir)
     if results_dir.is_symlink() or results_dir.is_file():
         results_dir.unlink()
     elif results_dir.exists():
-        shutil.rmtree(results_dir)
+        if any(results_dir.iterdir()):
+            kept = results_dir.with_name(datetime.now().strftime(f"{results_dir.name}-%Y%m%d-%H%M%S"))
+            results_dir.rename(kept)
+            print(f"Kept the previous results in {kept}")
+        else:
+            results_dir.rmdir()
     results_dir.mkdir(parents=True)
+    return results_dir
 
 
 def _write_manifest(tasks, results_dir=RESULTS_DIR, pipeline="plan"):

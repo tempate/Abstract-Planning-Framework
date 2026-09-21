@@ -39,7 +39,7 @@ from experiments.submit import (
     _argument_parser,
     _benchmark_tasks,
     _check_worktree_is_built,
-    _reset_results_dir,
+    _set_aside_results_dir,
     _write_copperbench_config,
     _write_manifest,
 )
@@ -153,31 +153,33 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(args.memory_limit, DEFAULT_MEMORY_LIMIT)
         self.assertEqual(args.partition, "sunnycove")
 
-    def test_new_suite_run_removes_previous_results(self):
+    def test_new_suite_run_keeps_previous_results_beside_an_empty_directory(self):
         with tempfile.TemporaryDirectory() as directory:
             results = Path(directory) / "runs"
             old_run = results / "old-run" / "result.json"
             old_run.parent.mkdir(parents=True)
             old_run.write_text("old result\n", encoding="utf-8")
 
-            _reset_results_dir(results)
+            _set_aside_results_dir(results)
 
             self.assertTrue(results.is_dir())
             self.assertEqual(list(results.iterdir()), [])
+            kept = [path for path in results.parent.iterdir() if path != results]
+            self.assertEqual([path.name for path in kept[0].iterdir()], ["old-run"])
 
     def test_a_dry_run_submits_nothing_and_leaves_the_results_alone(self):
         argv = ["submit", "--dry-run", "--domains", "driverlog", "--problems", "p07"]
         with (
             patch("sys.argv", argv),
             patch.object(experiments.submit, "_check_worktree_is_built"),
-            patch.object(experiments.submit, "_reset_results_dir") as reset,
+            patch.object(experiments.submit, "_set_aside_results_dir") as set_aside,
             patch.object(experiments.submit, "_write_manifest") as manifest,
             patch.object(experiments.submit, "subprocess") as subprocesses,
             contextlib.redirect_stdout(io.StringIO()) as output,
         ):
             experiments.submit.main()
 
-        reset.assert_not_called()
+        set_aside.assert_not_called()
         manifest.assert_not_called()
         subprocesses.run.assert_not_called()
         self.assertIn("driverlog", output.getvalue())

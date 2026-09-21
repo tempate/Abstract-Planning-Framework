@@ -75,9 +75,10 @@ search.
 carries it in the `verdict` column. Only the probNN problems run, the ones known
 unsolvable; satprob and unknownprob are skipped.
 
-`main()` calls `_reset_results_dir()`, which **deletes the whole results tree**
-before submitting. Move it aside first, or confirm the results are already
-pulled.
+`main()` calls `_set_aside_results_dir()`, which renames the previous `runs/` to
+`runs-<timestamp>/` and prints where it went. The new run still starts on an
+empty directory, because collect reads every result underneath. Nothing is
+deleted, so those siblings accumulate until pruned by hand.
 
 To submit a subset, name it:
 
@@ -96,10 +97,11 @@ change with it rather than against a real run.
 
 ## Running two branches at once
 
-One run per worktree, never two from one checkout. `_reset_results_dir()` deletes
-`runs/` before submitting and that path is `PROJECT_ROOT`-relative,
-so a second submission from the same directory wipes the first run's results and
-its manifest while those jobs are still writing into it.
+One run per worktree, never two from one checkout. Submitting renames `runs/`
+aside rather than deleting it, so the first run's results survive — but that
+path is `PROJECT_ROOT`-relative, and the jobs still writing into it follow the
+directory to its new name while the manifest they are collected against is the
+new run's.
 
 ```bash
 ssh -o BatchMode=yes copperhead '~/apf/new-worktree.sh <branch>'
