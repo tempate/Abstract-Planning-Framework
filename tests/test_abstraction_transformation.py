@@ -127,6 +127,32 @@ NEGATED_GOAL_PROBLEM = """
 """
 
 
+ONLY_DELETE_DOMAIN = """
+(define (domain switches)
+  (:requirements :strips :typing)
+  (:types item)
+  (:predicates
+    (ready ?x - item)
+    (done))
+  (:action clear
+    :parameters (?x - item)
+    :precondition (ready ?x)
+    :effect (not (ready ?x)))
+  (:action finish
+    :parameters (?x - item)
+    :precondition (ready ?x)
+    :effect (done)))
+"""
+
+ONLY_DELETE_PROBLEM = """
+(define (problem switches-task)
+  (:domain switches)
+  (:objects a b - item)
+  (:init (ready a) (ready b))
+  (:goal (done)))
+"""
+
+
 INEQUALITY_DOMAIN = """
 (define (domain roads)
   (:requirements :strips :typing :equality)
@@ -229,6 +255,35 @@ class AbstractionTransformationTests(unittest.TestCase):
                 for effect in release.effects
             )
         )
+
+    def test_drops_an_action_whose_every_effect_was_relaxed(self):
+        source = parse_problem(ONLY_DELETE_DOMAIN, ONLY_DELETE_PROBLEM)
+
+        result = _build_from_problem(source, ["a", "b"], "pooled-item")
+
+        self.assertEqual([action.name for action in result.problem.actions], ["finish"])
+        # Fast Downward's parser rejects an action serialized without :effect.
+        serialized = write_problem(result.problem)
+        parse_problem(serialized.domain, serialized.problem)
+
+    def test_keeps_the_cost_metric_when_a_priced_action_is_dropped(self):
+        problem, item, a, b = _two_object_problem("priced", "priced_item")
+        ready = Fluent("ready", BoolType(), target=item)
+        problem.add_fluent(ready, default_initial_value=False)
+        problem.set_initial_value(ready(a), True)
+        problem.set_initial_value(ready(b), True)
+
+        clear = InstantaneousAction("clear", target=item)
+        clear.add_precondition(ready(clear.parameter("target")))
+        clear.add_effect(ready(clear.parameter("target")), False)
+        problem.add_action(clear)
+        problem.add_goal(ready(a))
+        problem.add_quality_metric(MinimizeActionCosts({clear: 3}))
+
+        result = _build_from_problem(problem, ["a", "b"])
+
+        self.assertEqual(result.problem.actions, [])
+        self.assertEqual(result.problem.quality_metrics[0].costs, {})
 
     def test_rejects_a_multi_argument_initial_value_collision(self):
         problem, item, a, b = _two_object_problem("collision", "collision_item")

@@ -77,9 +77,13 @@ def _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, dele
     relaxed_deletes = []
     for action in problem.actions:
         collapsed_action, action_relaxed_deletes = _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax)
+        relaxed_deletes.extend(action_relaxed_deletes)
+        # An action with no effect left changes nothing, and the writer gives it
+        # no :effect, which Fast Downward's parser rejects.
+        if not collapsed_action.effects:
+            continue
         collapsed_problem.add_action(collapsed_action)
         collapsed_actions[action] = collapsed_action
-        relaxed_deletes.extend(action_relaxed_deletes)
     return collapsed_actions, tuple(relaxed_deletes)
 
 
@@ -149,7 +153,11 @@ def _copy_quality_metric(problem, collapsed_problem, collapsed_actions, rewrite)
         return
     metric = problem.quality_metrics[0]
     if isinstance(metric, MinimizeActionCosts):
-        action_costs = {collapsed_actions[action]: rewrite(cost) for action, cost in metric.costs.items()}
+        # A cost can name an action the collapse dropped for having no effect left.
+        action_costs = {}
+        for action, cost in metric.costs.items():
+            if action in collapsed_actions:
+                action_costs[collapsed_actions[action]] = rewrite(cost)
         default_cost = rewrite(metric.default) if metric.default is not None else None
         collapsed_problem.add_quality_metric(
             MinimizeActionCosts(action_costs, default=default_cost, environment=problem.environment)
