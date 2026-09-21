@@ -16,6 +16,10 @@ _SEARCH_UNSOLVABLE = 11
 # 247 is a SIGKILL, which on these tasks is the kernel reclaiming the memory the
 # search asked for.
 _KILLED_OUT_OF_MEMORY = 247
+# Reaching an unsolvable task through --translate alone is not a failure to the
+# driver, which exits 0 after the translator has written a dummy task in place
+# of the real one. The verdict only reaches us through what it printed.
+_UNSOLVABLE_MARKER = "Generating unsolvable task"
 
 SEARCH = "astar(blind())"
 LAMA_FIRST = "lama-first"
@@ -37,7 +41,7 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
     ]
     completed_process = subprocess.run(command, capture_output=True, text=True)
 
-    if completed_process.returncode == _TRANSLATE_UNSOLVABLE:
+    if completed_process.returncode == _TRANSLATE_UNSOLVABLE or _UNSOLVABLE_MARKER in completed_process.stdout:
         raise UnsolvableTaskError(f"Fast Downward ({label}) proved the task unsolvable while translating")
 
     if completed_process.returncode != _SUCCESS:
