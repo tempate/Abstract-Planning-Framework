@@ -8,7 +8,7 @@ from unittest.mock import patch
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import find_plan, has_plan, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
-from core.outcomes import IntegrationError, OutOfMemoryError
+from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
 from core.plan import PlanAction
 
 
@@ -40,6 +40,18 @@ class FastDownwardHelperTests(unittest.TestCase):
             pddl_to_sas(directory, "domain.pddl", "problem.pddl", "concrete")
 
         self.assertEqual(run.call_args.args[0][0], sys.executable)
+
+    @patch("core.integrations.fast_downward.subprocess.run")
+    def test_a_translator_that_proved_the_task_unsolvable_stops_the_search(self, run):
+        # It says so on stdout and still exits 0, leaving a dummy task the
+        # horizon search would raise forever on.
+        run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="No relaxed solution! Generating unsolvable task...", stderr=""
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(UnsolvableTaskError):
+                pddl_to_sas(directory, "domain.pddl", "problem.pddl", "concrete")
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_pddl_to_sas_surfaces_external_tool_diagnostics(self, run):
