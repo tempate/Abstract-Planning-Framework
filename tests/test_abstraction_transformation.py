@@ -10,7 +10,6 @@ from unified_planning.shortcuts import (
     InstantaneousAction,
     IntType,
     MaximizeExpressionOnFinalState,
-    MinimizeActionCosts,
     MinimizeExpressionOnFinalState,
     MinimizeSequentialPlanLength,
     Problem,
@@ -127,6 +126,32 @@ NEGATED_GOAL_PROBLEM = """
 """
 
 
+ONLY_DELETE_DOMAIN = """
+(define (domain switches)
+  (:requirements :strips :typing)
+  (:types item)
+  (:predicates
+    (ready ?x - item)
+    (done))
+  (:action clear
+    :parameters (?x - item)
+    :precondition (ready ?x)
+    :effect (not (ready ?x)))
+  (:action finish
+    :parameters (?x - item)
+    :precondition (ready ?x)
+    :effect (done)))
+"""
+
+ONLY_DELETE_PROBLEM = """
+(define (problem switches-task)
+  (:domain switches)
+  (:objects a b - item)
+  (:init (ready a) (ready b))
+  (:goal (done)))
+"""
+
+
 INEQUALITY_DOMAIN = """
 (define (domain roads)
   (:requirements :strips :typing :equality)
@@ -229,6 +254,16 @@ class AbstractionTransformationTests(unittest.TestCase):
                 for effect in release.effects
             )
         )
+
+    def test_drops_an_action_whose_every_effect_was_relaxed(self):
+        source = parse_problem(ONLY_DELETE_DOMAIN, ONLY_DELETE_PROBLEM)
+
+        result = _build_from_problem(source, ["a", "b"], "pooled-item")
+
+        self.assertEqual([action.name for action in result.problem.actions], ["finish"])
+        # Fast Downward's parser rejects an action serialized without :effect.
+        serialized = write_problem(result.problem)
+        parse_problem(serialized.domain, serialized.problem)
 
     def test_rejects_a_multi_argument_initial_value_collision(self):
         problem, item, a, b = _two_object_problem("collision", "collision_item")
@@ -353,18 +388,15 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertEqual(result.problem.goals, [marked(abstract_object)])
         self.assertEqual(result.problem.trajectory_constraints[0].arg(0), marked(abstract_object))
 
-    def test_rewrites_a_final_state_minimization_expression(self):
+    def test_drops_a_cost_metric_the_writer_would_strip_anyway(self):
         problem, item, a, b = _two_object_problem("final-state-metric", "metric_item")
         cost = Fluent("cost", IntType(), target=item)
         problem.add_fluent(cost, default_initial_value=0)
         problem.add_quality_metric(MinimizeExpressionOnFinalState(cost(a) + cost(b)))
 
         result = _build_from_problem(problem, ["a", "b"])
-        abstract_object = result.problem.object("metric_item_abs")
-        metric = result.problem.quality_metrics[0]
 
-        self.assertIsInstance(metric, MinimizeExpressionOnFinalState)
-        self.assertEqual(metric.expression, (cost(abstract_object) + cost(abstract_object)).simplify())
+        self.assertEqual(result.problem.quality_metrics, [])
 
     def test_preserves_numeric_effects_and_plan_length_metric(self):
         problem, item, a, b = _two_object_problem("numeric-effects", "numeric_item")

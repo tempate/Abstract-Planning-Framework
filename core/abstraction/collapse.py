@@ -63,24 +63,24 @@ def collapse_objects(problem, abstraction, relaxable_deletes):
             collapsed_problem.add_object(item)
     collapsed_problem.add_object(abstract_object)
 
-    collapsed_actions, relaxed_deletes = _copy_actions(
-        problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax
-    )
+    relaxed_deletes = _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax)
     _copy_initial_values(problem, collapsed_problem, rewrite)
     _copy_goals_and_constraints(problem, collapsed_problem, rewrite)
-    _copy_quality_metric(problem, collapsed_problem, collapsed_actions, rewrite)
+    _copy_quality_metric(problem, collapsed_problem)
     return collapsed_problem, relaxed_deletes
 
 
 def _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax):
-    collapsed_actions = {}
     relaxed_deletes = []
     for action in problem.actions:
         collapsed_action, action_relaxed_deletes = _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax)
-        collapsed_problem.add_action(collapsed_action)
-        collapsed_actions[action] = collapsed_action
         relaxed_deletes.extend(action_relaxed_deletes)
-    return collapsed_actions, tuple(relaxed_deletes)
+        # An action with no effect left changes nothing, and the writer gives it
+        # no :effect, which Fast Downward's parser rejects.
+        if not collapsed_action.effects:
+            continue
+        collapsed_problem.add_action(collapsed_action)
+    return tuple(relaxed_deletes)
 
 
 def _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax):
@@ -144,19 +144,8 @@ def _copy_goals_and_constraints(problem, collapsed_problem, rewrite):
         collapsed_problem.add_trajectory_constraint(rewrite(constraint))
 
 
-def _copy_quality_metric(problem, collapsed_problem, collapsed_actions, rewrite):
-    if not problem.quality_metrics:
-        return
-    metric = problem.quality_metrics[0]
-    if isinstance(metric, MinimizeActionCosts):
-        action_costs = {collapsed_actions[action]: rewrite(cost) for action, cost in metric.costs.items()}
-        default_cost = rewrite(metric.default) if metric.default is not None else None
-        collapsed_problem.add_quality_metric(
-            MinimizeActionCosts(action_costs, default=default_cost, environment=problem.environment)
-        )
-    elif isinstance(metric, MinimizeExpressionOnFinalState):
-        collapsed_problem.add_quality_metric(
-            MinimizeExpressionOnFinalState(rewrite(metric.expression), environment=problem.environment)
-        )
-    elif isinstance(metric, MinimizeSequentialPlanLength):
+def _copy_quality_metric(problem, collapsed_problem):
+    # Only the plan length survives write_abstract_problem, which strips a cost
+    # because the search asks for the shortest plan rather than the cheapest.
+    if problem.quality_metrics and isinstance(problem.quality_metrics[0], MinimizeSequentialPlanLength):
         collapsed_problem.add_quality_metric(MinimizeSequentialPlanLength(environment=problem.environment))
