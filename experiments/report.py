@@ -204,11 +204,21 @@ def _head_to_head(problems, baseline):
     return f"Head to head: abstract vs {MODE_LABELS[baseline]}", lines
 
 
+def _discarded_the_abstract_plan(row):
+    if not row["decrements"].strip():
+        return False
+    return int(row["decrements"]) == int(row["abstract_plan_length"])
+
+
 def _timeout_phases(problems):
     timeouts = [modes["abstract"] for modes in problems if modes["abstract"]["status"] == "timed out"]
     counts = {}
     for row in timeouts:
         phase = KILLED_IN_PHASE.get(row["last_completed_phase"], row["last_completed_phase"])
+        # The extended search is no longer a phase of its own. A guided search that
+        # has switched off every abstract action is what used to enter it.
+        if phase == "Guided concrete search" and _discarded_the_abstract_plan(row):
+            phase = "Abstract plan discarded"
         counts[phase] = counts.get(phase, 0) + 1
 
     lines = _narrow_header("Where the abstract pipeline was killed", "Timeouts")
