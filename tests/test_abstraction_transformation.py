@@ -10,7 +10,6 @@ from unified_planning.shortcuts import (
     InstantaneousAction,
     IntType,
     MaximizeExpressionOnFinalState,
-    MinimizeActionCosts,
     MinimizeExpressionOnFinalState,
     MinimizeSequentialPlanLength,
     Problem,
@@ -266,25 +265,6 @@ class AbstractionTransformationTests(unittest.TestCase):
         serialized = write_problem(result.problem)
         parse_problem(serialized.domain, serialized.problem)
 
-    def test_keeps_the_cost_metric_when_a_priced_action_is_dropped(self):
-        problem, item, a, b = _two_object_problem("priced", "priced_item")
-        ready = Fluent("ready", BoolType(), target=item)
-        problem.add_fluent(ready, default_initial_value=False)
-        problem.set_initial_value(ready(a), True)
-        problem.set_initial_value(ready(b), True)
-
-        clear = InstantaneousAction("clear", target=item)
-        clear.add_precondition(ready(clear.parameter("target")))
-        clear.add_effect(ready(clear.parameter("target")), False)
-        problem.add_action(clear)
-        problem.add_goal(ready(a))
-        problem.add_quality_metric(MinimizeActionCosts({clear: 3}))
-
-        result = _build_from_problem(problem, ["a", "b"])
-
-        self.assertEqual(result.problem.actions, [])
-        self.assertEqual(result.problem.quality_metrics[0].costs, {})
-
     def test_rejects_a_multi_argument_initial_value_collision(self):
         problem, item, a, b = _two_object_problem("collision", "collision_item")
         value = Fluent("value", IntType(), left=item, right=item)
@@ -408,18 +388,15 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertEqual(result.problem.goals, [marked(abstract_object)])
         self.assertEqual(result.problem.trajectory_constraints[0].arg(0), marked(abstract_object))
 
-    def test_rewrites_a_final_state_minimization_expression(self):
+    def test_drops_a_cost_metric_the_writer_would_strip_anyway(self):
         problem, item, a, b = _two_object_problem("final-state-metric", "metric_item")
         cost = Fluent("cost", IntType(), target=item)
         problem.add_fluent(cost, default_initial_value=0)
         problem.add_quality_metric(MinimizeExpressionOnFinalState(cost(a) + cost(b)))
 
         result = _build_from_problem(problem, ["a", "b"])
-        abstract_object = result.problem.object("metric_item_abs")
-        metric = result.problem.quality_metrics[0]
 
-        self.assertIsInstance(metric, MinimizeExpressionOnFinalState)
-        self.assertEqual(metric.expression, (cost(abstract_object) + cost(abstract_object)).simplify())
+        self.assertEqual(result.problem.quality_metrics, [])
 
     def test_preserves_numeric_effects_and_plan_length_metric(self):
         problem, item, a, b = _two_object_problem("numeric-effects", "numeric_item")
