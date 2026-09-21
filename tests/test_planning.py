@@ -54,13 +54,15 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
         pddl_to_sas.return_value = "concrete.sas"
         sas_to_asp.return_value = "asp program"
-        incremental_solver.return_value.search.return_value = SolveResult(["occurs(action,3)"], horizon=3, attempts=4)
+        incremental_solver.return_value.search.return_value = SolveResult(
+            ['occurs(action("act"),3)'], horizon=3, attempts=4
+        )
         config = PlanningConfig("domain.pddl", "problem.pddl")
 
         result = compute_concrete_plan(config)
 
         self.assertTrue(result["success"])
-        self.assertEqual(result["plan"], ["occurs(action,3)"])
+        self.assertEqual(result["plan"], ['occurs(action("act"),3)'])
         self.assertEqual(result["run_id"], "run-123")
         self.assertEqual(result["configuration"], config.as_dict())
         self.assertEqual(result["metrics"]["counters"]["concrete_solve_calls"], 4)

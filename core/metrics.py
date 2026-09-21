@@ -69,6 +69,18 @@ class PlanningMetrics:
         self.counters[name] = value
         self._report({"kind": "counter_updated", "counter": name})
 
+    def set_counters(self, values: dict[str, int]) -> None:
+        """Set several counters, reporting them once.
+
+        Each report rewrites the whole result file, and the search publishes its
+        progress on every solver attempt.
+        """
+        unknown = sorted(name for name in values if name not in COUNTER_LABELS)
+        if unknown:
+            raise ValueError(f"Unknown counter metric: {', '.join(unknown)}")
+        self.counters.update(values)
+        self._report({"kind": "counters_updated", "counters": sorted(values)})
+
     def set_abstraction(self, objects, object_type: str) -> None:
         """Record the collapsed object class."""
         self.abstraction = {"objects": sorted(objects), "object_type": object_type}

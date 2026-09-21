@@ -2,6 +2,7 @@
 
 import clingo
 
+from core.outcomes import IntegrationError
 from core.plan import PlanAction
 
 
@@ -26,13 +27,14 @@ def _plan_action(symbol):
     if not _is_function(symbol, "occurs", 2):
         return None
 
+    # Past this point the atom is a step of the plan, so a shape this cannot
+    # read is a step gone missing rather than an atom to pass over. Dropping it
+    # would shorten the plan the caller reports and weaken the guidance the
+    # refinement builds from it.
     action, time_step = symbol.arguments
-    if not _is_function(action, "action", 1) or time_step.type != clingo.SymbolType.Number:
-        return None
-
-    fields = _action_fields(action.arguments[0])
-    if fields is None:
-        return None
+    fields = _action_fields(action.arguments[0]) if _is_function(action, "action", 1) else None
+    if fields is None or time_step.type != clingo.SymbolType.Number:
+        raise IntegrationError(f"Clingo returned a plan step this parser cannot read: {symbol}")
     return PlanAction(fields[0], fields[1:], time_step.number)
 
 

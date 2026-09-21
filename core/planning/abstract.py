@@ -79,8 +79,12 @@ def report_abstraction(abstract_problem, metrics):
     """
     abstraction = abstract_problem.abstraction
     metrics.set_abstraction(abstraction.objects, abstraction.object_type)
-    metrics.set_counter("relaxed_deletes", len(abstract_problem.relaxed_deletes))
-    metrics.set_counter("relaxed_inequalities", len(abstract_problem.relaxed_inequalities))
+    metrics.set_counters(
+        {
+            "relaxed_deletes": len(abstract_problem.relaxed_deletes),
+            "relaxed_inequalities": len(abstract_problem.relaxed_inequalities),
+        }
+    )
     print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
 
 

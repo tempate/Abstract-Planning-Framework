@@ -22,7 +22,7 @@ include = ["core*", "scripts*", "experiments*"]
 [tool.black]
 line-length = 120
 target-version = ["py313"]
-skip-magic-trailing-comma = true
+skip-magic-trailing-comma = false
 extend-exclude = '''
 /(
     experiments/benchmarks/downward-benchmarks

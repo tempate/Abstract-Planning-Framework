@@ -30,6 +30,12 @@ class ClingoPlanParsingTests(unittest.TestCase):
             ),
         )
 
+    def test_an_occurrence_the_parser_cannot_read_is_not_passed_over(self):
+        # Dropping it would report a plan a step short of the one Clingo found.
+        for atom in ('occurs(action(("load",1)),1)', "occurs(step,1)", 'occurs(action(("load","p0")),first)'):
+            with self.subTest(atom=atom), self.assertRaises(IntegrationError):
+                parse_plan_actions([atom])
+
 
 class FastDownwardHelperTests(unittest.TestCase):
     @patch("core.integrations.fast_downward.subprocess.run")

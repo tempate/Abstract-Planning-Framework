@@ -32,16 +32,18 @@ class RefinementTests(unittest.TestCase):
     def test_the_abstract_plan_is_mapped_and_its_horizon_is_reported(
         self, parse_plan_actions, build_mapping, incremental_solver, relaxing_solver, collect_switches
     ):
-        incremental_solver.return_value.search.return_value = SolveResult(["occurs(abstract,1)"], horizon=2, attempts=3)
+        incremental_solver.return_value.search.return_value = SolveResult(
+            ['occurs(action("abstract"),1)'], horizon=2, attempts=3
+        )
         relaxing_solver.return_value.search.return_value = RelaxedResult(
-            ["occurs(concrete,1)"], horizon=5, attempts=3, dropped=2
+            ['occurs(action("concrete"),1)'], horizon=5, attempts=3, dropped=2
         )
         context = self._context()
 
         result = refine(context)
 
         self.assertTrue(result["success"])
-        self.assertEqual(result["plan"], ["occurs(concrete,1)"])
+        self.assertEqual(result["plan"], ['occurs(action("concrete"),1)'])
         self.assertEqual(result["run_id"], "run-123")
         self.assertEqual(context.metrics.counters["abstract_plan_length"], 2)
         self.assertEqual(context.metrics.counters["abstract_solve_calls"], 3)
@@ -62,7 +64,9 @@ class RefinementTests(unittest.TestCase):
     def test_the_plan_length_counts_actions_instead_of_time_steps(
         self, parse_plan_actions, build_mapping, incremental_solver, relaxing_solver, collect_switches
     ):
-        incremental_solver.return_value.search.return_value = SolveResult(["occurs(abstract,1)"], horizon=2, attempts=1)
+        incremental_solver.return_value.search.return_value = SolveResult(
+            ['occurs(action("abstract"),1)'], horizon=2, attempts=1
+        )
         relaxing_solver.return_value.search.return_value = RelaxedResult(
             ['occurs(action(("move","a")),2)', 'occurs(action(("move","b")),4)'], horizon=5, attempts=1, dropped=0
         )
@@ -83,14 +87,14 @@ class RefinementTests(unittest.TestCase):
     ):
         incremental_solver.return_value.search.return_value = SolveResult(["abstract atom"], horizon=3, attempts=4)
         relaxing_solver.return_value.search.return_value = RelaxedResult(
-            ["occurs(concrete,9)"], horizon=9, attempts=6, dropped=3
+            ['occurs(action("concrete"),9)'], horizon=9, attempts=6, dropped=3
         )
 
         context = self._context()
         result = refine(context)
 
         self.assertTrue(result["success"])
-        self.assertEqual(result["plan"], ["occurs(concrete,9)"])
+        self.assertEqual(result["plan"], ['occurs(action("concrete"),9)'])
         self.assertEqual(context.metrics.counters["decrements"], 3)
         # The mapped horizon of seven was raised to nine.
         self.assertEqual(context.metrics.counters["increments"], 2)
