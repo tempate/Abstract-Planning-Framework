@@ -1,0 +1,127 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb,amsthm}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+
+\theoremstyle{plain}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+
+\begin{document}
+
+\begin{definition}[Planning task]
+A STRIPS planning task over a finite set of objects $O$ is a tuple $P = \langle S,A,I,G\rangle$. Its atoms are the ground expressions $p(o_1,\dots,o_k)$ for a predicate $p$ of arity $k$ and $o_i \in O$. A state $s \in S$ is a set of atoms, $I \in S$ is the initial state, $G$ is a set of atoms, and every action $a \in A$ is a triple $\langle \mathrm{pre}(a), \mathrm{add}(a), \mathrm{del}(a) \rangle$ of sets of atoms.
+\end{definition}
+
+\begin{definition}[Applicability and progression]\label{def:progression}
+An action $a \in A$ is \emph{applicable} in a state $s \in S$ if $\mathrm{pre}(a) \subseteq s$, and the state it leads to is then
+\[
+  s[a] = \bigl(s \setminus \mathrm{del}(a)\bigr) \cup \mathrm{add}(a).
+\]
+A plan is a finite sequence $\pi = a_1 \dots a_n$ of actions. The empty plan $\varepsilon$ is applicable in every state, with $s[\varepsilon] = s$, and $\pi = a_1 \dots a_n$ with $n \geq 1$ is \emph{applicable} in $s$ if $a_1$ is applicable in $s$ and $a_2 \dots a_n$ is applicable in $s[a_1]$. The plan then leads to $s[\pi] = s[a_1][a_2 \dots a_n]$. A plan $\pi$ \emph{solves} $P$ if it is applicable in $I$ and $G \subseteq I[\pi]$.
+\end{definition}
+
+\begin{definition}[Object collapse]
+Fix a set $C \subseteq O$ of objects to collapse, with $|C| > 1$, and a fresh symbol $c \notin O$. The collapse is the map $\sigma \colon O \to (O \setminus C) \cup \{c\}$ given by
+\[
+  \sigma(o) =
+  \begin{cases}
+    c & \text{if } o \in C,\\
+    o & \text{otherwise.}
+  \end{cases}
+\]
+\end{definition}
+
+\begin{definition}[Abstraction map]
+The abstraction map $(\cdot)^*$ lifts $\sigma$ to atoms, states, actions and plans by setting
+\[
+  p(o_1,\dots,o_k)^* = p(\sigma(o_1),\dots,\sigma(o_k)),
+  \qquad
+  s^* = \{\, f^* : f \in s \,\},
+\]
+\[
+  a^* = \langle \mathrm{pre}(a)^*, \mathrm{add}(a)^*, \mathrm{del}(a)^* \rangle,
+  \qquad
+  (a_1 \dots a_n)^* = a_1^* \dots a_n^*.
+\]
+\end{definition}
+
+\begin{definition}[Abstract task]
+The abstraction of $P$ under $\sigma$ is $P^* = \langle S^*,A^*,I^*,G^*\rangle$, where $S^*$ collects the states over $(O \setminus C) \cup \{c\}$, $A^* = \{\, a^* : a \in A \,\}$, and $(\cdot)^*$ carries $I$ and $G$ to $I^*$ and $G^*$.
+\end{definition}
+
+\begin{definition}[Relaxed abstract task]\label{def:relaxed}
+Say that an atom $p(o_1,\dots,o_k)$ \emph{mentions} an object $o$ if $o \in \{o_1,\dots,o_k\}$. For $a \in A$ put
+\[
+  \mathrm{del}^r(a) = \{\, d^* : d \in \mathrm{del}(a)
+    \text{ and } d \text{ mentions no object of } C \,\},
+\]
+\[
+  a^r = \langle\, \mathrm{pre}(a)^*,\ \mathrm{add}(a)^*,\ \mathrm{del}^r(a) \,\rangle,
+\]
+so that $a^r$ forgets every delete whose atom mentions a collapsed object. The \emph{relaxed abstract task} is $P^r = \langle S^*, A^r, I^*, G^* \rangle$ with $A^r = \{\, a^r : a \in A \,\}$. It differs from $P^*$ only in the delete lists of its actions, and coincides with $P^*$ when no delete of $P$ mentions an object of $C$.
+\end{definition}
+
+Since $\sigma$ maps every object of $C$ onto the single symbol $c$ it is not injective, so $(\cdot)^*$ may identify distinct atoms, states and actions of $P$.
+
+\begin{lemma}\label{lem:action}
+If $a \in A$ is applicable in $s \in S$, then $a^r$ is applicable in $s^*$.
+\end{lemma}
+
+\begin{proof}
+By Definition~\ref{def:relaxed} the relaxation leaves preconditions untouched, so $\mathrm{pre}(a^r) = \mathrm{pre}(a)^*$. From $\mathrm{pre}(a) \subseteq s$ we get $\mathrm{pre}(a)^* \subseteq s^*$, hence $\mathrm{pre}(a^r) \subseteq s^*$.
+\end{proof}
+
+\begin{lemma}[Progression]\label{lem:progress}
+If $a \in A$ is applicable in $s \in S$, then $(s[a])^* \subseteq s^*[a^r]$.
+\end{lemma}
+
+\begin{proof}
+Progression gives $s[a] = (s \setminus \mathrm{del}(a)) \cup \mathrm{add}(a)$, so
+\[
+  (s[a])^* = (s \setminus \mathrm{del}(a))^* \cup \mathrm{add}(a)^*,
+  \qquad
+  s^*[a^r] = (s^* \setminus \mathrm{del}^r(a)) \cup \mathrm{add}(a)^*,
+\]
+and it suffices to show that $(s \setminus \mathrm{del}(a))^* \subseteq s^* \setminus \mathrm{del}^r(a)$. Let $f \in (s \setminus \mathrm{del}(a))^*$. Then $f = g^*$ for some $g \in s$ such that $g \notin \mathrm{del}(a)$, so $f \in s^*$. Suppose $f \in \mathrm{del}^r(a)$. By Definition~\ref{def:relaxed} we then have $f = d^*$ for some $d \in \mathrm{del}(a)$ mentioning no object of $C$. Since $\sigma$ fixes every object outside $C$, it fixes $d$, so $f = d$. Now $d$ is an atom over $O$ and $c \notin O$, so $f$ does not mention $c$. If $g$ mentioned an object of $C$ then $g^*$ would mention $c$, and $g^* = f$ does not. Hence $g$ mentions no object of $C$ either, so $\sigma$ fixes $g$ and $g = g^* = f = d$. This contradicts $g \notin \mathrm{del}(a)$, so $f \notin \mathrm{del}^r(a)$.
+\end{proof}
+
+\begin{lemma}[Monotonicity]\label{lem:mono}
+Let $s \subseteq t$ be states and let $\pi$ be applicable in $s$. Then $\pi$ is applicable in $t$ and $s[\pi] \subseteq t[\pi]$.
+\end{lemma}
+
+\begin{proof}
+By induction on the length of $\pi$. The empty plan is applicable in every state and $s[\varepsilon] = s \subseteq t = t[\varepsilon]$. For $\pi = a\pi'$, applicability of $a$ in $s$ gives $\mathrm{pre}(a) \subseteq s \subseteq t$, so $a$ is applicable in $t$, and
+\[
+  s[a] = (s \setminus \mathrm{del}(a)) \cup \mathrm{add}(a)
+           \subseteq (t \setminus \mathrm{del}(a)) \cup \mathrm{add}(a)
+            = t[a].
+\]
+The claim follows by applying the induction hypothesis to $\pi'$ at $s[a] \subseteq t[a]$.
+\end{proof}
+
+\begin{lemma}\label{lem:plan}
+If $\pi$ is applicable in $s \in S$, then $\pi^r$ is applicable in $s^*$ and $(s[\pi])^* \subseteq s^*[\pi^r]$.
+\end{lemma}
+
+\begin{proof}
+By induction on the length of $\pi$. For the empty plan both sides are $s^*$. Let $\pi = a\pi'$ with $a$ applicable in $s$. By Lemma~\ref{lem:action} $a^r$ is applicable in $s^*$, and by Lemma~\ref{lem:progress} $(s[a])^* \subseteq s^*[a^r]$. The induction hypothesis applied to $\pi'$ at $s[a]$ gives that $\pi'^r$ is applicable in $(s[a])^*$ with $(s[a][\pi'])^* \subseteq (s[a])^*[\pi'^r]$. Since $(s[a])^* \subseteq s^*[a^r]$, Lemma~\ref{lem:mono} lets us move both to $s^*[a^r]$, where $\pi'^r$ is applicable and
+\[
+  (s[\pi])^* = (s[a][\pi'])^* \subseteq (s[a])^*[\pi'^r]
+             \subseteq s^*[a^r][\pi'^r] = s^*[\pi^r]. \qedhere
+\]
+\end{proof}
+
+\begin{theorem}[Over-approximation]\label{thm:goal}
+If $G \subseteq I[\pi]$, then $G^* \subseteq I^*[\pi^r]$.
+\end{theorem}
+
+\begin{proof}
+By Lemma~\ref{lem:plan} the plan $\pi^r$ is applicable in $I^*$ and $(I[\pi])^* \subseteq I^*[\pi^r]$. Applying $(\cdot)^*$ to $G \subseteq I[\pi]$ gives $G^* \subseteq (I[\pi])^*$, so
+\[
+  G^* \subseteq (I[\pi])^* \subseteq I^*[\pi^r]. \qedhere
+\]
+\end{proof}
+
+\end{document}

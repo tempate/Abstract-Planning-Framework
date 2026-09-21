@@ -8,3 +8,11 @@ __pycache__/
 *.so
 runs/
 .claude/settings.local.json
+
+# LaTeX build output
+theory/*.aux
+theory/*.log
+theory/*.out
+theory/*.fls
+theory/*.fdb_latexmk
+theory/*.synctex.gz
