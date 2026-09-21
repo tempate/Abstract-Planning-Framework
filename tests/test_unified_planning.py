@@ -8,9 +8,11 @@ from core.integrations.unified_planning import (
     parse_problem,
     read_problem,
     to_positive_normal_form,
+    validate_plan,
     without_action_costs,
     write_problem,
 )
+from core.plan import PlanAction
 
 ROUND_TRIP_DOMAIN = """
 (define (domain travel)
@@ -221,6 +223,24 @@ class WithoutActionCostsTests(unittest.TestCase):
         without_action_costs(problem)
 
         self.assertTrue(problem.quality_metrics)
+
+
+class PlanValidationTests(unittest.TestCase):
+    def setUp(self):
+        self.problem = parse_problem(ROUND_TRIP_DOMAIN, ROUND_TRIP_PROBLEM)
+
+    def test_a_plan_that_reaches_the_goal_is_valid(self):
+        plan = [PlanAction(name="move", args=("start", "destination"), time_step=0)]
+
+        self.assertEqual(validate_plan(self.problem, plan), "valid")
+
+    def test_a_plan_that_leaves_the_goal_unreached_is_invalid(self):
+        self.assertEqual(validate_plan(self.problem, []), "invalid")
+
+    def test_a_plan_the_problem_cannot_express_is_unchecked_rather_than_invalid(self):
+        plan = [PlanAction(name="teleport", args=("start", "destination"), time_step=0)]
+
+        self.assertTrue(validate_plan(self.problem, plan).startswith("unchecked"))
 
 
 if __name__ == "__main__":

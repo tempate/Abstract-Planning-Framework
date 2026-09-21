@@ -6,6 +6,7 @@ import sys
 
 from core.integrations.paths import FAST_DOWNWARD_SCRIPT
 from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
+from core.plan import PlanAction
 
 # Fast Downward's exit codes, documented at
 # https://www.fast-downward.org/latest/documentation/exit-codes/.
@@ -100,6 +101,15 @@ def _search(base_dir, domain_path, problem_path, label, driver=(), search=()):
         *search,
     ]
     return subprocess.run(command, capture_output=True, text=True), plan_path
+
+
+def parse_plan_actions(plan):
+    """Convert the lines of a plan file into chronological plan actions."""
+    actions = []
+    for time_step, line in enumerate(plan):
+        name, *args = line.strip().strip("()").split()
+        actions.append(PlanAction(name=name, args=tuple(args), time_step=time_step))
+    return tuple(actions)
 
 
 def _read_plan(plan_path):

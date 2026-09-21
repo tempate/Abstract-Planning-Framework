@@ -2,6 +2,7 @@
 
 import os
 
+from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import has_plan, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.metrics import PlanningMetrics
@@ -9,6 +10,7 @@ from core.abstraction.factory import build_abstract_problem, report_abstraction,
 from core.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
 from core.planning.config import AbstractPlanningConfig
 from core.planning.execution import temp_run_dir
+from core.planning.validation import validated
 from core.refinement.pipeline import RefinementContext, refine
 
 
@@ -18,6 +20,8 @@ def solve_via_abstraction(config: AbstractPlanningConfig, on_update=None):
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
             result = _abstract_and_refine(config, base_dir, run_id, metrics)
+    # Outside the measured phases, so that checking a plan cannot move a timing.
+    result["plan_valid"] = validated(config, result.get("plan"), parse_plan_actions)
     result["metrics"] = metrics.as_dict()
     return result
 
