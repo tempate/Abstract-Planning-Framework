@@ -15,7 +15,8 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate apf
 Checkouts are worktrees of the bare repo `~/apf/.bare`, one per branch at
 `~/apf/<branch>`. In each of them `lib/downward`, `lib/pddl-symmetries`,
 `experiments/benchmarks/downward-benchmarks` and `lib/plasp/bin` are symlinks into
-`~/apf/.shared`, which holds the only built copy. Nothing is built per worktree,
+`~/apf/.shared`, which holds the only built copy. A branch that vendors
+`lib/numeric-fast-downward` gets that linked too. Nothing is built per worktree,
 so a branch that moved a submodule pointer would silently run the shared
 version — we build one copy because no branch here moves one.
 
@@ -97,9 +98,9 @@ new run's.
 ssh -o BatchMode=yes copperhead '~/apf/new-worktree.sh <branch>'
 ```
 
-That fetches, adds `~/apf/<branch>`, replaces the three empty submodule
-directories with links into `~/apf/.shared`, and asserts every artifact is
-reachable before it prints `ready:`. Two seconds, no build.
+That fetches, adds `~/apf/<branch>`, replaces each empty submodule directory
+with a link into `~/apf/.shared`, and asserts every artifact is reachable before
+it prints `ready:`. Two seconds, no build.
 
 Plain `git worktree add` leaves `experiments/benchmarks/downward-benchmarks`,
 `lib/downward` and `lib/pddl-symmetries` empty. Submitting now refuses and names
@@ -111,8 +112,9 @@ these are checked in:
 | `pybind11_blissmodule.so` | every abstract job dies in symmetry discovery |
 | `lib/downward/builds/release` | exit code 36, `Could not find build 'release'` |
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
+| `lib/numeric-fast-downward/builds/release64` | `numeric-fast-downward binary not found`, on every resources-track job |
 
-Left unchecked, the tell for all three is a queue that drains far faster than 30
+Left unchecked, the tell for all of these is a queue that drains far faster than 30
 minutes a job. Smoke-test anyway when the branch touches the pipeline itself,
 which the preflight cannot judge:
 
@@ -127,12 +129,34 @@ hard one for its own reasons, which says nothing about the worktree.
 task after the run — so a finished run can be pulled while another is still
 queued. `--remote-dir` follows the branch each checkout is on.
 
-Removing a worktree afterwards needs `--force`, since the four symlinks read as
+Removing a worktree afterwards needs `--force`, since the symlinks read as
 local modifications:
 
 ```bash
 ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare worktree remove --force ~/apf/<branch>'
 ```
+
+## Rebuilding numeric-fast-downward
+
+`~/apf/.shared/numeric-fast-downward` is the vendored source at `fac7ce0` with
+`lib/numeric-fast-downward.patch` applied. The patch is what makes it buildable
+here at all: the cluster has no CPLEX, and unpatched the LP layer demands it.
+
+COIN lives in its own prefix, `~/apf/.shared/coin`, and **not** in the `apf` env —
+installing into `apf` would disturb whatever jobs are running. `FindOSI.cmake`
+reads `DOWNWARD_COIN_ROOT`, and `build.py` has a bare `python` shebang that does
+not resolve here:
+
+```bash
+conda create -y -p ~/apf/.shared/coin -c conda-forge coin-or-osi coin-or-clp coin-or-utils
+export DOWNWARD_COIN_ROOT=~/apf/.shared/coin
+cd ~/apf/.shared/numeric-fast-downward && python3 ./build.py release64 -j4
+```
+
+`ldd` on the built binary must resolve the COIN libraries through RPATH, or the
+jobs need `LD_LIBRARY_PATH` too. Detection exits through the no-solution path and
+aborts even on success, so `Found <n>/<m> resource variables` on stdout is the
+only thing that says it worked.
 
 ## Watching a run
 
