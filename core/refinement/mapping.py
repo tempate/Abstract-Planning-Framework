@@ -2,6 +2,8 @@
 
 import json
 
+from core.abstraction.collapse import RELAXED_VARIANT_SEPARATOR
+
 
 def concrete_time_step(abstract_time_step):
     """Place an abstract action after the gap that precedes it."""
@@ -70,7 +72,10 @@ def _action_pattern(action, abstraction):
             args.append(_quote(arg))
 
     # Build the action string for the new arguments.
-    action_str = f"action(({','.join((_quote(action.name), *args))}))"
+    # The collapse splits an action whose delete only some groundings relax, and
+    # the concrete task knows the name it was split from.
+    concrete_name = action.name.split(RELAXED_VARIANT_SEPARATOR)[0]
+    action_str = f"action(({','.join((_quote(concrete_name), *args))}))"
 
     # Build the conditions for the independent variables and the action.
     conds = []

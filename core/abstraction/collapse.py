@@ -1,6 +1,9 @@
 """Collapse concrete objects in a Unified Planning problem."""
 
-from unified_planning.model import InstantaneousAction, Object, Problem
+import itertools
+from dataclasses import dataclass
+
+from unified_planning.model import Fluent, InstantaneousAction, Object, Problem
 from unified_planning.model.metrics import (
     MinimizeActionCosts,
     MinimizeExpressionOnFinalState,
@@ -9,7 +12,15 @@ from unified_planning.model.metrics import (
 
 from core.abstraction.relaxation import match_relaxable_delete
 
-__all__ = ["AbstractionError", "collapse_objects", "validate_supported_problem"]
+__all__ = ["AbstractionError", "RELAXED_VARIANT_SEPARATOR", "collapse_objects", "validate_supported_problem"]
+
+# A relaxed variant keeps the action name it came from, so the refinement can
+# still recognise it, and carries the separator to mark what it is.
+RELAXED_VARIANT_SEPARATOR = "--relaxed-"
+
+# Each collapsible parameter doubles the variants. Past this the schema-level
+# drop is cheaper than the precision it buys.
+MAX_COLLAPSIBLE_PARAMETERS = 3
 
 
 class AbstractionError(ValueError):
@@ -63,54 +74,139 @@ def collapse_objects(problem, abstraction, relaxable_deletes):
             collapsed_problem.add_object(item)
     collapsed_problem.add_object(abstract_object)
 
-    relaxed_deletes = _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax)
+    markers = _add_markers(collapsed_problem, abstraction.name, abstract_object, objects_to_collapse[0].type)
+
+    relaxed_deletes = _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax, markers)
     _copy_initial_values(problem, collapsed_problem, rewrite)
     _copy_goals_and_constraints(problem, collapsed_problem, rewrite)
     _copy_quality_metric(problem, collapsed_problem)
     return collapsed_problem, relaxed_deletes
 
 
-def _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax):
+@dataclass(frozen=True)
+class _Markers:
+    """Static fluents telling the abstract object apart from the rest."""
+
+    abstract: Fluent
+    plain: Fluent
+
+
+def _add_markers(collapsed_problem, abstract_name, abstract_object, collapsed_type):
+    """Mark which objects of the collapsed type stand for several concrete ones."""
+    environment = collapsed_problem.environment
+    boolean = environment.type_manager.BoolType()
+    markers = _Markers(
+        abstract=Fluent(f"{abstract_name}-is-abstract", boolean, environment=environment, x=collapsed_type),
+        plain=Fluent(f"{abstract_name}-is-plain", boolean, environment=environment, x=collapsed_type),
+    )
+    collapsed_problem.add_fluent(markers.abstract, default_initial_value=False)
+    collapsed_problem.add_fluent(markers.plain, default_initial_value=False)
+    collapsed_problem.set_initial_value(markers.abstract(abstract_object), True)
+    for item in collapsed_problem.all_objects:
+        if item != abstract_object and (item.type == collapsed_type or item.type.is_subtype(collapsed_type)):
+            collapsed_problem.set_initial_value(markers.plain(item), True)
+    return markers
+
+
+def _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax, markers):
     relaxed_deletes = []
     for action in problem.actions:
-        collapsed_action, action_relaxed_deletes = _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax)
+        variants, action_relaxed_deletes = _action_variants(
+            action, rewrite, objects_to_collapse, deletes_to_relax, markers
+        )
         relaxed_deletes.extend(action_relaxed_deletes)
-        # An action with no effect left changes nothing, and the writer gives it
-        # no :effect, which Fast Downward's parser rejects.
-        if not collapsed_action.effects:
-            continue
-        collapsed_problem.add_action(collapsed_action)
+        for variant in variants:
+            # An action with no effect left changes nothing, and the writer gives
+            # it no :effect, which Fast Downward's parser rejects.
+            if not variant.effects:
+                continue
+            collapsed_problem.add_action(variant)
     return tuple(relaxed_deletes)
 
 
-def _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax):
-    collapsed_action = action.clone()
-    collapsed_action.clear_preconditions()
-    for precondition in action.preconditions:
-        collapsed_action.add_precondition(rewrite(precondition))
+def _action_variants(action, rewrite, objects_to_collapse, deletes_to_relax, markers):
+    """Split an action so a delete survives the groundings that do not collapse.
 
-    relaxed_deletes = []
-    collapsed_action.clear_effects()
+    Dropping a relaxable delete from the schema drops it for every grounding,
+    including the ones whose atom mentions no collapsed object. Splitting the
+    action on whether its collapsible parameters take the abstract object keeps
+    the delete exactly where the concrete task still needs it.
+    """
+    if RELAXED_VARIANT_SEPARATOR in action.name:
+        raise AbstractionError(f"Action name already holds the variant separator: {action.name}")
+
+    matches = []
     for effect in action.effects:
         match = match_relaxable_delete(action, effect, objects_to_collapse)
-        if match is not None:
-            _, relaxable_delete = match
-            if relaxable_delete in deletes_to_relax:
-                relaxed_deletes.append(relaxable_delete)
-                continue
+        if match is None:
+            continue
+        parameters, relaxable_delete = match
+        if relaxable_delete not in deletes_to_relax:
+            continue
+        # A delete naming a collapsed object outright mentions one in every
+        # grounding, whatever its parameters take.
+        always = any(not variable.startswith("?") for variable in relaxable_delete.variables)
+        matches.append((effect, () if always else parameters, relaxable_delete, always))
 
+    if not matches:
+        return [_variant(action, rewrite, set(), ())], []
+
+    collapsible = []
+    for _, parameters, _, _ in matches:
+        for parameter in parameters:
+            if parameter not in collapsible:
+                collapsible.append(parameter)
+
+    relaxed_deletes = [relaxable_delete for _, _, relaxable_delete, _ in matches]
+
+    # With no collapsible parameter every grounding mentions a collapsed object
+    # outright, so the schema-level drop is already exact.
+    if not collapsible or len(collapsible) > MAX_COLLAPSIBLE_PARAMETERS:
+        return [_variant(action, rewrite, {id(effect) for effect, _, _, _ in matches}, ())], relaxed_deletes
+
+    variants = []
+    for index, assignment in enumerate(itertools.product((False, True), repeat=len(collapsible))):
+        abstract_parameters = {id(parameter) for parameter, is_abstract in zip(collapsible, assignment) if is_abstract}
+        dropped = {
+            id(effect)
+            for effect, parameters, _, always in matches
+            if always or any(id(parameter) in abstract_parameters for parameter in parameters)
+        }
+        conditions = tuple(
+            (markers.abstract if is_abstract else markers.plain)(parameter)
+            for parameter, is_abstract in zip(collapsible, assignment)
+        )
+        name = action.name if not any(assignment) else f"{action.name}{RELAXED_VARIANT_SEPARATOR}{index}"
+        variants.append(_variant(action, rewrite, dropped, conditions, name))
+    return variants, relaxed_deletes
+
+
+def _variant(action, rewrite, dropped_effects, conditions, name=None):
+    variant = action.clone()
+    if name is not None and name != action.name:
+        variant._name = name
+    variant.clear_preconditions()
+    for precondition in action.preconditions:
+        variant.add_precondition(rewrite(precondition))
+    for condition in conditions:
+        variant.add_precondition(condition)
+
+    variant.clear_effects()
+    for effect in action.effects:
+        if id(effect) in dropped_effects:
+            continue
         fluent = rewrite(effect.fluent)
         value = rewrite(effect.value)
         condition = rewrite(effect.condition)
         if effect.is_assignment():
-            collapsed_action.add_effect(fluent, value, condition, effect.forall)
+            variant.add_effect(fluent, value, condition, effect.forall)
         elif effect.is_increase():
-            collapsed_action.add_increase_effect(fluent, value, condition, effect.forall)
+            variant.add_increase_effect(fluent, value, condition, effect.forall)
         elif effect.is_decrease():
-            collapsed_action.add_decrease_effect(fluent, value, condition, effect.forall)
+            variant.add_decrease_effect(fluent, value, condition, effect.forall)
         else:
             raise AbstractionError(f"Unsupported effect in action {action.name}: {effect}")
-    return collapsed_action, relaxed_deletes
+    return variant
 
 
 def _copy_initial_values(problem, collapsed_problem, rewrite):

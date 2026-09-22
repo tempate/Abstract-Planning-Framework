@@ -19,6 +19,7 @@ from unified_planning.shortcuts import (
 )
 
 from core.integrations.unified_planning import parse_problem, write_problem
+from core.abstraction.collapse import RELAXED_VARIANT_SEPARATOR
 from core.abstraction.factory import AbstractionError, build_abstract_problem
 from core.planning.config import AbstractPlanningConfig
 
@@ -218,8 +219,10 @@ class PositiveNormalFormTests(unittest.TestCase):
 
         result = _build_from_problem(source, ["item-a", "item-b"])
 
+        markers = {f"{result.abstraction.name}-is-abstract", f"{result.abstraction.name}-is-plain"}
         self.assertEqual(
-            sorted(fluent.name for fluent in result.problem.fluents), sorted(fluent.name for fluent in source.fluents)
+            sorted(fluent.name for fluent in result.problem.fluents if fluent.name not in markers),
+            sorted(fluent.name for fluent in source.fluents),
         )
 
 
@@ -260,7 +263,9 @@ class AbstractionTransformationTests(unittest.TestCase):
 
         result = _build_from_problem(source, ["a", "b"], "pooled-item")
 
-        self.assertEqual([action.name for action in result.problem.actions], ["finish"])
+        names = [action.name for action in result.problem.actions]
+        self.assertTrue(all(action.effects for action in result.problem.actions))
+        self.assertFalse([name for name in names if name.startswith("clear" + RELAXED_VARIANT_SEPARATOR)])
         # Fast Downward's parser rejects an action serialized without :effect.
         serialized = write_problem(result.problem)
         parse_problem(serialized.domain, serialized.problem)
@@ -451,8 +456,14 @@ class AbstractionTransformationTests(unittest.TestCase):
         # matches; `?from` is a place and must not be picked up.
         self.assertEqual([item.predicate for item in result.relaxed_deletes], ["at"])
         self.assertEqual([item.variables for item in result.relaxed_deletes], [("?x",)])
-        shift = result.problem.action("shift")
-        self.assertFalse(any(effect.value.is_false() for effect in shift.effects))
+        # The delete survives the grounding that takes a concrete item, and goes
+        # only for the one that takes the abstract object.
+        plain = result.problem.action("shift")
+        relaxed = next(
+            action for action in result.problem.actions if action.name.startswith("shift" + RELAXED_VARIANT_SEPARATOR)
+        )
+        self.assertTrue(any(effect.value.is_false() for effect in plain.effects))
+        self.assertFalse(any(effect.value.is_false() for effect in relaxed.effects))
 
     def test_relaxes_a_delete_that_names_a_collapsed_object_directly(self):
         domain = """
