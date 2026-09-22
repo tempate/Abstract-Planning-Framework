@@ -28,8 +28,12 @@ step. It prints the producing commit either way, so a pull states its own
 provenance:
 
 ```bash
-python -m experiments.fetch --remote-dir <dir>/runs/ --into <scratch> --csv experiments/plan/results.csv
+python -m experiments.fetch --into <scratch> --csv experiments/plan/results.csv
 ```
+
+`--remote-dir` defaults to `~/apf/<branch>/runs/` for the branch this checkout
+is on, which is where `new-worktree.sh` puts it. Pass it explicitly for a run
+that lives anywhere else.
 
 `--into` must point **outside the repo**. Only `runs/` is
 gitignored, and rsync without `--delete` merges whatever is already there — two
@@ -117,9 +121,8 @@ Pick a problem the branch solves quickly. A refinement branch can time out on a
 hard one for its own reasons, which says nothing about the worktree.
 
 `experiments.fetch` guards on `squeue -u "$USER"`, the whole user rather than one
-run, so neither run can be pulled until both drain. Give each its own `--into`,
-and `--remote-dir ~/apf/<branch>/runs/` is required because there is no longer
-one checkout to default to.
+run, so neither run can be pulled until both drain. Give each its own `--into`;
+`--remote-dir` follows the branch each checkout is on.
 
 Removing a worktree afterwards needs `--force`, since the four symlinks read as
 local modifications:

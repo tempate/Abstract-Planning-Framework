@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 import experiments.fetch
-from experiments.fetch import main
+from experiments.fetch import _default_remote_dir, _remote_command_path, main
 
 
 class FetchTests(unittest.TestCase):
@@ -17,6 +17,13 @@ class FetchTests(unittest.TestCase):
         ):
             main()
         return pull, collect
+
+    def test_the_branch_names_the_worktree_the_run_is_pulled_from(self):
+        self.assertEqual(_default_remote_dir("sas-resource-ladders"), "apf/sas-resource-ladders/runs/")
+
+    def test_a_home_relative_path_survives_being_quoted_for_the_remote_shell(self):
+        self.assertEqual(_remote_command_path("~/apf/main/runs/"), "apf/main/runs/")
+        self.assertEqual(_remote_command_path("/scratch/runs/"), "/scratch/runs/")
 
     def test_a_run_from_another_commit_is_not_pulled(self):
         pull, _ = self._run(["--remote-dir", "/apf/other/runs/"], remote_head="aaa", local_head="bbb")
