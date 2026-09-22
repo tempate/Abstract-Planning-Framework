@@ -19,7 +19,7 @@ Fix a finite set $O$ of objects and a finite set $P$ of predicates.
 An \emph{atom} is a ground expression $p(o_1,\dots,o_k)$, where $p \in P$ has arity $k \geq 0$ and $o_1,\dots,o_k \in O$.
 \end{definition}
 
-Let $F$ be the set of atoms.
+Let $F$ be the set of atoms. An atom $p(o_1,\dots,o_k)$ \emph{mentions} an object $o$ if $o \in \{o_1,\dots,o_k\}$.
 
 \begin{definition}
 A \emph{state} is a set $s \subseteq F$. The atoms in $s$ are exactly those that hold, so an atom outside $s$ is false rather than unknown.
@@ -71,14 +71,14 @@ and extends to atoms, states, actions, and plans by
 \end{align*}
 \end{definition}
 
-Since $\alpha$ maps every object of $C$ onto the single symbol $c$ it is not injective, so it may identify distinct atoms, states, and actions of $\Pi$. The two lemmas below are the only properties of $\alpha$ the later proofs use.
+Since $\alpha$ maps every object of $C$ onto the single symbol $c$, it is not injective, so it may identify distinct atoms, states, and actions of $\Pi$. The two lemmas below state the only properties of $\alpha$ the later proofs use.
 
 \begin{lemma}\label{lem:image}
 If $X \subseteq Y$ are sets of atoms, then $\alpha(X) \subseteq \alpha(Y)$.
 \end{lemma}
 
 \begin{proof}
-If $f \in \alpha(X)$, then $f = \alpha(g)$ for some $g \in X$, and since $X \subseteq Y$, then $g \in Y$ and $f = \alpha(g) \in \alpha(Y)$.
+If $f \in \alpha(X)$, then $f = \alpha(g)$ for some $g \in X$, and $g \in Y$ since $X \subseteq Y$, so $f = \alpha(g) \in \alpha(Y)$.
 \end{proof}
 
 \begin{lemma}\label{lem:fixed}
@@ -86,14 +86,13 @@ For an atom $f \in F$ the following are equivalent: $f$ mentions no object of $C
 \end{lemma}
 
 \begin{proof}
-If $f$ mentions no object of $C$ then $\alpha$ fixes each of its arguments, so $\alpha(f) = f$. If $\alpha(f) = f$ then $\alpha(f)$ is an atom over $O$, and $c \notin O$, so it does not mention $c$. If $f$ mentions some $o \in C$ then $\alpha(f)$ mentions $\alpha(o) = c$.
+If $f$ mentions no object of $C$, then $\alpha$ fixes each of its arguments, so $\alpha(f) = f$. If $\alpha(f) = f$, then $\alpha(f)$ is an atom over $O$, and $c \notin O$, so it does not mention $c$. If $f$ mentions some $o \in C$, then $\alpha(f)$ mentions $\alpha(o) = c$.
 \end{proof}
 
 \begin{definition}
-The \emph{abstraction} of $\Pi$ under $\alpha$ is $\Pi^\alpha = \langle F^\alpha, A^\alpha, \alpha(I), \alpha(G)\rangle$, where $F^\alpha$ is the set of atoms over $P$ and $(O \setminus C) \cup \{c\}$ and $A^\alpha = \{\, \alpha(a) : a \in A \,\}$.
+The \emph{abstraction} of $\Pi$ under $\alpha$ is $\Pi^\alpha = \langle F^\alpha, A^\alpha, \alpha(I), \alpha(G)\rangle$, where $F^\alpha$ is the set of atoms over $P$ and $(O \setminus C) \cup \{c\}$, and $A^\alpha = \{\, \alpha(a) : a \in A \,\}$.
 \end{definition}
 
-An atom $p(o_1,\dots,o_k) \in F$ \emph{mentions} an object $o \in O$ if $o \in \{o_1,\dots,o_k\}$.
 
 \begin{definition}\label{def:relaxed}
 The \emph{relaxation} of an action $a \in A$ is the action
@@ -111,7 +110,7 @@ $\Pi^r$ differs from $\Pi^\alpha$ only in the delete lists of its actions, and c
 
 \section{Over-approximation}
 
-The argument is an induction on the length of a plan. Two lemmas cover a single action, and a third carries an inclusion along a plan.
+The argument is an induction on the length of a plan. Two lemmas cover a single action, and a third carries an inclusion along the whole plan.
 
 \begin{lemma}\label{lem:action}
 If $a \in A$ is applicable in $s \subseteq F$, then $a^r$ is applicable in $\alpha(s)$.
@@ -126,12 +125,12 @@ If $a \in A$ is applicable in $s \subseteq F$, then $\alpha(s[a]) \subseteq \alp
 \end{lemma}
 
 \begin{proof}
-By Definitions~\ref{def:action},~\ref{def:alpha} and~\ref{def:relaxed}, we have that
+By Definitions~\ref{def:action},~\ref{def:alpha}, and~\ref{def:relaxed}, we have that
 \begin{align*}
   \alpha(s[a]) &= \alpha(s \setminus \mathrm{del}(a)) \cup \alpha(\mathrm{add}(a)),\\
   \alpha(s)[a^r] &= (\alpha(s) \setminus \mathrm{del}^r(a)) \cup \alpha(\mathrm{add}(a)),
 \end{align*}
-and it suffices to show that $\alpha(s \setminus \mathrm{del}(a)) \subseteq \alpha(s) \setminus \mathrm{del}^r(a)$. Let $f \in \alpha(s \setminus \mathrm{del}(a))$, so $f \in \alpha(s)$ by Lemma~\ref{lem:image}, and $f = \alpha(g)$ for some $g \in s$ with $g \notin \mathrm{del}(a)$. Suppose towards a contradiction that $f \in \mathrm{del}^r(a)$. By Definition~\ref{def:relaxed}, we have $f = \alpha(d)$ for some $d \in \mathrm{del}(a)$ mentioning no object of $C$, so $f = d$ by Lemma~\ref{lem:fixed} and $f$ does not mention $c$. Then $\alpha(g)$ does not mention $c$, so Lemma~\ref{lem:fixed} gives $g = \alpha(g) = f = d$ --- a contradiction since $g \notin \mathrm{del}(a)$.
+and it suffices to show that $\alpha(s \setminus \mathrm{del}(a)) \subseteq \alpha(s) \setminus \mathrm{del}^r(a)$. Let $f \in \alpha(s \setminus \mathrm{del}(a))$, so $f \in \alpha(s)$ by Lemma~\ref{lem:image}, and $f = \alpha(g)$ for some $g \in s$ with $g \notin \mathrm{del}(a)$. Suppose towards a contradiction that $f \in \mathrm{del}^r(a)$. By Definition~\ref{def:relaxed}, we have $f = \alpha(d)$ for some $d \in \mathrm{del}(a)$ mentioning no object of $C$, so by Lemma~\ref{lem:fixed}, $f = d$ and $f$ does not mention $c$. Then $\alpha(g)$ does not mention $c$, so Lemma~\ref{lem:fixed} gives $g = \alpha(g) = f = d$ --- a contradiction since $g \notin \mathrm{del}(a)$.
 \end{proof}
 
 Lemma~\ref{lem:progress} gives an inclusion rather than an equality, because the relaxed action keeps facts the concrete one deletes. The induction therefore has to move a plan from a state to a superset of it.
@@ -141,7 +140,7 @@ Let $s \subseteq t$ be states and let $\pi$ be applicable in $s$. Then $\pi$ is 
 \end{lemma}
 
 \begin{proof}
-By induction on the length of $\pi$. The empty plan is applicable in every state and $s[\varepsilon] = s \subseteq t = t[\varepsilon]$. For $\pi = a\pi'$, applicability of $a$ in $s$ gives $\mathrm{pre}(a) \subseteq s \subseteq t$, so $a$ is applicable in $t$, and by Definition~\ref{def:action},
+By induction on the length of $\pi$. The empty plan is applicable in every state and $s[\varepsilon] = s \subseteq t = t[\varepsilon]$. For $\pi = a\pi'$, applicability of $a$ in $s$ gives $\mathrm{pre}(a) \subseteq s \subseteq t$, so $a$ is applicable in $t$, and Definition~\ref{def:action} gives
 \[
   s[a] = (s \setminus \mathrm{del}(a)) \cup \mathrm{add}(a)
            \subseteq (t \setminus \mathrm{del}(a)) \cup \mathrm{add}(a)
