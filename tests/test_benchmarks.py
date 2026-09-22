@@ -381,6 +381,23 @@ class BenchmarkTests(unittest.TestCase):
 
             self.assertEqual(collect(directory), [])
 
+    def test_a_gap_filling_run_is_merged_with_the_one_it_completes(self):
+        with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
+            self._write_result(first, "concrete")
+            self._write_result(first, "abstract", status="timeout")
+            _write_manifest([("abstract", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=first)
+            self._write_result(second, "abstract")
+            _write_manifest([("lama", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=second)
+
+            rows = collect(first, second)
+
+        by_mode = {row["mode"]: row for row in rows}
+        self.assertEqual(set(by_mode), {"abstract", "concrete", "lama"})
+        # the later run owns the result both directories hold
+        self.assertEqual(by_mode["abstract"]["status"], "success")
+        # a mode only the second manifest expected is still accounted for
+        self.assertEqual(by_mode["lama"]["status"], "missing")
+
     def test_separate_mode_runs_are_collected_as_separate_rows(self):
         abstract_output = (
             "Collapsed ['package1', 'package2'] into package_abs (type=package)\n"

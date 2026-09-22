@@ -43,14 +43,15 @@ runs in one directory collect into one unreadable CSV.
 
 Collecting a partial run straight into `results.csv` **silently drops the
 existing abstract rows**: `_preserved_rows` keeps the modes the run did not
-submit, and the run owns the ones it did. Merge the raw trees instead, then collect once:
+submit, and the run owns the ones it did. Name both runs instead, oldest first:
 
-1. rsync both result directories into one scratch directory
-2. write a manifest whose `expected_results` is the union of both manifests
-3. `experiments.collect.main(<merged dir>, "experiments/plan/results.csv")`
+```bash
+python -m experiments.collect <first run> <gap-filling run> --csv experiments/plan/results.csv
+```
 
-Confirm the collect prints no `Incomplete benchmark run` line and that the row
-count matches problems × the modes submitted.
+The later directory wins where both hold a result, and the expected results are
+the union of both manifests. Confirm the collect prints no `Incomplete benchmark
+run` line and that the row count matches problems × the modes submitted.
 
 ## Submitting
 
