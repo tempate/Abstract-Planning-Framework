@@ -1,6 +1,7 @@
 """Build planning abstractions from PDDL Symmetries classes."""
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from unified_planning.model import Problem
 
@@ -8,7 +9,12 @@ from core.abstraction.collapse import AbstractionError, collapse_objects, valida
 from core.abstraction.heuristic import abstraction_score
 from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
-from core.integrations.unified_planning import read_problem, to_positive_normal_form
+from core.integrations.unified_planning import (
+    read_problem,
+    to_positive_normal_form,
+    without_action_costs,
+    write_problem,
+)
 from core.metrics import PlanningMetrics
 from core.outcomes import NoSymmetriesError
 from core.planning.config import AbstractPlanningConfig
@@ -154,3 +160,40 @@ def _create_abstraction(problem, object_names, abstract_name):
 def _normalize_object_names(object_names):
     """Normalize object names to lowercase, remove duplicates, and order them."""
     return sorted({str(name).casefold() for name in object_names})
+
+
+def report_abstraction(abstract_problem, metrics):
+    """Record the collapsed class and what relaxing it cost.
+
+    Reported before solving, so a run that fails later still carries it: the
+    metrics snapshot reaches the result file on every update, which is what
+    survives a run killed at the benchmark timeout.
+    """
+    abstraction = abstract_problem.abstraction
+    metrics.set_abstraction(abstraction.objects, abstraction.object_type)
+    metrics.set_counters(
+        {
+            "relaxed_deletes": len(abstract_problem.relaxed_deletes),
+            "relaxed_inequalities": len(abstract_problem.relaxed_inequalities),
+        }
+    )
+    print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
+
+
+def write_abstract_problem(problem, base_dir):
+    """Write the abstract problem to a temporary directory."""
+
+    # Create the temporary directory.
+    input_directory = Path(base_dir, "generated-abstraction")
+    input_directory.mkdir(parents=True, exist_ok=True)
+
+    # Write the abstract domain and problem files.
+    serialized = write_problem(without_action_costs(problem))
+
+    domain_path = input_directory / "domain.pddl"
+    domain_path.write_text(serialized.domain, encoding="utf-8")
+
+    problem_path = input_directory / "problem.pddl"
+    problem_path.write_text(serialized.problem, encoding="utf-8")
+
+    return domain_path, problem_path

@@ -1,5 +1,11 @@
 """Typed outcomes that can terminate a planning pipeline cleanly."""
 
+# What the decide pipeline reports instead of a plan. These reach the verdict
+# column of the collected CSV, so both modes spell them from here.
+SOLVABLE = "solvable"
+UNSOLVABLE = "unsolvable"
+UNKNOWN = "unknown"
+
 
 class PlanningOutcomeError(RuntimeError):
     """Base class for expected, machine-classifiable planning outcomes."""

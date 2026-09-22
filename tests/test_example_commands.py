@@ -148,7 +148,7 @@ class PlannerExitStatusTests(unittest.TestCase):
 
     def test_explicit_selection_reaches_the_planning_pipeline(self):
         with (
-            patch.object(planner, "compute_abstract_plan", return_value={"success": True}) as compute,
+            patch.object(planner, "solve_via_abstraction", return_value={"success": True}) as compute,
             patch.object(planner, "print_planning_result"),
         ):
             status = self._main(
