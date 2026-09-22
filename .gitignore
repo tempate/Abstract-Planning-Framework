@@ -16,3 +16,4 @@ theory/*.out
 theory/*.fls
 theory/*.fdb_latexmk
 theory/*.synctex.gz
+theory/*.pdf

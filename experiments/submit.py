@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 import shlex
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -16,12 +15,19 @@ from experiments.tracks import DEFAULT_TRACK, TRACKS
 from scripts.utils.arguments import positive_int
 
 DEFAULT_MEMORY_LIMIT = 8 * 1024
-# CopperBench defaults to broadwell, so every run so far has gone there without
-# this repository saying so, and queued behind it while sunnycove sat idle. Two
-# things to know before raising --timeout or reading timings from an "any" run:
-# the partition caps a job at one hour, and it spans both CPU generations, so
-# wall-clock times are only comparable within one of them.
-DEFAULT_PARTITION = "any"
+# One CPU generation, so wall-clock times are comparable across a whole run. The
+# "any" partition is not: it spans broadwell and sunnycove, and caps a job at one
+# hour, which silently bounds --timeout.
+DEFAULT_PARTITION = "sunnycove"
+# What a fresh worktree has not got yet. new-worktree.sh links all four at once,
+# so they are present together or absent together, and checking them per mode
+# would guard a case that does not arise. The tell for a missing one is a queue
+# draining far faster than the timeout, long after the jobs are gone.
+REQUIRED_ARTIFACTS = {
+    "lib/pddl-symmetries/src/translate/pybliss-0.73/pybind11_blissmodule.so": "abstract jobs die in symmetry discovery",
+    "lib/downward/builds/release": "every search exits 36, Could not find build 'release'",
+    "lib/plasp/bin/plasp": "plasp binary not found, before any solving",
+}
 
 
 def main():
@@ -33,11 +39,20 @@ def main():
             suite=track.suite.SUITE,
             runnable=track.suite.SYMMETRIC_PROBLEMS,
             modes=args.modes,
+            domains=args.domains,
+            problems=args.problems,
         )
     )
     pipeline = track.pipeline
-    _reset_results_dir()
-    _write_manifest(tasks, pipeline=pipeline)
+    _check_worktree_is_built()
+    if not tasks:
+        raise SystemExit(
+            f"No problems found under {track.suite.BENCHMARKS_DIR}. "
+            "A worktree made without new-worktree.sh leaves the benchmark submodule empty."
+        )
+    if not args.dry_run:
+        _set_aside_results_dir()
+        _write_manifest(tasks, pipeline=pipeline)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
         config_file = _write_copperbench_config(
             tasks,
@@ -48,18 +63,56 @@ def main():
             partition=args.partition,
             pipeline=pipeline,
         )
+        if args.dry_run:
+            _report_run(tasks, config_file, definition_dir)
+            return
         print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
 
 
-def _reset_results_dir(results_dir=RESULTS_DIR):
-    """Replace the previous benchmark results with an empty directory."""
+def _report_run(tasks, config_file, definition_dir):
+    """Print what a submission would send, so a submit-side change can be checked for free."""
+    definition_dir = Path(definition_dir)
+    instances = (definition_dir / "instances.txt").read_text(encoding="utf-8").splitlines()
+    print(f"Would submit {len(tasks)} cluster jobs (one per mode and benchmark problem)")
+    print(config_file.read_text(encoding="utf-8").strip())
+    print((definition_dir / "configs.txt").read_text(encoding="utf-8").strip())
+    for instance in instances[:3]:
+        print(f"  {instance}")
+    if len(instances) > 3:
+        print(f"  ... and {len(instances) - 3} more")
+
+
+def _check_worktree_is_built(project_root=PROJECT_ROOT):
+    """Refuse to submit from a worktree whose shared build artifacts are missing."""
+    missing = [path for path in REQUIRED_ARTIFACTS if not (Path(project_root) / path).exists()]
+    if missing:
+        raise SystemExit(
+            "Nothing to run with; this worktree is missing:\n"
+            + "\n".join(f"  {path} — {REQUIRED_ARTIFACTS[path]}" for path in missing)
+        )
+
+
+def _set_aside_results_dir(results_dir=RESULTS_DIR):
+    """Give the run an empty directory, keeping what the previous one left.
+
+    Until a run is pulled, its results directory is the only copy of it, and a
+    submission used to delete the lot. It is renamed instead. The directory
+    still has to start empty, because collect reads every result under it, so a
+    previous run left in place would land in the new one's CSV.
+    """
     results_dir = Path(results_dir)
     if results_dir.is_symlink() or results_dir.is_file():
         results_dir.unlink()
     elif results_dir.exists():
-        shutil.rmtree(results_dir)
+        if any(results_dir.iterdir()):
+            kept = results_dir.with_name(datetime.now().strftime(f"{results_dir.name}-%Y%m%d-%H%M%S"))
+            results_dir.rename(kept)
+            print(f"Kept the previous results in {kept}")
+        else:
+            results_dir.rmdir()
     results_dir.mkdir(parents=True)
+    return results_dir
 
 
 def _write_manifest(tasks, results_dir=RESULTS_DIR, pipeline="plan"):
@@ -98,6 +151,17 @@ def _argument_parser():
         choices=MODES,
         default=["abstract"],
         help="Ways to solve every problem, one cluster job each",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Build the run definition and print it without submitting, and without touching the results directory",
+    )
+    parser.add_argument(
+        "--domains", nargs="+", help="Submit only these domains of the track's suite, instead of all of them"
+    )
+    parser.add_argument(
+        "--problems", nargs="+", help="Submit only these problem files, named p01.pddl or p01, within each domain"
     )
     parser.add_argument(
         "--track",
@@ -164,13 +228,20 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstract",)):
+def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstract",), domains=None, problems=None):
+    if domains is not None:
+        unknown = sorted(set(domains) - set(suite))
+        if unknown:
+            raise SystemExit(f"Not in this track's suite: {', '.join(unknown)}")
+        suite = [domain_name for domain_name in suite if domain_name in set(domains)]
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
             if _is_domain_file(problem.name) or _has_other_status(problem.name):
                 continue
             if runnable is not None and (domain_name, problem.name) not in runnable:
+                continue
+            if problems is not None and not {problem.name, problem.stem} & set(problems):
                 continue
             domain = _find_domain(problem)
             for mode in modes:

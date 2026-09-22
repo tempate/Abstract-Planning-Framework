@@ -30,13 +30,16 @@ from experiments.run import (
     _run_task,
 )
 import experiments.report
+import experiments.submit
 from experiments.report import _coverage, _finished_problems, _head_to_head
 from experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
+    REQUIRED_ARTIFACTS,
     _argument_parser,
     _benchmark_tasks,
-    _reset_results_dir,
+    _check_worktree_is_built,
+    _set_aside_results_dir,
     _write_copperbench_config,
     _write_manifest,
 )
@@ -148,18 +151,55 @@ class BenchmarkTests(unittest.TestCase):
 
         self.assertEqual(args.timeout, DEFAULT_TIMEOUT)
         self.assertEqual(args.memory_limit, DEFAULT_MEMORY_LIMIT)
+        self.assertEqual(args.partition, "sunnycove")
 
-    def test_new_suite_run_removes_previous_results(self):
+    def test_new_suite_run_keeps_previous_results_beside_an_empty_directory(self):
         with tempfile.TemporaryDirectory() as directory:
             results = Path(directory) / "runs"
             old_run = results / "old-run" / "result.json"
             old_run.parent.mkdir(parents=True)
             old_run.write_text("old result\n", encoding="utf-8")
 
-            _reset_results_dir(results)
+            _set_aside_results_dir(results)
 
             self.assertTrue(results.is_dir())
             self.assertEqual(list(results.iterdir()), [])
+            kept = [path for path in results.parent.iterdir() if path != results]
+            self.assertEqual([path.name for path in kept[0].iterdir()], ["old-run"])
+
+    def test_a_dry_run_submits_nothing_and_leaves_the_results_alone(self):
+        argv = ["submit", "--dry-run", "--domains", "driverlog", "--problems", "p07"]
+        with (
+            patch("sys.argv", argv),
+            patch.object(experiments.submit, "_check_worktree_is_built"),
+            patch.object(experiments.submit, "_set_aside_results_dir") as set_aside,
+            patch.object(experiments.submit, "_write_manifest") as manifest,
+            patch.object(experiments.submit, "subprocess") as subprocesses,
+            contextlib.redirect_stdout(io.StringIO()) as output,
+        ):
+            experiments.submit.main()
+
+        set_aside.assert_not_called()
+        manifest.assert_not_called()
+        subprocesses.run.assert_not_called()
+        self.assertIn("driverlog", output.getvalue())
+
+    def test_an_unbuilt_worktree_is_refused_before_anything_is_submitted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(SystemExit) as refusal:
+                _check_worktree_is_built(project_root=Path(directory))
+
+        self.assertIn("plasp", str(refusal.exception))
+
+    def test_a_built_worktree_submits(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for artifact in REQUIRED_ARTIFACTS:
+                path = root / artifact
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+
+            _check_worktree_is_built(project_root=root)
 
     def test_single_benchmark_selects_one_mode(self):
         common = ["--domain-name", "example", "--domain", "domain.pddl", "--problem", "p01.pddl"]
@@ -251,6 +291,31 @@ class BenchmarkTests(unittest.TestCase):
 
             self.assertEqual([problem.name for _mode, _name, _domain, problem in tasks], ["p02.pddl"])
 
+    def test_a_subset_run_names_its_domains_and_problems(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for domain_name in ("one", "two"):
+                benchmark = root / domain_name
+                benchmark.mkdir()
+                (benchmark / "domain.pddl").touch()
+                (benchmark / "p01.pddl").touch()
+                (benchmark / "p02.pddl").touch()
+            suite = ["one", "two"]
+
+            by_domain = _benchmark_tasks(root, suite, runnable=None, domains=["two"])
+            by_problem = _benchmark_tasks(root, suite, runnable=None, domains=["two"], problems=["p02"])
+            by_file_name = _benchmark_tasks(root, suite, runnable=None, problems=["p02.pddl"])
+
+            self.assertEqual({name for _m, name, _d, _p in by_domain}, {"two"})
+            self.assertEqual([(n, p.name) for _m, n, _d, p in by_problem], [("two", "p02.pddl")])
+            self.assertEqual({p.name for _m, _n, _d, p in by_file_name}, {"p02.pddl"})
+
+    def test_a_misspelled_domain_is_refused_rather_than_submitting_nothing(self):
+        with self.assertRaises(SystemExit) as refusal:
+            list(_benchmark_tasks(Path("/nowhere"), ["driverlog"], runnable=None, domains=["driverlgo"]))
+
+        self.assertIn("driverlgo", str(refusal.exception))
+
     def test_only_the_problems_known_unsolvable_are_submitted(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -317,6 +382,23 @@ class BenchmarkTests(unittest.TestCase):
             (run_dir / "metadata.json").write_text('{"instances": {}, "configs": {}}\n', encoding="utf-8")
 
             self.assertEqual(collect(directory), [])
+
+    def test_a_gap_filling_run_is_merged_with_the_one_it_completes(self):
+        with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
+            self._write_result(first, "concrete")
+            self._write_result(first, "abstract", status="timeout")
+            _write_manifest([("abstract", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=first)
+            self._write_result(second, "abstract")
+            _write_manifest([("lama", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=second)
+
+            rows = collect(first, second)
+
+        by_mode = {row["mode"]: row for row in rows}
+        self.assertEqual(set(by_mode), {"abstract", "concrete", "lama"})
+        # the later run owns the result both directories hold
+        self.assertEqual(by_mode["abstract"]["status"], "success")
+        # a mode only the second manifest expected is still accounted for
+        self.assertEqual(by_mode["lama"]["status"], "missing")
 
     def test_separate_mode_runs_are_collected_as_separate_rows(self):
         abstract_output = (

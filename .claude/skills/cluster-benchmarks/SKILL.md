@@ -21,22 +21,19 @@ version — we build one copy because no branch here moves one.
 
 ## Pulling a finished run
 
-**Find the worktree that produced it before trusting anything.** An empty queue
-says a run finished, not which code ran it:
+`experiments.fetch` does the checking itself: it reads the HEAD of the checkout
+that produced the run, refuses to pull when that is not the commit this checkout
+stands on, refuses while `squeue` is non-empty, then rsyncs and collects in one
+step. It prints the producing commit either way, so a pull states its own
+provenance:
 
 ```bash
-ssh -o BatchMode=yes copperhead 'cd <dir> && git rev-parse --abbrev-ref HEAD && git rev-parse --short HEAD'
+python -m experiments.fetch --into <scratch> --csv experiments/plan/results.csv
 ```
 
-Compare that HEAD to the local branch. A mismatch means the results are not this
-branch's run.
-
-Then pull with `experiments.fetch`, which refuses while `squeue` is non-empty,
-rsyncs, and collects in one step:
-
-```bash
-python -m experiments.fetch --remote-dir <dir>/runs/ --into <scratch> --csv experiments/plan/results.csv
-```
+`--remote-dir` defaults to `~/apf/<branch>/runs/` for the branch this checkout
+is on, which is where `new-worktree.sh` puts it. Pass it explicitly for a run
+that lives anywhere else.
 
 `--into` must point **outside the repo**. Only `runs/` is
 gitignored, and rsync without `--delete` merges whatever is already there — two
@@ -46,14 +43,15 @@ runs in one directory collect into one unreadable CSV.
 
 Collecting a partial run straight into `results.csv` **silently drops the
 existing abstract rows**: `_preserved_rows` keeps the modes the run did not
-submit, and the run owns the ones it did. Merge the raw trees instead, then collect once:
+submit, and the run owns the ones it did. Name both runs instead, oldest first:
 
-1. rsync both result directories into one scratch directory
-2. write a manifest whose `expected_results` is the union of both manifests
-3. `experiments.collect.main(<merged dir>, "experiments/plan/results.csv")`
+```bash
+python -m experiments.collect <first run> <gap-filling run> --csv experiments/plan/results.csv
+```
 
-Confirm the collect prints no `Incomplete benchmark run` line and that the row
-count matches problems × the modes submitted.
+The later directory wins where both hold a result, and the expected results are
+the union of both manifests. Confirm the collect prints no `Incomplete benchmark
+run` line and that the row count matches problems × the modes submitted.
 
 ## Submitting
 
@@ -63,9 +61,10 @@ python -m experiments.submit --modes abstract concrete lama
 
 Submit every mode you want compared: `experiments.report` pairs **all** of them
 and drops any problem missing one, so a mode left out of a run shrinks every
-table. `lama` is plain Fast Downward, the external baseline. Pin `--partition`
-for any run whose timings are published — the default `any` spans two CPU
-generations, and that is hard to defend against an external planner.
+table. `lama` is plain Fast Downward, the external baseline. Runs go to
+`sunnycove` by default, one CPU generation, so timings are comparable across a
+run. Only pass `--partition any` to fill a queue you do not intend to publish
+timings from: it spans two CPU generations and caps each job at one hour.
 
 `--track unsolvability` takes only `abstract` and `concrete`: `scripts.unsolvability`
 has no `lama` subcommand, and its concrete mode already is a plain Fast Downward
@@ -76,21 +75,33 @@ search.
 carries it in the `verdict` column. Only the probNN problems run, the ones known
 unsolvable; satprob and unknownprob are skipped.
 
-`main()` calls `_reset_results_dir()`, which **deletes the whole results tree**
-before submitting. Move it aside first, or confirm the results are already
-pulled.
+`main()` calls `_set_aside_results_dir()`, which renames the previous `runs/` to
+`runs-<timestamp>/` and prints where it went. The new run still starts on an
+empty directory, because collect reads every result underneath. Nothing is
+deleted, so those siblings accumulate until pruned by hand.
 
-To submit a subset, cut the problem files the runner reads down to the wanted
-problems, submit, then `git checkout --` them. Workers get explicit problem
-paths, so restoring the files mid-run is safe. Say plainly that such a run is
-not reproducible from a SHA, since the committed code submits the whole set.
+To submit a subset, name it:
+
+```bash
+python -m experiments.submit --domains driverlog gripper --problems p07 p08
+```
+
+`--problems` matches within every domain submitted, by file name or stem. A
+domain not in the track's suite is refused rather than quietly submitting
+nothing. The manifest records exactly what was submitted, so the run stays
+reproducible from a SHA plus its flags.
+
+`--dry-run` prints the job count, the CopperBench config and the first
+instances, and returns before touching `runs/` or the queue. Check a submit-side
+change with it rather than against a real run.
 
 ## Running two branches at once
 
-One run per worktree, never two from one checkout. `_reset_results_dir()` deletes
-`runs/` before submitting and that path is `PROJECT_ROOT`-relative,
-so a second submission from the same directory wipes the first run's results and
-its manifest while those jobs are still writing into it.
+One run per worktree, never two from one checkout. Submitting renames `runs/`
+aside rather than deleting it, so the first run's results survive — but that
+path is `PROJECT_ROOT`-relative, and the jobs still writing into it follow the
+directory to its new name while the manifest they are collected against is the
+new run's.
 
 ```bash
 ssh -o BatchMode=yes copperhead '~/apf/new-worktree.sh <branch>'
@@ -101,8 +112,9 @@ directories with links into `~/apf/.shared`, and asserts every artifact is
 reachable before it prints `ready:`. Two seconds, no build.
 
 Plain `git worktree add` leaves `experiments/benchmarks/downward-benchmarks`,
-`lib/downward` and `lib/pddl-symmetries` empty, so the runner finds no problems
-and submits nothing without saying why. None of these are checked in:
+`lib/downward` and `lib/pddl-symmetries` empty. Submitting now refuses and names
+what is missing, rather than queueing jobs that all die the same way. None of
+these are checked in:
 
 | missing | how it fails |
 |---|---|
@@ -110,9 +122,9 @@ and submits nothing without saying why. None of these are checked in:
 | `lib/downward/builds/release` | exit code 36, `Could not find build 'release'` |
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
 
-The tell for all three is a queue that drains far faster than 30 minutes a job.
-Smoke-test before submitting the set, which catches them in a minute instead of
-after 142 dead jobs:
+Left unchecked, the tell for all three is a queue that drains far faster than 30
+minutes a job. Smoke-test anyway when the branch touches the pipeline itself,
+which the preflight cannot judge:
 
 ```bash
 ./examples/abstract.sh   # driverlog p07: collapses three packages, plan length 15
@@ -121,10 +133,10 @@ after 142 dead jobs:
 Pick a problem the branch solves quickly. A refinement branch can time out on a
 hard one for its own reasons, which says nothing about the worktree.
 
-`experiments.fetch` guards on `squeue -u "$USER"`, the whole user rather than one
-run, so neither run can be pulled until both drain. Give each its own `--into`,
-and `--remote-dir ~/apf/<branch>/runs/` is required because there is no longer
-one checkout to default to.
+`experiments.fetch` guards on the run's own jobs — CopperBench names every array
+task after the run — so a finished run can be pulled while another is still
+queued. Give each its own `--into`; `--remote-dir` follows the branch each
+checkout is on.
 
 Removing a worktree afterwards needs `--force`, since the four symlinks read as
 local modifications:
@@ -132,6 +144,21 @@ local modifications:
 ```bash
 ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare worktree remove --force ~/apf/<branch>'
 ```
+
+## Watching a run
+
+```bash
+python -m experiments.status
+```
+
+Reports the run's own queued jobs, how many results are written against how many
+the manifest expects, and what each result says so far. It reads the cluster in
+place and pulls nothing, so it is the right thing to put on a background watch:
+the queue count alone means opposite things depending on whether the worktree is
+built.
+
+Results still saying `running` with no job left on the queue are flagged. Those
+jobs were killed, which is what the runsolver SIGINT looks like from here.
 
 ## Before reporting on a run
 

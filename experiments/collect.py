@@ -1,5 +1,6 @@
 """Collect benchmark result files into one CSV file."""
 
+import argparse
 import ast
 from collections import Counter
 import csv
@@ -36,30 +37,39 @@ def _value(output, label, convert=str):
     return "" if match is None else convert(match.group(1))
 
 
-def collect(results_dir=RESULTS_DIR):
-    results_dir = Path(results_dir)
+def collect(*results_dirs):
+    """Collect one run, or several merged into one set of rows.
+
+    A run that filled another's gaps is collected by naming both: the later
+    directory wins where the two hold the same result, and the expected results
+    are the union of their manifests.
+    """
     results = {}
-    for result_file in sorted(results_dir.rglob("*.json")):
-        if result_file.name in ("metadata.json", MANIFEST_NAME):
-            continue
-        result = json.loads(result_file.read_text(encoding="utf-8"))
-        if not {"domain", "problem", "output"} <= result.keys():
-            continue
+    keys = set()
+    for results_dir in results_dirs or (RESULTS_DIR,):
+        results_dir = Path(results_dir)
+        for result_file in sorted(results_dir.rglob("*.json")):
+            if result_file.name in ("metadata.json", MANIFEST_NAME):
+                continue
+            result = json.loads(result_file.read_text(encoding="utf-8"))
+            if not {"domain", "problem", "output"} <= result.keys():
+                continue
 
-        mode = result.get("mode")
-        if mode in MODES:
-            results[(result["domain"], result["problem"], mode)] = result
-        else:
-            # Results produced before modes became separate jobs stored the
-            # concrete comparison inside the abstract result.
-            results.setdefault((result["domain"], result["problem"], "abstract"), result)
-            if "concrete" in result:
-                results.setdefault((result["domain"], result["problem"], "concrete"), result["concrete"])
+            mode = result.get("mode")
+            if mode in MODES:
+                results[(result["domain"], result["problem"], mode)] = result
+            else:
+                # Results produced before modes became separate jobs stored the
+                # concrete comparison inside the abstract result.
+                results.setdefault((result["domain"], result["problem"], "abstract"), result)
+                if "concrete" in result:
+                    results.setdefault((result["domain"], result["problem"], "concrete"), result["concrete"])
 
-    keys = set(results)
-    manifest = results_dir / MANIFEST_NAME
-    if manifest.is_file():
-        keys.update(_manifest_keys(manifest))
+        manifest = results_dir / MANIFEST_NAME
+        if manifest.is_file():
+            keys.update(_manifest_keys(manifest))
+
+    keys.update(results)
 
     rows = []
     for domain, problem, mode in sorted(keys):
@@ -215,8 +225,10 @@ def _preserved_rows(collected, csv_file=CSV_FILE):
     return preserved
 
 
-def main(results_dir=RESULTS_DIR, csv_file=CSV_FILE):
-    collected = collect(results_dir)
+def main(results_dirs=RESULTS_DIR, csv_file=CSV_FILE):
+    if isinstance(results_dirs, (str, Path)):
+        results_dirs = [results_dirs]
+    collected = collect(*results_dirs)
     preserved = _preserved_rows(collected, csv_file)
     rows = sorted(collected + preserved, key=_key)
     csv_file = Path(csv_file)
@@ -234,5 +246,19 @@ def main(results_dir=RESULTS_DIR, csv_file=CSV_FILE):
     print(f"Collected {len(rows)} results in {csv_file}")
 
 
+def _argument_parser():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "results_dirs",
+        nargs="*",
+        type=Path,
+        default=[RESULTS_DIR],
+        help="Result directories to collect; where two hold the same result, the later one wins",
+    )
+    parser.add_argument("--csv", default=CSV_FILE, help="CSV file to collect the results into")
+    return parser
+
+
 if __name__ == "__main__":
-    main()
+    args = _argument_parser().parse_args()
+    main(args.results_dirs, args.csv)
