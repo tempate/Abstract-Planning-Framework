@@ -36,7 +36,7 @@ An \emph{action} $a$ is a triple $\langle \mathrm{pre}(a), \mathrm{add}(a), \mat
 A \emph{STRIPS planning task} over $F$ is a tuple $\Pi = \langle F,A,I,G\rangle$, where $A$ is a set of actions, $I \subseteq F$ is the initial state, and $G \subseteq F$ is the goal.
 \end{definition}
 
-Preconditions and goals are sets of atoms, so they can only require an atom to be present, never absent.
+Preconditions and goals are sets of atoms, so they can only require an atom to be present, never absent. Every task is ground, so $A$ is a set of actions rather than of action schemas, and conditions on the identity of objects, such as an inequality between two schema parameters, have been resolved before the abstraction is applied.
 
 \begin{definition}
 A \emph{plan} is a finite sequence $\pi = a_1 \dots a_n$ of actions. The empty plan $\varepsilon$ is applicable in every state, with $s[\varepsilon] = s$, and $\pi = a_1 \dots a_n$ with $n \geq 1$ is \emph{applicable} in $s$ if $a_1$ is applicable in $s$ and $a_2 \dots a_n$ is applicable in $s[a_1]$. The plan then leads to 
@@ -71,7 +71,7 @@ and extends to atoms, states, actions, and plans by
 \end{align*}
 \end{definition}
 
-Since $\alpha$ maps every object of $C$ onto the single symbol $c$ it is not injective, so it may identify distinct atoms, states, and actions of $\Pi$.
+Since $\alpha$ maps every object of $C$ onto the single symbol $c$ it is not injective, so it may identify distinct atoms, states, and actions of $\Pi$. The two lemmas below are the only properties of $\alpha$ the later proofs use.
 
 \begin{lemma}\label{lem:image}
 If $X \subseteq Y$ are sets of atoms, then $\alpha(X) \subseteq \alpha(Y)$.
@@ -111,6 +111,8 @@ $\Pi^r$ differs from $\Pi^\alpha$ only in the delete lists of its actions, and c
 
 \section{Over-approximation}
 
+The argument is an induction on the length of a plan. Two lemmas cover a single action, and a third carries an inclusion along a plan.
+
 \begin{lemma}\label{lem:action}
 If $a \in A$ is applicable in $s \subseteq F$, then $a^r$ is applicable in $\alpha(s)$.
 \end{lemma}
@@ -131,6 +133,8 @@ By Definitions~\ref{def:action},~\ref{def:alpha} and~\ref{def:relaxed}, we have 
 \end{align*}
 and it suffices to show that $\alpha(s \setminus \mathrm{del}(a)) \subseteq \alpha(s) \setminus \mathrm{del}^r(a)$. Let $f \in \alpha(s \setminus \mathrm{del}(a))$, so $f \in \alpha(s)$ by Lemma~\ref{lem:image}, and $f = \alpha(g)$ for some $g \in s$ with $g \notin \mathrm{del}(a)$. Suppose towards a contradiction that $f \in \mathrm{del}^r(a)$. By Definition~\ref{def:relaxed}, we have $f = \alpha(d)$ for some $d \in \mathrm{del}(a)$ mentioning no object of $C$, so $f = d$ by Lemma~\ref{lem:fixed} and $f$ does not mention $c$. Then $\alpha(g)$ does not mention $c$, so Lemma~\ref{lem:fixed} gives $g = \alpha(g) = f = d$ --- a contradiction since $g \notin \mathrm{del}(a)$.
 \end{proof}
+
+Lemma~\ref{lem:progress} gives an inclusion rather than an equality, because the relaxed action keeps facts the concrete one deletes. The induction therefore has to move a plan from a state to a superset of it.
 
 \begin{lemma}\label{lem:mono}
 Let $s \subseteq t$ be states and let $\pi$ be applicable in $s$. Then $\pi$ is applicable in $t$ and $s[\pi] \subseteq t[\pi]$.
