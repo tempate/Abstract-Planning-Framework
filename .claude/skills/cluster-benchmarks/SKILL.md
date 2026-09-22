@@ -143,6 +143,21 @@ local modifications:
 ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare worktree remove --force ~/apf/<branch>'
 ```
 
+## Watching a run
+
+```bash
+python -m experiments.status
+```
+
+Reports the run's own queued jobs, how many results are written against how many
+the manifest expects, and what each result says so far. It reads the cluster in
+place and pulls nothing, so it is the right thing to put on a background watch:
+the queue count alone means opposite things depending on whether the worktree is
+built.
+
+Results still saying `running` with no job left on the queue are flagged. Those
+jobs were killed, which is what the runsolver SIGINT looks like from here.
+
 ## Before reporting on a run
 
 ```bash
