@@ -63,9 +63,10 @@ python -m experiments.submit --modes abstract concrete lama
 
 Submit every mode you want compared: `experiments.report` pairs **all** of them
 and drops any problem missing one, so a mode left out of a run shrinks every
-table. `lama` is plain Fast Downward, the external baseline. Pin `--partition`
-for any run whose timings are published — the default `any` spans two CPU
-generations, and that is hard to defend against an external planner.
+table. `lama` is plain Fast Downward, the external baseline. Runs go to
+`sunnycove` by default, one CPU generation, so timings are comparable across a
+run. Only pass `--partition any` to fill a queue you do not intend to publish
+timings from: it spans two CPU generations and caps each job at one hour.
 
 `--track unsolvability` takes only `abstract` and `concrete`: `scripts.unsolvability`
 has no `lama` subcommand, and its concrete mode already is a plain Fast Downward

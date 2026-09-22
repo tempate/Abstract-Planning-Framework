@@ -16,12 +16,10 @@ from experiments.tracks import DEFAULT_TRACK, TRACKS
 from scripts.utils.arguments import positive_int
 
 DEFAULT_MEMORY_LIMIT = 8 * 1024
-# CopperBench defaults to broadwell, so every run so far has gone there without
-# this repository saying so, and queued behind it while sunnycove sat idle. Two
-# things to know before raising --timeout or reading timings from an "any" run:
-# the partition caps a job at one hour, and it spans both CPU generations, so
-# wall-clock times are only comparable within one of them.
-DEFAULT_PARTITION = "any"
+# One CPU generation, so wall-clock times are comparable across a whole run. The
+# "any" partition is not: it spans broadwell and sunnycove, and caps a job at one
+# hour, which silently bounds --timeout.
+DEFAULT_PARTITION = "sunnycove"
 
 
 def main():

@@ -148,6 +148,7 @@ class BenchmarkTests(unittest.TestCase):
 
         self.assertEqual(args.timeout, DEFAULT_TIMEOUT)
         self.assertEqual(args.memory_limit, DEFAULT_MEMORY_LIMIT)
+        self.assertEqual(args.partition, "sunnycove")
 
     def test_new_suite_run_removes_previous_results(self):
         with tempfile.TemporaryDirectory() as directory:
