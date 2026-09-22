@@ -34,8 +34,10 @@ from experiments.report import _coverage, _finished_problems, _head_to_head
 from experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
+    REQUIRED_ARTIFACTS,
     _argument_parser,
     _benchmark_tasks,
+    _check_worktree_is_built,
     _reset_results_dir,
     _write_copperbench_config,
     _write_manifest,
@@ -161,6 +163,23 @@ class BenchmarkTests(unittest.TestCase):
 
             self.assertTrue(results.is_dir())
             self.assertEqual(list(results.iterdir()), [])
+
+    def test_an_unbuilt_worktree_is_refused_before_anything_is_submitted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(SystemExit) as refusal:
+                _check_worktree_is_built(project_root=Path(directory))
+
+        self.assertIn("plasp", str(refusal.exception))
+
+    def test_a_built_worktree_submits(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for artifact in REQUIRED_ARTIFACTS:
+                path = root / artifact
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+
+            _check_worktree_is_built(project_root=root)
 
     def test_single_benchmark_selects_one_mode(self):
         common = ["--domain-name", "example", "--domain", "domain.pddl", "--problem", "p01.pddl"]

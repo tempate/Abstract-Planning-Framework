@@ -20,6 +20,15 @@ DEFAULT_MEMORY_LIMIT = 8 * 1024
 # "any" partition is not: it spans broadwell and sunnycove, and caps a job at one
 # hour, which silently bounds --timeout.
 DEFAULT_PARTITION = "sunnycove"
+# What a fresh worktree has not got yet. new-worktree.sh links all four at once,
+# so they are present together or absent together, and checking them per mode
+# would guard a case that does not arise. The tell for a missing one is a queue
+# draining far faster than the timeout, long after the jobs are gone.
+REQUIRED_ARTIFACTS = {
+    "lib/pddl-symmetries/src/translate/pybliss-0.73/pybind11_blissmodule.so": "abstract jobs die in symmetry discovery",
+    "lib/downward/builds/release": "every search exits 36, Could not find build 'release'",
+    "lib/plasp/bin/plasp": "plasp binary not found, before any solving",
+}
 
 
 def main():
@@ -34,6 +43,12 @@ def main():
         )
     )
     pipeline = track.pipeline
+    _check_worktree_is_built()
+    if not tasks:
+        raise SystemExit(
+            f"No problems found under {track.suite.BENCHMARKS_DIR}. "
+            "A worktree made without new-worktree.sh leaves the benchmark submodule empty."
+        )
     _reset_results_dir()
     _write_manifest(tasks, pipeline=pipeline)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
@@ -48,6 +63,16 @@ def main():
         )
         print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
+
+
+def _check_worktree_is_built(project_root=PROJECT_ROOT):
+    """Refuse to submit from a worktree whose shared build artifacts are missing."""
+    missing = [path for path in REQUIRED_ARTIFACTS if not (Path(project_root) / path).exists()]
+    if missing:
+        raise SystemExit(
+            "Nothing to run with; this worktree is missing:\n"
+            + "\n".join(f"  {path} — {REQUIRED_ARTIFACTS[path]}" for path in missing)
+        )
 
 
 def _reset_results_dir(results_dir=RESULTS_DIR):

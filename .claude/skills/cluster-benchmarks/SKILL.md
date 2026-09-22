@@ -95,8 +95,9 @@ directories with links into `~/apf/.shared`, and asserts every artifact is
 reachable before it prints `ready:`. Two seconds, no build.
 
 Plain `git worktree add` leaves `experiments/benchmarks/downward-benchmarks`,
-`lib/downward` and `lib/pddl-symmetries` empty, so the runner finds no problems
-and submits nothing without saying why. None of these are checked in:
+`lib/downward` and `lib/pddl-symmetries` empty. Submitting now refuses and names
+what is missing, rather than queueing jobs that all die the same way. None of
+these are checked in:
 
 | missing | how it fails |
 |---|---|
@@ -104,9 +105,9 @@ and submits nothing without saying why. None of these are checked in:
 | `lib/downward/builds/release` | exit code 36, `Could not find build 'release'` |
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
 
-The tell for all three is a queue that drains far faster than 30 minutes a job.
-Smoke-test before submitting the set, which catches them in a minute instead of
-after 142 dead jobs:
+Left unchecked, the tell for all three is a queue that drains far faster than 30
+minutes a job. Smoke-test anyway when the branch touches the pipeline itself,
+which the preflight cannot judge:
 
 ```bash
 ./examples/abstract.sh   # driverlog p07: collapses three packages, plan length 15
