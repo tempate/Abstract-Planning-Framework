@@ -1,6 +1,7 @@
 """Pull finished benchmark results off the cluster and collect them into the CSV."""
 
 import argparse
+import shlex
 import subprocess
 
 from experiments.collect import CSV_FILE, main as collect
@@ -11,6 +12,15 @@ DEFAULT_HOST = "copperhead"
 
 def main():
     args = _argument_parser().parse_args()
+    remote_head = _remote_head(args.host, args.remote_dir)
+    local_head = _local_head()
+    print(f"The run was produced by {remote_head[:9]} on {args.host}")
+    if remote_head != local_head and not args.force:
+        print(
+            f"This checkout is on {local_head[:9]}, so the results are not this branch's run. "
+            "Check out the commit that produced them, or pass --force."
+        )
+        return
     pending = _pending_jobs(args.host)
     if pending and not args.force:
         print(f"{pending} job(s) still on the queue; the run is unfinished. Pass --force to pull anyway.")
@@ -28,9 +38,29 @@ def _argument_parser():
     parser.add_argument("--remote-dir", required=True, help="Results directory on that host, ~/apf/<branch>/runs/")
     parser.add_argument("--into", default=RESULTS_DIR, help="Local directory to pull the results into")
     parser.add_argument("--csv", default=CSV_FILE, help="CSV file to collect the results into")
-    parser.add_argument("--force", action="store_true", help="Pull even while jobs are still queued")
+    parser.add_argument(
+        "--force", action="store_true", help="Pull even while jobs are queued, or from a checkout on another commit"
+    )
     parser.add_argument("--dry-run", action="store_true", help="Report what rsync would transfer")
     return parser
+
+
+def _remote_head(host, remote_dir):
+    """The commit the checkout that produced a run is standing on.
+
+    An empty queue says a run finished, not which code ran it, and the results
+    carry no record of that themselves.
+    """
+    command = ["ssh", "-o", "BatchMode=yes", host, f"git -C {shlex.quote(remote_dir)} rev-parse HEAD"]
+    completed = subprocess.run(command, capture_output=True, text=True)
+    if completed.returncode != 0:
+        raise SystemExit(f"Cannot read the checkout holding {host}:{remote_dir}\n{completed.stderr.strip()}")
+    return completed.stdout.strip()
+
+
+def _local_head():
+    completed = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True)
+    return completed.stdout.strip()
 
 
 def _pending_jobs(host):

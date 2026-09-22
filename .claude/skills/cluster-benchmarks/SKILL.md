@@ -21,18 +21,11 @@ version — we build one copy because no branch here moves one.
 
 ## Pulling a finished run
 
-**Find the worktree that produced it before trusting anything.** An empty queue
-says a run finished, not which code ran it:
-
-```bash
-ssh -o BatchMode=yes copperhead 'cd <dir> && git rev-parse --abbrev-ref HEAD && git rev-parse --short HEAD'
-```
-
-Compare that HEAD to the local branch. A mismatch means the results are not this
-branch's run.
-
-Then pull with `experiments.fetch`, which refuses while `squeue` is non-empty,
-rsyncs, and collects in one step:
+`experiments.fetch` does the checking itself: it reads the HEAD of the checkout
+that produced the run, refuses to pull when that is not the commit this checkout
+stands on, refuses while `squeue` is non-empty, then rsyncs and collects in one
+step. It prints the producing commit either way, so a pull states its own
+provenance:
 
 ```bash
 python -m experiments.fetch --remote-dir <dir>/runs/ --into <scratch> --csv experiments/plan/results.csv
