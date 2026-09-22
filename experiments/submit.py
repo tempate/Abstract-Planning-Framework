@@ -40,6 +40,8 @@ def main():
             suite=track.suite.SUITE,
             runnable=track.suite.SYMMETRIC_PROBLEMS,
             modes=args.modes,
+            domains=args.domains,
+            problems=args.problems,
         )
     )
     pipeline = track.pipeline
@@ -123,6 +125,12 @@ def _argument_parser():
         help="Ways to solve every problem, one cluster job each",
     )
     parser.add_argument(
+        "--domains", nargs="+", help="Submit only these domains of the track's suite, instead of all of them"
+    )
+    parser.add_argument(
+        "--problems", nargs="+", help="Submit only these problem files, named p01.pddl or p01, within each domain"
+    )
+    parser.add_argument(
         "--track",
         choices=sorted(TRACKS),
         default=DEFAULT_TRACK,
@@ -187,13 +195,20 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstract",)):
+def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstract",), domains=None, problems=None):
+    if domains is not None:
+        unknown = sorted(set(domains) - set(suite))
+        if unknown:
+            raise SystemExit(f"Not in this track's suite: {', '.join(unknown)}")
+        suite = [domain_name for domain_name in suite if domain_name in set(domains)]
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
             if _is_domain_file(problem.name) or _has_other_status(problem.name):
                 continue
             if runnable is not None and (domain_name, problem.name) not in runnable:
+                continue
+            if problems is not None and not {problem.name, problem.stem} & set(problems):
                 continue
             domain = _find_domain(problem)
             for mode in modes:

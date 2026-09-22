@@ -271,6 +271,31 @@ class BenchmarkTests(unittest.TestCase):
 
             self.assertEqual([problem.name for _mode, _name, _domain, problem in tasks], ["p02.pddl"])
 
+    def test_a_subset_run_names_its_domains_and_problems(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for domain_name in ("one", "two"):
+                benchmark = root / domain_name
+                benchmark.mkdir()
+                (benchmark / "domain.pddl").touch()
+                (benchmark / "p01.pddl").touch()
+                (benchmark / "p02.pddl").touch()
+            suite = ["one", "two"]
+
+            by_domain = _benchmark_tasks(root, suite, runnable=None, domains=["two"])
+            by_problem = _benchmark_tasks(root, suite, runnable=None, domains=["two"], problems=["p02"])
+            by_file_name = _benchmark_tasks(root, suite, runnable=None, problems=["p02.pddl"])
+
+            self.assertEqual({name for _m, name, _d, _p in by_domain}, {"two"})
+            self.assertEqual([(n, p.name) for _m, n, _d, p in by_problem], [("two", "p02.pddl")])
+            self.assertEqual({p.name for _m, _n, _d, p in by_file_name}, {"p02.pddl"})
+
+    def test_a_misspelled_domain_is_refused_rather_than_submitting_nothing(self):
+        with self.assertRaises(SystemExit) as refusal:
+            list(_benchmark_tasks(Path("/nowhere"), ["driverlog"], runnable=None, domains=["driverlgo"]))
+
+        self.assertIn("driverlgo", str(refusal.exception))
+
     def test_only_the_problems_known_unsolvable_are_submitted(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

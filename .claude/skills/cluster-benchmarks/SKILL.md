@@ -78,10 +78,16 @@ unsolvable; satprob and unknownprob are skipped.
 before submitting. Move it aside first, or confirm the results are already
 pulled.
 
-To submit a subset, cut the problem files the runner reads down to the wanted
-problems, submit, then `git checkout --` them. Workers get explicit problem
-paths, so restoring the files mid-run is safe. Say plainly that such a run is
-not reproducible from a SHA, since the committed code submits the whole set.
+To submit a subset, name it:
+
+```bash
+python -m experiments.submit --domains driverlog gripper --problems p07 p08
+```
+
+`--problems` matches within every domain submitted, by file name or stem. A
+domain not in the track's suite is refused rather than quietly submitting
+nothing. The manifest records exactly what was submitted, so the run stays
+reproducible from a SHA plus its flags.
 
 ## Running two branches at once
 
