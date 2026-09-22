@@ -126,9 +126,10 @@ which the preflight cannot judge:
 Pick a problem the branch solves quickly. A refinement branch can time out on a
 hard one for its own reasons, which says nothing about the worktree.
 
-`experiments.fetch` guards on `squeue -u "$USER"`, the whole user rather than one
-run, so neither run can be pulled until both drain. Give each its own `--into`;
-`--remote-dir` follows the branch each checkout is on.
+`experiments.fetch` guards on the run's own jobs — CopperBench names every array
+task after the run — so a finished run can be pulled while another is still
+queued. Give each its own `--into`; `--remote-dir` follows the branch each
+checkout is on.
 
 Removing a worktree afterwards needs `--force`, since the four symlinks read as
 local modifications:

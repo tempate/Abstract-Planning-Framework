@@ -10,6 +10,7 @@ class FetchTests(unittest.TestCase):
         with (
             patch.object(experiments.fetch, "_remote_head", return_value=remote_head),
             patch.object(experiments.fetch, "_local_head", return_value=local_head),
+            patch.object(experiments.fetch, "_remote_run_name", return_value="run-example"),
             patch.object(experiments.fetch, "_pending_jobs", return_value=pending),
             patch.object(experiments.fetch, "_pull") as pull,
             patch.object(experiments.fetch, "collect") as collect,
@@ -34,6 +35,17 @@ class FetchTests(unittest.TestCase):
         pull, _ = self._run(["--remote-dir", "/apf/other/runs/", "--force"], remote_head="aaa", local_head="bbb")
 
         pull.assert_called_once()
+
+    def test_only_this_runs_jobs_hold_up_its_pull(self):
+        with patch.object(experiments.fetch, "subprocess") as subprocesses:
+            subprocesses.run.return_value.stdout = "0\n"
+            experiments.fetch._pending_jobs("copperhead", "run-example")
+            with_name = subprocesses.run.call_args[0][0][-1]
+            experiments.fetch._pending_jobs("copperhead")
+            without_name = subprocesses.run.call_args[0][0][-1]
+
+        self.assertIn("--name=run-example", with_name)
+        self.assertNotIn("--name", without_name)
 
     def test_an_unfinished_run_is_not_pulled(self):
         pull, _ = self._run(["--remote-dir", "/apf/branch/runs/"], pending=3)

@@ -3,6 +3,7 @@
 import argparse
 import shlex
 import subprocess
+from pathlib import Path
 
 from experiments.collect import CSV_FILE, main as collect
 from experiments.run import RESULTS_DIR
@@ -24,9 +25,11 @@ def main():
             "Check out the commit that produced them, or pass --force."
         )
         return
-    pending = _pending_jobs(args.host)
+    run_name = _remote_run_name(args.host, remote_dir)
+    pending = _pending_jobs(args.host, run_name)
     if pending and not args.force:
-        print(f"{pending} job(s) still on the queue; the run is unfinished. Pass --force to pull anyway.")
+        whose = run_name or "this user"
+        print(f"{pending} job(s) of {whose} still on the queue; the run is unfinished. Pass --force to pull anyway.")
         return
     _pull(args.host, remote_dir, args.into, args.dry_run)
     if not args.dry_run:
@@ -86,9 +89,23 @@ def _local_head():
     return completed.stdout.strip()
 
 
-def _pending_jobs(host):
-    """Count the queued and running jobs the cluster still holds for this user."""
-    command = ["ssh", "-o", "BatchMode=yes", host, 'squeue -u "$USER" -h | wc -l']
+def _remote_run_name(host, remote_dir):
+    """The Slurm job name of the run in that directory.
+
+    CopperBench names its own directory and every array task after the run, so
+    the name is there to be read even though the results do not carry it. An
+    empty answer means a directory CopperBench did not write.
+    """
+    path = shlex.quote(_remote_command_path(remote_dir))
+    command = ["ssh", "-o", "BatchMode=yes", host, f"ls -1dt {path}/run-*/ 2>/dev/null | head -1"]
+    completed = subprocess.run(command, capture_output=True, text=True)
+    return Path(completed.stdout.strip()).name
+
+
+def _pending_jobs(host, run_name=None):
+    """Count the jobs the cluster still holds for this run, or for the user without one."""
+    selector = f" --name={shlex.quote(run_name)}" if run_name else ""
+    command = ["ssh", "-o", "BatchMode=yes", host, f'squeue -u "$USER"{selector} -h | wc -l']
     completed = subprocess.run(command, capture_output=True, text=True, check=True)
     return int(completed.stdout.strip())
 
