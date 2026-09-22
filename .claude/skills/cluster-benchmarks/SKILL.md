@@ -89,6 +89,10 @@ domain not in the track's suite is refused rather than quietly submitting
 nothing. The manifest records exactly what was submitted, so the run stays
 reproducible from a SHA plus its flags.
 
+`--dry-run` prints the job count, the CopperBench config and the first
+instances, and returns before touching `runs/` or the queue. Check a submit-side
+change with it rather than against a real run.
+
 ## Running two branches at once
 
 One run per worktree, never two from one checkout. `_reset_results_dir()` deletes

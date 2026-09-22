@@ -51,8 +51,9 @@ def main():
             f"No problems found under {track.suite.BENCHMARKS_DIR}. "
             "A worktree made without new-worktree.sh leaves the benchmark submodule empty."
         )
-    _reset_results_dir()
-    _write_manifest(tasks, pipeline=pipeline)
+    if not args.dry_run:
+        _reset_results_dir()
+        _write_manifest(tasks, pipeline=pipeline)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
         config_file = _write_copperbench_config(
             tasks,
@@ -63,8 +64,24 @@ def main():
             partition=args.partition,
             pipeline=pipeline,
         )
+        if args.dry_run:
+            _report_run(tasks, config_file, definition_dir)
+            return
         print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
+
+
+def _report_run(tasks, config_file, definition_dir):
+    """Print what a submission would send, so a submit-side change can be checked for free."""
+    definition_dir = Path(definition_dir)
+    instances = (definition_dir / "instances.txt").read_text(encoding="utf-8").splitlines()
+    print(f"Would submit {len(tasks)} cluster jobs (one per mode and benchmark problem)")
+    print(config_file.read_text(encoding="utf-8").strip())
+    print((definition_dir / "configs.txt").read_text(encoding="utf-8").strip())
+    for instance in instances[:3]:
+        print(f"  {instance}")
+    if len(instances) > 3:
+        print(f"  ... and {len(instances) - 3} more")
 
 
 def _check_worktree_is_built(project_root=PROJECT_ROOT):
@@ -123,6 +140,11 @@ def _argument_parser():
         choices=MODES,
         default=["abstract"],
         help="Ways to solve every problem, one cluster job each",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Build the run definition and print it without submitting, and without touching the results directory",
     )
     parser.add_argument(
         "--domains", nargs="+", help="Submit only these domains of the track's suite, instead of all of them"

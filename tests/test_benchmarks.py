@@ -30,6 +30,7 @@ from experiments.run import (
     _run_task,
 )
 import experiments.report
+import experiments.submit
 from experiments.report import _coverage, _finished_problems, _head_to_head
 from experiments.submit import (
     DEFAULT_MEMORY_LIMIT,
@@ -163,6 +164,23 @@ class BenchmarkTests(unittest.TestCase):
 
             self.assertTrue(results.is_dir())
             self.assertEqual(list(results.iterdir()), [])
+
+    def test_a_dry_run_submits_nothing_and_leaves_the_results_alone(self):
+        argv = ["submit", "--dry-run", "--domains", "driverlog", "--problems", "p07"]
+        with (
+            patch("sys.argv", argv),
+            patch.object(experiments.submit, "_check_worktree_is_built"),
+            patch.object(experiments.submit, "_reset_results_dir") as reset,
+            patch.object(experiments.submit, "_write_manifest") as manifest,
+            patch.object(experiments.submit, "subprocess") as subprocesses,
+            contextlib.redirect_stdout(io.StringIO()) as output,
+        ):
+            experiments.submit.main()
+
+        reset.assert_not_called()
+        manifest.assert_not_called()
+        subprocesses.run.assert_not_called()
+        self.assertIn("driverlog", output.getvalue())
 
     def test_an_unbuilt_worktree_is_refused_before_anything_is_submitted(self):
         with tempfile.TemporaryDirectory() as directory:
