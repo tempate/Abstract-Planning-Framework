@@ -7,37 +7,21 @@ may exist only because of the relaxation, and is reported as unknown.
 """
 
 import argparse
-import sys
-import traceback
 
-from core.integrations.unified_planning import PddlError
-from core.abstraction.factory import AbstractionError
-from core.outcomes import PlanningOutcomeError
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.abstract import check_solvability_via_abstraction
 from core.planning.baseline import check_solvability_directly
 
 from .utils.arguments import abstraction_arguments, task_arguments
+from .utils.entry import run
 from .utils.reporting import print_metrics, progress_callback
 
 
 def main():
-    parser = _argument_parser()
-    args = parser.parse_args()
-    try:
-        print("Starting")
-        result = _compute(args)
-    except PlanningOutcomeError as error:
-        print(f"{error.label}: {error}")
-        return error.exit_code
-    except (AbstractionError, PddlError, OSError, UnicodeError, ValueError) as error:
-        parser.error(str(error))
-    except Exception as error:
-        # Left uncaught it exits 1, which reads as a task proved unsolvable.
-        print(f"Error: {error!r}")
-        traceback.print_exc(file=sys.stdout)
-        return PlanningOutcomeError.exit_code
+    return run(_argument_parser(), _compute, _report)
 
+
+def _report(result):
     print_verdict(result)
     return 0
 
@@ -57,7 +41,6 @@ def _compute(args):
             ),
             on_update,
         )
-    raise ValueError(f"Unknown decision mode: {args.mode}")
 
 
 def print_verdict(result):
