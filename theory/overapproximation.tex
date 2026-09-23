@@ -3,7 +3,6 @@
 
 \theoremstyle{definition}
 \newtheorem{definition}{Definition}
-\newtheorem{remark}{Remark}
 
 \theoremstyle{plain}
 \newtheorem{lemma}{Lemma}
@@ -13,7 +12,7 @@
 
 Many planning tasks contain objects that behave alike, such as several packages that differ only in their names. We collapse such objects into a single representative and plan in the resulting abstraction. The abstract task is smaller, so a planner solves it faster, and we then refine its plan into a plan for the original task. For the approach to be sound, the abstraction must not lose plans. If the original task is solvable, the abstraction must be solvable too, so an unsolvable abstraction proves the original task unsolvable.
 
-Collapsing objects alone does not guarantee soundness, because deleting an atom about one collapsed object also deletes it for all the others. This note defines the abstraction, relaxes exactly the deletes that cause the problem, and proves that the result never loses a plan.
+Collapsing objects alone does not guarantee soundness, because deleting an atom about one collapsed object also deletes it for all the others. This note defines the abstraction, relaxes the deletes that can cause the problem, and proves that the result never loses a plan.
 
 \section{Preliminaries}\label{sec:prelim}
 
@@ -28,7 +27,7 @@ An \emph{atom} is a ground expression $p(o_1,\dots,o_k)$, where $p \in P$ has ar
 Let $F$ be the set of atoms. An atom $p(o_1,\dots,o_k)$ \emph{mentions} an object $o$ if $o \in \{o_1,\dots,o_k\}$.
 
 \begin{definition}
-A \emph{state} is a set $s \subseteq F$. The atoms in $s$ are exactly those that hold, so an atom outside $s$ is false rather than unknown.
+A \emph{state} is a set $s \subseteq F$. The state $s$ contains exactly the atoms that hold, so an atom outside $s$ is false rather than unknown.
 \end{definition}
 
 \begin{definition}\label{def:action}
@@ -44,7 +43,7 @@ A \emph{STRIPS planning task} over $F$ is a tuple $\Pi = \langle F,A,I,G\rangle$
 
 Preconditions and goals are sets of atoms, so they can only require an atom to be present, never absent. The proof relies on positive conditions. A state with more atoms satisfies every condition that a state with fewer atoms satisfies, so adding atoms to a state never blocks an action or a goal.
 
-Every task is ground, so $A$ is a set of actions rather than of action schemas, and conditions on the identity of objects, such as an inequality between two schema parameters, have been resolved before the abstraction is applied.
+Every task is ground, so $A$ is a set of actions rather than of action schemas. Grounding already decides conditions on the identity of objects, such as an inequality between two schema parameters, so no action of $\Pi$ carries such a condition, and collapsing objects later cannot falsify one.
 
 \begin{definition}
 A \emph{plan} is a finite sequence $\pi = a_1 \dots a_n$ of actions. The empty plan $\varepsilon$ is applicable in every state, with $s[\varepsilon] = s$, and $\pi = a_1 \dots a_n$ with $n \geq 1$ is \emph{applicable} in $s$ if $a_1$ is applicable in $s$ and $a_2 \dots a_n$ is applicable in $s[a_1]$. The plan then leads to 
@@ -64,7 +63,7 @@ The abstraction replaces a set of objects by one representative. Atoms and actio
 Fix a non-empty set $C \subseteq O$ of objects to collapse and a fresh symbol $c \notin O$.
 
 \begin{definition}\label{def:alpha}
-The \emph{abstraction map} $\alpha$ is given by
+We define the \emph{abstraction map} $\alpha$ on objects by
 \begin{align*}
   \alpha(o) &=
   \begin{cases}
@@ -72,7 +71,7 @@ The \emph{abstraction map} $\alpha$ is given by
     o & \text{otherwise,}
   \end{cases}
 \end{align*}
-and extends to atoms, states, actions, and plans by
+and extend it to atoms, states, actions, and plans by
 \begin{align*}
   \alpha\bigl(p(o_1,\dots,o_k)\bigr) &= p(\alpha(o_1),\dots,\alpha(o_k)),\\
   \alpha(s) &= \{\, \alpha(f) : f \in s \,\},\\
@@ -108,7 +107,7 @@ The \emph{abstraction} of $\Pi$ under $\alpha$ is $\Pi^\alpha = \langle F^\alpha
 
 The definitions of Section~\ref{sec:prelim} apply to $\Pi^\alpha$ unchanged, with $(O \setminus C) \cup \{c\}$ in place of $O$. The states of $\Pi^\alpha$ are therefore the subsets of $F^\alpha$.
 
-$\Pi^\alpha$ can lose plans of $\Pi$. Suppose that two packages $p_1, p_2 \in C$ lie at a location $l$, and take the plan that loads $p_1$ and then $p_2$. Loading $p_1$ deletes $\mathit{at}(p_1, l)$, so its image in $\Pi^\alpha$ deletes $\mathit{at}(c, l)$, even though $p_2$ still lies at $l$. Loading $p_2$ needs $\mathit{at}(c, l)$ in $\Pi^\alpha$, so the image of the plan fails there. The trouble is that one atom of $\Pi^\alpha$ stands for several atoms of $\Pi$, and deleting one of them should not delete the others. The relaxation therefore drops every delete that mentions an object of $C$.
+$\Pi^\alpha$ can lose plans of $\Pi$. Suppose that two packages $b_1, b_2 \in C$ lie at a location $l$, and take the plan that loads $b_1$ and then $b_2$. Loading $b_1$ deletes $\mathit{at}(b_1, l)$, so its image in $\Pi^\alpha$ deletes $\mathit{at}(c, l)$, even though $b_2$ still lies at $l$. Loading $b_2$ needs $\mathit{at}(c, l)$ in $\Pi^\alpha$, so the image of the plan fails there. The trouble is that one atom of $\Pi^\alpha$ stands for several atoms of $\Pi$, and deleting one of them should not delete the others. The relaxation therefore drops every delete that mentions an object of $C$.
 
 \begin{definition}\label{def:relaxed}
 The \emph{relaxation} of an action $a \in A$ is the action
@@ -186,6 +185,6 @@ By Definition~\ref{def:relaxed}, $\Pi^r$ has initial state $\alpha(I)$ and goal 
 
 Read the other way, if $\Pi^r$ has no plan, then neither does $\Pi$, so proving that $\Pi^r$ is unsolvable proves that $\Pi$ is unsolvable.
 
-The converse fails. $\Pi^r$ may have plans that are not the relaxation of any plan of $\Pi$, because $\alpha$ forgets which object of $C$ an atom is about, and the relaxation keeps atoms that $\Pi$ deletes. A plan of $\Pi^r$ is therefore only a candidate, and we still have to refine it into a plan of $\Pi$.
+The converse fails. $\Pi^r$ may have a plan even when $\Pi$ has none, because $\alpha$ forgets which object of $C$ an atom is about, and the relaxation keeps atoms that $\Pi$ deletes. A plan of $\Pi^r$ is therefore only a candidate, and we still have to refine it into a plan of $\Pi$.
 
 \end{document}
