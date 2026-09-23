@@ -21,23 +21,21 @@ version — we build one copy because no branch here moves one.
 
 ## Pulling a finished run
 
-`experiments.fetch` does the checking itself: it reads the HEAD of the checkout
-that produced the run, refuses to pull when that is not the commit this checkout
-stands on, refuses while `squeue` is non-empty, then rsyncs and collects in one
-step. It prints the producing commit either way, so a pull states its own
-provenance:
+`experiments.fetch` does the checking itself: it refuses while `squeue` still
+holds the run's jobs, rsyncs the run into a fresh temporary directory, and
+collects it only when this checkout holds the code the manifest says submitted
+it (commits that only touch `results.csv` or `reports.md` since do not count).
+It prints the producing commit and the directory either way, so a pull states
+its own provenance:
 
 ```bash
-python -m experiments.fetch --into <scratch> --csv experiments/plan/results.csv
+python -m experiments.fetch
 ```
 
 `--remote-dir` defaults to `~/apf/<branch>/runs/` for the branch this checkout
 is on, which is where `new-worktree.sh` puts it. Pass it explicitly for a run
-that lives anywhere else.
-
-`--into` must point **outside the repo**. Only `runs/` is
-gitignored, and rsync without `--delete` merges whatever is already there — two
-runs in one directory collect into one unreadable CSV.
+that lives anywhere else. The CSV defaults to the one of the track the manifest
+names.
 
 ## Merging a gap-filling run
 
@@ -127,8 +125,7 @@ hard one for its own reasons, which says nothing about the worktree.
 
 `experiments.fetch` guards on the run's own jobs — CopperBench names every array
 task after the run — so a finished run can be pulled while another is still
-queued. Give each its own `--into`; `--remote-dir` follows the branch each
-checkout is on.
+queued. `--remote-dir` follows the branch each checkout is on.
 
 Removing a worktree afterwards needs `--force`, since the four symlinks read as
 local modifications:
