@@ -1,6 +1,8 @@
 """Solve one PDDL task concretely or through an automatically generated abstraction."""
 
 import argparse
+import sys
+import traceback
 
 from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
@@ -25,6 +27,11 @@ def main():
         return error.exit_code
     except (AbstractionError, PddlError, OSError, UnicodeError, ValueError) as error:
         parser.error(str(error))
+    except Exception as error:
+        # Left uncaught it exits 1, which reads as a task proved unsolvable.
+        print(f"Error: {error!r}")
+        traceback.print_exc(file=sys.stdout)
+        return PlanningOutcomeError.exit_code
 
     print_planning_result(result)
     return 0 if result["success"] else 1

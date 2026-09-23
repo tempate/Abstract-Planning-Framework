@@ -7,6 +7,8 @@ may exist only because of the relaxation, and is reported as unknown.
 """
 
 import argparse
+import sys
+import traceback
 
 from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
@@ -30,6 +32,11 @@ def main():
         return error.exit_code
     except (AbstractionError, PddlError, OSError, UnicodeError, ValueError) as error:
         parser.error(str(error))
+    except Exception as error:
+        # Left uncaught it exits 1, which reads as a task proved unsolvable.
+        print(f"Error: {error!r}")
+        traceback.print_exc(file=sys.stdout)
+        return PlanningOutcomeError.exit_code
 
     print_verdict(result)
     return 0

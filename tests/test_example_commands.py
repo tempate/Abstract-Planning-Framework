@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from scripts import planner
 from scripts.planner import _argument_parser
-from core.outcomes import UnsolvableTaskError
+from core.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -125,6 +125,15 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertEqual(status, 1)
         self.assertIn("No plan: task is unsolvable", output.getvalue())
         self.assertNotIn("Traceback", output.getvalue())
+
+    def test_a_crash_is_an_error_rather_than_a_task_without_a_plan(self):
+        output = StringIO()
+        with patch.object(planner, "_compute", side_effect=KeyError("plan")):
+            with redirect_stdout(output):
+                status = self._main(["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl"])
+
+        self.assertEqual(STATUS_BY_EXIT_CODE[status], "error")
+        self.assertIn("KeyError", output.getvalue())
 
     def test_both_modes_report_failure_when_no_plan_is_found(self):
         for mode in ("concrete", "abstract"):
