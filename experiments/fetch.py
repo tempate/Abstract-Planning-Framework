@@ -2,26 +2,22 @@
 
 import argparse
 import json
-import shlex
 import subprocess
 import tempfile
 from pathlib import Path
 
+from experiments.cluster import DEFAULT_HOST, current_branch, default_remote_dir, queued_jobs, remote_head, run_name
 from experiments.collect import main as collect
 from experiments.run import MANIFEST_NAME
-
-DEFAULT_HOST = "copperhead"
-# One worktree per branch, all under ~/apf on the cluster.
-REMOTE_ROOT = "apf"
 
 
 def main():
     args = _argument_parser().parse_args()
-    remote_dir = args.remote_dir or _default_remote_dir(_current_branch())
-    run_name = _remote_run_name(args.host, remote_dir)
-    pending = _pending_jobs(args.host, run_name)
+    remote_dir = args.remote_dir or default_remote_dir(current_branch())
+    name = run_name(args.host, remote_dir)
+    pending = queued_jobs(args.host, name)
     if pending and not args.force:
-        whose = run_name or "this user"
+        whose = name or "this user"
         print(f"{pending} job(s) of {whose} still on the queue; the run is unfinished. Pass --force to pull anyway.")
         return
     # A fresh directory each time, since rsync merges into whatever a previous
@@ -30,7 +26,8 @@ def main():
     _pull(args.host, remote_dir, into, args.dry_run)
     if args.dry_run:
         return
-    commit = _manifest_commit(into) or _remote_head(args.host, remote_dir)
+    # A manifest written before it recorded the commit leaves only the remote checkout to ask.
+    commit = _manifest_commit(into) or remote_head(args.host, remote_dir)
     print(f"The run was produced by {commit[:9]} on {args.host}, pulled into {into}")
     if not _checkout_holds(commit) and not args.force:
         print(
@@ -57,38 +54,10 @@ def _argument_parser():
     return parser
 
 
-def _current_branch():
-    completed = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True, check=True)
-    return completed.stdout.strip()
-
-
-def _default_remote_dir(branch):
-    return f"{REMOTE_ROOT}/{branch}/runs/"
-
-
-def _remote_command_path(remote_dir):
-    """Drop a ~/ prefix, which quoting would stop the remote shell expanding.
-
-    ssh runs the command from the home directory, so what is left resolves to
-    the same place.
-    """
-    return remote_dir[2:] if remote_dir.startswith("~/") else remote_dir
-
-
 def _manifest_commit(results_dir):
     """The commit the run was submitted from, as its manifest records it."""
     manifest = Path(results_dir) / MANIFEST_NAME
     return json.loads(manifest.read_text(encoding="utf-8")).get("commit") if manifest.is_file() else None
-
-
-def _remote_head(host, remote_dir):
-    """The commit the checkout that produced a run stands on, for a manifest that does not record it."""
-    path = shlex.quote(_remote_command_path(remote_dir))
-    command = ["ssh", "-o", "BatchMode=yes", host, f"git -C {path} rev-parse HEAD"]
-    completed = subprocess.run(command, capture_output=True, text=True)
-    if completed.returncode != 0:
-        raise SystemExit(f"Cannot read the checkout holding {host}:{remote_dir}\n{completed.stderr.strip()}")
-    return completed.stdout.strip()
 
 
 def _checkout_holds(commit):
@@ -98,29 +67,6 @@ def _checkout_holds(commit):
         # A commit this clone does not have.
         return False
     return all(Path(name).name in ("results.csv", "reports.md") for name in completed.stdout.splitlines())
-
-
-def _remote_run_name(host, remote_dir):
-    """The Slurm job name of the run in that directory.
-
-    CopperBench names its own directory and every array task after the run, so
-    the name is there to be read even though the results do not carry it. An
-    empty answer means a directory CopperBench did not write.
-    """
-    path = shlex.quote(_remote_command_path(remote_dir))
-    command = ["ssh", "-o", "BatchMode=yes", host, f"ls -1dt {path}/run-*/ 2>/dev/null | head -1"]
-    completed = subprocess.run(command, capture_output=True, text=True)
-    return Path(completed.stdout.strip()).name
-
-
-def _pending_jobs(host, run_name=None, states=None):
-    """Count the jobs the cluster still holds for this run, or for the user without one."""
-    selector = f" --name={shlex.quote(run_name)}" if run_name else ""
-    if states:
-        selector += f" --states={states}"
-    command = ["ssh", "-o", "BatchMode=yes", host, f'squeue -u "$USER"{selector} -h | wc -l']
-    completed = subprocess.run(command, capture_output=True, text=True, check=True)
-    return int(completed.stdout.strip())
 
 
 def _pull(host, remote_dir, into, dry_run):
