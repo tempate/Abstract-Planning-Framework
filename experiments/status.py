@@ -42,8 +42,9 @@ def main():
     remote_dir = args.remote_dir or _default_remote_dir(_current_branch())
     run_name = _remote_run_name(args.host, remote_dir)
     pending = _pending_jobs(args.host, run_name)
+    running = _pending_jobs(args.host, run_name, states="RUNNING")
     summary = _remote_summary(args.host, remote_dir)
-    _report(run_name or remote_dir, pending, summary)
+    _report(run_name or remote_dir, pending, running, summary)
 
 
 def _argument_parser():
@@ -66,18 +67,19 @@ def _remote_summary(host, remote_dir):
     return json.loads(completed.stdout)
 
 
-def _report(run, pending, summary):
+def _report(run, pending, running, summary):
     counts = summary["counts"]
     written = sum(counts.values())
     expected = summary["expected"]
     print(f"{run}: {pending} job(s) on the queue, {written} of {expected or '?'} results written")
     for status, count in sorted(counts.items(), key=lambda item: (-item[1], item[0])):
         print(f"  {status:<24} {count}")
-    # A result still saying running belongs to a job that is gone unless the
-    # queue still holds it, which is how an out-of-memory kill looks here.
-    stranded = counts.get("running", 0)
-    if stranded and stranded > pending:
-        print(f"{stranded - pending} result(s) left running with no job on the queue; those jobs were killed")
+    # A job writes its result only once it starts, so a result still saying
+    # running with no running job behind it belongs to a job killed before it
+    # could write the outcome. A queued job has no result yet to compare.
+    stranded = counts.get("running", 0) - running
+    if stranded > 0:
+        print(f"{stranded} result(s) left running with no job running; those jobs were killed")
 
 
 if __name__ == "__main__":

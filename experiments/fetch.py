@@ -102,9 +102,11 @@ def _remote_run_name(host, remote_dir):
     return Path(completed.stdout.strip()).name
 
 
-def _pending_jobs(host, run_name=None):
+def _pending_jobs(host, run_name=None, states=None):
     """Count the jobs the cluster still holds for this run, or for the user without one."""
     selector = f" --name={shlex.quote(run_name)}" if run_name else ""
+    if states:
+        selector += f" --states={states}"
     command = ["ssh", "-o", "BatchMode=yes", host, f'squeue -u "$USER"{selector} -h | wc -l']
     completed = subprocess.run(command, capture_output=True, text=True, check=True)
     return int(completed.stdout.strip())

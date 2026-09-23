@@ -130,9 +130,8 @@ def _run_pipeline(command, timeout, environment=None):
         # runsolver enforces its memory limit by sending SIGINT. Uncaught it
         # escapes before the result is written, leaving the "running" stub while
         # Slurm still records the job COMPLETED.
-        _kill_process_group(process)
+        output = _kill_process_group(process)
         return_code = None
-        output = ""
         timed_out = False
         interrupted = True
     status = _machine_status(return_code, timed_out, output, interrupted)

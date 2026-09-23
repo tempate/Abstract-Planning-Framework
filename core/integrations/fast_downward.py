@@ -12,10 +12,11 @@ from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskErro
 _SUCCESS = 0
 _TRANSLATE_UNSOLVABLE = 10
 _SEARCH_UNSOLVABLE = 11
-# The driver reports a component killed by a signal as 256 minus the signal, so
-# 247 is a SIGKILL, which on these tasks is the kernel reclaiming the memory the
+# The translator and the search report running out of memory themselves. The
+# driver reports a component killed by a signal as 256 minus the signal, so 247
+# is a SIGKILL, which on these tasks is the kernel reclaiming the memory the
 # search asked for.
-_KILLED_OUT_OF_MEMORY = 247
+_OUT_OF_MEMORY = (20, 22, 24, 247)
 # Reaching an unsolvable task through --translate alone is not a failure to the
 # driver, which exits 0 after the translator has written a dummy task in place
 # of the real one. The verdict only reaches us through what it printed.
@@ -113,6 +114,6 @@ def _raise_failure(completed_process, label):
         output.strip() for output in (completed_process.stdout, completed_process.stderr) if output.strip()
     )
     message = f"Fast Downward ({label}) failed with exit code {completed_process.returncode}:\n{diagnostics}"
-    if completed_process.returncode == _KILLED_OUT_OF_MEMORY:
+    if completed_process.returncode in _OUT_OF_MEMORY:
         raise OutOfMemoryError(message)
     raise IntegrationError(message)
