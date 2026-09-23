@@ -9,4 +9,4 @@ pre-commit runs black on commit. It reformats and aborts — re-stage and commit
 
 `experiments/plan/results.csv` is the benchmark artifact. A `running` row is a job that
 was killed without a terminal status, not live work; check for them before
-drawing conclusions from a run.
+drawing conclusions from a run. `interrupted` is runsolver's memory limit.

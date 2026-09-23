@@ -43,6 +43,10 @@ git push --force-with-lease
 git push origin --delete <parent branch>                        # nothing points at it now
 ```
 
+The same holds for **any force-push**: a PR based on the branch you rewrite keeps
+the old commits, so check `gh pr list --base <branch>` before pushing and rebase
+those children onto the new tip too.
+
 Rebase the child **by base, not by merge**: the squashed parent shares no SHA
 with the copies of its commits sitting on the child, so only `--onto` drops
 them. `git merge-base <child> <parent>` gives the old parent tip, and it needs
