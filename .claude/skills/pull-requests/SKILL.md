@@ -35,18 +35,24 @@ Branches here stack (`main → #65 → #68`). Merging the parent closes nothing;
 **deleting its branch is what closes the children**, so delete it last:
 
 ```bash
-gh pr list --state open --json number,headRefName,baseRefName   # find them first
-gh pr merge <parent> --squash                                   # no --delete-branch
-git rebase --onto main <parent tip before the merge>            # in each child
-gh pr edit <child> --base main
-git push --force-with-lease
-git push origin --delete <parent branch>                        # nothing points at it now
+gh pr merge <parent> --squash                  # no --delete-branch
+python -m scripts.restack <parent branch>      # --dry-run first to see what moves
 ```
 
-Rebase the child **by base, not by merge**: the squashed parent shares no SHA
-with the copies of its commits sitting on the child, so only `--onto` drops
-them. `git merge-base <child> <parent>` gives the old parent tip, and it needs
-reading before the parent ref goes.
+`scripts.restack` rebases every open PR based on the parent onto main in a
+scratch worktree, retargets it, force-pushes it with a lease, carries the PRs
+stacked on those down the chain, and deletes the parent branch last. It stops,
+pushing nothing of that child, if a rebase conflicts: resolve that one by hand.
+Watch CI on the moved PRs before merging the next.
+
+Check for stacked PRs before **any force-push** too: a PR based on the branch
+you rewrite keeps the old commits, so run `gh pr list --base <branch>` first and
+rebase those children onto the new tip.
+
+By hand, rebase the child **by base, not by merge**: the squashed parent shares
+no SHA with the copies of its commits sitting on the child, so only
+`git rebase --onto main <old parent tip>` drops them. The old tip is
+`origin/<parent>` until that ref goes.
 
 A child PR whose base branch was deleted is CLOSED and unrecoverable: `gh pr
 reopen` fails with `Could not open the pull request`, and `gh pr edit --base`

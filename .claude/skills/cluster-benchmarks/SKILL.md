@@ -146,8 +146,9 @@ place and pulls nothing, so it is the right thing to put on a background watch:
 the queue count alone means opposite things depending on whether the worktree is
 built.
 
-Results still saying `running` with no job left on the queue are flagged. Those
-jobs were killed, which is what the runsolver SIGINT looks like from here.
+Results still saying `running` with no job left running are flagged. Those jobs
+were killed before they could write an outcome. runsolver's memory limit is not
+one of them: the worker catches its SIGINT and writes `interrupted`.
 
 ## Before reporting on a run
 
@@ -155,11 +156,12 @@ jobs were killed, which is what the runsolver SIGINT looks like from here.
 awk -F, '$4=="running"' experiments/plan/results.csv | wc -l
 ```
 
-`running` rows are jobs killed without a terminal status, not live work. They
-cluster at one `last_completed_phase` when a limit killed them. Report a run as
-partial rather than averaging over them, and check `status` for `error` and
-`killed (signal 9)` too — a domain can contribute nothing while the totals still
-look healthy.
+`running` rows are jobs killed without a terminal status, not live work. Report a
+run as partial rather than averaging over them. `interrupted` is runsolver's
+memory limit and `out of memory` is Fast Downward's own; both cluster at one
+`last_completed_phase`. Check `status` for `error` and `killed (signal 9)` too —
+a domain can contribute nothing while the totals still look healthy. In a CSV
+collected before #101, a crash reads `no plan found` and a memory kill `running`.
 
 ## Closing the loop
 
