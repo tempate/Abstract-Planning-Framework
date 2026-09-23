@@ -17,7 +17,7 @@ from core.integrations.unified_planning import (
     write_problem,
 )
 from core.metrics import PlanningMetrics
-from core.outcomes import NoSymmetriesError
+from core.outcomes import NoResourcesError, NoSymmetriesError
 from core.planning.config import RESOURCES, AbstractPlanningConfig
 
 __all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "NoSymmetriesError", "build_abstract_problem"]
@@ -89,7 +89,7 @@ def _candidate_classes(config, metrics):
             with tempfile.TemporaryDirectory(prefix="apf-resources-") as directory:
                 resources = detect_resources(directory, config.domain_path, config.problem_path)
         if not resources:
-            raise NoSymmetriesError("Resource detection found no abstractable object classes")
+            raise NoResourcesError("Resource detection found no abstractable object classes")
         return [resource.objects for resource in resources]
 
     with metrics.measure("symmetry_discovery"):

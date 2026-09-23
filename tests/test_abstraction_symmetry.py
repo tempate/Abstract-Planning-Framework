@@ -8,6 +8,7 @@ from unittest.mock import patch
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
 from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
+from core.outcomes import NoResourcesError
 from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 from core.planning.config import AbstractPlanningConfig
 
@@ -138,6 +139,16 @@ class SymmetrySelectionTests(unittest.TestCase):
         ):
             with self.assertRaises(NoSymmetriesError):
                 build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+
+    def test_rejects_tasks_without_a_resource_as_having_no_resources(self):
+        with (
+            patch("core.abstraction.factory.read_problem", return_value=self.problem),
+            patch("core.abstraction.factory.detect_resources", return_value=()),
+        ):
+            with self.assertRaises(NoResourcesError):
+                build_abstract_problem(
+                    AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source="resources")
+                )
 
     def test_accepts_domain_constants_reported_by_pddl_symmetries(self):
         domain = """

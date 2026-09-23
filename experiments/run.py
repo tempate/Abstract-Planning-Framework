@@ -177,6 +177,7 @@ def _human_status(result):
         "success": "success",
         "no_plan": "no plan found",
         "no_symmetries": "no symmetries",
+        "no_resources": "no resources",
         "symmetry_timeout": "symmetry timeout",
         "timed_out": "timed out",
         "running": "running",
