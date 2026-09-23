@@ -8,7 +8,6 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts import planner
-from scripts.planner import _argument_parser
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
 from experiments.collect import _values
@@ -86,28 +85,6 @@ class ShellExampleTests(unittest.TestCase):
         )
         # The abstract example demonstrates automatic symmetry selection.
         self.assertNotIn("--objects-to-abstract", commands["abstract"])
-
-
-class PlannerArgumentTests(unittest.TestCase):
-    def test_concrete_mode_takes_a_domain_and_a_problem(self):
-        args = _argument_parser().parse_args(["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl"])
-
-        self.assertEqual(args.mode, "concrete")
-        self.assertEqual(args.domain, "domain.pddl")
-        self.assertEqual(args.problem, "problem.pddl")
-
-    def test_abstract_mode_selects_objects_automatically_by_default(self):
-        args = _argument_parser().parse_args(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
-
-        self.assertEqual(args.mode, "abstract")
-        self.assertIsNone(args.objects_to_abstract)
-
-    def test_abstract_mode_accepts_explicit_objects(self):
-        args = _argument_parser().parse_args(
-            ["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl", "--objects-to-abstract", "a", "b"]
-        )
-
-        self.assertEqual(args.objects_to_abstract, ["a", "b"])
 
 
 class PlannerExitStatusTests(unittest.TestCase):

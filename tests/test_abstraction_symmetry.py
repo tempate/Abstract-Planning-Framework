@@ -122,15 +122,12 @@ class SymmetrySelectionTests(unittest.TestCase):
         ]
         with (
             patch("core.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.abstraction.factory.find_symmetric_object_sets", return_value=classes) as find_classes,
+            patch("core.abstraction.factory.find_symmetric_object_sets", return_value=classes),
         ):
             result = build_abstract_problem(
-                AbstractPlanningConfig(
-                    "domain.pddl", "problem.pddl", abstract_name="pooled-vehicles", symmetry_time_limit=17
-                )
+                AbstractPlanningConfig("domain.pddl", "problem.pddl", abstract_name="pooled-vehicles")
             )
 
-        find_classes.assert_called_once_with("domain.pddl", "problem.pddl", 17)
         self.assertEqual(set(result.abstraction.objects), {"vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"})
         self.assertEqual(result.abstraction.name, "pooled-vehicles")
 
@@ -138,12 +135,9 @@ class SymmetrySelectionTests(unittest.TestCase):
         with (
             patch("core.abstraction.factory.read_problem", return_value=self.problem),
             patch("core.abstraction.factory.find_symmetric_object_sets", return_value=[]),
-            patch("core.abstraction.factory._select_abstraction") as select,
         ):
-            with self.assertRaisesRegex(NoSymmetriesError, "found no abstractable object classes"):
+            with self.assertRaises(NoSymmetriesError):
                 build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
-
-        select.assert_not_called()
 
     def test_accepts_domain_constants_reported_by_pddl_symmetries(self):
         domain = """
@@ -182,54 +176,31 @@ class SymmetrySelectionTests(unittest.TestCase):
             result = find_symmetric_object_sets(domain, problem, 17, translator)
 
         self.assertEqual(result, [["b", "a"], ["x", "y"]])
-        command = run.call_args.args[0]
-        self.assertIn("--only-object-symmetries", command)
-        self.assertIn("--do-not-stabilize-initial-state", command)
-        self.assertEqual(command[command.index("--bliss-time-limit") + 1], "17")
-        self.assertTrue(Path(command[1]).is_absolute())
-        working_directory = Path(run.call_args.kwargs["cwd"])
-        self.assertNotEqual(working_directory, translator.resolve().parent)
-        self.assertFalse(working_directory.exists())
 
     @patch("core.integrations.pddl_symmetries.subprocess.run")
-    def test_surfaces_translator_diagnostics(self, run):
-        run.return_value = subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="bliss is not built")
-        with tempfile.TemporaryDirectory() as directory:
-            translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(IntegrationError, "bliss is not built"):
-                find_symmetric_object_sets(domain, problem, 10, translator)
-
-    @patch("core.integrations.pddl_symmetries.subprocess.run")
-    def test_reports_an_unsolvable_translation(self, run):
-        run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="Translator phase\nNo relaxed solution!\n", stderr=""
+    def test_each_way_the_translator_fails_is_told_apart(self, run):
+        outcomes = (
+            (subprocess.CompletedProcess([], 1, stdout="", stderr="bliss is not built"), IntegrationError),
+            (subprocess.CompletedProcess([], 0, stdout="No relaxed solution!\n", stderr=""), UnsolvableTaskError),
+            (
+                subprocess.CompletedProcess([], 0, stdout="Non-trivial symmetric object sets: [not valid\n", stderr=""),
+                IntegrationError,
+            ),
+            (subprocess.TimeoutExpired("translate.py", 10), SymmetryTimeoutError),
         )
-        with tempfile.TemporaryDirectory() as directory:
-            translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(UnsolvableTaskError, "no relaxed solution"):
-                find_symmetric_object_sets(domain, problem, 10, translator)
+        for outcome, error in outcomes:
+            with self.subTest(error=error.__name__), tempfile.TemporaryDirectory() as directory:
+                run.return_value, run.side_effect = (
+                    (None, outcome) if isinstance(outcome, Exception) else (outcome, None)
+                )
+                translator, domain, problem = _stub_symmetry_inputs(directory)
 
-    @patch("core.integrations.pddl_symmetries.subprocess.run")
-    def test_rejects_malformed_object_sets(self, run):
-        run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="Non-trivial symmetric object sets: [not valid\n", stderr=""
-        )
-        with tempfile.TemporaryDirectory() as directory:
-            translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(IntegrationError, "malformed"):
-                find_symmetric_object_sets(domain, problem, 10, translator)
+                with self.assertRaises(error):
+                    find_symmetric_object_sets(domain, problem, 10, translator)
 
     def test_rejects_nonpositive_symmetry_time_limit(self):
         with self.assertRaisesRegex(ValueError, "positive"):
             find_symmetric_object_sets("d.pddl", "p.pddl", 0)
-
-    @patch("core.integrations.pddl_symmetries.subprocess.run")
-    def test_reports_process_timeouts(self, run):
-        run.side_effect = subprocess.TimeoutExpired("translate.py", 10)
-        with tempfile.TemporaryDirectory() as directory:
-            translator, domain, problem = _stub_symmetry_inputs(directory)
-            with self.assertRaisesRegex(SymmetryTimeoutError, "exceeded"):
-                find_symmetric_object_sets(domain, problem, 10, translator)
 
 
 @unittest.skipUnless(

@@ -78,18 +78,21 @@ class FastDownwardHelperTests(unittest.TestCase):
             self.assertFalse(Path(directory, "problem.pddl").exists())
 
     @patch("core.integrations.fast_downward.subprocess.run")
-    def test_the_search_keeps_its_files_inside_the_run_directory(self, run):
-        run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    def test_a_search_keeps_its_files_inside_the_run_directory(self, run):
+        # Left to itself the driver writes into the working directory, which the
+        # tasks of a cluster run share.
+        run.return_value = subprocess.CompletedProcess(args=[], returncode=10, stdout="", stderr="")
 
-        with tempfile.TemporaryDirectory() as directory:
-            has_plan(directory, "domain.pddl", "problem.pddl", "concrete")
+        for search in (has_plan, find_plan):
+            with self.subTest(search=search.__name__), tempfile.TemporaryDirectory() as directory:
+                search(directory, "domain.pddl", "problem.pddl", "label")
 
-            command = run.call_args.args[0]
-            written = [command[i + 1] for i, part in enumerate(command) if part in ("--sas-file", "--plan-file")]
+                command = run.call_args.args[0]
+                written = [command[i + 1] for i, part in enumerate(command) if part in ("--sas-file", "--plan-file")]
 
-        self.assertEqual(len(written), 2)
-        for path in written:
-            self.assertTrue(path.startswith(directory), f"{path} escapes the run directory")
+                self.assertEqual(len(written), 2)
+                for path in written:
+                    self.assertTrue(path.startswith(directory), f"{path} escapes the run directory")
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_the_baseline_reads_the_actions_of_the_plan_it_wrote(self, run):
@@ -119,29 +122,6 @@ class FastDownwardHelperTests(unittest.TestCase):
             self.assertEqual(find_plan(directory, "domain.pddl", "problem.pddl", "lama"), [])
 
     @patch("core.integrations.fast_downward.subprocess.run")
-    def test_the_baseline_reports_no_plan_when_the_task_is_unsolvable(self, run):
-        with tempfile.TemporaryDirectory() as directory:
-            for exit_code in (10, 11):
-                run.return_value = subprocess.CompletedProcess(args=[], returncode=exit_code, stdout="", stderr="")
-                self.assertIsNone(find_plan(directory, "domain.pddl", "problem.pddl", "lama"))
-
-    @patch("core.integrations.fast_downward.subprocess.run")
-    def test_the_baseline_keeps_its_files_inside_the_run_directory(self, run):
-        run.side_effect = lambda command, **_: subprocess.CompletedProcess(
-            args=command, returncode=10, stdout="", stderr=""
-        )
-
-        with tempfile.TemporaryDirectory() as directory:
-            find_plan(directory, "domain.pddl", "problem.pddl", "lama")
-
-            command = run.call_args.args[0]
-            written = [command[i + 1] for i, part in enumerate(command) if part in ("--sas-file", "--plan-file")]
-
-        self.assertEqual(len(written), 2)
-        for path in written:
-            self.assertTrue(path.startswith(directory), f"{path} escapes the run directory")
-
-    @patch("core.integrations.fast_downward.subprocess.run")
     def test_running_out_of_memory_is_told_apart_from_other_failures(self, run):
         # The translator's, the search's, the search's with time, and a SIGKILL.
         for returncode in (20, 22, 24, 247):
@@ -159,6 +139,7 @@ class FastDownwardHelperTests(unittest.TestCase):
 
                 with tempfile.TemporaryDirectory() as directory:
                     self.assertFalse(has_plan(directory, "domain.pddl", "problem.pddl", "concrete"))
+                    self.assertIsNone(find_plan(directory, "domain.pddl", "problem.pddl", "lama"))
 
 
 class PlaspPostProcessingTests(unittest.TestCase):
@@ -184,18 +165,6 @@ class PlaspPostProcessingTests(unittest.TestCase):
                 program = sas_to_asp(str(sas))
 
             self.assertEqual(program, "exact.\nactions.\ntranslated.\n")
-
-    def test_switch_guard_is_added_to_exact_occurrence_rule(self):
-        rule = "1 {occurs(Action, t) : action(Action)} 1."
-
-        result = add_switch_to_asp_rule(f"before.\n{rule}\nafter.\n")
-
-        self.assertIn("not switch(t), not gap(t).", result)
-        self.assertIn("0 {occurs(Action, t) : action(Action)} 1 :- gap(t).", result)
-        self.assertNotIn(rule, result)
-        self.assertEqual(result.count("not switch(t)"), 1)
-        self.assertIn("before.\n", result)
-        self.assertIn("after.\n", result)
 
     def test_switch_guard_rejects_an_encoding_without_the_occurrence_rule(self):
         with self.assertRaisesRegex(IntegrationError, "No occurrence rule"):

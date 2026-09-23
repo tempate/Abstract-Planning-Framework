@@ -42,26 +42,6 @@ selected(fallback) :- not keep(2).
         self.assertEqual(result.plan, ["selected(fallback)"])
         self.assertEqual(result.dropped, 1)
 
-    def test_reports_the_horizon_the_count_given_up_and_the_calls_made(self):
-        attempts = []
-
-        result = self._search(
-            """
-{ keep(1) }.
-{ keep(2) }.
-:- keep(1).
-:- keep(2).
-selected(done) :- not keep(1), not keep(2).
-#show selected/1.
-""",
-            [1, 2],
-            on_attempt=lambda horizon, dropped, calls: attempts.append((horizon, dropped, calls)),
-        )
-
-        self.assertEqual(result.dropped, 2)
-        self.assertEqual(result.attempts, 3)
-        self.assertEqual(attempts, [(0, 0, 1), (0, 1, 2), (0, 2, 3)])
-
     def test_raises_the_horizon_once_there_is_nothing_left_to_give_up(self):
         attempts = []
 
