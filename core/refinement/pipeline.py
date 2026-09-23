@@ -7,14 +7,13 @@ from core.integrations.clingo import parse_plan_actions, plan_length
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.refinement.mapping import build_mapping, mapped_horizon
-from core.refinement.switches import collect_switches
 from core.search.relaxing import RelaxingSolver
 from core.search.incremental import IncrementalSolver
 
 
 @dataclass
 class RefinementContext:
-    """Configuration and run state for abstract-plan refinement."""
+    """What refining an abstract plan needs."""
 
     config: AbstractPlanningConfig
     abstraction: Abstraction
@@ -22,20 +21,16 @@ class RefinementContext:
     metrics: PlanningMetrics
     concrete_asp: str
     abstract_asp: str
-    horizon: int = 0
 
 
 def refine(context: RefinementContext):
     """Obtain an abstract plan and use it to guide concrete search."""
-    # Find an abstract plan
-    abstract_plan = _solve_abstract_plan(context)
-
-    # Build the ASP to map abstract to concrete actions
+    abstract_plan, abstract_horizon = _solve_abstract_plan(context)
     mapping = build_mapping(abstract_plan, context.abstraction)
-
-    # Solve the ASP
     asp = "\n".join((context.concrete_asp, mapping))
-    plan = _solve_concrete_plan(context, asp)
+    # The concrete search runs on the mapped time line, which surrounds every
+    # abstract action with a gap for one optional concrete action.
+    plan = _solve_concrete_plan(context, asp, mapped_horizon(abstract_horizon))
 
     if plan is not None:
         context.metrics.set_counter("plan_length", plan_length(plan))
@@ -49,7 +44,7 @@ def refine(context: RefinementContext):
 
 
 def _solve_abstract_plan(context):
-    """Search for the shortest abstract plan and read the horizon it maps to."""
+    """Search for the shortest abstract plan, returning its actions and its horizon."""
 
     def record_attempt(horizon, solve_calls):
         context.metrics.set_counters(
@@ -63,9 +58,6 @@ def _solve_abstract_plan(context):
         solver = IncrementalSolver(context.abstract_asp)
         solve_result = solver.search(on_attempt=record_attempt)
 
-    # The concrete search runs on the mapped time line, which surrounds every
-    # abstract action with a gap for one optional concrete action.
-    context.horizon = mapped_horizon(solve_result.horizon)
     context.metrics.set_counters(
         {
             "abstract_plan_length": solve_result.horizon,
@@ -73,30 +65,32 @@ def _solve_abstract_plan(context):
         }
     )
 
-    return parse_plan_actions(solve_result.plan)
+    return parse_plan_actions(solve_result.plan), solve_result.horizon
 
 
-def _solve_concrete_plan(context, asp):
+def _solve_concrete_plan(context, asp, mapped):
     """Refine the abstract plan, then search above its horizon if it does not refine."""
-    mapped = context.horizon
-
     # Publish the counters before searching so an interrupted run still has them.
     _publish_counters(context, decrements=0, increments=0, solve_calls=0)
 
     def record_attempt(horizon, dropped, solve_calls):
-        context.horizon = horizon
         _publish_counters(context, decrements=dropped, increments=horizon - mapped, solve_calls=solve_calls)
 
     with context.metrics.measure("guided_concrete_solving"):
         solver = RelaxingSolver(asp, mapped)
         # Give up the abstract plan from its end, so what survives is a prefix of it.
-        result = solver.search(list(reversed(collect_switches(solver))), record_attempt)
+        result = solver.search(list(reversed(_switches(solver))), record_attempt)
 
-    context.horizon = result.horizon
     _publish_counters(
         context, decrements=result.dropped, increments=result.horizon - mapped, solve_calls=result.attempts
     )
     return result.plan
+
+
+def _switches(solver):
+    """The switches holding the abstract plan, ordered by time step rather than lexically."""
+    switches = [atom.symbol for atom in solver.control.symbolic_atoms if atom.symbol.name == "switch"]
+    return sorted(switches, key=lambda switch: switch.arguments[0].number)
 
 
 def _publish_counters(context, *, decrements, increments, solve_calls):

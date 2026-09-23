@@ -6,7 +6,6 @@ from pathlib import Path
 from unified_planning.model import Problem
 
 from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
-from core.abstraction.heuristic import abstraction_score
 from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import (
@@ -87,14 +86,16 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
 
 
 def _select_abstraction(problem, symmetry_classes, abstract_name=None):
-    """Select the largest class reported by PDDL Symmetries."""
+    """Select the largest class reported by PDDL Symmetries.
+
+    Collapsing more objects is what lowers the abstract horizon, so size alone decides.
+    """
     candidate = None
-    candidate_score = None
     rejection = None
 
     # PDDL Symmetries prints its classes in an order that varies between
-    # processes, and the first class with the best score wins, so two runs of
-    # one problem could collapse different classes of the same size.
+    # processes, and the first of the largest wins, so two runs of one problem
+    # could collapse different classes of the same size.
     ordered_classes = sorted(sorted(symmetry_class) for symmetry_class in symmetry_classes)
 
     for symmetry_class in ordered_classes:
@@ -105,10 +106,8 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
             # reason for the case where none of them works.
             rejection = rejection or error
             continue
-        score = abstraction_score(abstraction)
-        if candidate_score is None or score < candidate_score:
+        if candidate is None or len(abstraction.objects) > len(candidate.objects):
             candidate = abstraction
-            candidate_score = score
 
     if candidate is None:
         raise rejection
@@ -118,25 +117,21 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
 def _create_abstraction(problem, object_names, abstract_name):
     objects_by_name = {item.name.casefold(): item for item in problem.all_objects}
 
-    # Normalize names and remove duplicates.
     object_names = _normalize_object_names(object_names)
     if len(object_names) < 2:
         raise AbstractionError("At least two distinct objects must be selected")
 
-    # Find the objects to collapse
     unknown_names = [name for name in object_names if name not in objects_by_name]
     if unknown_names:
         raise AbstractionError(f"Unknown problem objects: {', '.join(unknown_names)}")
     objects_to_collapse = tuple(objects_by_name[name] for name in object_names)
 
-    # Check that all selected objects have the same declared type
     if len({item.type for item in objects_to_collapse}) != 1:
         raise AbstractionError("Selected objects must have the same declared type")
 
     if abstract_name is None:
         abstract_name = f"{objects_to_collapse[0].type.name}_abs"
 
-    # Check if abstract_name is taken
     reserved_names = set()
     for item in problem.actions:
         reserved_names.add(item.name.casefold())
@@ -182,12 +177,9 @@ def report_abstraction(abstract_problem, metrics):
 
 def write_abstract_problem(problem, base_dir):
     """Write the abstract problem to a temporary directory."""
-
-    # Create the temporary directory.
     input_directory = Path(base_dir, "generated-abstraction")
     input_directory.mkdir(parents=True, exist_ok=True)
 
-    # Write the abstract domain and problem files.
     serialized = write_problem(without_action_costs(problem))
 
     domain_path = input_directory / "domain.pddl"

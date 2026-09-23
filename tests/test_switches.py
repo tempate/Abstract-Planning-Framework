@@ -1,6 +1,6 @@
 import unittest
 
-from core.refinement.switches import collect_switches
+from core.refinement.pipeline import _switches
 from core.search.incremental import IncrementalSolver
 
 PROGRAM = """
@@ -11,7 +11,7 @@ PROGRAM = """
 
 class SwitchTests(unittest.TestCase):
     def test_switches_are_ordered_by_time_step_instead_of_lexically(self):
-        switches = collect_switches(IncrementalSolver(PROGRAM))
+        switches = _switches(IncrementalSolver(PROGRAM))
 
         self.assertEqual([str(switch) for switch in switches], ["switch(2)", "switch(10)"])
 
