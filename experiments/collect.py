@@ -199,24 +199,17 @@ def _key(row):
 
 
 def _preserved_rows(collected, csv_file=CSV_FILE):
-    """Read the results of the modes this run left alone, so it cannot erase them.
-
-    A run submits the modes it is interested in, and the others keep whatever
-    the CSV already holds: submitting only a baseline must not drop the
-    abstract results, and re-running the abstract pipeline must not leave
-    behind rows from the encoding before it.  What a run submitted is what it
-    collected, the manifest included, so the modes it did not is the rest.
-    """
+    """Read the CSV rows this run did not re-run, so a run replaces only its own."""
     csv_file = Path(csv_file)
     if not csv_file.is_file():
         return []
 
-    submitted = {row["mode"] for row in collected}
+    rerun = {_key(row) for row in collected}
 
     preserved = []
     with csv_file.open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
-            if row["mode"] in submitted:
+            if _key(row) in rerun:
                 continue
             kept = {}
             for field in FIELDS:
@@ -242,7 +235,7 @@ def main(results_dirs=RESULTS_DIR, csv_file=CSV_FILE):
         details = ", ".join(f"{mode}: {count}" for mode, count in sorted(missing.items()))
         print(f"Incomplete benchmark run: {sum(missing.values())} expected results are missing ({details})")
     if preserved:
-        print(f"Kept {len(preserved)} results from modes the run did not submit")
+        print(f"Kept {len(preserved)} results the run did not re-run")
     print(f"Collected {len(rows)} results in {csv_file}")
 
 

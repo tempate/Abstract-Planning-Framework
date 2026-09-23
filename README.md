@@ -70,8 +70,9 @@ python -m experiments.report experiments/plan/results.csv
   a plan. Only the probNN problems run, the ones known to be unsolvable.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
-- `collect` rewrites `experiments/plan/results.csv`, keeping the results of the
-  modes the run did not submit, so a baseline can be measured on its own.
+- `collect` rewrites `experiments/plan/results.csv`, replacing only the
+  (domain, problem, mode) results the run holds, so a baseline or a gap-filling
+  run can be collected on its own.
   `report` rewrites `experiments/plan/reports.md`, comparing only the problems
   every mode finished and saying how many it dropped.
 

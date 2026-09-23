@@ -41,17 +41,9 @@ runs in one directory collect into one unreadable CSV.
 
 ## Merging a gap-filling run
 
-Collecting a partial run straight into `results.csv` **silently drops the
-existing abstract rows**: `_preserved_rows` keeps the modes the run did not
-submit, and the run owns the ones it did. Name both runs instead, oldest first:
-
-```bash
-python -m experiments.collect <first run> <gap-filling run> --csv experiments/plan/results.csv
-```
-
-The later directory wins where both hold a result, and the expected results are
-the union of both manifests. Confirm the collect prints no `Incomplete benchmark
-run` line and that the row count matches problems × the modes submitted.
+A partial run collects straight into `results.csv`: a row is replaced only where
+the run holds that (domain, problem, mode), so the rest stays. A problem that
+left the suite keeps its old row until you delete it.
 
 ## Submitting
 
