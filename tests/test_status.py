@@ -34,12 +34,13 @@ class StatusTests(unittest.TestCase):
         summary = {"expected": 4, "counts": {"success": 1, "running": 3}}
 
         with contextlib.redirect_stdout(io.StringIO()) as gone:
-            _report("run-example", pending=0, summary=summary)
-        with contextlib.redirect_stdout(io.StringIO()) as still_queued:
-            _report("run-example", pending=3, summary=summary)
+            # Queued jobs have not written anything, so they cannot account for them.
+            _report("run-example", pending=5, running=0, summary=summary)
+        with contextlib.redirect_stdout(io.StringIO()) as still_running:
+            _report("run-example", pending=5, running=3, summary=summary)
 
         self.assertIn("killed", gone.getvalue())
-        self.assertNotIn("killed", still_queued.getvalue())
+        self.assertNotIn("killed", still_running.getvalue())
 
 
 if __name__ == "__main__":
