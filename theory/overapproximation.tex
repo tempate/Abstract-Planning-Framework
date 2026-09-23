@@ -78,15 +78,18 @@ If $X \subseteq Y$ are sets of atoms, then $\alpha(X) \subseteq \alpha(Y)$.
 \end{lemma}
 
 \begin{proof}
-If $f \in \alpha(X)$, then $f = \alpha(g)$ for some $g \in X$, and $g \in Y$ since $X \subseteq Y$, so $f = \alpha(g) \in \alpha(Y)$.
+By Definition~\ref{def:alpha},
+\[
+  \alpha(X) = \{\, \alpha(x) : x \in X \,\} \subseteq \{\, \alpha(x) : x \in Y \,\} = \alpha(Y). \qedhere
+\]
 \end{proof}
 
 \begin{lemma}\label{lem:fixed}
-For an atom $f \in F$ the following are equivalent: $f$ mentions no object of $C$; $\alpha(f) = f$; and $\alpha(f)$ does not mention $c$.
+For an atom $f \in F$ the following are equivalent: (i) $f$ mentions no object of $C$; (ii) $\alpha(f) = f$; (iii) $\alpha(f)$ does not mention $c$.
 \end{lemma}
 
 \begin{proof}
-If $f$ mentions no object of $C$, then $\alpha$ fixes each of its arguments, so $\alpha(f) = f$. If $\alpha(f) = f$, then $\alpha(f)$ is an atom over $O$, and $c \notin O$, so it does not mention $c$. If $f$ mentions some $o \in C$, then $\alpha(f)$ mentions $\alpha(o) = c$.
+(i)~$\Rightarrow$~(ii): $\alpha$ fixes every object outside $C$, so it fixes each argument of $f$. (ii)~$\Rightarrow$~(iii): $\alpha(f) = f$ is an atom over $O$, and $c \notin O$. (iii)~$\Rightarrow$~(i): if $f$ mentions some $o \in C$, then $\alpha(f)$ mentions $\alpha(o) = c$.
 \end{proof}
 
 \begin{definition}
@@ -101,8 +104,9 @@ The \emph{relaxation} of an action $a \in A$ is the action
 \]
 where 
 \[
-\mathrm{del}^r(a) = \{\, \alpha(d) : d \in \mathrm{del}(a) \text{ and } d \text{ mentions no object of } C \,\}.
+\mathrm{del}^r(a) = \{\, d \in \mathrm{del}(a) : d \text{ mentions no object of } C \,\}.
 \]
+The atoms of $\mathrm{del}^r(a)$ are atoms over $O \setminus C$, so $a^r$ is an action over $F^\alpha$.
 The relaxation of a plan $\pi = a_1 \dots a_n$ is $\pi^r = a_1^r \dots a_n^r$, and the relaxation of $\Pi^\alpha$ is $\Pi^r = \langle F^\alpha, A^r, \alpha(I), \alpha(G) \rangle$, where $A^r = \{\, a^r : a \in A \,\}$.
 \end{definition}
 
@@ -110,43 +114,27 @@ $\Pi^r$ differs from $\Pi^\alpha$ only in the delete lists of its actions, and c
 
 \section{Over-approximation}
 
-The argument is an induction on the length of a plan. Two lemmas cover a single action, and a third carries an inclusion along the whole plan.
-
-\begin{lemma}\label{lem:action}
-If $a \in A$ is applicable in $s \subseteq F$, then $a^r$ is applicable in $\alpha(s)$.
-\end{lemma}
-
-\begin{proof}
-Applicability of $a$ in $s$ gives $\mathrm{pre}(a) \subseteq s$, so $\alpha(\mathrm{pre}(a)) \subseteq \alpha(s)$ by Lemma~\ref{lem:image}. By Definition~\ref{def:relaxed}, the relaxation leaves preconditions untouched, so $\mathrm{pre}(a^r) = \alpha(\mathrm{pre}(a)) \subseteq \alpha(s)$.
-\end{proof}
+The argument is an induction on the length of a plan. The relaxed action keeps atoms the concrete one deletes, so a step gives only an inclusion, and the abstract state may run ahead of the concrete one. Lemma~\ref{lem:progress} covers a single step, and Lemma~\ref{lem:plan} chains the steps along a plan, starting each one from the larger state.
 
 \begin{lemma}\label{lem:progress}
-If $a \in A$ is applicable in $s \subseteq F$, then $\alpha(s[a]) \subseteq \alpha(s)[a^r]$.
+If $a \in A$ is applicable in $s \subseteq F$, then $a^r$ is applicable in $\alpha(s)$ and $\alpha(s[a]) \subseteq \alpha(s)[a^r]$.
 \end{lemma}
 
 \begin{proof}
-By Definitions~\ref{def:action},~\ref{def:alpha}, and~\ref{def:relaxed}, we have that
+Since $a$ is applicable in $s$, we have $\mathrm{pre}(a) \subseteq s$, so Lemma~\ref{lem:image} and Definition~\ref{def:relaxed} give
+\[
+  \mathrm{pre}(a^r) = \alpha(\mathrm{pre}(a)) \subseteq \alpha(s),
+\]
+and $a^r$ is applicable in $\alpha(s)$.
+
+For the inclusion, Definitions~\ref{def:action},~\ref{def:alpha}, and~\ref{def:relaxed} give
 \begin{align*}
   \alpha(s[a]) &= \alpha(s \setminus \mathrm{del}(a)) \cup \alpha(\mathrm{add}(a)),\\
-  \alpha(s)[a^r] &= (\alpha(s) \setminus \mathrm{del}^r(a)) \cup \alpha(\mathrm{add}(a)),
+  \alpha(s)[a^r] &= (\alpha(s) \setminus \mathrm{del}^r(a)) \cup \alpha(\mathrm{add}(a)).
 \end{align*}
-and it suffices to show that $\alpha(s \setminus \mathrm{del}(a)) \subseteq \alpha(s) \setminus \mathrm{del}^r(a)$. Let $f \in \alpha(s \setminus \mathrm{del}(a))$, so $f \in \alpha(s)$ by Lemma~\ref{lem:image}, and $f = \alpha(g)$ for some $g \in s$ with $g \notin \mathrm{del}(a)$. Suppose towards a contradiction that $f \in \mathrm{del}^r(a)$. By Definition~\ref{def:relaxed}, we have $f = \alpha(d)$ for some $d \in \mathrm{del}(a)$ mentioning no object of $C$, so by Lemma~\ref{lem:fixed}, $f = d$ and $f$ does not mention $c$. Then $\alpha(g)$ does not mention $c$, so Lemma~\ref{lem:fixed} gives $g = \alpha(g) = f = d$ --- a contradiction since $g \notin \mathrm{del}(a)$.
-\end{proof}
+Both add the same atoms, so it suffices to show that $\alpha(s \setminus \mathrm{del}(a)) \subseteq \alpha(s) \setminus \mathrm{del}^r(a)$. The point is that $a^r$ deletes only atoms that mention no object of $C$, and by Lemma~\ref{lem:fixed}, $\alpha$ maps no other atom onto one of those.
 
-Lemma~\ref{lem:progress} gives an inclusion rather than an equality, because the relaxed action keeps facts the concrete one deletes. The induction therefore has to move a plan from a state to a superset of it.
-
-\begin{lemma}\label{lem:mono}
-Let $s \subseteq t$ be states and let $\pi$ be applicable in $s$. Then $\pi$ is applicable in $t$ and $s[\pi] \subseteq t[\pi]$.
-\end{lemma}
-
-\begin{proof}
-By induction on the length of $\pi$. The empty plan is applicable in every state and $s[\varepsilon] = s \subseteq t = t[\varepsilon]$. For $\pi = a\pi'$, applicability of $a$ in $s$ gives $\mathrm{pre}(a) \subseteq s \subseteq t$, so $a$ is applicable in $t$, and Definition~\ref{def:action} gives
-\[
-  s[a] = (s \setminus \mathrm{del}(a)) \cup \mathrm{add}(a)
-           \subseteq (t \setminus \mathrm{del}(a)) \cup \mathrm{add}(a)
-            = t[a].
-\]
-The claim follows by applying the induction hypothesis to $\pi'$ at $s[a] \subseteq t[a]$.
+Let $f \in \alpha(s \setminus \mathrm{del}(a))$, say $f = \alpha(g)$ with $g \in s \setminus \mathrm{del}(a)$. Then $f \in \alpha(s)$ by Lemma~\ref{lem:image}, and it remains to show that $f \notin \mathrm{del}^r(a)$. Suppose it were. Then $f \in \mathrm{del}(a) \subseteq F$, so $f$ is an atom over $O$ and does not mention $c$. As $\alpha(g) = f$ does not mention $c$, Lemma~\ref{lem:fixed} gives $g = \alpha(g) = f$. Hence $g \in \mathrm{del}(a)$, a contradiction.
 \end{proof}
 
 \begin{lemma}\label{lem:plan}
@@ -154,10 +142,16 @@ If $\pi$ is applicable in $s \subseteq F$, then $\pi^r$ is applicable in $\alpha
 \end{lemma}
 
 \begin{proof}
-By induction on the length of $\pi$. For the empty plan both sides are $\alpha(s)$. Let $\pi = a\pi'$ with $a$ applicable in $s$. By Lemma~\ref{lem:action}, $a^r$ is applicable in $\alpha(s)$, and by Lemma~\ref{lem:progress}, $\alpha(s[a]) \subseteq \alpha(s)[a^r]$. The induction hypothesis applied to $\pi'$ at $s[a]$ gives that $\pi'^r$ is applicable in $\alpha(s[a])$ with $\alpha(s[a][\pi']) \subseteq \alpha(s[a])[\pi'^r]$. Since $\alpha(s[a]) \subseteq \alpha(s)[a^r]$, Lemma~\ref{lem:mono} lets us move both to $\alpha(s)[a^r]$, where $\pi'^r$ is applicable and
+We prove the stronger claim that for every state $t$ with $\alpha(s) \subseteq t$, the plan $\pi^r$ is applicable in $t$ and $\alpha(s[\pi]) \subseteq t[\pi^r]$; the lemma is the case $t = \alpha(s)$. The induction needs this form, because after the first action the relaxed plan continues from $\alpha(s)[a^r]$, which may be strictly larger than $\alpha(s[a])$.
+
+The proof is by induction on the length of $\pi$. For the empty plan the claim is the assumption $\alpha(s) \subseteq t$. Let $\pi = a\pi'$, so $a$ is applicable in $s$ and $\pi'$ in $s[a]$. By Lemma~\ref{lem:progress}, $a^r$ is applicable in $\alpha(s)$ and $\alpha(s[a]) \subseteq \alpha(s)[a^r]$. Since $\mathrm{pre}(a^r) \subseteq \alpha(s) \subseteq t$, the action $a^r$ is also applicable in $t$, and by Definition~\ref{def:action},
 \[
-  \alpha(s[\pi]) = \alpha(s[a][\pi']) \subseteq \alpha(s[a])[\pi'^r]
-             \subseteq \alpha(s)[a^r][\pi'^r] = \alpha(s)[\pi^r]. \qedhere
+  \alpha(s[a]) \subseteq \bigl(\alpha(s) \setminus \mathrm{del}^r(a)\bigr) \cup \mathrm{add}(a^r)
+           \subseteq \bigl(t \setminus \mathrm{del}^r(a)\bigr) \cup \mathrm{add}(a^r) = t[a^r].
+\]
+The induction hypothesis at $s[a]$ and $t[a^r]$ then gives that $\pi'^r$ is applicable in $t[a^r]$, so $\pi^r$ is applicable in $t$, and
+\[
+  \alpha(s[\pi]) = \alpha(s[a][\pi']) \subseteq t[a^r][\pi'^r] = t[\pi^r]. \qedhere
 \]
 \end{proof}
 
@@ -166,11 +160,11 @@ If $\pi$ solves $\Pi$, then $\pi^r$ solves $\Pi^r$.
 \end{theorem}
 
 \begin{proof}
-By Definition~\ref{def:solves}, $\pi$ is applicable in $I$ and $G \subseteq I[\pi]$. By Lemma~\ref{lem:plan}, the plan $\pi^r$ is applicable in $\alpha(I)$ and $\alpha(I[\pi]) \subseteq \alpha(I)[\pi^r]$. Applying Lemma~\ref{lem:image} to $G \subseteq I[\pi]$ gives $\alpha(G) \subseteq \alpha(I[\pi])$, so
+Let $\pi$ solve $\Pi$, so $\pi$ is applicable in $I$ and $G \subseteq I[\pi]$ by Definition~\ref{def:solves}. Lemma~\ref{lem:plan} at $s = I$ gives that $\pi^r$ is applicable in $\alpha(I)$ and $\alpha(I[\pi]) \subseteq \alpha(I)[\pi^r]$. Applying Lemma~\ref{lem:image} to $G \subseteq I[\pi]$ then gives
 \[
   \alpha(G) \subseteq \alpha(I[\pi]) \subseteq \alpha(I)[\pi^r].
 \]
-By Definition~\ref{def:relaxed}, the initial state of $\Pi^r$ is $\alpha(I)$ and its goal is $\alpha(G)$, so $\pi^r$ solves $\Pi^r$ by Definition~\ref{def:solves}.
+By Definition~\ref{def:relaxed}, $\Pi^r$ has initial state $\alpha(I)$ and goal $\alpha(G)$, so $\pi^r$ solves $\Pi^r$ by Definition~\ref{def:solves}.
 \end{proof}
 
 \end{document}
