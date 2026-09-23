@@ -30,7 +30,7 @@ def main():
         _benchmark_tasks(
             benchmarks_dir=track.benchmarks_dir,
             suite=track.suite,
-            runnable=track.runnable(),
+            runnable=None if args.all_problems else track.runnable(),
             modes=args.modes,
             domains=args.domains,
             problems=args.problems,
@@ -163,6 +163,11 @@ def _argument_parser():
     )
     parser.add_argument(
         "--problems", nargs="+", help="Submit only these problem files, named p01.pddl or p01, within each domain"
+    )
+    parser.add_argument(
+        "--all-problems",
+        action="store_true",
+        help="Submit every problem of the suite, not only the ones the track lists as runnable",
     )
     parser.add_argument(
         "--track",
