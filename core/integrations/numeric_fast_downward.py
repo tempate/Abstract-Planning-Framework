@@ -2,6 +2,7 @@
 
 import os
 import re
+import signal
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -52,19 +53,34 @@ def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME
         "--search",
         DETECTION_SEARCH,
     ]
+    # The driver starts translate, preprocess and search as children of its own,
+    # so it gets a session of its own, and a timeout or an interrupted caller
+    # takes all of them down rather than leaving them holding memory.
+    process = subprocess.Popen(
+        command, cwd=base_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, start_new_session=True
+    )
     try:
-        completed_process = subprocess.run(command, cwd=base_dir, capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired as expired:
-        raise IntegrationError(f"Resource detection timed out after {timeout}s") from expired
+        stdout, stderr = process.communicate(timeout=timeout)
+    except BaseException as error:
+        _kill_process_group(process)
+        if isinstance(error, subprocess.TimeoutExpired):
+            raise IntegrationError(f"Resource detection timed out after {timeout}s") from error
+        raise
 
-    if _SUMMARY.search(completed_process.stdout) is None:
-        diagnostics = "\n".join(
-            output.strip() for output in (completed_process.stdout, completed_process.stderr) if output.strip()
-        )
+    if _SUMMARY.search(stdout) is None:
+        diagnostics = "\n".join(output.strip() for output in (stdout, stderr) if output.strip())
         raise IntegrationError(f"Resource detection reported nothing:\n{diagnostics}")
 
     values = read_sas_variables(os.path.join(base_dir, "output.sas"))
-    return parse_resources(completed_process.stdout, values)
+    return parse_resources(stdout, values)
+
+
+def _kill_process_group(process):
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        process.kill()
+    process.communicate()
 
 
 def parse_resources(detector_output, values):
