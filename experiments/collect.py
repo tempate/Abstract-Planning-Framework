@@ -12,9 +12,6 @@ from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from experiments.run import MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR, _human_status
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
-# The raw run output stays in the untracked results directory; the collected CSV
-# is the artifact that gets committed and reported on.
-CSV_FILE = TRACKS[DEFAULT_TRACK].results_file
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
 FIELDS = (
     "domain",
@@ -198,25 +195,18 @@ def _key(row):
     return (row["domain"], row["problem"], row["mode"])
 
 
-def _preserved_rows(collected, csv_file=CSV_FILE):
-    """Read the results of the modes this run left alone, so it cannot erase them.
-
-    A run submits the modes it is interested in, and the others keep whatever
-    the CSV already holds: submitting only a baseline must not drop the
-    abstract results, and re-running the abstract pipeline must not leave
-    behind rows from the encoding before it.  What a run submitted is what it
-    collected, the manifest included, so the modes it did not is the rest.
-    """
+def _preserved_rows(collected, csv_file):
+    """Read the CSV rows this run did not re-run, so a run replaces only its own."""
     csv_file = Path(csv_file)
     if not csv_file.is_file():
         return []
 
-    submitted = {row["mode"] for row in collected}
+    rerun = {_key(row) for row in collected}
 
     preserved = []
     with csv_file.open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
-            if row["mode"] in submitted:
+            if _key(row) in rerun:
                 continue
             kept = {}
             for field in FIELDS:
@@ -225,9 +215,10 @@ def _preserved_rows(collected, csv_file=CSV_FILE):
     return preserved
 
 
-def main(results_dirs=RESULTS_DIR, csv_file=CSV_FILE):
+def main(results_dirs=RESULTS_DIR, csv_file=None):
     if isinstance(results_dirs, (str, Path)):
         results_dirs = [results_dirs]
+    csv_file = csv_file or _track_results_file(results_dirs)
     collected = collect(*results_dirs)
     preserved = _preserved_rows(collected, csv_file)
     rows = sorted(collected + preserved, key=_key)
@@ -242,8 +233,21 @@ def main(results_dirs=RESULTS_DIR, csv_file=CSV_FILE):
         details = ", ".join(f"{mode}: {count}" for mode, count in sorted(missing.items()))
         print(f"Incomplete benchmark run: {sum(missing.values())} expected results are missing ({details})")
     if preserved:
-        print(f"Kept {len(preserved)} results from modes the run did not submit")
+        print(f"Kept {len(preserved)} results the run did not re-run")
     print(f"Collected {len(rows)} results in {csv_file}")
+
+
+def _track_results_file(results_dirs):
+    """The results file of the track the runs were submitted for."""
+    tracks = set()
+    for results_dir in results_dirs:
+        manifest = Path(results_dir) / MANIFEST_NAME
+        # A run submitted before the manifest named its track is a plan run.
+        track = json.loads(manifest.read_text(encoding="utf-8")).get("track") if manifest.is_file() else None
+        tracks.add(track or DEFAULT_TRACK)
+    if len(tracks) > 1:
+        raise SystemExit(f"The runs belong to different tracks: {', '.join(sorted(tracks))}")
+    return TRACKS[tracks.pop()].results_file
 
 
 def _argument_parser():
@@ -255,7 +259,7 @@ def _argument_parser():
         default=[RESULTS_DIR],
         help="Result directories to collect; where two hold the same result, the later one wins",
     )
-    parser.add_argument("--csv", default=CSV_FILE, help="CSV file to collect the results into")
+    parser.add_argument("--csv", help="CSV file to collect the results into; defaults to the run's track's")
     return parser
 
 

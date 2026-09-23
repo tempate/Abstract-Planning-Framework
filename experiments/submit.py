@@ -52,7 +52,7 @@ def main():
         )
     if not args.dry_run:
         _set_aside_results_dir()
-        _write_manifest(tasks, pipeline=pipeline)
+        _write_manifest(tasks, track=args.track)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
         config_file = _write_copperbench_config(
             tasks,
@@ -115,15 +115,22 @@ def _set_aside_results_dir(results_dir=RESULTS_DIR):
     return results_dir
 
 
-def _write_manifest(tasks, results_dir=RESULTS_DIR, pipeline="plan"):
-    """Record every result expected from a submitted benchmark run."""
+def _write_manifest(tasks, results_dir=RESULTS_DIR, track=DEFAULT_TRACK):
+    """Record every result expected from a submitted benchmark run, and the code that runs it."""
     expected_results = [
         {"domain": domain_name, "problem": problem.name, "mode": mode} for mode, domain_name, _domain, problem in tasks
     ]
-    manifest = {"version": 1, "pipeline": pipeline, "expected_results": expected_results}
+    manifest = {"version": 1, "track": track, "commit": _head_commit(), "expected_results": expected_results}
     path = Path(results_dir) / MANIFEST_NAME
     path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return path
+
+
+def _head_commit():
+    completed = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=PROJECT_ROOT, capture_output=True, text=True, check=True
+    )
+    return completed.stdout.strip()
 
 
 def _argument_parser():

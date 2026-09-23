@@ -17,7 +17,7 @@ from experiments.plan.suite import SUITE
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 from experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from experiments.collect import FIELDS, _preserved_rows, collect
+from experiments.collect import FIELDS, _preserved_rows, _track_results_file, collect
 from scripts.utils.reporting import update_result_progress
 from experiments.run import (
     DEFAULT_TIMEOUT,
@@ -691,6 +691,16 @@ class BenchmarkTests(unittest.TestCase):
                 self.assertEqual([row["mode"] for row in rows], ["abstract", "concrete"])
                 self.assertEqual([row["status"] for row in rows], statuses)
 
+    def test_a_run_is_collected_into_the_results_of_its_track(self):
+        task = [("concrete", "example", Path("domain.pddl"), Path("p01.pddl"))]
+        with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
+            _write_manifest(task, plan, track="plan")
+            _write_manifest(task, decide, track="unsolvability")
+
+            self.assertEqual(_track_results_file([decide]), TRACKS["unsolvability"].results_file)
+            with self.assertRaises(SystemExit):
+                _track_results_file([plan, decide])
+
 
 class CollectedCsvTests(unittest.TestCase):
     @staticmethod
@@ -710,16 +720,6 @@ class CollectedCsvTests(unittest.TestCase):
             collected.append({"domain": domain, "problem": problem, "mode": mode, "status": status})
         return collected
 
-    def test_a_run_without_concrete_results_keeps_the_ones_already_collected(self):
-        with tempfile.TemporaryDirectory() as directory:
-            csv_file = self._write_csv(directory, [("example", "p01.pddl", "concrete", "success")])
-            collected = self._collected([("example", "p01.pddl", "abstract", "success")])
-
-            preserved = _preserved_rows(collected, csv_file)
-
-        self.assertEqual([row["mode"] for row in preserved], ["concrete"])
-        self.assertEqual(preserved[0]["status"], "success")
-
     def test_a_collected_result_replaces_the_one_already_in_the_csv(self):
         rows = [("example", "p01.pddl", "concrete", "success")]
         for status in ("timed out", "missing"):
@@ -731,34 +731,25 @@ class CollectedCsvTests(unittest.TestCase):
 
                 self.assertEqual(preserved, [])
 
-    def test_a_mode_the_run_submitted_does_not_keep_its_old_results(self):
-        """Otherwise a problem dropped from the suite would keep reporting the
-        result of an encoding that is no longer the one being measured."""
-        with tempfile.TemporaryDirectory() as directory:
-            csv_file = self._write_csv(directory, [("example", "p01.pddl", "abstract", "success")])
-            collected = self._collected([("example", "p02.pddl", "abstract", "success")])
-
-            preserved = _preserved_rows(collected, csv_file)
-
-        self.assertEqual(preserved, [])
-
-    def test_the_modes_the_run_left_alone_keep_their_results(self):
-        """A baseline can be measured on its own without erasing the pipelines
-        it is there to be compared against."""
+    def test_every_result_the_run_did_not_re_run_is_kept(self):
+        """A baseline measured on its own, or a run filling one problem's gap,
+        leaves the rest of the CSV as it was."""
         with tempfile.TemporaryDirectory() as directory:
             csv_file = self._write_csv(
                 directory,
                 [
                     ("example", "p01.pddl", "abstract", "success"),
-                    ("example", "p01.pddl", "concrete", "success"),
+                    ("example", "p02.pddl", "abstract", "timed out"),
                     ("example", "p01.pddl", "lama", "timed out"),
                 ],
             )
-            collected = self._collected([("example", "p01.pddl", "lama", "success")])
+            collected = self._collected([("example", "p02.pddl", "abstract", "success")])
 
             preserved = _preserved_rows(collected, csv_file)
 
-        self.assertEqual({row["mode"] for row in preserved}, {"abstract", "concrete"})
+        self.assertEqual(
+            {(row["problem"], row["mode"]) for row in preserved}, {("p01.pddl", "abstract"), ("p01.pddl", "lama")}
+        )
 
     def test_a_first_run_has_nothing_to_keep(self):
         with tempfile.TemporaryDirectory() as directory:
