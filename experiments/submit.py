@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import re
 import shlex
 import subprocess
 import sys
@@ -252,9 +253,9 @@ def _is_domain_file(name):
     """Tell a domain file from a problem file by name.
 
     downward-benchmarks spells it out in full; unsolve-ipc-2016 shortens it to
-    dom, satdom and unknowndom, against prob, satprob and unknownprob.
+    domNN, satdomNN and unknowndomNN, against probNN, satprobNN and unknownprobNN.
     """
-    return "dom" in name and "prob" not in name
+    return "domain" in name or re.match(r"(sat|unknown)?dom\d", name) is not None
 
 
 def _has_other_status(name):

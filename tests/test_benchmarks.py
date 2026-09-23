@@ -287,6 +287,17 @@ class BenchmarkTests(unittest.TestCase):
 
         self.assertEqual([task[3].name for task in tasks], ["prob01.pddl"])
 
+    def test_a_problem_whose_name_holds_dom_is_still_a_problem(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "example").mkdir()
+            for name in ("domain.pddl", "p01-domain.pddl", "random01.pddl"):
+                (root / "example" / name).touch()
+
+            tasks = list(_benchmark_tasks(root, ["example"], runnable=None))
+
+        self.assertEqual([task[3].name for task in tasks], ["random01.pddl"])
+
     def test_collector_ignores_copperbench_metadata_next_to_results(self):
         with tempfile.TemporaryDirectory() as directory:
             run_dir = Path(directory) / "run-1"
