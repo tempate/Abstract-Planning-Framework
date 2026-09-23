@@ -7,8 +7,6 @@ from unified_planning.model.metrics import (
     MinimizeSequentialPlanLength,
 )
 
-from core.abstraction.relaxation import match_relaxable_delete
-
 __all__ = ["AbstractionError", "collapse_objects", "validate_supported_problem"]
 
 
@@ -63,17 +61,17 @@ def collapse_objects(problem, abstraction, relaxable_deletes):
             collapsed_problem.add_object(item)
     collapsed_problem.add_object(abstract_object)
 
-    relaxed_deletes = _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax)
+    relaxed_deletes = _copy_actions(problem, collapsed_problem, rewrite, deletes_to_relax)
     _copy_initial_values(problem, collapsed_problem, rewrite)
     _copy_goals_and_constraints(problem, collapsed_problem, rewrite)
     _copy_quality_metric(problem, collapsed_problem)
     return collapsed_problem, relaxed_deletes
 
 
-def _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, deletes_to_relax):
+def _copy_actions(problem, collapsed_problem, rewrite, deletes_to_relax):
     relaxed_deletes = []
     for action in problem.actions:
-        collapsed_action, action_relaxed_deletes = _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax)
+        collapsed_action, action_relaxed_deletes = _copy_action(action, rewrite, deletes_to_relax)
         relaxed_deletes.extend(action_relaxed_deletes)
         # An action with no effect left changes nothing, and the writer gives it
         # no :effect, which Fast Downward's parser rejects.
@@ -83,7 +81,7 @@ def _copy_actions(problem, collapsed_problem, rewrite, objects_to_collapse, dele
     return tuple(relaxed_deletes)
 
 
-def _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax):
+def _copy_action(action, rewrite, deletes_to_relax):
     collapsed_action = action.clone()
     collapsed_action.clear_preconditions()
     for precondition in action.preconditions:
@@ -92,12 +90,9 @@ def _copy_action(action, rewrite, objects_to_collapse, deletes_to_relax):
     relaxed_deletes = []
     collapsed_action.clear_effects()
     for effect in action.effects:
-        match = match_relaxable_delete(action, effect, objects_to_collapse)
-        if match is not None:
-            _, relaxable_delete = match
-            if relaxable_delete in deletes_to_relax:
-                relaxed_deletes.append(relaxable_delete)
-                continue
+        if (action.name, effect) in deletes_to_relax:
+            relaxed_deletes.append((action.name, effect))
+            continue
 
         fluent = rewrite(effect.fluent)
         value = rewrite(effect.value)
