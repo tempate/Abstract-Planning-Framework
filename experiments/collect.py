@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from experiments.run import MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR, _human_status
+from experiments.run import MANIFEST_NAME, MODES, RESULTS_DIR, _human_status
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
@@ -52,15 +52,8 @@ def collect(*results_dirs):
             if not {"domain", "problem", "output"} <= result.keys():
                 continue
 
-            mode = result.get("mode")
-            if mode in MODES:
-                results[(result["domain"], result["problem"], mode)] = result
-            else:
-                # Results produced before modes became separate jobs stored the
-                # concrete comparison inside the abstract result.
-                results.setdefault((result["domain"], result["problem"], "abstract"), result)
-                if "concrete" in result:
-                    results.setdefault((result["domain"], result["problem"], "concrete"), result["concrete"])
+            if result.get("mode") in MODES:
+                results[(result["domain"], result["problem"], result["mode"])] = result
 
         manifest = results_dir / MANIFEST_NAME
         if manifest.is_file():
@@ -97,40 +90,14 @@ def _values(result):
         "last_completed_phase": progress.get("last_completed_phase", ""),
         **{f"{name}_seconds": durations.get(name, "") for name in DURATION_LABELS},
         "verdict": _value(output, "Verdict"),
-        **_counter_values(output, counters),
+        **{name: counters.get(name, "") for name in COUNTER_LABELS},
         **_abstraction_values(output, metrics.get("abstraction")),
         "error_message": _error_message(result),
     }
 
 
-def _counter_values(output, counters):
-    """Read the counters, falling back to the two the oldest planner printed on their own line."""
-    values = {}
-    for name in COUNTER_LABELS:
-        if name in counters:
-            values[name] = counters[name]
-        elif name in ("decrements", "increments"):
-            values[name] = _value(output, name.title(), int)
-        elif name == "plan_length":
-            # Runs from before this was a counter only printed the plan itself.
-            values[name] = _plan_length(output)
-        else:
-            values[name] = ""
-    return values
-
-
 def _metrics(output, progress=None):
-    # Read the compact JSON emitted by the first structured-metrics version.
-    match = re.search(r"^Metrics: (\{.*\})$", output, re.MULTILINE)
-    if match is not None:
-        try:
-            metrics = json.loads(match.group(1))
-        except json.JSONDecodeError:
-            pass
-        else:
-            if isinstance(metrics, dict):
-                return metrics
-
+    """Read the metrics the planner printed, or, when it printed none, the last it reported."""
     metrics = {
         "durations": _metric_group(output, DURATION_LABELS, float),
         "counters": _metric_group(output, COUNTER_LABELS, int),
@@ -151,14 +118,8 @@ def _metric_group(output, labels, conversion):
     return values
 
 
-def _plan_length(output):
-    if _value(output, "Plan found") != "yes":
-        return ""
-    return len(re.findall(r"^[ \t]+occurs\(", output, re.MULTILINE))
-
-
 def _abstraction_values(output, abstraction=None):
-    """Read the collapsed class, falling back to the line older planners only printed."""
+    """Read the collapsed class from the metrics, or from the line the planner prints when it selects it."""
     if abstraction:
         return {
             "abstracted_object_count": len(abstraction["objects"]),

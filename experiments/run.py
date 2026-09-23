@@ -20,8 +20,6 @@ MANIFEST_NAME = "manifest.json"
 # Every way one problem gets solved, in the order a report reads them.
 MODES = ("abstract", "concrete", "lama")
 PIPELINE_MODULES = {"plan": "scripts.planner", "decide": "scripts.unsolvability"}
-NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
-SYMMETRY_TIMEOUT_MESSAGE = "PDDL Symmetries exceeded its"
 
 
 def main():
@@ -29,7 +27,7 @@ def main():
     result = _run_task(
         args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout, pipeline=args.pipeline
     )
-    print(f"{args.domain_name}/{args.problem.name}: {_task_status(args.mode, result)}", flush=True)
+    print(f"{args.domain_name}/{args.problem.name}: {args.mode} {_human_status(result)}", flush=True)
 
 
 def _argument_parser():
@@ -134,7 +132,7 @@ def _run_pipeline(command, timeout, environment=None):
         return_code = None
         timed_out = False
         interrupted = True
-    status = _machine_status(return_code, timed_out, output, interrupted)
+    status = _machine_status(return_code, timed_out, interrupted)
     result = {
         "status": status,
         "return_code": return_code,
@@ -158,19 +156,13 @@ def _kill_process_group(process):
     return process.communicate()[0] or ""
 
 
-def _machine_status(return_code, timed_out, output, interrupted=False):
+def _machine_status(return_code, timed_out, interrupted=False):
     if interrupted:
         return "interrupted"
     if timed_out:
         return "timed_out"
     if return_code is not None and return_code < 0:
         return "killed"
-    # These message checks classify results produced by an older planner CLI
-    # during a rolling update of cluster workers.
-    if NO_SYMMETRIES_MESSAGE in output:
-        return "no_symmetries"
-    if SYMMETRY_TIMEOUT_MESSAGE in output:
-        return "symmetry_timeout"
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
@@ -180,9 +172,7 @@ def _planner_command(domain, problem, mode, pipeline="plan"):
 
 
 def _human_status(result):
-    status = result.get("status") or _machine_status(
-        result.get("return_code"), result.get("timed_out", False), result.get("output", "")
-    )
+    status = result["status"]
     labels = {
         "success": "success",
         "no_plan": "no plan found",
@@ -197,15 +187,8 @@ def _human_status(result):
     if status in labels:
         return labels[status]
     if status == "killed":
-        signal_number = result.get("signal")
-        if signal_number is None and result.get("return_code", 0) < 0:
-            signal_number = -result["return_code"]
-        return f"killed (signal {signal_number})"
+        return f"killed (signal {result['signal']})"
     return f"error (exit code {result.get('return_code')})"
-
-
-def _task_status(mode, result):
-    return f"{mode} {_human_status(result)}"
 
 
 if __name__ == "__main__":

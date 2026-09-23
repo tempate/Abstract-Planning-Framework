@@ -324,6 +324,7 @@ class BenchmarkTests(unittest.TestCase):
             "    Refinement decrements  2\n"
             "    Horizon increments     1\n"
             "    Abstract plan length    3\n"
+            "    Plan length            2\n"
             "    Final horizon          4\n"
             "    Abstract solver calls  1\n"
             "    Concrete solver calls  4\n"
@@ -336,6 +337,7 @@ class BenchmarkTests(unittest.TestCase):
             "    Total                   2.500000\n"
             "    Concrete Fast Downward  1.000000\n"
             "  Solver activity:\n"
+            "    Plan length            3\n"
             "    Final horizon          6\n"
             "    Concrete solver calls  1\n"
             "Plan:\n  occurs(action(first),1)\n  occurs(action(second),1)\n  occurs(action(third),2)\n"
@@ -470,11 +472,11 @@ class BenchmarkTests(unittest.TestCase):
             self.assertFalse(survivor.exists(), "a grandchild outlived the timeout")
 
     def test_benchmark_status_is_human_readable(self):
-        self.assertEqual(_human_status({"timed_out": False, "return_code": 0, "output": ""}), "success")
-        self.assertEqual(_human_status({"timed_out": False, "return_code": 1, "output": ""}), "no plan found")
-        self.assertEqual(_human_status({"timed_out": False, "return_code": 2, "output": ""}), "error (exit code 2)")
-        self.assertEqual(_human_status({"timed_out": False, "return_code": 5, "output": ""}), "out of memory")
-        self.assertEqual(_human_status({"timed_out": True, "return_code": None, "output": ""}), "timed out")
+        self.assertEqual(_human_status({"status": "success"}), "success")
+        self.assertEqual(_human_status({"status": "no_plan"}), "no plan found")
+        self.assertEqual(_human_status({"status": "error", "return_code": 2}), "error (exit code 2)")
+        self.assertEqual(_human_status({"status": "out_of_memory"}), "out of memory")
+        self.assertEqual(_human_status({"status": "timed_out"}), "timed out")
         self.assertEqual(_human_status({"status": "symmetry_timeout"}), "symmetry timeout")
         self.assertEqual(_human_status({"status": "killed", "signal": 9}), "killed (signal 9)")
         self.assertEqual(_human_status({"status": "running"}), "running")
@@ -499,32 +501,6 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(results[4]["return_code"], -9)
         self.assertEqual(results[4]["signal"], 9)
         self.assertNotIn("signal", results[5])
-
-    def test_collector_reads_legacy_combined_result(self):
-        legacy = {
-            "domain": "example",
-            "problem": "p01.pddl",
-            "return_code": 0,
-            "timed_out": False,
-            "wall_time_seconds": 1.0,
-            "output": "Horizon: 4\nPlan found: yes\n",
-            "concrete": {
-                "return_code": 0,
-                "timed_out": False,
-                "wall_time_seconds": 2.0,
-                "output": "Horizon: 6\nPlan found: yes\n",
-            },
-        }
-        with tempfile.TemporaryDirectory() as directory:
-            result_file = Path(directory) / "example" / "p01.json"
-            result_file.parent.mkdir()
-            result_file.write_text(json.dumps(legacy), encoding="utf-8")
-
-            rows = collect(directory)
-
-        self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[0]["mode"], "abstract")
-        self.assertEqual(rows[1]["mode"], "concrete")
 
     def test_the_manifest_marks_every_mode_that_produced_no_result(self):
         expected_statuses = {
