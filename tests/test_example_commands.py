@@ -9,7 +9,9 @@ from unittest.mock import patch
 
 from scripts import planner
 from scripts.planner import _argument_parser
+from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
+from experiments.collect import _values
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -21,24 +23,23 @@ def _argument_after(command, option):
 
 
 class PlannerOutputTests(unittest.TestCase):
-    def test_metrics_are_grouped_and_human_readable(self):
-        result = {
-            "plan": ["occurs(move,5)"],
-            "plan_length": 1,
-            "success": True,
-            "metrics": {"durations": {"total": 1.25}, "counters": {"decrements": 2, "concrete_solve_calls": 3}},
+    def test_every_metric_the_planner_prints_is_collected(self):
+        """The collector reads the printed metrics, so the two must agree on the format."""
+        metrics = {
+            "durations": {name: 0.25 for name in DURATION_LABELS},
+            "counters": {name: 3 for name in COUNTER_LABELS},
+            "abstraction": {"objects": ["a", "b"], "object_type": "item"},
         }
         output = StringIO()
-
         with redirect_stdout(output):
-            planner.print_planning_result(result)
+            planner.print_planning_result({"plan": ["occurs(move,1)"], "success": True, "metrics": metrics})
 
-        text = output.getvalue()
-        self.assertIn("Metrics:\n  Durations (seconds):", text)
-        self.assertRegex(text, r"(?m)^    Total +1\.250000$")
-        self.assertIn("  Solver activity:", text)
-        self.assertRegex(text, r"(?m)^    Refinement decrements +2$")
-        self.assertNotIn('{"durations"', text)
+        values = _values({"status": "success", "wall_time_seconds": 1.0, "output": output.getvalue()})
+
+        for name in DURATION_LABELS:
+            self.assertEqual(values[f"{name}_seconds"], 0.25, name)
+        for name in COUNTER_LABELS:
+            self.assertEqual(values[name], 3, name)
 
 
 class ShellExampleTests(unittest.TestCase):
