@@ -12,6 +12,7 @@ from pathlib import Path
 
 from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR
 from experiments.tracks import DEFAULT_TRACK, TRACKS
+from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.arguments import positive_int
 
 DEFAULT_MEMORY_LIMIT = 8 * 1024
@@ -19,15 +20,6 @@ DEFAULT_MEMORY_LIMIT = 8 * 1024
 # "any" partition is not: it spans broadwell and sunnycove, and caps a job at one
 # hour, which silently bounds --timeout.
 DEFAULT_PARTITION = "sunnycove"
-# What a fresh worktree has not got yet. new-worktree.sh links all four at once,
-# so they are present together or absent together, and checking them per mode
-# would guard a case that does not arise. The tell for a missing one is a queue
-# draining far faster than the timeout, long after the jobs are gone.
-REQUIRED_ARTIFACTS = {
-    "lib/pddl-symmetries/src/translate/pybliss-0.73/pybind11_blissmodule.so": "abstract jobs die in symmetry discovery",
-    "lib/downward/builds/release": "every search exits 36, Could not find build 'release'",
-    "lib/plasp/bin/plasp": "plasp binary not found, before any solving",
-}
 
 
 def main():
@@ -84,21 +76,23 @@ def _report_run(tasks, config_file, definition_dir):
 
 def _check_worktree_is_built(project_root=PROJECT_ROOT):
     """Refuse to submit from a worktree whose shared build artifacts are missing."""
-    missing = [path for path in REQUIRED_ARTIFACTS if not (Path(project_root) / path).exists()]
+    # A fresh worktree has none of what setup builds until new-worktree.sh links
+    # it in, and a job without it dies long after the queue has drained.
+    missing = []
+    for name, path in ARTIFACTS.items():
+        relative = path.relative_to(SETUP_ROOT)
+        if not (Path(project_root) / relative).exists():
+            missing.append(f"  {name} ({relative})")
     if missing:
-        raise SystemExit(
-            "Nothing to run with; this worktree is missing:\n"
-            + "\n".join(f"  {path} — {REQUIRED_ARTIFACTS[path]}" for path in missing)
-        )
+        raise SystemExit("Nothing to run with; this worktree is missing:\n" + "\n".join(missing))
 
 
 def _set_aside_results_dir(results_dir=RESULTS_DIR):
-    """Give the run an empty directory, keeping what the previous one left.
+    """Give the run an empty directory, renaming what the previous one left.
 
-    Until a run is pulled, its results directory is the only copy of it, and a
-    submission used to delete the lot. It is renamed instead. The directory
-    still has to start empty, because collect reads every result under it, so a
-    previous run left in place would land in the new one's CSV.
+    Until a run is pulled, its results directory is the only copy of it. The
+    directory still has to start empty, because collect reads every result
+    under it.
     """
     results_dir = Path(results_dir)
     if results_dir.is_symlink() or results_dir.is_file():

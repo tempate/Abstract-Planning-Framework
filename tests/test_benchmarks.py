@@ -16,6 +16,7 @@ from unittest.mock import patch
 from experiments.tracks import TRACKS
 from experiments.submit import _find_domain
 from experiments.collect import FIELDS, _preserved_rows, _track_results_file, collect
+from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.reporting import update_result_progress
 from experiments.run import (
     PROJECT_ROOT,
@@ -28,7 +29,6 @@ import experiments.submit
 from experiments.report import _coverage, _finished_problems, _head_to_head
 from experiments.submit import (
     MANIFEST_NAME,
-    REQUIRED_ARTIFACTS,
     _benchmark_tasks,
     _check_worktree_is_built,
     _set_aside_results_dir,
@@ -168,8 +168,8 @@ class BenchmarkTests(unittest.TestCase):
             root = Path(directory)
             with self.assertRaises(SystemExit) as refusal:
                 _check_worktree_is_built(project_root=root)
-            for artifact in REQUIRED_ARTIFACTS:
-                path = root / artifact
+            for artifact in ARTIFACTS.values():
+                path = root / artifact.relative_to(SETUP_ROOT)
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
 
