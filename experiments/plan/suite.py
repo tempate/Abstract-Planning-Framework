@@ -11,17 +11,9 @@ which no relaxed delete reaches, but which collapsing two objects into one symbo
 does, by making the two sides equal.
 
 A problem is only worth submitting when some source can abstract it, so
-``SYMMETRIC_PROBLEMS`` lists the ones PDDL Symmetries reports a class for, read
-from ``symmetries.txt``, whose header carries the command that regenerates it
+``symmetries.txt`` lists the ones PDDL Symmetries reports a class for, whose header carries the command that regenerates it
 from a collected run.
 """
-
-from pathlib import Path
-
-from experiments import DOWNWARD_BENCHMARKS_DIR, read_problems
-
-BENCHMARKS_DIR = DOWNWARD_BENCHMARKS_DIR
-SYMMETRIC_PROBLEMS_FILE = Path(__file__).parent / "symmetries.txt"
 
 SUITE = [
     "agricola-sat18-strips",
@@ -93,6 +85,3 @@ SUITE = [
     "woodworking-sat11-strips",
     "zenotravel",
 ]
-
-
-SYMMETRIC_PROBLEMS = read_problems(SYMMETRIC_PROBLEMS_FILE)

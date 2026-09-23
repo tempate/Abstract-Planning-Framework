@@ -35,19 +35,18 @@ def main():
     track = TRACKS[args.track]
     tasks = list(
         _benchmark_tasks(
-            benchmarks_dir=track.suite.BENCHMARKS_DIR,
-            suite=track.suite.SUITE,
-            runnable=track.suite.SYMMETRIC_PROBLEMS,
+            benchmarks_dir=track.benchmarks_dir,
+            suite=track.suite,
+            runnable=track.runnable(),
             modes=args.modes,
             domains=args.domains,
             problems=args.problems,
         )
     )
-    pipeline = track.pipeline
     _check_worktree_is_built()
     if not tasks:
         raise SystemExit(
-            f"No problems found under {track.suite.BENCHMARKS_DIR}. "
+            f"No problems found under {track.benchmarks_dir}. "
             "A worktree made without new-worktree.sh leaves the benchmark submodule empty."
         )
     if not args.dry_run:
@@ -61,7 +60,7 @@ def main():
             memory_limit=args.memory_limit,
             max_parallel_jobs=args.max_parallel_jobs,
             partition=args.partition,
-            pipeline=pipeline,
+            track=args.track,
         )
         if args.dry_run:
             _report_run(tasks, config_file, definition_dir)
@@ -186,7 +185,7 @@ def _write_copperbench_config(
     memory_limit=DEFAULT_MEMORY_LIMIT,
     max_parallel_jobs=None,
     partition=DEFAULT_PARTITION,
-    pipeline="plan",
+    track=DEFAULT_TRACK,
 ):
     """Write the files CopperBench needs to submit one job per problem."""
     definition_dir = Path(definition_dir)
@@ -209,8 +208,8 @@ def _write_copperbench_config(
         "$4",
         "--timeout",
         "$timeout",
-        "--pipeline",
-        pipeline,
+        "--track",
+        track,
     ]
     configs_file.write_text(shlex.join(worker) + "\n", encoding="utf-8")
 

@@ -10,10 +10,8 @@ import csv
 import re
 from pathlib import Path
 
-from experiments.plan.suite import BENCHMARKS_DIR, SUITE
-from experiments.run import PROJECT_ROOT
+from experiments.tracks import TRACKS
 
-DEFAULT_CSV = PROJECT_ROOT / "experiments" / "plan" / "results.csv"
 NEEDS_PNF = "needs PNF"
 INERT = "inert"
 POSITIVE = "already positive"
@@ -24,7 +22,7 @@ def main():
     args = _argument_parser().parse_args()
     collapsed = _collapsed_types(args.results)
     rows = []
-    for domain in SUITE:
+    for domain in TRACKS["plan"].suite:
         directory = Path(args.benchmarks) / domain
         if not directory.is_dir():
             continue
@@ -249,8 +247,12 @@ def _collapsed_types(results_file):
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--benchmarks", default=BENCHMARKS_DIR, help="Directory holding the benchmark domains")
-    parser.add_argument("--results", default=DEFAULT_CSV, help="Collected CSV naming the type each domain collapsed")
+    parser.add_argument(
+        "--benchmarks", default=TRACKS["plan"].benchmarks_dir, help="Directory holding the benchmark domains"
+    )
+    parser.add_argument(
+        "--results", default=TRACKS["plan"].results_file, help="Collected CSV naming the type each domain collapsed"
+    )
     return parser
 
 
