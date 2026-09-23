@@ -11,6 +11,8 @@ from core.outcomes import IntegrationError
 
 BUILD = "release64"
 DETECTION_SEARCH = "resource_detection()"
+# The budget symmetry discovery gets, so neither source can spend a whole job finding a class.
+DETECTION_TIME_LIMIT = 300
 
 # The engine classifies the variables, writes its reformulated task and leaves
 # through the no-solution path, so its exit code never reports success. These
@@ -27,7 +29,7 @@ class ResourceVariable:
     objects: tuple[str, ...]
 
 
-def detect_resources(base_dir, domain_path, problem_path, timeout=None):
+def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME_LIMIT):
     """Return the resource variables of one PDDL task, widest first."""
     if not os.path.exists(NUMERIC_FAST_DOWNWARD_BIN):
         raise IntegrationError(
