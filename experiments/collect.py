@@ -12,9 +12,6 @@ from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from experiments.run import MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR, _human_status
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
-# The raw run output stays in the untracked results directory; the collected CSV
-# is the artifact that gets committed and reported on.
-CSV_FILE = TRACKS[DEFAULT_TRACK].results_file
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
 FIELDS = (
     "domain",
@@ -198,7 +195,7 @@ def _key(row):
     return (row["domain"], row["problem"], row["mode"])
 
 
-def _preserved_rows(collected, csv_file=CSV_FILE):
+def _preserved_rows(collected, csv_file):
     """Read the CSV rows this run did not re-run, so a run replaces only its own."""
     csv_file = Path(csv_file)
     if not csv_file.is_file():
@@ -218,9 +215,10 @@ def _preserved_rows(collected, csv_file=CSV_FILE):
     return preserved
 
 
-def main(results_dirs=RESULTS_DIR, csv_file=CSV_FILE):
+def main(results_dirs=RESULTS_DIR, csv_file=None):
     if isinstance(results_dirs, (str, Path)):
         results_dirs = [results_dirs]
+    csv_file = csv_file or _track_results_file(results_dirs)
     collected = collect(*results_dirs)
     preserved = _preserved_rows(collected, csv_file)
     rows = sorted(collected + preserved, key=_key)
@@ -239,6 +237,19 @@ def main(results_dirs=RESULTS_DIR, csv_file=CSV_FILE):
     print(f"Collected {len(rows)} results in {csv_file}")
 
 
+def _track_results_file(results_dirs):
+    """The results file of the track the runs were submitted for."""
+    tracks = set()
+    for results_dir in results_dirs:
+        manifest = Path(results_dir) / MANIFEST_NAME
+        # A run submitted before the manifest named its track is a plan run.
+        track = json.loads(manifest.read_text(encoding="utf-8")).get("track") if manifest.is_file() else None
+        tracks.add(track or DEFAULT_TRACK)
+    if len(tracks) > 1:
+        raise SystemExit(f"The runs belong to different tracks: {', '.join(sorted(tracks))}")
+    return TRACKS[tracks.pop()].results_file
+
+
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -248,7 +259,7 @@ def _argument_parser():
         default=[RESULTS_DIR],
         help="Result directories to collect; where two hold the same result, the later one wins",
     )
-    parser.add_argument("--csv", default=CSV_FILE, help="CSV file to collect the results into")
+    parser.add_argument("--csv", help="CSV file to collect the results into; defaults to the run's track's")
     return parser
 
 

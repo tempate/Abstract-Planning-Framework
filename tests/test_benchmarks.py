@@ -17,7 +17,7 @@ from experiments.plan.suite import SUITE
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 from experiments.submit import _find_domain
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from experiments.collect import FIELDS, _preserved_rows, collect
+from experiments.collect import FIELDS, _preserved_rows, _track_results_file, collect
 from scripts.utils.reporting import update_result_progress
 from experiments.run import (
     DEFAULT_TIMEOUT,
@@ -690,6 +690,16 @@ class BenchmarkTests(unittest.TestCase):
                 self.assertEqual(manifest.name, MANIFEST_NAME)
                 self.assertEqual([row["mode"] for row in rows], ["abstract", "concrete"])
                 self.assertEqual([row["status"] for row in rows], statuses)
+
+    def test_a_run_is_collected_into_the_results_of_its_track(self):
+        task = [("concrete", "example", Path("domain.pddl"), Path("p01.pddl"))]
+        with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
+            _write_manifest(task, plan, track="plan")
+            _write_manifest(task, decide, track="unsolvability")
+
+            self.assertEqual(_track_results_file([decide]), TRACKS["unsolvability"].results_file)
+            with self.assertRaises(SystemExit):
+                _track_results_file([plan, decide])
 
 
 class CollectedCsvTests(unittest.TestCase):

@@ -5,7 +5,7 @@ import shlex
 import subprocess
 from pathlib import Path
 
-from experiments.collect import CSV_FILE, main as collect
+from experiments.collect import main as collect
 from experiments.run import RESULTS_DIR
 
 DEFAULT_HOST = "copperhead"
@@ -44,7 +44,7 @@ def _argument_parser():
         help="Results directory on that host; defaults to the worktree matching this branch, ~/apf/<branch>/runs/",
     )
     parser.add_argument("--into", default=RESULTS_DIR, help="Local directory to pull the results into")
-    parser.add_argument("--csv", default=CSV_FILE, help="CSV file to collect the results into")
+    parser.add_argument("--csv", help="CSV file to collect the results into; defaults to the run's track's")
     parser.add_argument(
         "--force", action="store_true", help="Pull even while jobs are queued, or from a checkout on another commit"
     )
