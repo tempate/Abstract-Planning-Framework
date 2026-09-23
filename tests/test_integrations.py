@@ -62,7 +62,7 @@ class FastDownwardHelperTests(unittest.TestCase):
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_pddl_to_sas_surfaces_external_tool_diagnostics(self, run):
         run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=20, stdout="translator output", stderr="search failed"
+            args=[], returncode=30, stdout="translator output", stderr="search failed"
         )
 
         with tempfile.TemporaryDirectory() as directory:
@@ -142,14 +142,14 @@ class FastDownwardHelperTests(unittest.TestCase):
             self.assertTrue(path.startswith(directory), f"{path} escapes the run directory")
 
     @patch("core.integrations.fast_downward.subprocess.run")
-    def test_a_search_killed_for_memory_is_told_apart_from_other_failures(self, run):
-        run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=247, stdout="search exit code: -9", stderr=""
-        )
-
-        with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaises(OutOfMemoryError):
-                has_plan(directory, "domain.pddl", "problem.pddl", "abstract")
+    def test_running_out_of_memory_is_told_apart_from_other_failures(self, run):
+        # The translator's, the search's, the search's with time, and a SIGKILL.
+        for returncode in (20, 22, 24, 247):
+            with self.subTest(returncode=returncode):
+                run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr="")
+                with tempfile.TemporaryDirectory() as directory:
+                    with self.assertRaises(OutOfMemoryError):
+                        has_plan(directory, "domain.pddl", "problem.pddl", "abstract")
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_both_unsolvable_exit_codes_mean_no_plan(self, run):
