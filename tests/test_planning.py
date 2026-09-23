@@ -10,11 +10,13 @@ from core.abstraction.factory import Abstraction, AbstractionError, build_abstra
 from core.search.incremental import SolveResult
 from core.integrations.unified_planning import read_problem
 from core.outcomes import UnsolvableTaskError
-from core.planning.abstract import write_abstract_problem, compute_abstract_plan
-from core.planning.baseline import compute_baseline_plan
+from core.abstraction.factory import write_abstract_problem
+from core.planning.abstract import solve_via_abstraction
+from core.planning.baseline import solve_directly
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
-from core.planning.concrete import compute_concrete_plan
-from core.planning.solvability import compute_abstract_verdict, compute_concrete_verdict
+from core.planning.concrete import solve_with_asp
+from core.planning.abstract import check_solvability_via_abstraction
+from core.planning.baseline import check_solvability_directly
 from scripts.utils.arguments import positive_int
 
 
@@ -59,7 +61,7 @@ class ConcretePlanningOrchestrationTests(unittest.TestCase):
         )
         config = PlanningConfig("domain.pddl", "problem.pddl")
 
-        result = compute_concrete_plan(config)
+        result = solve_with_asp(config)
 
         self.assertTrue(result["success"])
         self.assertEqual(result["plan"], ['occurs(action("act"),3)'])
@@ -75,7 +77,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
         find_plan.return_value = ["(walk a b)", "(drive b c)"]
         config = PlanningConfig("domain.pddl", "problem.pddl")
 
-        result = compute_baseline_plan(config)
+        result = solve_directly(config)
 
         self.assertTrue(result["success"])
         self.assertEqual(result["configuration"], config.as_dict())
@@ -86,7 +88,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
     def test_an_unsolvable_task_is_not_a_plan(self, find_plan):
         find_plan.return_value = None
 
-        result = compute_baseline_plan(PlanningConfig("domain.pddl", "problem.pddl"))
+        result = solve_directly(PlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
@@ -98,7 +100,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         generated = _generated_abstraction(relaxed_deletes=(object(),))
 
         with _stubbed_abstract_pipeline(generated) as stubs:
-            result = compute_abstract_plan(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            result = solve_via_abstraction(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         context = stubs.refine.call_args.args[0]
         self.assertTrue(result["success"])
@@ -114,7 +116,7 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
         ):
             temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
             with self.assertRaises(AbstractionError):
-                compute_abstract_plan(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+                solve_via_abstraction(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         pddl_to_sas.assert_not_called()
 
@@ -123,37 +125,37 @@ class AbstractPlanningOrchestrationTests(unittest.TestCase):
 def _stubbed_decision(found):
     """Run the abstract decision pipeline against stubbed integrations."""
     with (
-        patch("core.planning.solvability.temp_run_dir") as temp_run_dir,
+        patch("core.planning.abstract.temp_run_dir") as temp_run_dir,
         patch(
-            "core.planning.solvability.build_abstract_problem", return_value=_generated_abstraction()
+            "core.planning.abstract.build_abstract_problem", return_value=_generated_abstraction()
         ) as build_abstract_problem,
-        patch("core.planning.solvability.write_abstract_problem", return_value=("domain.pddl", "problem.pddl")),
-        patch("core.planning.solvability.has_plan", return_value=found),
+        patch("core.planning.abstract.write_abstract_problem", return_value=("domain.pddl", "problem.pddl")),
+        patch("core.planning.abstract.has_plan", return_value=found),
     ):
         temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
         yield SimpleNamespace(build_abstract_problem=build_abstract_problem)
 
 
 class DecisionTests(unittest.TestCase):
-    @patch("core.planning.solvability.has_plan")
+    @patch("core.planning.baseline.has_plan")
     def test_searching_the_task_itself_settles_it(self, has_plan):
         for found, verdict in ((True, "solvable"), (False, "unsolvable")):
             with self.subTest(found=found):
                 has_plan.return_value = found
 
-                result = compute_concrete_verdict(PlanningConfig("domain.pddl", "problem.pddl"))
+                result = check_solvability_directly(PlanningConfig("domain.pddl", "problem.pddl"))
 
                 self.assertEqual(result["verdict"], verdict)
 
     def test_an_abstract_plan_settles_nothing(self):
         with _stubbed_decision(found=True):
-            result = compute_abstract_verdict(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            result = check_solvability_via_abstraction(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unknown")
 
     def test_an_abstraction_with_no_plan_proves_the_task_unsolvable(self):
         with _stubbed_decision(found=False):
-            result = compute_abstract_verdict(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            result = check_solvability_via_abstraction(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unsolvable")
 
@@ -161,7 +163,7 @@ class DecisionTests(unittest.TestCase):
         with _stubbed_decision(found=True) as stubs:
             stubs.build_abstract_problem.side_effect = UnsolvableTaskError("no relaxed solution")
 
-            result = compute_abstract_verdict(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            result = check_solvability_via_abstraction(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unsolvable")
 

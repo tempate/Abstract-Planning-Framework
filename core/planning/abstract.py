@@ -1,34 +1,33 @@
 """Prepare and dispatch abstraction-based planning workflows."""
 
 import os
-from pathlib import Path
 
-from core.integrations.fast_downward import pddl_to_sas
-from core.integrations.unified_planning import without_action_costs, write_problem
+from core.integrations.fast_downward import has_plan, pddl_to_sas
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.metrics import PlanningMetrics
-from core.abstraction.factory import build_abstract_problem
+from core.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
+from core.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
 from core.planning.config import AbstractPlanningConfig
 from core.planning.execution import temp_run_dir
 from core.refinement.pipeline import RefinementContext, refine
 
 
-def compute_abstract_plan(config: AbstractPlanningConfig, on_update=None):
+def solve_via_abstraction(config: AbstractPlanningConfig, on_update=None):
     """Abstract one concrete task and dispatch its plan-refinement workflow."""
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
-            result = _compute_abstract_plan(config, base_dir, run_id, metrics)
+            result = _abstract_and_refine(config, base_dir, run_id, metrics)
     result["metrics"] = metrics.as_dict()
     return result
 
 
-def _compute_abstract_plan(config, base_dir, run_id, metrics):
+def _abstract_and_refine(config, base_dir, run_id, metrics):
     abstract_problem = build_abstract_problem(config, metrics)
     report_abstraction(abstract_problem, metrics)
 
     concrete_sas, abstract_sas = _to_sas(base_dir, abstract_problem.problem, config, metrics)
-    concrete_asp, abstract_asp = _to_asp(concrete_sas, abstract_sas, config, metrics)
+    concrete_asp, abstract_asp = _to_asp(concrete_sas, abstract_sas, metrics)
 
     context = RefinementContext(
         config=config,
@@ -58,7 +57,7 @@ def _to_sas(base_dir, problem, config, metrics):
     return concrete_sas, abstract_sas
 
 
-def _to_asp(concrete_sas, abstract_sas, config, metrics):
+def _to_asp(concrete_sas, abstract_sas, metrics):
     """Translate both SAS files into their ASP programs."""
     with metrics.measure("concrete_asp"):
         concrete_asp = sas_to_asp(concrete_sas)
@@ -70,38 +69,33 @@ def _to_asp(concrete_sas, abstract_sas, config, metrics):
     return concrete_asp, abstract_asp
 
 
-def report_abstraction(abstract_problem, metrics):
-    """Record the collapsed class and what relaxing it cost.
+def check_solvability_via_abstraction(config: AbstractPlanningConfig, on_update=None):
+    """Search the abstraction, which can only settle the task one way.
 
-    Reported before solving, so a run that fails later still carries it: the
-    metrics snapshot reaches the result file on every update, which is what
-    survives a run killed at the benchmark timeout.
+    The abstraction drops deletes and relaxes inequalities, so it
+    over-approximates: no abstract plan means no concrete plan, but an abstract
+    plan may exist only because of the relaxation.
     """
-    abstraction = abstract_problem.abstraction
-    metrics.set_abstraction(abstraction.objects, abstraction.object_type)
-    metrics.set_counters(
-        {
-            "relaxed_deletes": len(abstract_problem.relaxed_deletes),
-            "relaxed_inequalities": len(abstract_problem.relaxed_inequalities),
-        }
-    )
-    print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
+    metrics = PlanningMetrics(on_update=on_update)
+    with metrics.measure("total"):
+        with temp_run_dir("abstract") as (base_dir, run_id):
+            try:
+                abstract_problem = build_abstract_problem(config, metrics)
+                report_abstraction(abstract_problem, metrics)
 
+                with metrics.measure("abstract_pddl_writing"):
+                    domain_path, problem_path = write_abstract_problem(abstract_problem.problem, base_dir)
 
-def write_abstract_problem(problem, base_dir):
-    """Write the abstract problem to a temporary directory."""
+                with metrics.measure("abstract_fd"):
+                    found = has_plan(base_dir, domain_path, problem_path, "abstract")
+            except UnsolvableTaskError:
+                # Symmetry discovery reads the concrete task, so proving it
+                # unsolvable there is the verdict, not a failure to reach one.
+                found = False
 
-    # Create the temporary directory.
-    input_directory = Path(base_dir, "generated-abstraction")
-    input_directory.mkdir(parents=True, exist_ok=True)
-
-    # Write the abstract domain and problem files.
-    serialized = write_problem(without_action_costs(problem))
-
-    domain_path = input_directory / "domain.pddl"
-    domain_path.write_text(serialized.domain, encoding="utf-8")
-
-    problem_path = input_directory / "problem.pddl"
-    problem_path.write_text(serialized.problem, encoding="utf-8")
-
-    return domain_path, problem_path
+    return {
+        "configuration": config.as_dict(),
+        "verdict": UNKNOWN if found else UNSOLVABLE,
+        "run_id": run_id,
+        "metrics": metrics.as_dict(),
+    }

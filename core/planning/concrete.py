@@ -9,26 +9,37 @@ from core.planning.execution import temp_run_dir
 from core.search.incremental import IncrementalSolver
 
 
-def compute_concrete_plan(config: PlanningConfig, on_update=None):
+def solve_with_asp(config: PlanningConfig, on_update=None):
     """Translate and solve one concrete PDDL planning problem."""
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir() as (base_dir, run_id):
-            result = _compute_concrete_plan(config, base_dir, run_id, metrics)
+            result = _translate_and_solve(config, base_dir, run_id, metrics)
     result["metrics"] = metrics.as_dict()
     return result
 
 
-def _compute_concrete_plan(config, base_dir, run_id, metrics):
-    # Translate the concrete problem into SAS.
+def _translate_and_solve(config, base_dir, run_id, metrics):
+    sas_file = _to_sas(base_dir, config, metrics)
+    asp = _to_asp(sas_file, metrics)
+    return _search(asp, config, run_id, metrics)
+
+
+def _to_sas(base_dir, config, metrics):
+    """Translate the task and return its SAS file."""
     with metrics.measure("concrete_fd"):
-        sas_file = pddl_to_sas(base_dir, config.domain_path, config.problem_path, "concrete")
+        return pddl_to_sas(base_dir, config.domain_path, config.problem_path, "concrete")
 
-    # Generate the ASP representation of the concrete problem.
+
+def _to_asp(sas_file, metrics):
+    """Translate the SAS file into its ASP program."""
     with metrics.measure("concrete_asp"):
-        asp = sas_to_asp(sas_file)
+        return sas_to_asp(sas_file)
 
-    # Solve the concrete problem, raising the horizon until a plan is found.
+
+def _search(asp, config, run_id, metrics):
+    """Solve the program, raising the horizon until a plan is found."""
+
     def record_attempt(_horizon, solve_calls):
         metrics.set_counter("concrete_solve_calls", solve_calls)
 

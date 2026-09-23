@@ -12,7 +12,8 @@ from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
 from core.outcomes import PlanningOutcomeError
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
-from core.planning.solvability import compute_abstract_verdict, compute_concrete_verdict
+from core.planning.abstract import check_solvability_via_abstraction
+from core.planning.baseline import check_solvability_directly
 
 from .utils.arguments import abstraction_arguments, task_arguments
 from .utils.reporting import print_metrics, progress_callback
@@ -38,9 +39,9 @@ def _compute(args):
     on_update = progress_callback()
     common = {"domain_path": args.domain, "problem_path": args.problem}
     if args.mode == "concrete":
-        return compute_concrete_verdict(PlanningConfig(**common), on_update)
+        return check_solvability_directly(PlanningConfig(**common), on_update)
     if args.mode == "abstract":
-        return compute_abstract_verdict(
+        return check_solvability_via_abstraction(
             AbstractPlanningConfig(
                 **common,
                 objects_to_abstract=args.objects_to_abstract,

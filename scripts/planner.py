@@ -5,10 +5,10 @@ import argparse
 from core.integrations.unified_planning import PddlError
 from core.abstraction.factory import AbstractionError
 from core.outcomes import PlanningOutcomeError
-from core.planning.abstract import compute_abstract_plan
-from core.planning.baseline import compute_baseline_plan
-from core.planning.concrete import compute_concrete_plan
+from core.planning.abstract import solve_via_abstraction
+from core.planning.concrete import solve_with_asp
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
+from core.planning.baseline import solve_directly
 
 from .utils.arguments import abstraction_arguments, task_arguments
 from .utils.reporting import print_metrics, progress_callback
@@ -34,11 +34,11 @@ def _compute(args):
     on_update = progress_callback()
     common = {"domain_path": args.domain, "problem_path": args.problem}
     if args.mode == "concrete":
-        return compute_concrete_plan(PlanningConfig(**common), on_update)
+        return solve_with_asp(PlanningConfig(**common), on_update)
     if args.mode == "lama":
-        return compute_baseline_plan(PlanningConfig(**common), on_update)
+        return solve_directly(PlanningConfig(**common), on_update)
     if args.mode == "abstract":
-        return compute_abstract_plan(
+        return solve_via_abstraction(
             AbstractPlanningConfig(
                 **common,
                 objects_to_abstract=args.objects_to_abstract,
