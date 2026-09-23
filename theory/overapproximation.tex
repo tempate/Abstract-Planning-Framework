@@ -11,7 +11,13 @@
 
 \begin{document}
 
+Many planning tasks contain objects that behave alike, such as several packages that differ only in their names. We collapse such objects into a single representative and plan in the resulting abstraction. The abstract task is smaller, so a planner solves it faster, and we then refine its plan into a plan for the original task. For the approach to be sound, the abstraction must not lose plans. If the original task is solvable, the abstraction must be solvable too, so an unsolvable abstraction proves the original task unsolvable.
+
+Collapsing objects alone does not guarantee soundness, because deleting an atom about one collapsed object also deletes it for all the others. This note defines the abstraction, relaxes exactly the deletes that cause the problem, and proves that the result never loses a plan.
+
 \section{Preliminaries}
+
+We use propositional STRIPS. The definitions below fix notation and make explicit the two features the proof relies on. States are sets of atoms, and every condition is positive.
 
 Fix a finite set $O$ of objects and a finite set $P$ of predicates.
 
@@ -36,7 +42,7 @@ An \emph{action} $a$ is a triple $\langle \mathrm{pre}(a), \mathrm{add}(a), \mat
 A \emph{STRIPS planning task} over $F$ is a tuple $\Pi = \langle F,A,I,G\rangle$, where $A$ is a set of actions, $I \subseteq F$ is the initial state, and $G \subseteq F$ is the goal.
 \end{definition}
 
-Preconditions and goals are sets of atoms, so they can only require an atom to be present, never absent. Every task is ground, so $A$ is a set of actions rather than of action schemas, and conditions on the identity of objects, such as an inequality between two schema parameters, have been resolved before the abstraction is applied.
+Preconditions and goals are sets of atoms, so they can only require an atom to be present, never absent. The proof relies on positive conditions. A state with more atoms satisfies every condition that a state with fewer atoms satisfies, so extra atoms in an abstract state never block an action or a goal. Every task is ground, so $A$ is a set of actions rather than of action schemas, and conditions on the identity of objects, such as an inequality between two schema parameters, have been resolved before the abstraction is applied.
 
 \begin{definition}
 A \emph{plan} is a finite sequence $\pi = a_1 \dots a_n$ of actions. The empty plan $\varepsilon$ is applicable in every state, with $s[\varepsilon] = s$, and $\pi = a_1 \dots a_n$ with $n \geq 1$ is \emph{applicable} in $s$ if $a_1$ is applicable in $s$ and $a_2 \dots a_n$ is applicable in $s[a_1]$. The plan then leads to 
@@ -50,6 +56,8 @@ A plan $\pi$ \emph{solves} $\Pi$ if it is applicable in $I$ and $G \subseteq I[\
 \end{definition}
 
 \section{Abstraction}
+
+The abstraction replaces a set of objects by one representative. Atoms and actions that differed only in which of these objects they mention then coincide, so the abstract task has fewer of both.
 
 Fix a set $C \subseteq O$ of objects to collapse, with $|C| > 1$, and a fresh symbol $c \notin O$.
 
@@ -71,7 +79,7 @@ and extends to atoms, states, actions, and plans by
 \end{align*}
 \end{definition}
 
-Since $\alpha$ maps every object of $C$ onto the single symbol $c$, it is not injective, so it may identify distinct atoms, states, and actions of $\Pi$. The two lemmas below state the only properties of $\alpha$ the later proofs use.
+Since $\alpha$ maps every object of $C$ onto the single symbol $c$, it is not injective, so it may identify distinct atoms, states, and actions of $\Pi$. The two lemmas below state the only properties of $\alpha$ the later proofs use. Lemma~\ref{lem:image} carries inclusions between concrete states over to their images, which is how preconditions and goals transfer to the abstraction. Lemma~\ref{lem:fixed} identifies the atoms that $\alpha$ does not merge with any other, namely the atoms that mention no object of $C$. Only these atoms are safe to keep as deletes.
 
 \begin{lemma}\label{lem:image}
 If $X \subseteq Y$ are sets of atoms, then $\alpha(X) \subseteq \alpha(Y)$.
@@ -85,17 +93,18 @@ By Definition~\ref{def:alpha},
 \end{proof}
 
 \begin{lemma}\label{lem:fixed}
-For an atom $f \in F$ the following are equivalent: (i) $f$ mentions no object of $C$; (ii) $\alpha(f) = f$; (iii) $\alpha(f)$ does not mention $c$.
+For an atom $f \in F$, the conditions (i) $f$ mentions no object of $C$, (ii) $\alpha(f) = f$, and (iii) $\alpha(f)$ does not mention $c$ are equivalent.
 \end{lemma}
 
 \begin{proof}
-(i)~$\Rightarrow$~(ii): $\alpha$ fixes every object outside $C$, so it fixes each argument of $f$. (ii)~$\Rightarrow$~(iii): $\alpha(f) = f$ is an atom over $O$, and $c \notin O$. (iii)~$\Rightarrow$~(i): if $f$ mentions some $o \in C$, then $\alpha(f)$ mentions $\alpha(o) = c$.
+If $f$ mentions no object of $C$, then $\alpha$ fixes each argument of $f$, so (i) implies (ii). If $\alpha(f) = f$, then $\alpha(f)$ is an atom over $O$, and $c \notin O$, so (ii) implies (iii). If $f$ mentions some $o \in C$, then $\alpha(f)$ mentions $\alpha(o) = c$, so (iii) implies (i).
 \end{proof}
 
 \begin{definition}
 The \emph{abstraction} of $\Pi$ under $\alpha$ is $\Pi^\alpha = \langle F^\alpha, A^\alpha, \alpha(I), \alpha(G)\rangle$, where $F^\alpha$ is the set of atoms over $P$ and $(O \setminus C) \cup \{c\}$, and $A^\alpha = \{\, \alpha(a) : a \in A \,\}$.
 \end{definition}
 
+$\Pi^\alpha$ can lose plans of $\Pi$. Suppose that two packages $p_1, p_2 \in C$ lie at a location $l$, and take the plan that loads $p_1$ and then $p_2$. Loading $p_1$ deletes $\mathit{at}(p_1, l)$, so its image in $\Pi^\alpha$ deletes $\mathit{at}(c, l)$, even though $p_2$ still lies at $l$. Loading $p_2$ needs $\mathit{at}(c, l)$ in $\Pi^\alpha$, so the image of the plan fails there. The trouble is that one atom of $\Pi^\alpha$ stands for several atoms of $\Pi$, and deleting one of them should not delete the others. The relaxation therefore drops every delete that mentions an object of $C$.
 
 \begin{definition}\label{def:relaxed}
 The \emph{relaxation} of an action $a \in A$ is the action
@@ -114,7 +123,7 @@ $\Pi^r$ differs from $\Pi^\alpha$ only in the delete lists of its actions, and c
 
 \section{Over-approximation}
 
-The argument is an induction on the length of a plan. The relaxed action keeps atoms the concrete one deletes, so a step gives only an inclusion, and the abstract state may run ahead of the concrete one. Lemma~\ref{lem:progress} covers a single step, and Lemma~\ref{lem:plan} chains the steps along a plan, starting each one from the larger state.
+To show that $\Pi^r$ keeps every plan of $\Pi$, we run a concrete plan and its relaxation side by side and show that the abstract state always contains the image of the concrete one. Preconditions and goals then carry over by Lemma~\ref{lem:image}. Lemma~\ref{lem:progress} proves the containment for a single action, and Lemma~\ref{lem:plan} for a whole plan.
 
 \begin{lemma}\label{lem:progress}
 If $a \in A$ is applicable in $s \subseteq F$, then $a^r$ is applicable in $\alpha(s)$ and $\alpha(s[a]) \subseteq \alpha(s)[a^r]$.
@@ -132,17 +141,19 @@ For the inclusion, Definitions~\ref{def:action},~\ref{def:alpha}, and~\ref{def:r
   \alpha(s[a]) &= \alpha(s \setminus \mathrm{del}(a)) \cup \alpha(\mathrm{add}(a)),\\
   \alpha(s)[a^r] &= (\alpha(s) \setminus \mathrm{del}^r(a)) \cup \alpha(\mathrm{add}(a)).
 \end{align*}
-Both add the same atoms, so it suffices to show that $\alpha(s \setminus \mathrm{del}(a)) \subseteq \alpha(s) \setminus \mathrm{del}^r(a)$. The point is that $a^r$ deletes only atoms that mention no object of $C$, and by Lemma~\ref{lem:fixed}, $\alpha$ maps no other atom onto one of those.
+Both add the same atoms, so it suffices to show that $\alpha(s \setminus \mathrm{del}(a)) \subseteq \alpha(s) \setminus \mathrm{del}^r(a)$. The point is that $a^r$ deletes only atoms that mention no object of $C$, and by Lemma~\ref{lem:fixed}, $\alpha$ maps no other atom onto such an atom.
 
 Let $f \in \alpha(s \setminus \mathrm{del}(a))$, say $f = \alpha(g)$ with $g \in s \setminus \mathrm{del}(a)$. Then $f \in \alpha(s)$ by Lemma~\ref{lem:image}, and it remains to show that $f \notin \mathrm{del}^r(a)$. Suppose it were. Then $f \in \mathrm{del}(a) \subseteq F$, so $f$ is an atom over $O$ and does not mention $c$. As $\alpha(g) = f$ does not mention $c$, Lemma~\ref{lem:fixed} gives $g = \alpha(g) = f$. Hence $g \in \mathrm{del}(a)$, a contradiction.
 \end{proof}
+
+Lemma~\ref{lem:progress} gives only an inclusion. The relaxed action keeps atoms the concrete one deletes, so after one step the abstract state may hold more than the image of the concrete state. Lemma~\ref{lem:plan} carries the inclusion along a plan, which is where positive conditions matter, since the extra atoms never block a later action.
 
 \begin{lemma}\label{lem:plan}
 If $\pi$ is applicable in $s \subseteq F$, then $\pi^r$ is applicable in $\alpha(s)$ and $\alpha(s[\pi]) \subseteq \alpha(s)[\pi^r]$.
 \end{lemma}
 
 \begin{proof}
-We prove the stronger claim that for every state $t$ with $\alpha(s) \subseteq t$, the plan $\pi^r$ is applicable in $t$ and $\alpha(s[\pi]) \subseteq t[\pi^r]$; the lemma is the case $t = \alpha(s)$. The induction needs this form, because after the first action the relaxed plan continues from $\alpha(s)[a^r]$, which may be strictly larger than $\alpha(s[a])$.
+We prove the stronger claim that for every state $t$ with $\alpha(s) \subseteq t$, the plan $\pi^r$ is applicable in $t$ and $\alpha(s[\pi]) \subseteq t[\pi^r]$. The lemma is the case $t = \alpha(s)$. The induction needs this form, because after the first action the relaxed plan continues from $\alpha(s)[a^r]$, which may be strictly larger than $\alpha(s[a])$.
 
 The proof is by induction on the length of $\pi$. For the empty plan the claim is the assumption $\alpha(s) \subseteq t$. Let $\pi = a\pi'$, so $a$ is applicable in $s$ and $\pi'$ in $s[a]$. By Lemma~\ref{lem:progress}, $a^r$ is applicable in $\alpha(s)$ and $\alpha(s[a]) \subseteq \alpha(s)[a^r]$. Since $\mathrm{pre}(a^r) \subseteq \alpha(s) \subseteq t$, the action $a^r$ is also applicable in $t$, and by Definition~\ref{def:action},
 \[
@@ -155,6 +166,8 @@ The induction hypothesis at $s[a]$ and $t[a^r]$ then gives that $\pi'^r$ is appl
 \]
 \end{proof}
 
+The theorem follows by starting both plans in the initial state and checking the goal at the end.
+
 \begin{theorem}
 If $\pi$ solves $\Pi$, then $\pi^r$ solves $\Pi^r$.
 \end{theorem}
@@ -166,5 +179,9 @@ Let $\pi$ solve $\Pi$, so $\pi$ is applicable in $I$ and $G \subseteq I[\pi]$ by
 \]
 By Definition~\ref{def:relaxed}, $\Pi^r$ has initial state $\alpha(I)$ and goal $\alpha(G)$, so $\pi^r$ solves $\Pi^r$ by Definition~\ref{def:solves}.
 \end{proof}
+
+Read the other way, if $\Pi^r$ has no plan, then neither does $\Pi$, so proving that $\Pi^r$ is unsolvable proves that $\Pi$ is unsolvable.
+
+The converse fails. $\Pi^r$ may have plans that are not the relaxation of any plan of $\Pi$, because $\alpha$ forgets which object of $C$ an atom is about, and the relaxation keeps atoms that $\Pi$ deletes. A plan of $\Pi^r$ is therefore only a candidate, and we still have to refine it into a plan of $\Pi$.
 
 \end{document}
