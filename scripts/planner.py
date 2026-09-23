@@ -1,38 +1,22 @@
 """Solve one PDDL task concretely or through an automatically generated abstraction."""
 
 import argparse
-import sys
-import traceback
 
-from core.integrations.unified_planning import PddlError
-from core.abstraction.factory import AbstractionError
-from core.outcomes import PlanningOutcomeError
 from core.planning.abstract import solve_via_abstraction
 from core.planning.concrete import solve_with_asp
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from core.planning.baseline import solve_directly
 
 from .utils.arguments import abstraction_arguments, task_arguments
+from .utils.entry import run
 from .utils.reporting import print_metrics, progress_callback
 
 
 def main():
-    parser = _argument_parser()
-    args = parser.parse_args()
-    try:
-        print("Starting")
-        result = _compute(args)
-    except PlanningOutcomeError as error:
-        print(f"{error.label}: {error}")
-        return error.exit_code
-    except (AbstractionError, PddlError, OSError, UnicodeError, ValueError) as error:
-        parser.error(str(error))
-    except Exception as error:
-        # Left uncaught it exits 1, which reads as a task proved unsolvable.
-        print(f"Error: {error!r}")
-        traceback.print_exc(file=sys.stdout)
-        return PlanningOutcomeError.exit_code
+    return run(_argument_parser(), _compute, _report)
 
+
+def _report(result):
     print_planning_result(result)
     return 0 if result["success"] else 1
 
@@ -54,7 +38,6 @@ def _compute(args):
             ),
             on_update,
         )
-    raise ValueError(f"Unknown planning mode: {args.mode}")
 
 
 def print_planning_result(result):
@@ -62,8 +45,6 @@ def print_planning_result(result):
     print("\n=== RESULT ===")
     print(f"Plan found: {'yes' if result['plan'] is not None else 'no'}")
 
-    # The horizon surrounds every abstract action with a gap for one optional
-    # concrete action, so it roughly doubles the plan a reader wants to see.
     length = result["metrics"]["counters"].get("plan_length")
     if result["plan"] is not None:
         print(f"Plan length: {length}")

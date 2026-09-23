@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from core.outcomes import STATUS_BY_EXIT_CODE
+from experiments.tracks import DEFAULT_TRACK, TRACKS
 from scripts.utils.arguments import positive_int
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -19,17 +20,12 @@ DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"
 # Every way one problem gets solved, in the order a report reads them.
 MODES = ("abstract", "concrete", "lama")
-PIPELINE_MODULES = {"plan": "scripts.planner", "decide": "scripts.unsolvability"}
-NO_SYMMETRIES_MESSAGE = "PDDL Symmetries found no abstractable object classes"
-SYMMETRY_TIMEOUT_MESSAGE = "PDDL Symmetries exceeded its"
 
 
 def main():
     args = _argument_parser().parse_args()
-    result = _run_task(
-        args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout, pipeline=args.pipeline
-    )
-    print(f"{args.domain_name}/{args.problem.name}: {_task_status(args.mode, result)}", flush=True)
+    result = _run_task(args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout, track=args.track)
+    print(f"{args.domain_name}/{args.problem.name}: {args.mode} {_human_status(result)}", flush=True)
 
 
 def _argument_parser():
@@ -42,15 +38,15 @@ def _argument_parser():
         "--timeout", type=positive_int, default=DEFAULT_TIMEOUT, help="Wall-clock limit in seconds for this pipeline"
     )
     parser.add_argument(
-        "--pipeline",
-        choices=tuple(PIPELINE_MODULES),
-        default="plan",
-        help="plan searches for a plan; decide only reports whether the task is solvable",
+        "--track",
+        choices=sorted(TRACKS),
+        default=DEFAULT_TRACK,
+        help="Track the problem belongs to, which names the driver that runs it",
     )
     return parser
 
 
-def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, pipeline="plan"):
+def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK):
     result_file = Path(results_dir) / domain_name / problem.stem / f"{mode}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
     started_at = datetime.now(timezone.utc).isoformat()
@@ -61,7 +57,7 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
         "wall_time_seconds": 0.0,
         "output": "",
         "mode": mode,
-        "pipeline": pipeline,
+        "track": track,
         "domain": domain_name,
         "problem": problem.name,
         "started_at": started_at,
@@ -71,13 +67,13 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
 
     environment = os.environ.copy()
     environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
-    command = _planner_command(domain, problem, mode, pipeline)
+    command = _planner_command(domain, problem, mode, track)
     result = _run_pipeline(command, timeout, environment)
     progress = _read_progress(result_file)
     result.update(
         {
             "mode": mode,
-            "pipeline": pipeline,
+            "track": track,
             "domain": domain_name,
             "problem": problem.name,
             "started_at": started_at,
@@ -134,7 +130,7 @@ def _run_pipeline(command, timeout, environment=None):
         return_code = None
         timed_out = False
         interrupted = True
-    status = _machine_status(return_code, timed_out, output, interrupted)
+    status = _machine_status(return_code, timed_out, interrupted)
     result = {
         "status": status,
         "return_code": return_code,
@@ -158,31 +154,22 @@ def _kill_process_group(process):
     return process.communicate()[0] or ""
 
 
-def _machine_status(return_code, timed_out, output, interrupted=False):
+def _machine_status(return_code, timed_out, interrupted=False):
     if interrupted:
         return "interrupted"
     if timed_out:
         return "timed_out"
     if return_code is not None and return_code < 0:
         return "killed"
-    # These message checks classify results produced by an older planner CLI
-    # during a rolling update of cluster workers.
-    if NO_SYMMETRIES_MESSAGE in output:
-        return "no_symmetries"
-    if SYMMETRY_TIMEOUT_MESSAGE in output:
-        return "symmetry_timeout"
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
-def _planner_command(domain, problem, mode, pipeline="plan"):
-    module = PIPELINE_MODULES[pipeline]
-    return [sys.executable, "-m", module, mode, "--problem", str(problem), "--domain", str(domain)]
+def _planner_command(domain, problem, mode, track=DEFAULT_TRACK):
+    return [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
 
 
 def _human_status(result):
-    status = result.get("status") or _machine_status(
-        result.get("return_code"), result.get("timed_out", False), result.get("output", "")
-    )
+    status = result["status"]
     labels = {
         "success": "success",
         "no_plan": "no plan found",
@@ -197,15 +184,8 @@ def _human_status(result):
     if status in labels:
         return labels[status]
     if status == "killed":
-        signal_number = result.get("signal")
-        if signal_number is None and result.get("return_code", 0) < 0:
-            signal_number = -result["return_code"]
-        return f"killed (signal {signal_number})"
+        return f"killed (signal {result['signal']})"
     return f"error (exit code {result.get('return_code')})"
-
-
-def _task_status(mode, result):
-    return f"{mode} {_human_status(result)}"
 
 
 if __name__ == "__main__":

@@ -102,47 +102,31 @@ def _is_verdict_run(problems):
 
 
 def _verdicts(problems, modes):
+    rows = [(verdict.capitalize(), _verdict_counts(problems, modes, verdict)) for verdict in VERDICTS]
+    return "Verdicts", _outcome_table(problems, modes, "Verdict", rows)
+
+
+def _coverage(problems, modes):
+    rows = [("Plans found", _status_counts(problems, modes, "success"))]
+    return "Coverage", _outcome_table(problems, modes, "Metric", rows)
+
+
+def _outcome_table(problems, modes, heading, rows):
+    """Count each mode's outcomes, ending with the ones the given rows, timeouts and memory leave out."""
     total = len(problems)
-    decided = {mode: 0 for mode in modes}
-    lines = _wide_header("Verdict", modes)
-    for verdict in VERDICTS:
-        counts = _verdict_counts(problems, modes, verdict)
-        for mode in decided:
-            decided[mode] += counts[mode]
-        lines.append(_wide(verdict.capitalize(), [_share(counts[mode], total, 1) for mode in modes]))
+    rows = rows + [
+        ("Timeouts", _status_counts(problems, modes, "timed out")),
+        ("Out of memory", _out_of_memory(problems, modes)),
+    ]
+    # Whatever the rows leave out, errors among them, so they always add up to
+    # the total even when a status nobody has named yet turns up.
+    other = {mode: total - sum(counts[mode] for _label, counts in rows) for mode in modes}
 
-    timeouts = _status_counts(problems, modes, "timed out")
-    out_of_memory = _out_of_memory(problems, modes)
-
-    # Whatever the rows above leave out: no symmetries, or an error.
-    other = {mode: total - decided[mode] - timeouts[mode] - out_of_memory[mode] for mode in modes}
-
-    for label, counts in (("Timeouts", timeouts), ("Out of memory", out_of_memory), ("Others", other)):
+    lines = _wide_header(heading, modes)
+    for label, counts in (*rows, ("Others", other)):
         lines.append(_wide(label, [_share(counts[mode], total, 1) for mode in modes]))
     lines.append(_wide("Total problems", [total for _ in modes]))
-    return "Verdicts", lines
-
-
-def _verdict_head_to_head(problems, baseline):
-    pair = ("abstract", baseline)
-    proved = [problem for problem in problems if all(problem[mode]["verdict"] == "unsolvable" for mode in pair)]
-    shared = len(proved)
-
-    faster = {mode: 0 for mode in pair}
-    for problem in proved:
-        winner = "abstract" if _runtime(problem["abstract"]) < _runtime(problem[baseline]) else baseline
-        faster[winner] += 1
-
-    times = {mode: [_runtime(problem[mode]) for problem in proved] for mode in pair}
-    counts = _verdict_counts(problems, pair, "unsolvable")
-
-    lines = _wide_header("Metric", pair)
-    lines.append(_wide("Proved unsolvable by both", [shared for _ in pair]))
-    lines.append(_wide("Faster when both proved it", [_share(faster[mode], shared, 1) for mode in pair]))
-    lines.append(_wide("Proved it when the other did not", [counts[mode] - shared for mode in pair]))
-    lines.append(_wide("Median runtime when both proved it", [_median(times[mode]) for mode in pair]))
-    lines.append(_wide("Total runtime across shared proofs", [_seconds(sum(times[mode])) for mode in pair]))
-    return f"Head to head: abstract vs {MODE_LABELS[baseline]}", lines
+    return lines
 
 
 def _verdict_counts(problems, modes, verdict):
@@ -154,37 +138,39 @@ def _verdict_counts(problems, modes, verdict):
     return counts
 
 
-def _coverage(problems, modes):
-    total = len(problems)
-    found = _status_counts(problems, modes, "success")
-    timeouts = _status_counts(problems, modes, "timed out")
-    out_of_memory = _out_of_memory(problems, modes)
-
-    # Whatever the rows above leave out, errors among them, so the rows always
-    # add up to the total even when a status nobody has named yet turns up.
-    other = {mode: total - found[mode] - timeouts[mode] - out_of_memory[mode] for mode in modes}
-
-    lines = _wide_header("Metric", modes)
-    for label, counts in (
-        ("Plans found", found),
-        ("Timeouts", timeouts),
-        ("Out of memory", out_of_memory),
-        ("Others", other),
-    ):
-        lines.append(_wide(label, [_share(counts[mode], total, 1) for mode in modes]))
-    lines.append(_wide("Total problems", [total for _ in modes]))
-    return "Coverage", lines
+PLAN_COMPARISON = {
+    "shared": "Plans found by both",
+    "faster": "Faster when both found a plan",
+    "alone": "Plan found when the other did not",
+    "median": "Median runtime when both found a plan",
+    "total": "Total runtime across shared solves",
+}
+VERDICT_COMPARISON = {
+    "shared": "Proved unsolvable by both",
+    "faster": "Faster when both proved it",
+    "alone": "Proved it when the other did not",
+    "median": "Median runtime when both proved it",
+    "total": "Total runtime across shared proofs",
+}
 
 
 def _head_to_head(problems, baseline):
-    """Compare the abstract pipeline with one baseline.
+    return _compare(problems, baseline, lambda row: row["status"] == "success", PLAN_COMPARISON)
+
+
+def _verdict_head_to_head(problems, baseline):
+    return _compare(problems, baseline, lambda row: row["verdict"] == "unsolvable", VERDICT_COMPARISON)
+
+
+def _compare(problems, baseline, succeeded, labels):
+    """Compare the abstract pipeline with one baseline on what both succeeded at.
 
     Pairwise rather than over every mode at once: intersecting three ways would
     drop the problems one baseline missed out of the others' comparison, moving
     numbers for a reason that has nothing to do with either of them.
     """
     pair = ("abstract", baseline)
-    both = [problem for problem in problems if _solved_by_both(problem, pair)]
+    both = [problem for problem in problems if all(succeeded(problem[mode]) for mode in pair)]
     shared = len(both)
 
     faster = {mode: 0 for mode in pair}
@@ -193,14 +179,14 @@ def _head_to_head(problems, baseline):
         faster[winner] += 1
 
     times = {mode: [_runtime(problem[mode]) for problem in both] for mode in pair}
-    found = _status_counts(problems, pair, "success")
+    alone = {mode: sum(succeeded(problem[mode]) for problem in problems) - shared for mode in pair}
 
     lines = _wide_header("Metric", pair)
-    lines.append(_wide("Plans found by both", [shared for _ in pair]))
-    lines.append(_wide("Faster when both found a plan", [_share(faster[mode], shared, 1) for mode in pair]))
-    lines.append(_wide("Plan found when the other did not", [found[mode] - shared for mode in pair]))
-    lines.append(_wide("Median runtime when both found a plan", [_median(times[mode]) for mode in pair]))
-    lines.append(_wide("Total runtime across shared solves", [_seconds(sum(times[mode])) for mode in pair]))
+    lines.append(_wide(labels["shared"], [shared for _ in pair]))
+    lines.append(_wide(labels["faster"], [_share(faster[mode], shared, 1) for mode in pair]))
+    lines.append(_wide(labels["alone"], [alone[mode] for mode in pair]))
+    lines.append(_wide(labels["median"], [_median(times[mode]) for mode in pair]))
+    lines.append(_wide(labels["total"], [_seconds(sum(times[mode])) for mode in pair]))
     return f"Head to head: abstract vs {MODE_LABELS[baseline]}", lines
 
 
@@ -281,10 +267,6 @@ def _relaxed_delete_bucket(relaxed_deletes):
     if relaxed_deletes < 20:
         return "10 to 19"
     return "20 or more"
-
-
-def _solved_by_both(problem, pair):
-    return all(problem[mode]["status"] == "success" for mode in pair)
 
 
 def _runtime(row):

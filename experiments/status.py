@@ -3,15 +3,15 @@
 import argparse
 import json
 import shlex
-import subprocess
 
-from experiments.fetch import (
+from experiments.cluster import (
     DEFAULT_HOST,
-    _current_branch,
-    _default_remote_dir,
-    _pending_jobs,
-    _remote_command_path,
-    _remote_run_name,
+    current_branch,
+    default_remote_dir,
+    queued_jobs,
+    remote_path,
+    run_name,
+    ssh,
 )
 
 # Runs on the cluster's own python3, so it may not import anything this
@@ -39,12 +39,12 @@ print(json.dumps({"expected": expected, "counts": counts}))
 
 def main():
     args = _argument_parser().parse_args()
-    remote_dir = args.remote_dir or _default_remote_dir(_current_branch())
-    run_name = _remote_run_name(args.host, remote_dir)
-    pending = _pending_jobs(args.host, run_name)
-    running = _pending_jobs(args.host, run_name, states="RUNNING")
+    remote_dir = args.remote_dir or default_remote_dir(current_branch())
+    name = run_name(args.host, remote_dir)
+    pending = queued_jobs(args.host, name)
+    running = queued_jobs(args.host, name, states="RUNNING")
     summary = _remote_summary(args.host, remote_dir)
-    _report(run_name or remote_dir, pending, running, summary)
+    _report(name or remote_dir, pending, running, summary)
 
 
 def _argument_parser():
@@ -59,9 +59,7 @@ def _argument_parser():
 
 def _remote_summary(host, remote_dir):
     """Count the results written so far, and what each of them says."""
-    path = shlex.quote(_remote_command_path(remote_dir))
-    command = ["ssh", "-o", "BatchMode=yes", host, f"python3 -c {shlex.quote(REMOTE_SUMMARY)} {path}"]
-    completed = subprocess.run(command, capture_output=True, text=True)
+    completed = ssh(host, f"python3 -c {shlex.quote(REMOTE_SUMMARY)} {remote_path(remote_dir)}")
     if completed.returncode != 0:
         raise SystemExit(f"Cannot read {host}:{remote_dir}\n{completed.stderr.strip()}")
     return json.loads(completed.stdout)

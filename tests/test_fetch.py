@@ -7,7 +7,8 @@ import unittest
 from unittest.mock import patch
 
 import experiments.fetch
-from experiments.fetch import _checkout_holds, _default_remote_dir, _remote_command_path, main
+from experiments.cluster import default_remote_dir, remote_path
+from experiments.fetch import _checkout_holds, main
 
 
 class FetchTests(unittest.TestCase):
@@ -24,8 +25,8 @@ class FetchTests(unittest.TestCase):
             patch.object(experiments.fetch.tempfile, "mkdtemp", side_effect=tracked_mkdtemp),
             patch.object(experiments.fetch, "_manifest_commit", return_value="abc123"),
             patch.object(experiments.fetch, "_checkout_holds", return_value=holds),
-            patch.object(experiments.fetch, "_remote_run_name", return_value="run-example"),
-            patch.object(experiments.fetch, "_pending_jobs", return_value=pending),
+            patch.object(experiments.fetch, "run_name", return_value="run-example"),
+            patch.object(experiments.fetch, "queued_jobs", return_value=pending),
             patch.object(experiments.fetch, "_pull") as pull,
             patch.object(experiments.fetch, "collect") as collect,
             patch("sys.argv", ["fetch", *argv]),
@@ -39,11 +40,11 @@ class FetchTests(unittest.TestCase):
         return pull, collect
 
     def test_the_branch_names_the_worktree_the_run_is_pulled_from(self):
-        self.assertEqual(_default_remote_dir("sas-resource-ladders"), "apf/sas-resource-ladders/runs/")
+        self.assertEqual(default_remote_dir("sas-resource-ladders"), "apf/sas-resource-ladders/runs/")
 
     def test_a_home_relative_path_survives_being_quoted_for_the_remote_shell(self):
-        self.assertEqual(_remote_command_path("~/apf/main/runs/"), "apf/main/runs/")
-        self.assertEqual(_remote_command_path("/scratch/runs/"), "/scratch/runs/")
+        self.assertEqual(remote_path("~/apf/main/runs/"), "apf/main/runs/")
+        self.assertEqual(remote_path("/scratch/runs/"), "/scratch/runs/")
 
     def test_a_run_from_other_code_is_collected_only_when_forced(self):
         for argv, collected in (([], False), (["--force"], True)):

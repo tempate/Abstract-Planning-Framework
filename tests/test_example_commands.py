@@ -8,6 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts import planner
+from core.abstraction.collapse import AbstractionError
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
 from experiments.collect import _values
@@ -126,7 +127,7 @@ class PlannerExitStatusTests(unittest.TestCase):
 
     def test_an_abstraction_error_exits_through_the_parser(self):
         errors = StringIO()
-        with patch.object(planner, "_compute", side_effect=planner.AbstractionError("no abstractable object classes")):
+        with patch.object(planner, "_compute", side_effect=AbstractionError("no abstractable object classes")):
             with redirect_stderr(errors), self.assertRaises(SystemExit) as raised:
                 self._main(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
