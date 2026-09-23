@@ -7,7 +7,6 @@ from core.integrations.clingo import parse_plan_actions, plan_length
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.refinement.mapping import build_mapping, mapped_horizon
-from core.refinement.switches import collect_switches
 from core.search.relaxing import RelaxingSolver
 from core.search.incremental import IncrementalSolver
 
@@ -85,13 +84,19 @@ def _solve_concrete_plan(context, asp):
     with context.metrics.measure("guided_concrete_solving"):
         solver = RelaxingSolver(asp, mapped)
         # Give up the abstract plan from its end, so what survives is a prefix of it.
-        result = solver.search(list(reversed(collect_switches(solver))), record_attempt)
+        result = solver.search(list(reversed(_switches(solver))), record_attempt)
 
     context.horizon = result.horizon
     _publish_counters(
         context, decrements=result.dropped, increments=result.horizon - mapped, solve_calls=result.attempts
     )
     return result.plan
+
+
+def _switches(solver):
+    """The switches holding the abstract plan, ordered by time step rather than lexically."""
+    switches = [atom.symbol for atom in solver.control.symbolic_atoms if atom.symbol.name == "switch"]
+    return sorted(switches, key=lambda switch: switch.arguments[0].number)
 
 
 def _publish_counters(context, *, decrements, increments, solve_calls):

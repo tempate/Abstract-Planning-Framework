@@ -27,7 +27,8 @@ def build_mapping(abstract_plan, abstraction):
         mapping_rules.append(f"concrete_object({_quote(object_name)}).")
 
     # Mark the odd time steps as gaps so the encoding lets them stay empty.
-    for time_step in range(1, mapped_horizon(_abstract_horizon(abstract_plan)) + 1, 2):
+    abstract_horizon = max((action.time_step for action in abstract_plan), default=0)
+    for time_step in range(1, mapped_horizon(abstract_horizon) + 1, 2):
         mapping_rules.append(f"gap({time_step}).")
 
     for action in sorted(abstract_plan, key=lambda action: action.time_step):
@@ -43,14 +44,6 @@ def build_mapping(abstract_plan, abstraction):
         mapping_rules.append(rule)
 
     return "\n".join(mapping_rules)
-
-
-def _abstract_horizon(abstract_plan):
-    """Return the last time step of the abstract plan."""
-    horizon = 0
-    for action in abstract_plan:
-        horizon = max(horizon, action.time_step)
-    return horizon
 
 
 def _action_pattern(action, abstraction):
