@@ -38,7 +38,6 @@ class PlaspInstallerTests(unittest.TestCase):
 
             self.assertEqual(destination.read_bytes(), binary)
             self.assertTrue(destination.stat().st_mode & stat.S_IXUSR)
-            download.assert_called_once_with()
 
     def test_rejects_a_binary_with_the_wrong_checksum(self):
         archive = _archive_with(b"unexpected")

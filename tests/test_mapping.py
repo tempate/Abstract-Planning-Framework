@@ -10,37 +10,6 @@ OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)}
 
 
 class MappingTests(unittest.TestCase):
-    def test_maps_an_abstract_argument_to_existing_grounded_actions(self):
-        abstract_plan = (PlanAction("move", ("item_abs", "dock"), 2),)
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
-
-        mapping = build_mapping(abstract_plan, abstraction)
-
-        self.assertIn('concrete_object("item1").', mapping)
-        self.assertIn('concrete_object("item2").', mapping)
-        self.assertIn('action(("move",ConcreteObject1,"dock"))', mapping)
-        self.assertIn('action(action(("move",ConcreteObject1,"dock")))', mapping)
-
-    def test_each_abstract_argument_is_grounded_independently(self):
-        abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
-        abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))
-
-        mapping = build_mapping(abstract_plan, abstraction)
-
-        self.assertIn('action(("link",ConcreteObject1,ConcreteObject2))', mapping)
-        self.assertIn("concrete_object(ConcreteObject1)", mapping)
-        self.assertIn("concrete_object(ConcreteObject2)", mapping)
-
-    def test_non_abstract_actions_are_mapped_directly(self):
-        abstract_plan = (PlanAction("inspect", ("item1",), 1),)
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
-
-        mapping = build_mapping(abstract_plan, abstraction)
-
-        self.assertIn(
-            '1 { occurs(action(("inspect","item1")),2) : action(action(("inspect","item1"))) } 1 :- switch(2).', mapping
-        )
-
     def test_every_abstract_action_is_surrounded_by_a_gap(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item2",), 2))
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))

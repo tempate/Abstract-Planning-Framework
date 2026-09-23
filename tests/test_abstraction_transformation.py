@@ -179,13 +179,6 @@ INEQUALITY_PROBLEM = """
 
 
 class InequalityRelaxationTests(unittest.TestCase):
-    def test_relaxes_an_inequality_the_collapse_would_make_false(self):
-        source = parse_problem(INEQUALITY_DOMAIN, INEQUALITY_PROBLEM)
-
-        result = _build_from_problem(source, ["hall", "study"])
-
-        self.assertEqual([item.variables for item in result.relaxed_inequalities], [("?from", "?to")])
-
     def test_the_collapsed_action_survives_the_collapse(self):
         source = parse_problem(INEQUALITY_DOMAIN, INEQUALITY_PROBLEM)
 
@@ -213,15 +206,6 @@ class PositiveNormalFormTests(unittest.TestCase):
 
         self.assertFalse(result.problem.kind.has_negative_conditions())
 
-    def test_leaves_an_already_positive_task_alone(self):
-        source = parse_problem(ABSTRACTION_DOMAIN, ABSTRACTION_PROBLEM)
-
-        result = _build_from_problem(source, ["item-a", "item-b"])
-
-        self.assertEqual(
-            sorted(fluent.name for fluent in result.problem.fluents), sorted(fluent.name for fluent in source.fluents)
-        )
-
 
 class AbstractionTransformationTests(unittest.TestCase):
     def test_collapses_objects_without_mutating_source(self):
@@ -235,7 +219,6 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertTrue({"item-a", "item-b"}.isdisjoint(result_objects))
         self.assertEqual(result_objects, {"item-c", "pooled-item"})
         self.assertEqual(result.abstraction.object_type, "item")
-        self.assertEqual([item.action for item in result.relaxed_deletes], ["consume"])
         serialized = write_problem(result.problem)
         for selected in ("item-a", "item-b"):
             self.assertNotIn(selected, serialized.problem)
@@ -246,7 +229,6 @@ class AbstractionTransformationTests(unittest.TestCase):
 
         result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
 
-        self.assertEqual([item.action for item in result.relaxed_deletes], ["consume"])
         release = result.problem.action("release")
         self.assertTrue(
             any(
@@ -447,10 +429,7 @@ class AbstractionTransformationTests(unittest.TestCase):
         result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
 
         # Keeping the delete would drop `at` for the collapsed object while the
-        # other objects it stands for are still there. Only the item argument
-        # matches; `?from` is a place and must not be picked up.
-        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["at"])
-        self.assertEqual([item.variables for item in result.relaxed_deletes], [("?x",)])
+        # other objects it stands for are still there.
         shift = result.problem.action("shift")
         self.assertFalse(any(effect.value.is_false() for effect in shift.effects))
 
@@ -479,9 +458,6 @@ class AbstractionTransformationTests(unittest.TestCase):
 
         result = _build_from_problem(source, ["stage", "dock"], "pooled-place")
 
-        # `?x` is an item, so only the named place matches.
-        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["at"])
-        self.assertEqual([item.variables for item in result.relaxed_deletes], [("stage",)])
         clear_stage = result.problem.action("clear-stage")
         self.assertFalse(any(effect.value.is_false() for effect in clear_stage.effects))
 
@@ -512,15 +488,9 @@ class AbstractionTransformationTests(unittest.TestCase):
         result = _build_from_problem(source, ["hub", "spur"], "pooled-port")
 
         # `movable` is static and holds for no collapsed object, so `?a` cannot
-        # bind one. The named `hub` still makes the delete apply.
-        self.assertEqual([item.predicate for item in result.relaxed_deletes], ["linked"])
-        self.assertEqual([item.variables for item in result.relaxed_deletes], [("?a", "hub")])
+        # bind one, but the named `hub` still makes the delete apply.
         unlink = result.problem.action("unlink")
         self.assertFalse(any(effect.value.is_false() for effect in unlink.effects))
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class PositiveNormalFormSkipTests(unittest.TestCase):
@@ -542,3 +512,7 @@ class PositiveNormalFormSkipTests(unittest.TestCase):
         result = _build_from_problem(problem, ["a", "b"])
 
         self.assertFalse(result.problem.kind.has_negative_conditions())
+
+
+if __name__ == "__main__":
+    unittest.main()

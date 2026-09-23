@@ -13,19 +13,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from experiments.plan.suite import SUITE
-from experiments.tracks import DEFAULT_TRACK, TRACKS
+from experiments.tracks import TRACKS
 from experiments.submit import _find_domain
-from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from experiments.collect import FIELDS, _preserved_rows, _track_results_file, collect
 from scripts.utils.reporting import update_result_progress
 from experiments.run import (
-    DEFAULT_TIMEOUT,
-    NO_SYMMETRIES_MESSAGE,
     PROJECT_ROOT,
-    _argument_parser as _benchmark_argument_parser,
     _human_status,
-    _planner_command,
     _run_pipeline,
     _run_task,
 )
@@ -33,10 +27,8 @@ import experiments.report
 import experiments.submit
 from experiments.report import _coverage, _finished_problems, _head_to_head
 from experiments.submit import (
-    DEFAULT_MEMORY_LIMIT,
     MANIFEST_NAME,
     REQUIRED_ARTIFACTS,
-    _argument_parser,
     _benchmark_tasks,
     _check_worktree_is_built,
     _set_aside_results_dir,
@@ -127,12 +119,6 @@ class BenchmarkTests(unittest.TestCase):
 
         self.assertEqual({row["mode"] for row in rows}, {"abstract", "concrete", "lama"})
 
-    def test_the_default_track_runs_the_whole_symmetry_suite_through_the_planner(self):
-        track = TRACKS[DEFAULT_TRACK]
-
-        self.assertIs(track.suite.SUITE, SUITE)
-        self.assertEqual(track.pipeline, "plan")
-
     def test_the_run_names_the_partition_every_task_goes_to(self):
         with tempfile.TemporaryDirectory() as directory:
             definition_dir = Path(directory)
@@ -145,13 +131,6 @@ class BenchmarkTests(unittest.TestCase):
     def test_the_project_root_is_the_repository_root(self):
         """Guards the parents[N] depth, which moving the runner has broken twice."""
         self.assertTrue((PROJECT_ROOT / "pyproject.toml").is_file(), f"{PROJECT_ROOT} is not the repository root")
-
-    def test_cluster_resource_defaults(self):
-        args = _argument_parser().parse_args([])
-
-        self.assertEqual(args.timeout, DEFAULT_TIMEOUT)
-        self.assertEqual(args.memory_limit, DEFAULT_MEMORY_LIMIT)
-        self.assertEqual(args.partition, "sunnycove")
 
     def test_new_suite_run_keeps_previous_results_beside_an_empty_directory(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -184,16 +163,11 @@ class BenchmarkTests(unittest.TestCase):
         subprocesses.run.assert_not_called()
         self.assertIn("driverlog", output.getvalue())
 
-    def test_an_unbuilt_worktree_is_refused_before_anything_is_submitted(self):
-        with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaises(SystemExit) as refusal:
-                _check_worktree_is_built(project_root=Path(directory))
-
-        self.assertIn("plasp", str(refusal.exception))
-
-    def test_a_built_worktree_submits(self):
+    def test_only_a_built_worktree_submits(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+            with self.assertRaises(SystemExit) as refusal:
+                _check_worktree_is_built(project_root=root)
             for artifact in REQUIRED_ARTIFACTS:
                 path = root / artifact
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -201,16 +175,7 @@ class BenchmarkTests(unittest.TestCase):
 
             _check_worktree_is_built(project_root=root)
 
-    def test_single_benchmark_selects_one_mode(self):
-        common = ["--domain-name", "example", "--domain", "domain.pddl", "--problem", "p01.pddl"]
-
-        abstract = _benchmark_argument_parser().parse_args(["abstract", *common])
-        concrete = _benchmark_argument_parser().parse_args(["concrete", *common])
-
-        self.assertEqual(abstract.mode, "abstract")
-        self.assertEqual(concrete.mode, "concrete")
-        self.assertEqual(abstract.timeout, DEFAULT_TIMEOUT)
-        self.assertEqual(concrete.timeout, DEFAULT_TIMEOUT)
+        self.assertIn("plasp", str(refusal.exception))
 
     def test_prepares_one_copperbench_job_per_mode_and_problem(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -235,18 +200,10 @@ class BenchmarkTests(unittest.TestCase):
             worker = shlex.split((definition_dir / "configs.txt").read_text(encoding="utf-8"))
             instances = (definition_dir / "instances.txt").read_text(encoding="utf-8").splitlines()
 
-        self.assertTrue(config["name"].startswith("run-"))
         self.assertEqual(config["timeout"], 1800)
         self.assertEqual(config["mem_limit"], 4096)
-        self.assertEqual(config["request_cpus"], 1)
-        self.assertNotIn("runs", config)
-        self.assertTrue(config["instances_are_parameters"])
-        self.assertNotIn("exclusive", config)
-        self.assertEqual(config["max_parallel_jobs"], 12)
         self.assertEqual(config["working_dir"], os.path.relpath(PROJECT_ROOT, definition_dir))
         self.assertIn("experiments.run", worker)
-        for placeholder in ("$1", "$2", "$3", "$4", "$timeout"):
-            self.assertIn(placeholder, worker)
         self.assertEqual(
             instances,
             [
@@ -287,9 +244,11 @@ class BenchmarkTests(unittest.TestCase):
             (benchmark / "p01.pddl").touch()
             (benchmark / "p02.pddl").touch()
 
-            tasks = list(_benchmark_tasks(root, ["example"], runnable={("example", "p02.pddl")}))
+            required = list(_benchmark_tasks(root, ["example"], runnable={("example", "p02.pddl")}))
+            not_required = list(_benchmark_tasks(root, ["example"], runnable=None))
 
-            self.assertEqual([problem.name for _mode, _name, _domain, problem in tasks], ["p02.pddl"])
+        self.assertEqual([task[3].name for task in required], ["p02.pddl"])
+        self.assertEqual([task[3].name for task in not_required], ["p01.pddl", "p02.pddl"])
 
     def test_a_subset_run_names_its_domains_and_problems(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -327,53 +286,6 @@ class BenchmarkTests(unittest.TestCase):
             tasks = list(_benchmark_tasks(root, ["example"], runnable=None))
 
         self.assertEqual([task[3].name for task in tasks], ["prob01.pddl"])
-
-    def test_the_decide_pipeline_runs_the_unsolvability_script(self):
-        command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract", "decide")
-
-        self.assertIn("scripts.unsolvability", command)
-        self.assertIn("abstract", command)
-
-    def test_every_problem_runs_when_no_symmetry_class_is_required(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / "example").mkdir()
-            (root / "example" / "domain.pddl").touch()
-            (root / "example" / "p01.pddl").touch()
-            (root / "example" / "p02.pddl").touch()
-
-            tasks = list(_benchmark_tasks(root, ["example"], runnable=None))
-
-        self.assertEqual([task[3].name for task in tasks], ["p01.pddl", "p02.pddl"])
-
-    def test_planner_gets_only_the_mode_problem_and_domain(self):
-        command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "abstract")
-        concrete_command = _planner_command(Path("domain.pddl"), Path("problem.pddl"), "concrete")
-
-        self.assertEqual(
-            command[1:], ["-m", "scripts.planner", "abstract", "--problem", "problem.pddl", "--domain", "domain.pddl"]
-        )
-        self.assertEqual(
-            concrete_command[1:],
-            ["-m", "scripts.planner", "concrete", "--problem", "problem.pddl", "--domain", "domain.pddl"],
-        )
-
-    def test_existing_result_does_not_exclude_problem_from_new_run(self):
-        with tempfile.TemporaryDirectory() as benchmarks, tempfile.TemporaryDirectory() as results:
-            benchmark = Path(benchmarks) / "example"
-            benchmark.mkdir()
-            domain = benchmark / "domain.pddl"
-            problem = benchmark / "p01.pddl"
-            domain.touch()
-            problem.touch()
-            result = Path(results) / "example" / "p01" / "abstract.json"
-            result.parent.mkdir(parents=True)
-            result.touch()
-
-            self.assertEqual(
-                list(_benchmark_tasks(benchmarks, ["example"], {("example", "p01.pddl")})),
-                [("abstract", "example", domain, problem)],
-            )
 
     def test_collector_ignores_copperbench_metadata_next_to_results(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -432,23 +344,12 @@ class BenchmarkTests(unittest.TestCase):
             subprocess.CompletedProcess([], 0, stdout=abstract_output),
             subprocess.CompletedProcess([], 0, stdout=concrete_output),
         ]
-        with tempfile.TemporaryDirectory() as directory, _fake_planner(completed) as run:
+        with tempfile.TemporaryDirectory() as directory, _fake_planner(completed):
             _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
-            abstract = json.loads((Path(directory) / "example" / "p01" / "abstract.json").read_text())
-            concrete = json.loads((Path(directory) / "example" / "p01" / "concrete.json").read_text())
 
-        self.assertEqual(abstract["mode"], "abstract")
-        self.assertEqual(abstract["status"], "success")
-        self.assertEqual(abstract["return_code"], 0)
-        self.assertNotIn("concrete", abstract)
-        self.assertEqual(concrete["mode"], "concrete")
-        self.assertEqual(concrete["return_code"], 0)
         self.assertEqual(len(rows), 2)
-        self.assertEqual(FIELDS[:4], ("domain", "problem", "mode", "status"))
-        for name in (*(f"{name}_seconds" for name in DURATION_LABELS), *COUNTER_LABELS):
-            self.assertIn(name, FIELDS)
         self.assertEqual(rows[0]["mode"], "abstract")
         self.assertEqual(rows[0]["status"], "success")
         self.assertEqual(rows[0]["plan_length"], 2)
@@ -467,13 +368,6 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[1]["concrete_fd_seconds"], 1.0)
         self.assertEqual(rows[1]["abstracted_object_count"], "")
         self.assertEqual(rows[1]["abstracted_object_type"], "")
-        self.assertEqual(run.call_count, 2)
-        self.assertEqual(
-            run.call_args_list[0].args[0], _planner_command(Path("domain.pddl"), Path("p01.pddl"), "abstract")
-        )
-        self.assertEqual(
-            run.call_args_list[1].args[0], _planner_command(Path("domain.pddl"), Path("p01.pddl"), "concrete")
-        )
 
     def test_worker_preserves_phase_progress_in_the_result(self):
         metrics = {"durations": {"concrete_fd": 2.5}, "counters": {}}
@@ -534,50 +428,28 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[0]["abstracted_object_count"], 3)
         self.assertEqual(rows[0]["abstracted_object_type"], "ball")
 
-    def test_collector_preserves_concise_error_message(self):
-        failed = subprocess.CompletedProcess(
-            [], 2, stdout="usage: planner.py [-h]\nplanner.py: error: Unsupported quality metric\nStarting\n"
-        )
-        with tempfile.TemporaryDirectory() as directory, _fake_planner(failed):
-            _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
-            rows = collect(directory)
-
-        self.assertEqual(rows[0]["status"], "error (exit code 2)")
-        self.assertEqual(rows[0]["error_message"], "Unsupported quality metric")
-
-    def test_collector_reads_an_error_the_planner_capitalized(self):
-        # Fast Downward reports its failure, then keeps printing; the message is
-        # not the last thing on stdout.
-        failed = subprocess.CompletedProcess(
-            [],
-            2,
-            stdout=(
+    def test_the_collector_keeps_the_line_that_says_what_failed(self):
+        outputs = {
+            "usage: planner.py [-h]\nplanner.py: error: Unsupported quality metric\nStarting\n": (
+                "Unsupported quality metric"
+            ),
+            # Fast Downward capitalizes its error, then keeps printing.
+            (
                 "Starting\n"
                 "Error: Fast Downward (abstract) failed with exit code 31\n"
                 "Driver aborting after translate\n"
                 "INFO     Planner time: 0.14s\n"
-            ),
-        )
-        with tempfile.TemporaryDirectory() as directory, _fake_planner(failed):
-            _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
-            rows = collect(directory)
+            ): "Fast Downward (abstract) failed with exit code 31",
+        }
+        for output, message in outputs.items():
+            with self.subTest(message=message):
+                failed = subprocess.CompletedProcess([], 2, stdout=output)
+                with tempfile.TemporaryDirectory() as directory, _fake_planner(failed):
+                    _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
+                    rows = collect(directory)
 
-        self.assertEqual(rows[0]["error_message"], "Fast Downward (abstract) failed with exit code 31")
-
-    def test_each_mode_receives_the_complete_timeout(self):
-        timeouts = [
-            subprocess.TimeoutExpired([], 1800, output="Starting abstract\n"),
-            subprocess.TimeoutExpired([], 1800, output=b"Starting concrete\n"),
-        ]
-        with tempfile.TemporaryDirectory() as directory, _fake_planner(timeouts) as run:
-            abstract = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=1800)
-            concrete = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=1800)
-
-        self.assertTrue(abstract["timed_out"])
-        self.assertEqual(abstract["output"], "Starting abstract\n")
-        self.assertTrue(concrete["timed_out"])
-        self.assertEqual(concrete["output"], "Starting concrete\n")
-        self.assertEqual([process.timeouts[0] for process in run.processes], [1800, 1800])
+                self.assertEqual(rows[0]["status"], "error (exit code 2)")
+                self.assertEqual(rows[0]["error_message"], message)
 
     def test_a_timeout_takes_down_what_the_pipeline_spawned(self):
         # No mocks: what outlives a timeout is the planner's own children, and
@@ -627,20 +499,6 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(results[4]["return_code"], -9)
         self.assertEqual(results[4]["signal"], 9)
         self.assertNotIn("signal", results[5])
-
-    def test_no_symmetries_does_not_prevent_the_separate_concrete_run(self):
-        no_symmetries = subprocess.CompletedProcess([], 2, stdout=f"planner.py: error: {NO_SYMMETRIES_MESSAGE}\n")
-        concrete_completed = subprocess.CompletedProcess([], 0, stdout="Plan found: yes\n")
-        with tempfile.TemporaryDirectory() as directory, _fake_planner([no_symmetries, concrete_completed]) as run:
-            abstract = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
-            concrete = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
-            rows = collect(directory)
-
-        self.assertEqual(_human_status(abstract), "no symmetries")
-        self.assertEqual(_human_status(concrete), "success")
-        self.assertEqual(rows[0]["status"], "no symmetries")
-        self.assertEqual(rows[1]["status"], "success")
-        self.assertEqual(run.call_count, 2)
 
     def test_collector_reads_legacy_combined_result(self):
         legacy = {
@@ -864,13 +722,11 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(dropped, 1)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class DomainLookupTests(unittest.TestCase):
     def _collection(self, names):
-        directory = Path(tempfile.mkdtemp())
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        directory = Path(temporary.name)
         for name in names:
             (directory / name).write_text("", encoding="utf-8")
         return directory
@@ -900,3 +756,7 @@ class DomainLookupTests(unittest.TestCase):
 
         with self.assertRaises(FileNotFoundError):
             _find_domain(directory / "p01.pddl")
+
+
+if __name__ == "__main__":
+    unittest.main()

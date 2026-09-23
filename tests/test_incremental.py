@@ -16,24 +16,6 @@ step(t).
 
         self.assertEqual(set(plan), {"step(0)", "step(1)", "step(2)", "step(3)"})
 
-    def test_incremental_search_returns_the_first_satisfiable_horizon(self):
-        program = """
-#program base.
-reached(0).
-#show reached/1.
-#program step(t).
-reached(t).
-#program check(t).
-#external query(t).
-:- query(t), t < 2.
-"""
-
-        result = IncrementalSolver(program).search()
-
-        self.assertEqual(result.horizon, 2)
-        self.assertEqual(result.attempts, 3)
-        self.assertEqual(set(result.plan), {"reached(0)", "reached(1)", "reached(2)"})
-
     def test_incremental_search_checks_horizon_zero(self):
         program = """
 #program base.

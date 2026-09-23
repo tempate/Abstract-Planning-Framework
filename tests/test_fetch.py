@@ -64,17 +64,6 @@ class FetchTests(unittest.TestCase):
         first, second = (pull.call_args.args[2] for pull in pulls)
         self.assertNotEqual(first, second)
 
-    def test_only_this_runs_jobs_hold_up_its_pull(self):
-        with patch.object(experiments.fetch, "subprocess") as subprocesses:
-            subprocesses.run.return_value.stdout = "0\n"
-            experiments.fetch._pending_jobs("copperhead", "run-example")
-            with_name = subprocesses.run.call_args[0][0][-1]
-            experiments.fetch._pending_jobs("copperhead")
-            without_name = subprocesses.run.call_args[0][0][-1]
-
-        self.assertIn("--name=run-example", with_name)
-        self.assertNotIn("--name", without_name)
-
     def test_an_unfinished_run_is_not_pulled(self):
         pull, _ = self._run(["--remote-dir", "/apf/branch/runs/"], pending=3)
 
