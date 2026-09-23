@@ -1,6 +1,7 @@
 """Collapse concrete objects in a Unified Planning problem."""
 
 import itertools
+from collections import OrderedDict
 from dataclasses import dataclass
 
 from unified_planning.model import Fluent, InstantaneousAction, Object, Problem
@@ -135,6 +136,7 @@ def _action_variants(action, rewrite, objects_to_collapse, deletes_to_relax, mar
     if RELAXED_VARIANT_SEPARATOR in action.name:
         raise AbstractionError(f"Action name already holds the variant separator: {action.name}")
 
+    collapsed_type = objects_to_collapse[0].type
     matches = []
     for effect in action.effects:
         match = match_relaxable_delete(action, effect, objects_to_collapse)
@@ -144,8 +146,13 @@ def _action_variants(action, rewrite, objects_to_collapse, deletes_to_relax, mar
         if relaxable_delete not in deletes_to_relax:
             continue
         # A delete naming a collapsed object outright mentions one in every
-        # grounding, whatever its parameters take.
-        always = any(not variable.startswith("?") for variable in relaxable_delete.variables)
+        # grounding, whatever its parameters take. A marker cannot tell the
+        # groundings apart for a forall variable, which no precondition binds,
+        # or for a parameter typed wider than the markers, so those keep the
+        # schema-level drop too.
+        always = any(not variable.startswith("?") for variable in relaxable_delete.variables) or not all(
+            _is_markable(parameter, action, collapsed_type) for parameter in parameters
+        )
         matches.append((effect, () if always else parameters, relaxable_delete, always))
 
     if not matches:
@@ -159,8 +166,7 @@ def _action_variants(action, rewrite, objects_to_collapse, deletes_to_relax, mar
 
     relaxed_deletes = [relaxable_delete for _, _, relaxable_delete, _ in matches]
 
-    # With no collapsible parameter every grounding mentions a collapsed object
-    # outright, so the schema-level drop is already exact.
+    # With no collapsible parameter every delete keeps the schema-level drop.
     if not collapsible or len(collapsible) > MAX_COLLAPSIBLE_PARAMETERS:
         return [_variant(action, rewrite, {id(effect) for effect, _, _, _ in matches}, ())], relaxed_deletes
 
@@ -181,17 +187,22 @@ def _action_variants(action, rewrite, objects_to_collapse, deletes_to_relax, mar
     return variants, relaxed_deletes
 
 
+def _is_markable(parameter, action, collapsed_type):
+    return (
+        parameter.is_parameter_exp()
+        and parameter.parameter() in action.parameters
+        and (parameter.type == collapsed_type or parameter.type.is_subtype(collapsed_type))
+    )
+
+
 def _variant(action, rewrite, dropped_effects, conditions, name=None):
-    variant = action.clone()
-    if name is not None and name != action.name:
-        variant._name = name
-    variant.clear_preconditions()
+    parameters = OrderedDict((parameter.name, parameter.type) for parameter in action.parameters)
+    variant = InstantaneousAction(name or action.name, parameters, action.environment)
     for precondition in action.preconditions:
         variant.add_precondition(rewrite(precondition))
     for condition in conditions:
         variant.add_precondition(condition)
 
-    variant.clear_effects()
     for effect in action.effects:
         if id(effect) in dropped_effects:
             continue

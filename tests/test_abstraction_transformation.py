@@ -465,6 +465,43 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertTrue(any(effect.value.is_false() for effect in plain.effects))
         self.assertFalse(any(effect.value.is_false() for effect in relaxed.effects))
 
+    def test_drops_a_delete_from_the_schema_where_no_marker_can_split_it(self):
+        wider_parameter = """
+(define (domain transit)
+  (:requirements :strips :typing)
+  (:types place thing - object item crate - thing)
+  (:predicates (at ?x - thing ?p - place) (open ?p - place))
+  (:action shift
+    :parameters (?x - thing ?from - place ?to - place)
+    :precondition (at ?x ?from)
+    :effect (and (at ?x ?to) (not (at ?x ?from)))))
+"""
+        forall_variable = """
+(define (domain transit)
+  (:requirements :strips :typing :conditional-effects)
+  (:types place thing - object item crate - thing)
+  (:predicates (at ?x - thing ?p - place) (open ?p - place))
+  (:action shift
+    :parameters (?from - place)
+    :precondition (open ?from)
+    :effect (forall (?x - item) (when (at ?x ?from) (not (at ?x ?from))))))
+"""
+        problem_text = """
+(define (problem transit-task)
+  (:domain transit)
+  (:objects item-a item-b - item crate-a - crate dock stage - place)
+  (:init (at item-a dock) (at item-b dock) (at crate-a dock) (open dock))
+  (:goal (and (at item-a stage) (at crate-a stage))))
+"""
+        for label, domain in (("wider parameter", wider_parameter), ("forall variable", forall_variable)):
+            with self.subTest(label):
+                result = _build_from_problem(parse_problem(domain, problem_text), ["item-a", "item-b"], "pooled-item")
+
+                self.assertEqual([item.predicate for item in result.relaxed_deletes], ["at"])
+                self.assertFalse(
+                    any(effect.value.is_false() for action in result.problem.actions for effect in action.effects)
+                )
+
     def test_relaxes_a_delete_that_names_a_collapsed_object_directly(self):
         domain = """
 (define (domain depot)
