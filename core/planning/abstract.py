@@ -46,7 +46,6 @@ def _to_sas(base_dir, problem, config, metrics):
         concrete_dir = os.path.join(base_dir, "concrete")
         concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
 
-    # Write the temporary problem files
     with metrics.measure("abstract_pddl_writing"):
         domain_path, problem_path = write_abstract_problem(problem, base_dir)
 

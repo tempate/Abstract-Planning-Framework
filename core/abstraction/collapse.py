@@ -124,9 +124,9 @@ def _copy_initial_values(problem, collapsed_problem, rewrite):
                 raise AbstractionError(f"Object collapse creates conflicting initial values for {collapsed_fluent}")
             # The collapsed objects disagree on a fact, so the abstract object
             # holds it: the abstract task only has to admit the concrete plans,
-            # and a fact that stays true only makes more actions applicable.
-            # In PNF the complement of a fluent disagrees
-            # wherever the fluent does, so this is the common case, not an edge.
+            # and a fact that stays true only makes more actions applicable. In
+            # PNF the complement of a fluent disagrees wherever the fluent does,
+            # so this is the common case, not an edge.
             collapsed_value = problem.environment.expression_manager.TRUE()
         collapsed_initial_values[collapsed_fluent] = collapsed_value
     for fluent, value in collapsed_initial_values.items():

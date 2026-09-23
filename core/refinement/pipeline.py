@@ -27,13 +27,8 @@ class RefinementContext:
 
 def refine(context: RefinementContext):
     """Obtain an abstract plan and use it to guide concrete search."""
-    # Find an abstract plan
     abstract_plan = _solve_abstract_plan(context)
-
-    # Build the ASP to map abstract to concrete actions
     mapping = build_mapping(abstract_plan, context.abstraction)
-
-    # Solve the ASP
     asp = "\n".join((context.concrete_asp, mapping))
     plan = _solve_concrete_plan(context, asp)
 

@@ -118,25 +118,21 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None):
 def _create_abstraction(problem, object_names, abstract_name):
     objects_by_name = {item.name.casefold(): item for item in problem.all_objects}
 
-    # Normalize names and remove duplicates.
     object_names = _normalize_object_names(object_names)
     if len(object_names) < 2:
         raise AbstractionError("At least two distinct objects must be selected")
 
-    # Find the objects to collapse
     unknown_names = [name for name in object_names if name not in objects_by_name]
     if unknown_names:
         raise AbstractionError(f"Unknown problem objects: {', '.join(unknown_names)}")
     objects_to_collapse = tuple(objects_by_name[name] for name in object_names)
 
-    # Check that all selected objects have the same declared type
     if len({item.type for item in objects_to_collapse}) != 1:
         raise AbstractionError("Selected objects must have the same declared type")
 
     if abstract_name is None:
         abstract_name = f"{objects_to_collapse[0].type.name}_abs"
 
-    # Check if abstract_name is taken
     reserved_names = set()
     for item in problem.actions:
         reserved_names.add(item.name.casefold())
@@ -182,12 +178,9 @@ def report_abstraction(abstract_problem, metrics):
 
 def write_abstract_problem(problem, base_dir):
     """Write the abstract problem to a temporary directory."""
-
-    # Create the temporary directory.
     input_directory = Path(base_dir, "generated-abstraction")
     input_directory.mkdir(parents=True, exist_ok=True)
 
-    # Write the abstract domain and problem files.
     serialized = write_problem(without_action_costs(problem))
 
     domain_path = input_directory / "domain.pddl"
