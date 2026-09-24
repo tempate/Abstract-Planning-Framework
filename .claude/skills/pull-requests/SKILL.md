@@ -48,8 +48,7 @@ gh stack sync                               # fetch, rebase what is left, prune 
 ```
 
 The PRs above the merged one stay open, retarget to the stack's base and get
-rebased by GitHub. That replaces `scripts.restack`, which is only for a stack
-made without `gh stack`. The first stacked merge here is still to come, so check
+rebased by GitHub. The first stacked merge here is still to come, so check
 `gh stack view` and the remaining PRs' bases after it.
 
 Rewriting a branch in the middle of a stack leaves the ones above on its old
