@@ -52,6 +52,27 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
     return sas_path
 
 
+def sas_size(sas_path):
+    """Read the variable and operator counts a SAS file declares.
+
+    The translator writes each count on the line after a section that ends, so
+    one pass gets both without holding the file, which the abstract task can
+    make very large.
+    """
+    variables = operators = None
+    with open(sas_path, encoding="utf-8") as stream:
+        take_next = None
+        for line in stream:
+            line = line.strip()
+            if take_next == "variables":
+                variables = int(line)
+            elif take_next == "operators":
+                operators = int(line)
+                break
+            take_next = {"end_metric": "variables", "end_goal": "operators"}.get(line)
+    return variables, operators
+
+
 def has_plan(base_dir, domain_path, problem_path, label):
     """Translate and search one PDDL task, reporting only whether it has a plan."""
     completed_process, _ = _search(base_dir, domain_path, problem_path, label, search=("--search", SEARCH))

@@ -8,7 +8,7 @@ import json
 import re
 from pathlib import Path
 
-from core.metrics import COUNTER_LABELS, DURATION_LABELS
+from core.metrics import COUNTER_LABELS, DURATION_LABELS, RATIO_LABELS
 from experiments.run import MANIFEST_NAME, MODES, RESULTS_DIR, _human_status
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
@@ -24,6 +24,7 @@ FIELDS = (
     "verdict",
     "plan_valid",
     *COUNTER_LABELS,
+    *RATIO_LABELS,
     "abstracted_object_count",
     "abstracted_object_type",
     "error_message",
@@ -93,6 +94,7 @@ def _values(result):
         "verdict": _value(output, "Verdict"),
         "plan_valid": _value(output, "Plan valid"),
         **{name: counters.get(name, "") for name in COUNTER_LABELS},
+        **{name: metrics.get("ratios", {}).get(name, "") for name in RATIO_LABELS},
         **_abstraction_values(output, metrics.get("abstraction")),
         "error_message": _error_message(result),
     }
@@ -103,6 +105,7 @@ def _metrics(output, progress=None):
     metrics = {
         "durations": _metric_group(output, DURATION_LABELS, float),
         "counters": _metric_group(output, COUNTER_LABELS, int),
+        "ratios": _metric_group(output, RATIO_LABELS, float),
     }
     if metrics["durations"] or metrics["counters"]:
         return metrics

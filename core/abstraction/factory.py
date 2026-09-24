@@ -8,6 +8,7 @@ from unified_planning.model import Problem
 
 from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
 from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities
+from core.abstraction.statistics import describe_class, describe_relaxation
 from core.integrations.numeric_fast_downward import detect_resources
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import (
@@ -36,6 +37,7 @@ class AbstractionResult:
     problem: Problem
     relaxed_deletes: tuple
     relaxed_inequalities: tuple
+    statistics: dict
 
 
 def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
@@ -61,6 +63,10 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
         else:
             abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
 
+        # Described before the inequalities go, since relaxing them rewrites
+        # the preconditions this reads.
+        statistics = describe_class(problem, abstraction)
+
         # The class has to be chosen before the inequalities can be relaxed,
         # and they have to be relaxed before the translation, which rewrites
         # every one of them into a disjunction over pairs of objects.
@@ -78,11 +84,13 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     with metrics.measure("abstraction"):
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
+        statistics["counters"].update(describe_relaxation(problem, abstraction, relaxed_deletes))
     return AbstractionResult(
         abstraction=abstraction,
         problem=collapsed_problem,
         relaxed_deletes=relaxed_deletes,
         relaxed_inequalities=relaxed_inequalities,
+        statistics=statistics,
     )
 
 
@@ -190,8 +198,10 @@ def report_abstraction(abstract_problem, metrics):
         {
             "relaxed_deletes": len(abstract_problem.relaxed_deletes),
             "relaxed_inequalities": len(abstract_problem.relaxed_inequalities),
+            **abstract_problem.statistics["counters"],
         }
     )
+    metrics.set_ratios(abstract_problem.statistics["ratios"])
     print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
 
 

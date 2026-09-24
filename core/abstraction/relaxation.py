@@ -20,13 +20,7 @@ def find_relaxable_deletes(problem, abstraction):
 
 
 def _deletes_a_collapsed_fact(action, effect, collapsed, collapsed_type, static_fluents, true_facts):
-    is_delete = (
-        effect.is_assignment()
-        and effect.value.is_false()
-        and effect.fluent.type.is_bool_type()
-        and effect.fluent.is_fluent_exp()
-    )
-    if not is_delete:
+    if not _is_delete(effect):
         return False
 
     for argument in effect.fluent.args:
@@ -42,6 +36,15 @@ def _deletes_a_collapsed_fact(action, effect, collapsed, collapsed_type, static_
         if _can_bind(action, argument, collapsed, static_fluents, true_facts):
             return True
     return False
+
+
+def _is_delete(effect):
+    return (
+        effect.is_assignment()
+        and effect.value.is_false()
+        and effect.fluent.type.is_bool_type()
+        and effect.fluent.is_fluent_exp()
+    )
 
 
 def _can_bind(action, variable, collapsed, static_fluents, true_facts):

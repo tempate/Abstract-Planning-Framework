@@ -3,7 +3,7 @@
 import os
 
 from core.integrations.clingo import parse_plan_actions
-from core.integrations.fast_downward import has_plan, pddl_to_sas
+from core.integrations.fast_downward import has_plan, pddl_to_sas, sas_size
 from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
 from core.metrics import PlanningMetrics
 from core.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
@@ -49,6 +49,7 @@ def _to_sas(base_dir, problem, config, metrics):
     with metrics.measure("concrete_fd"):
         concrete_dir = os.path.join(base_dir, "concrete")
         concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
+    _report_sas_size("concrete", concrete_sas, metrics)
 
     with metrics.measure("abstract_pddl_writing"):
         domain_path, problem_path = write_abstract_problem(problem, base_dir)
@@ -56,8 +57,19 @@ def _to_sas(base_dir, problem, config, metrics):
     with metrics.measure("abstract_fd"):
         abstract_dir = os.path.join(base_dir, "abstract")
         abstract_sas = pddl_to_sas(abstract_dir, domain_path, problem_path, "abstract")
+    _report_sas_size("abstract", abstract_sas, metrics)
 
     return concrete_sas, abstract_sas
+
+
+def _report_sas_size(label, sas_path, metrics):
+    """Record how big a task the translator produced, which is what the collapse shrinks.
+
+    A file cut short declares neither count, and a size nobody read is better
+    left out of the results than written down as a zero.
+    """
+    sizes = dict(zip(("variables", "operators"), sas_size(sas_path)))
+    metrics.set_counters({f"{label}_sas_{name}": value for name, value in sizes.items() if value is not None})
 
 
 def _to_asp(concrete_sas, metrics):
