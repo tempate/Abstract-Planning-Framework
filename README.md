@@ -77,6 +77,10 @@ python -m experiments.report experiments/plan/symmetries/results.csv
 - `--track unsolvability` submits `experiments/unsolvability/symmetries/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
   a plan. Only the probNN problems run, the ones known to be unsolvable.
+- `--every-class` runs the abstraction modes once per class in the track's
+  `classes.json`, which `python -m experiments.classes --track <track>` writes,
+  and collects into the track's `classes/results.csv`. A class is named by its
+  position in `classes.json`.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
 - `collect` rewrites the `results.csv` of the track the run's manifest names,

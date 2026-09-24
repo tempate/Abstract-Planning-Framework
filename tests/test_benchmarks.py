@@ -20,7 +20,9 @@ from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.reporting import update_result_progress
 from experiments.run import (
     PROJECT_ROOT,
+    _class_objects,
     _human_status,
+    _planner_command,
     _run_pipeline,
     _run_task,
 )
@@ -93,18 +95,20 @@ def _fake_planner(outcomes):
 
 class BenchmarkTests(unittest.TestCase):
     @staticmethod
-    def _write_result(directory, mode, status="success"):
+    def _write_result(directory, mode, status="success", symmetry_class=None):
         result = {
             "domain": "example",
             "problem": "p01.pddl",
             "mode": mode,
+            "symmetry_class": symmetry_class,
             "status": status,
             "return_code": 0,
             "timed_out": False,
             "wall_time_seconds": 1.0,
             "output": "Plan found: yes\n",
         }
-        path = Path(directory) / "example" / "p01" / f"{mode}.json"
+        stem = mode if symmetry_class is None else f"{mode}-{symmetry_class}"
+        path = Path(directory) / "example" / "p01" / f"{stem}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(result), encoding="utf-8")
 
@@ -190,7 +194,7 @@ class BenchmarkTests(unittest.TestCase):
             definition_dir.mkdir()
 
             config_file = _write_copperbench_config(
-                [("abstraction-asp", "example", domain, problem), ("asp", "example", domain, problem)],
+                [("abstraction-asp", "example", domain, problem, None), ("asp", "example", domain, problem, None)],
                 definition_dir=definition_dir,
                 timeout=1800,
                 memory_limit=4096,
@@ -207,8 +211,8 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(
             instances,
             [
-                f"abstraction-asp example {domain.resolve()} {problem.resolve()}",
-                f"asp example {domain.resolve()} {problem.resolve()}",
+                f"abstraction-asp example {domain.resolve()} {problem.resolve()} -",
+                f"asp example {domain.resolve()} {problem.resolve()} -",
             ],
         )
 
@@ -224,14 +228,15 @@ class BenchmarkTests(unittest.TestCase):
 
             runnable = {("example", "p01.pddl")}
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable)), [("abstraction-asp", "example", domain, problem)]
+                list(_benchmark_tasks(root, ["example"], runnable)),
+                [("abstraction-asp", "example", domain, problem, None)],
             )
             self.assertEqual(
                 list(_benchmark_tasks(root, ["example"], runnable, modes=("abstraction-asp", "asp", "fd"))),
                 [
-                    ("abstraction-asp", "example", domain, problem),
-                    ("asp", "example", domain, problem),
-                    ("fd", "example", domain, problem),
+                    ("abstraction-asp", "example", domain, problem, None),
+                    ("asp", "example", domain, problem, None),
+                    ("fd", "example", domain, problem, None),
                 ],
             )
 
@@ -265,9 +270,9 @@ class BenchmarkTests(unittest.TestCase):
             by_problem = _benchmark_tasks(root, suite, runnable=None, domains=["two"], problems=["p02"])
             by_file_name = _benchmark_tasks(root, suite, runnable=None, problems=["p02.pddl"])
 
-            self.assertEqual({name for _m, name, _d, _p in by_domain}, {"two"})
-            self.assertEqual([(n, p.name) for _m, n, _d, p in by_problem], [("two", "p02.pddl")])
-            self.assertEqual({p.name for _m, _n, _d, p in by_file_name}, {"p02.pddl"})
+            self.assertEqual({name for _m, name, _d, _p, _c in by_domain}, {"two"})
+            self.assertEqual([(n, p.name) for _m, n, _d, p, _c in by_problem], [("two", "p02.pddl")])
+            self.assertEqual({p.name for _m, _n, _d, p, _c in by_file_name}, {"p02.pddl"})
 
     def test_a_misspelled_domain_is_refused_rather_than_submitting_nothing(self):
         with self.assertRaises(SystemExit) as refusal:
@@ -310,9 +315,9 @@ class BenchmarkTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
             self._write_result(first, "asp")
             self._write_result(first, "abstraction-asp", status="timeout")
-            _write_manifest([("abstraction-asp", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=first)
+            _write_manifest([("abstraction-asp", "example", Path("d.pddl"), Path("p01.pddl"), None)], results_dir=first)
             self._write_result(second, "abstraction-asp")
-            _write_manifest([("fd", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=second)
+            _write_manifest([("fd", "example", Path("d.pddl"), Path("p01.pddl"), None)], results_dir=second)
 
             rows = collect(first, second)
 
@@ -523,8 +528,8 @@ class BenchmarkTests(unittest.TestCase):
             with self.subTest(completed=completed), tempfile.TemporaryDirectory() as directory:
                 problem = Path("p01.pddl")
                 tasks = [
-                    ("abstraction-asp", "example", Path("domain.pddl"), problem),
-                    ("asp", "example", Path("domain.pddl"), problem),
+                    ("abstraction-asp", "example", Path("domain.pddl"), problem, None),
+                    ("asp", "example", Path("domain.pddl"), problem, None),
                 ]
                 manifest = _write_manifest(tasks, directory)
                 for mode in completed:
@@ -537,7 +542,7 @@ class BenchmarkTests(unittest.TestCase):
                 self.assertEqual([row["status"] for row in rows], statuses)
 
     def test_a_run_is_collected_into_the_results_of_its_track(self):
-        task = [("asp", "example", Path("domain.pddl"), Path("p01.pddl"))]
+        task = [("asp", "example", Path("domain.pddl"), Path("p01.pddl"), None)]
         with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
             _write_manifest(task, plan, track="plan/symmetries")
             _write_manifest(task, decide, track="unsolvability/symmetries")
@@ -545,6 +550,88 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual(_track_results_file([decide]), TRACKS["unsolvability/symmetries"].results_file)
             with self.assertRaises(SystemExit):
                 _track_results_file([plan, decide])
+
+    def test_a_run_over_every_class_is_collected_apart_from_the_track(self):
+        task = [("abstraction-fd", "example", Path("domain.pddl"), Path("p01.pddl"), 0)]
+        with tempfile.TemporaryDirectory() as directory:
+            _write_manifest(task, directory, track="unsolvability/symmetries", every_class=True)
+
+            self.assertEqual(_track_results_file([directory]), TRACKS["unsolvability/symmetries"].class_results_file)
+
+    def test_every_class_of_one_problem_becomes_its_own_row(self):
+        with tempfile.TemporaryDirectory() as directory:
+            self._write_result(directory, "abstraction-fd", symmetry_class=0)
+            self._write_result(directory, "abstraction-fd", symmetry_class=1)
+            self._write_result(directory, "fd")
+
+            rows = collect(directory)
+
+        self.assertEqual(
+            {(row["mode"], row["symmetry_class"]) for row in rows},
+            {("abstraction-fd", "0"), ("abstraction-fd", "1"), ("fd", "")},
+        )
+
+    def test_a_problem_is_submitted_once_per_symmetry_class(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "example").mkdir()
+            (root / "example" / "domain.pddl").touch()
+            (root / "example" / "p01.pddl").touch()
+            classes = {"example/p01.pddl": [["a", "b"], ["c", "d", "e"]]}
+
+            tasks = list(_benchmark_tasks(root, ["example"], None, modes=("abstraction-fd",), classes=classes))
+
+        self.assertEqual([(task[0], task[4]) for task in tasks], [("abstraction-fd", 0), ("abstraction-fd", 1)])
+
+    def test_a_problem_with_no_known_class_is_not_submitted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "example").mkdir()
+            (root / "example" / "domain.pddl").touch()
+            (root / "example" / "p01.pddl").touch()
+
+            tasks = list(_benchmark_tasks(root, ["example"], None, modes=("abstraction-fd",), classes={}))
+
+        self.assertEqual(tasks, [])
+
+    def test_no_instance_parameter_contains_a_comma(self):
+        """CopperBench splits a parameter on commas, and the extra pieces land
+        on the end of the worker command as unrecognized arguments."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            domain, problem = root / "domain.pddl", root / "p01.pddl"
+            domain.touch()
+            problem.touch()
+            definition_dir = root / "definition"
+            definition_dir.mkdir()
+
+            _write_copperbench_config(
+                [("abstraction-fd", "example", domain, problem, 0)],
+                definition_dir=definition_dir,
+                track="unsolvability/symmetries",
+            )
+            instances = (definition_dir / "instances.txt").read_text(encoding="utf-8")
+
+        self.assertNotIn(",", instances)
+
+    def test_the_worker_reads_its_class_out_of_classes_json(self):
+        classes = {"example/p01.pddl": [["a", "b"], ["c", "d", "e"]]}
+        with patch("experiments.tracks.Track.classes", return_value=classes):
+            objects = _class_objects("unsolvability/symmetries", "example", Path("p01.pddl"), 1)
+
+        self.assertEqual(objects, ("c", "d", "e"))
+
+    def test_a_class_classes_json_does_not_have_stops_the_job(self):
+        with patch("experiments.tracks.Track.classes", return_value={"example/p01.pddl": [["a", "b"]]}):
+            with self.assertRaises(SystemExit):
+                _class_objects("unsolvability/symmetries", "example", Path("p01.pddl"), 7)
+
+    def test_the_driver_is_told_which_objects_to_collapse(self):
+        command = _planner_command(
+            Path("domain.pddl"), Path("p01.pddl"), "abstraction-fd", "unsolvability/symmetries", ("a", "b")
+        )
+
+        self.assertEqual(command[-3:], ["--objects-to-abstract", "a", "b"])
 
 
 class CollectedCsvTests(unittest.TestCase):

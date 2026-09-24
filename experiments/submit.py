@@ -11,7 +11,15 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR
+from experiments.run import (
+    ABSTRACTION_PREFIX,
+    DEFAULT_TIMEOUT,
+    MANIFEST_NAME,
+    MODES,
+    NO_CLASS,
+    PROJECT_ROOT,
+    RESULTS_DIR,
+)
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.arguments import positive_int
@@ -34,6 +42,14 @@ def main():
     unknown = sorted(set(modes) - set(track.modes))
     if unknown:
         parser.error(f"{track_name} has no mode {', '.join(unknown)}; it runs {', '.join(track.modes)}")
+    classes = None
+    if args.every_class:
+        classes = track.classes()
+        if classes is None:
+            parser.error(f"{track.classes_file} does not exist; run python -m experiments.classes --track {track_name}")
+        concrete = sorted(mode for mode in modes if not mode.startswith(ABSTRACTION_PREFIX))
+        if concrete:
+            parser.error(f"--every-class runs the modes through an abstraction only, not {', '.join(concrete)}")
     tasks = list(
         _benchmark_tasks(
             benchmarks_dir=track.benchmarks_dir,
@@ -42,6 +58,7 @@ def main():
             modes=modes,
             domains=args.domains,
             problems=args.problems,
+            classes=classes,
         )
     )
     _check_worktree_is_built()
@@ -52,7 +69,7 @@ def main():
         )
     if not args.dry_run:
         _set_aside_results_dir()
-        _write_manifest(tasks, track=track_name)
+        _write_manifest(tasks, track=track_name, every_class=args.every_class)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
         config_file = _write_copperbench_config(
             tasks,
@@ -117,12 +134,19 @@ def _set_aside_results_dir(results_dir=RESULTS_DIR):
     return results_dir
 
 
-def _write_manifest(tasks, results_dir=RESULTS_DIR, track=DEFAULT_TRACK):
+def _write_manifest(tasks, results_dir=RESULTS_DIR, track=DEFAULT_TRACK, every_class=False):
     """Record every result expected from a submitted benchmark run, and the code that runs it."""
     expected_results = [
-        {"domain": domain_name, "problem": problem.name, "mode": mode} for mode, domain_name, _domain, problem in tasks
+        {"domain": domain_name, "problem": problem.name, "mode": mode, "symmetry_class": symmetry_class}
+        for mode, domain_name, _domain, problem, symmetry_class in tasks
     ]
-    manifest = {"version": 1, "track": track, "commit": _head_commit(), "expected_results": expected_results}
+    manifest = {
+        "version": 1,
+        "track": track,
+        "every_class": every_class,
+        "commit": _head_commit(),
+        "expected_results": expected_results,
+    }
     path = Path(results_dir) / MANIFEST_NAME
     path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     return path
@@ -170,6 +194,11 @@ def _argument_parser():
     )
     parser.add_argument(
         "--problems", nargs="+", help="Submit only these problem files, named p01.pddl or p01, within each domain"
+    )
+    parser.add_argument(
+        "--every-class",
+        action="store_true",
+        help="Collapse every class in the track's classes.json, one job each, into the track's classes/results.csv",
     )
     parser.add_argument(
         "--all-problems",
@@ -220,6 +249,8 @@ def _write_copperbench_config(
         "$3",
         "--problem",
         "$4",
+        "--symmetry-class",
+        "$5",
         "--timeout",
         "$timeout",
         "--track",
@@ -228,8 +259,11 @@ def _write_copperbench_config(
     configs_file.write_text(shlex.join(worker) + "\n", encoding="utf-8")
 
     instances = []
-    for mode, domain_name, domain, problem in tasks:
-        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()}")
+    for mode, domain_name, domain, problem, symmetry_class in tasks:
+        # Only the index travels: CopperBench splits an instance parameter on
+        # commas, so the worker reads the objects out of classes.json.
+        index = NO_CLASS if symmetry_class is None else symmetry_class
+        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()} {index}")
     instances_file.write_text("\n".join(instances) + "\n", encoding="utf-8")
 
     config = {
@@ -248,10 +282,21 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstraction-asp",), domains=None, problems=None):
+def _benchmark_tasks(
+    benchmarks_dir, suite, runnable, modes=("abstraction-asp",), domains=None, problems=None, classes=None
+):
+    """Yield the jobs to submit: one per mode and problem, or with classes, one per class.
+
+    A problem missing from classes has no class the collapse accepts, so it
+    gets no job, the same way a problem without symmetries never had one.
+    """
     for domain_name, domain, problem in _benchmark_problems(benchmarks_dir, suite, runnable, domains, problems):
         for mode in modes:
-            yield mode, domain_name, domain, problem
+            if classes is None:
+                yield mode, domain_name, domain, problem, None
+                continue
+            for index in range(len(classes.get(f"{domain_name}/{problem.name}", []))):
+                yield mode, domain_name, domain, problem, index
 
 
 def _benchmark_problems(benchmarks_dir, suite, runnable, domains=None, problems=None):
