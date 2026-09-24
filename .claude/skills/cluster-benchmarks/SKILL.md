@@ -165,9 +165,10 @@ collected before #101, a crash reads `no plan found` and a memory kill `running`
 
 ## Closing the loop
 
-When results land, do all four without being asked:
+When results land, do all five without being asked:
 
 1. collect into `experiments/plan/results.csv`
 2. `python -m experiments.report` to regenerate `experiments/plan/reports.md`
 3. commit both with the message `Update results`
 4. push
+5. rewrite the description of the branch's PR around the run's numbers, following **Writing the PR** in the `pull-requests` skill, and drop any numbers or run IDs from earlier runs
