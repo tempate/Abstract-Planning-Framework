@@ -7,6 +7,7 @@
 \theoremstyle{plain}
 \newtheorem{lemma}{Lemma}
 \newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
 
 \begin{document}
 
@@ -181,6 +182,16 @@ Let $\pi$ solve $\Pi$, so $\pi$ is applicable in $I$ and $G \subseteq I[\pi]$ by
   \alpha(G) \subseteq \alpha(I[\pi]) \subseteq \alpha(I)[\pi^r].
 \]
 By Definition~\ref{def:relaxed}, $\Pi^r$ has initial state $\alpha(I)$ and goal $\alpha(G)$, so $\pi^r$ solves $\Pi^r$ by Definition~\ref{def:solves}.
+\end{proof}
+
+The relaxation replaces each action of a plan by one action, so the abstract plan the theorem gives has exactly as many actions as the concrete one.
+
+\begin{corollary}\label{cor:length}
+If $\Pi$ has a plan with $n$ actions, then $\Pi^r$ has a plan with $n$ actions. In particular, a shortest plan of $\Pi^r$ has at most as many actions as a shortest plan of $\Pi$.
+\end{corollary}
+
+\begin{proof}
+Let $\pi = a_1 \dots a_n$ solve $\Pi$. By the theorem, $\pi^r = a_1^r \dots a_n^r$ solves $\Pi^r$, and $\pi^r$ has $n$ actions. Applying the first claim to a shortest plan of $\Pi$ gives the second.
 \end{proof}
 
 Read the other way, if $\Pi^r$ has no plan, then neither does $\Pi$, so proving that $\Pi^r$ is unsolvable proves that $\Pi$ is unsolvable.
