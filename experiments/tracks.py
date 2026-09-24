@@ -1,5 +1,6 @@
 """The benchmark tracks: the problems each one runs, the driver that runs them, and where the results go."""
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -26,6 +27,26 @@ class Track:
     @property
     def results_file(self):
         return self.directory / "results.csv"
+
+    @property
+    def classes_file(self):
+        """Every symmetry class of each problem, as experiments.classes enumerates them."""
+        return self.directory / "classes.json"
+
+    @property
+    def class_results_file(self):
+        """The results of a run that collapses every class, kept apart from the track's own."""
+        return self.directory / "classes" / "results.csv"
+
+    def classes(self):
+        """Map "<domain>/<problem>" to the object names of each class, or None where none were enumerated.
+
+        A class is named by its position in its problem's list, so enumerating
+        again renumbers the results.
+        """
+        if not self.classes_file.is_file():
+            return None
+        return json.loads(self.classes_file.read_text(encoding="utf-8"))["classes"]
 
     @property
     def runnable_file(self):
