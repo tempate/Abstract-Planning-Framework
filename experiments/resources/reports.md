@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-09-24 11:20 — experiments/resources/results.csv
+2026-09-24 11:25 — experiments/resources/results.csv
 
-640 problems compared over abstract
+330 problems compared over abstract
 
 ## Coverage
 
 ```
 Metric                                      Abstract pipeline
 -------------------------------------------------------------
-Plans found                                        72 (11.2%)
-Timeouts                                          200 (31.2%)
-Out of memory                                     302 (47.2%)
-Others                                             66 (10.3%)
-Total problems                                            640
+Plans found                                        72 (21.8%)
+Timeouts                                          199 (60.3%)
+Out of memory                                        0 (0.0%)
+Others                                             59 (17.9%)
+Total problems                                            330
 ```
 
 ## Where the timeouts died
@@ -24,8 +24,7 @@ Where the abstract pipeline was killed               Timeouts
 Searching for the abstract plan                     109 (55%)
 Abstract plan discarded                              82 (41%)
 Guided concrete search                                 8 (4%)
-problem_reading                                        1 (0%)
-Total                                                     200
+Total                                                     199
 ```
 
 ## How the successes were solved
