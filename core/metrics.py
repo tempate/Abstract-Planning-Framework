@@ -15,10 +15,11 @@ DURATION_LABELS = {
     "abstract_pddl_writing": "Abstract PDDL writing",
     "concrete_fd": "Concrete Fast Downward",
     "abstract_fd": "Abstract Fast Downward",
-    "lama_fd": "LAMA-first Fast Downward",
+    "fd_search": "Fast Downward search",
     "concrete_asp": "Concrete SAS-to-ASP",
     "abstract_asp": "Abstract SAS-to-ASP",
     "abstract_solving": "Abstract plan solving",
+    "abstract_fd_search": "Abstract Fast Downward search",
     "guided_concrete_solving": "Guided concrete solving",
     # No longer measured: the guided search now raises the horizon itself. Kept
     # so collecting a run made before that still writes the column it recorded.

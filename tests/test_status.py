@@ -15,11 +15,13 @@ class StatusTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for problem, status in (("p01", "success"), ("p02", "timed_out"), ("p03", "success")):
-                result = root / "example" / problem / "abstract.json"
+                result = root / "example" / problem / "abstraction-asp.json"
                 result.parent.mkdir(parents=True)
                 result.write_text(json.dumps({"status": status}), encoding="utf-8")
             (root / "metadata.json").write_text('{"instances": {}}', encoding="utf-8")
-            expected = [{"domain": "example", "problem": f"p0{n}.pddl", "mode": "abstract"} for n in (1, 2, 3, 4)]
+            expected = [
+                {"domain": "example", "problem": f"p0{n}.pddl", "mode": "abstraction-asp"} for n in (1, 2, 3, 4)
+            ]
             (root / "manifest.json").write_text(json.dumps({"expected_results": expected}), encoding="utf-8")
 
             completed = subprocess.run(

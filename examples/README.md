@@ -6,10 +6,14 @@ Run them from the repository root.
 
 | Script | Purpose |
 | --- | --- |
-| `concrete.sh` | Solve `driverlog/p07.pddl` directly |
-| `abstract.sh` | Discover and solve an object abstraction of the same task |
+| `fd.sh` | Solve `driverlog/p07.pddl` directly with Fast Downward's lama-first |
+| `asp.sh` | Solve it directly with ASP |
+| `abstraction-fd.sh` | Discover an object abstraction of the same task, plan it with Fast Downward, and refine that plan with ASP |
+| `abstraction-asp.sh` | The same, planning the abstraction with ASP |
 
 ```bash
-./examples/concrete.sh
-./examples/abstract.sh
+./examples/fd.sh
+./examples/asp.sh
+./examples/abstraction-fd.sh
+./examples/abstraction-asp.sh
 ```

@@ -112,12 +112,12 @@ class BenchmarkTests(unittest.TestCase):
         """A mode the collector does not know is filed as an abstract result and
         then dropped, silently, because the real abstract result sorts first."""
         with tempfile.TemporaryDirectory() as directory:
-            for mode in ("abstract", "concrete", "lama"):
+            for mode in ("abstraction-asp", "asp", "fd"):
                 self._write_result(directory, mode)
 
             rows = collect(directory)
 
-        self.assertEqual({row["mode"] for row in rows}, {"abstract", "concrete", "lama"})
+        self.assertEqual({row["mode"] for row in rows}, {"abstraction-asp", "asp", "fd"})
 
     def test_the_run_names_the_partition_every_task_goes_to(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -190,7 +190,7 @@ class BenchmarkTests(unittest.TestCase):
             definition_dir.mkdir()
 
             config_file = _write_copperbench_config(
-                [("abstract", "example", domain, problem), ("concrete", "example", domain, problem)],
+                [("abstraction-asp", "example", domain, problem), ("asp", "example", domain, problem)],
                 definition_dir=definition_dir,
                 timeout=1800,
                 memory_limit=4096,
@@ -207,8 +207,8 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(
             instances,
             [
-                f"abstract example {domain.resolve()} {problem.resolve()}",
-                f"concrete example {domain.resolve()} {problem.resolve()}",
+                f"abstraction-asp example {domain.resolve()} {problem.resolve()}",
+                f"asp example {domain.resolve()} {problem.resolve()}",
             ],
         )
 
@@ -224,14 +224,14 @@ class BenchmarkTests(unittest.TestCase):
 
             runnable = {("example", "p01.pddl")}
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable)), [("abstract", "example", domain, problem)]
+                list(_benchmark_tasks(root, ["example"], runnable)), [("abstraction-asp", "example", domain, problem)]
             )
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable, modes=("abstract", "concrete", "lama"))),
+                list(_benchmark_tasks(root, ["example"], runnable, modes=("abstraction-asp", "asp", "fd"))),
                 [
-                    ("abstract", "example", domain, problem),
-                    ("concrete", "example", domain, problem),
-                    ("lama", "example", domain, problem),
+                    ("abstraction-asp", "example", domain, problem),
+                    ("asp", "example", domain, problem),
+                    ("fd", "example", domain, problem),
                 ],
             )
 
@@ -308,20 +308,20 @@ class BenchmarkTests(unittest.TestCase):
 
     def test_a_gap_filling_run_is_merged_with_the_one_it_completes(self):
         with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
-            self._write_result(first, "concrete")
-            self._write_result(first, "abstract", status="timeout")
-            _write_manifest([("abstract", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=first)
-            self._write_result(second, "abstract")
-            _write_manifest([("lama", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=second)
+            self._write_result(first, "asp")
+            self._write_result(first, "abstraction-asp", status="timeout")
+            _write_manifest([("abstraction-asp", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=first)
+            self._write_result(second, "abstraction-asp")
+            _write_manifest([("fd", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=second)
 
             rows = collect(first, second)
 
         by_mode = {row["mode"]: row for row in rows}
-        self.assertEqual(set(by_mode), {"abstract", "concrete", "lama"})
+        self.assertEqual(set(by_mode), {"abstraction-asp", "asp", "fd"})
         # the later run owns the result both directories hold
-        self.assertEqual(by_mode["abstract"]["status"], "success")
+        self.assertEqual(by_mode["abstraction-asp"]["status"], "success")
         # a mode only the second manifest expected is still accounted for
-        self.assertEqual(by_mode["lama"]["status"], "missing")
+        self.assertEqual(by_mode["fd"]["status"], "missing")
 
     def test_separate_mode_runs_are_collected_as_separate_rows(self):
         abstract_output = (
@@ -358,12 +358,12 @@ class BenchmarkTests(unittest.TestCase):
             subprocess.CompletedProcess([], 0, stdout=concrete_output),
         ]
         with tempfile.TemporaryDirectory() as directory, _fake_planner(completed):
-            _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
-            _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
+            _run_task("abstraction-asp", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
+            _run_task("asp", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
         self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[0]["mode"], "abstract")
+        self.assertEqual(rows[0]["mode"], "abstraction-asp")
         self.assertEqual(rows[0]["status"], "success")
         self.assertEqual(rows[0]["plan_length"], 2)
         self.assertEqual(rows[0]["decrements"], 2)
@@ -374,7 +374,7 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(rows[0]["concrete_solve_calls"], 4)
         self.assertEqual(rows[0]["abstracted_object_count"], 2)
         self.assertEqual(rows[0]["abstracted_object_type"], "package")
-        self.assertEqual(rows[1]["mode"], "concrete")
+        self.assertEqual(rows[1]["mode"], "asp")
         self.assertEqual(rows[1]["status"], "success")
         self.assertEqual(rows[1]["plan_length"], 3)
         self.assertEqual(rows[1]["total_seconds"], 2.5)
@@ -394,7 +394,7 @@ class BenchmarkTests(unittest.TestCase):
             return subprocess.CompletedProcess(command, 2, stdout="planner failed before final metrics\n")
 
         with tempfile.TemporaryDirectory() as directory, _fake_planner(complete):
-            result = _run_task("concrete", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
+            result = _run_task("asp", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
         self.assertEqual(result["progress"]["last_completed_phase"], "concrete_fd")
@@ -412,7 +412,7 @@ class BenchmarkTests(unittest.TestCase):
             raise KeyboardInterrupt
 
         with tempfile.TemporaryDirectory() as directory, _fake_planner(interrupt):
-            result = _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
+            result = _run_task("abstraction-asp", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
             rows = collect(directory)
 
         self.assertEqual(result["status"], "interrupted")
@@ -432,7 +432,7 @@ class BenchmarkTests(unittest.TestCase):
             raise subprocess.TimeoutExpired(command, 10, output="Starting\n")
 
         with tempfile.TemporaryDirectory() as directory, _fake_planner(selected_then_killed):
-            _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=10)
+            _run_task("abstraction-asp", "example", Path("domain.pddl"), Path("p01.pddl"), directory, timeout=10)
             rows = collect(directory)
 
         # Nothing the killed run printed reaches the collector, so the class can
@@ -458,7 +458,7 @@ class BenchmarkTests(unittest.TestCase):
             with self.subTest(message=message):
                 failed = subprocess.CompletedProcess([], 2, stdout=output)
                 with tempfile.TemporaryDirectory() as directory, _fake_planner(failed):
-                    _run_task("abstract", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
+                    _run_task("abstraction-asp", "example", Path("domain.pddl"), Path("p01.pddl"), directory)
                     rows = collect(directory)
 
                 self.assertEqual(rows[0]["status"], "error (exit code 2)")
@@ -516,15 +516,15 @@ class BenchmarkTests(unittest.TestCase):
     def test_the_manifest_marks_every_mode_that_produced_no_result(self):
         expected_statuses = {
             (): ["missing", "missing"],
-            ("abstract",): ["success", "missing"],
-            ("abstract", "concrete"): ["success", "success"],
+            ("abstraction-asp",): ["success", "missing"],
+            ("abstraction-asp", "asp"): ["success", "success"],
         }
         for completed, statuses in expected_statuses.items():
             with self.subTest(completed=completed), tempfile.TemporaryDirectory() as directory:
                 problem = Path("p01.pddl")
                 tasks = [
-                    ("abstract", "example", Path("domain.pddl"), problem),
-                    ("concrete", "example", Path("domain.pddl"), problem),
+                    ("abstraction-asp", "example", Path("domain.pddl"), problem),
+                    ("asp", "example", Path("domain.pddl"), problem),
                 ]
                 manifest = _write_manifest(tasks, directory)
                 for mode in completed:
@@ -533,11 +533,11 @@ class BenchmarkTests(unittest.TestCase):
                 rows = collect(directory)
 
                 self.assertEqual(manifest.name, MANIFEST_NAME)
-                self.assertEqual([row["mode"] for row in rows], ["abstract", "concrete"])
+                self.assertEqual([row["mode"] for row in rows], ["abstraction-asp", "asp"])
                 self.assertEqual([row["status"] for row in rows], statuses)
 
     def test_a_run_is_collected_into_the_results_of_its_track(self):
-        task = [("concrete", "example", Path("domain.pddl"), Path("p01.pddl"))]
+        task = [("asp", "example", Path("domain.pddl"), Path("p01.pddl"))]
         with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
             _write_manifest(task, plan, track="plan/symmetries")
             _write_manifest(task, decide, track="unsolvability/symmetries")
@@ -566,11 +566,11 @@ class CollectedCsvTests(unittest.TestCase):
         return collected
 
     def test_a_collected_result_replaces_the_one_already_in_the_csv(self):
-        rows = [("example", "p01.pddl", "concrete", "success")]
+        rows = [("example", "p01.pddl", "asp", "success")]
         for status in ("timed out", "missing"):
             with self.subTest(status=status), tempfile.TemporaryDirectory() as directory:
                 csv_file = self._write_csv(directory, rows)
-                collected = self._collected([("example", "p01.pddl", "concrete", status)])
+                collected = self._collected([("example", "p01.pddl", "asp", status)])
 
                 preserved = _preserved_rows(collected, csv_file)
 
@@ -583,17 +583,17 @@ class CollectedCsvTests(unittest.TestCase):
             csv_file = self._write_csv(
                 directory,
                 [
-                    ("example", "p01.pddl", "abstract", "success"),
-                    ("example", "p02.pddl", "abstract", "timed out"),
-                    ("example", "p01.pddl", "lama", "timed out"),
+                    ("example", "p01.pddl", "abstraction-asp", "success"),
+                    ("example", "p02.pddl", "abstraction-asp", "timed out"),
+                    ("example", "p01.pddl", "fd", "timed out"),
                 ],
             )
-            collected = self._collected([("example", "p02.pddl", "abstract", "success")])
+            collected = self._collected([("example", "p02.pddl", "abstraction-asp", "success")])
 
             preserved = _preserved_rows(collected, csv_file)
 
         self.assertEqual(
-            {(row["problem"], row["mode"]) for row in preserved}, {("p01.pddl", "abstract"), ("p01.pddl", "lama")}
+            {(row["problem"], row["mode"]) for row in preserved}, {("p01.pddl", "abstraction-asp"), ("p01.pddl", "fd")}
         )
 
     def test_a_first_run_has_nothing_to_keep(self):
@@ -610,7 +610,7 @@ class ReportTests(unittest.TestCase):
             with results.open("w", encoding="utf-8", newline="") as stream:
                 writer = csv.DictWriter(stream, fieldnames=FIELDS)
                 writer.writeheader()
-                for mode in ("abstract", "concrete"):
+                for mode in ("abstraction-asp", "asp"):
                     writer.writerow(
                         {field: "" for field in FIELDS}
                         | {
@@ -633,12 +633,12 @@ class ReportTests(unittest.TestCase):
     def test_the_report_survives_a_run_with_no_shared_solves(self):
         problems = [
             {
-                "abstract": {"status": "timed out", "wall_time_seconds": "1800.0"},
-                "concrete": {"status": "success", "wall_time_seconds": "12.0"},
+                "abstraction-asp": {"status": "timed out", "wall_time_seconds": "1800.0"},
+                "asp": {"status": "success", "wall_time_seconds": "12.0"},
             }
         ]
 
-        _title, lines = _head_to_head(problems, "concrete")
+        _title, lines = _head_to_head(problems, "abstraction-asp", "asp")
 
         median = next(line for line in lines if line.startswith("Median runtime"))
         self.assertNotIn(" s", median)
@@ -646,7 +646,7 @@ class ReportTests(unittest.TestCase):
     def test_every_problem_is_accounted_for_in_the_coverage_table(self):
         """The rows have to add up, or a reader cannot tell what became of the
         problems that neither solved nor timed out."""
-        modes = ("abstract", "concrete", "lama")
+        modes = ("abstraction-asp", "asp", "fd")
         statuses = (
             ("success", "timed out", "success"),
             ("timed out", "success", "no plan found"),
@@ -670,19 +670,19 @@ class ReportTests(unittest.TestCase):
         of the others' comparison, moving numbers for an unrelated reason."""
         problems = [
             {
-                "abstract": {"status": "success", "wall_time_seconds": "1.0"},
-                "concrete": {"status": "success", "wall_time_seconds": "2.0"},
-                "lama": {"status": "success", "wall_time_seconds": "3.0"},
+                "abstraction-asp": {"status": "success", "wall_time_seconds": "1.0"},
+                "asp": {"status": "success", "wall_time_seconds": "2.0"},
+                "fd": {"status": "success", "wall_time_seconds": "3.0"},
             },
             {
-                "abstract": {"status": "success", "wall_time_seconds": "1.0"},
-                "concrete": {"status": "success", "wall_time_seconds": "2.0"},
-                "lama": {"status": "timed out", "wall_time_seconds": "1800.0"},
+                "abstraction-asp": {"status": "success", "wall_time_seconds": "1.0"},
+                "asp": {"status": "success", "wall_time_seconds": "2.0"},
+                "fd": {"status": "timed out", "wall_time_seconds": "1800.0"},
             },
         ]
 
-        _title, concrete = _head_to_head(problems, "concrete")
-        _title, lama = _head_to_head(problems, "lama")
+        _title, concrete = _head_to_head(problems, "abstraction-asp", "asp")
+        _title, lama = _head_to_head(problems, "abstraction-asp", "fd")
 
         self.assertIn("2", next(line for line in concrete if line.startswith("Plans found by both")))
         self.assertIn("1", next(line for line in lama if line.startswith("Plans found by both")))
@@ -693,9 +693,9 @@ class ReportTests(unittest.TestCase):
             with results.open("w", encoding="utf-8", newline="") as stream:
                 writer = csv.DictWriter(stream, fieldnames=FIELDS)
                 writer.writeheader()
-                rows = [("p01.pddl", "abstract"), ("p01.pddl", "concrete"), ("p01.pddl", "lama")]
+                rows = [("p01.pddl", "abstraction-asp"), ("p01.pddl", "asp"), ("p01.pddl", "fd")]
                 # p02 never ran the baseline, so no mode can be compared on it.
-                rows += [("p02.pddl", "abstract"), ("p02.pddl", "concrete")]
+                rows += [("p02.pddl", "abstraction-asp"), ("p02.pddl", "asp")]
                 for problem, mode in rows:
                     writer.writerow(
                         {field: "" for field in FIELDS}
@@ -704,7 +704,7 @@ class ReportTests(unittest.TestCase):
 
             modes, problems, dropped = _finished_problems(results)
 
-        self.assertEqual(modes, ("abstract", "concrete", "lama"))
+        self.assertEqual(modes, ("abstraction-asp", "asp", "fd"))
         self.assertEqual(len(problems), 1)
         self.assertEqual(dropped, 1)
 

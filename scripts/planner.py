@@ -2,12 +2,9 @@
 
 import argparse
 
-from core.planning.abstract import solve_via_abstraction
-from core.planning.concrete import solve_with_asp
-from core.planning.config import AbstractPlanningConfig, PlanningConfig
-from core.planning.baseline import solve_directly
+from core.planning import abstraction, asp, fd
 
-from .utils.arguments import abstraction_arguments, task_arguments
+from .utils.arguments import abstract_planning_config, abstraction_arguments, planning_config, task_arguments
 from .utils.entry import run
 from .utils.reporting import print_metrics, progress_callback
 
@@ -23,22 +20,14 @@ def _report(result):
 
 def _compute(args):
     on_update = progress_callback()
-    common = {"domain_path": args.domain, "problem_path": args.problem}
-    if args.mode == "concrete":
-        return solve_with_asp(PlanningConfig(**common), on_update)
-    if args.mode == "lama":
-        return solve_directly(PlanningConfig(**common), on_update)
-    if args.mode == "abstract":
-        return solve_via_abstraction(
-            AbstractPlanningConfig(
-                **common,
-                objects_to_abstract=args.objects_to_abstract,
-                abstract_name=args.abstract_name,
-                symmetry_time_limit=args.symmetry_time_limit,
-                abstraction_source=args.abstraction_source,
-            ),
-            on_update,
-        )
+    if args.mode == "asp":
+        return asp.solve(planning_config(args), on_update)
+    if args.mode == "fd":
+        return fd.solve(planning_config(args), on_update)
+    if args.mode == "abstraction-asp":
+        return abstraction.solve(abstract_planning_config(args), asp.find_abstract_plan, on_update)
+    if args.mode == "abstraction-fd":
+        return abstraction.solve(abstract_planning_config(args), fd.find_abstract_plan, on_update)
 
 
 def print_planning_result(result):
@@ -76,21 +65,27 @@ def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_subparsers(dest="mode", required=True, title="planning modes")
     modes.add_parser(
-        "concrete",
+        "asp",
         parents=[shared],
-        help="Solve the task directly",
+        help="Solve the task with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "lama",
+        "fd",
         parents=[shared],
-        help="Solve with plain Fast Downward as a baseline",
+        help="Solve the task with Fast Downward's lama-first",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "abstract",
+        "abstraction-asp",
         parents=[shared, abstract],
-        help="Solve through abstraction",
+        help="Find an abstract plan with ASP, then refine it with ASP",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
+        "abstraction-fd",
+        parents=[shared, abstract],
+        help="Find an abstract plan with Fast Downward's lama-first, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     return parser

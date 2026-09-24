@@ -1,6 +1,6 @@
 # Problems for which PDDL Symmetries reported an abstraction class.
 # Regenerate from a collected run:
-#   awk -F, '$3=="abstract" && $4!="no symmetries" && NR>1 {print $1"/"$2}' results.csv | sort -u
+#   awk -F, '$3=="abstraction-fd" && $4!="no symmetries" && NR>1 {print $1"/"$2}' results.csv | sort -u
 bag-barman/prob03.pddl
 bag-barman/prob06.pddl
 bag-barman/prob09.pddl

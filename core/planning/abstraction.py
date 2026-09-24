@@ -14,24 +14,25 @@ from core.planning.validation import validated
 from core.refinement.pipeline import RefinementContext, refine
 
 
-def solve_via_abstraction(config: AbstractPlanningConfig, on_update=None):
-    """Abstract one concrete task and dispatch its plan-refinement workflow."""
+def solve(config: AbstractPlanningConfig, find_abstract_plan, on_update=None):
+    """Abstract one concrete task, plan it with ``find_abstract_plan``, and refine that plan with ASP."""
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
-            result = _abstract_and_refine(config, base_dir, run_id, metrics)
+            result = _abstract_and_refine(config, find_abstract_plan, base_dir, run_id, metrics)
     # Outside the measured phases, so that checking a plan cannot move a timing.
     result["plan_valid"] = validated(config, result.get("plan"), parse_plan_actions)
     result["metrics"] = metrics.as_dict()
     return result
 
 
-def _abstract_and_refine(config, base_dir, run_id, metrics):
+def _abstract_and_refine(config, find_abstract_plan, base_dir, run_id, metrics):
     abstract_problem = build_abstract_problem(config, metrics)
     report_abstraction(abstract_problem, metrics)
 
     concrete_sas, abstract_sas = _to_sas(base_dir, abstract_problem.problem, config, metrics)
-    concrete_asp, abstract_asp = _to_asp(concrete_sas, abstract_sas, metrics)
+    concrete_asp = _to_asp(concrete_sas, metrics)
+    abstract_plan, abstract_horizon = find_abstract_plan(base_dir, abstract_sas, metrics)
 
     context = RefinementContext(
         config=config,
@@ -39,9 +40,8 @@ def _abstract_and_refine(config, base_dir, run_id, metrics):
         run_id=run_id,
         metrics=metrics,
         concrete_asp=concrete_asp,
-        abstract_asp=abstract_asp,
     )
-    return refine(context)
+    return refine(context, abstract_plan, abstract_horizon)
 
 
 def _to_sas(base_dir, problem, config, metrics):
@@ -60,19 +60,14 @@ def _to_sas(base_dir, problem, config, metrics):
     return concrete_sas, abstract_sas
 
 
-def _to_asp(concrete_sas, abstract_sas, metrics):
-    """Translate both SAS files into their ASP programs."""
+def _to_asp(concrete_sas, metrics):
+    """Translate the concrete SAS file into the ASP program the refinement searches."""
     with metrics.measure("concrete_asp"):
         concrete_asp = sas_to_asp(concrete_sas)
-        concrete_asp = add_switch_to_asp_rule(concrete_asp)
-
-    with metrics.measure("abstract_asp"):
-        abstract_asp = sas_to_asp(abstract_sas)
-
-    return concrete_asp, abstract_asp
+        return add_switch_to_asp_rule(concrete_asp)
 
 
-def check_solvability_via_abstraction(config: AbstractPlanningConfig, on_update=None):
+def check_solvability(config: AbstractPlanningConfig, on_update=None):
     """Search the abstraction, which can only settle the task one way.
 
     The abstraction drops deletes and relaxes inequalities, so it
@@ -89,7 +84,7 @@ def check_solvability_via_abstraction(config: AbstractPlanningConfig, on_update=
                 with metrics.measure("abstract_pddl_writing"):
                     domain_path, problem_path = write_abstract_problem(abstract_problem.problem, base_dir)
 
-                with metrics.measure("abstract_fd"):
+                with metrics.measure("abstract_fd_search"):
                     found = has_plan(base_dir, domain_path, problem_path, "abstract")
             except UnsolvableTaskError:
                 # Symmetry discovery reads the concrete task, so proving it

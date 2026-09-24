@@ -2,7 +2,7 @@
 
 import argparse
 
-from core.planning.config import ABSTRACTION_SOURCES, SYMMETRIES
+from core.planning.config import ABSTRACTION_SOURCES, SYMMETRIES, AbstractPlanningConfig, PlanningConfig
 
 
 def positive_int(value):
@@ -36,3 +36,20 @@ def abstraction_arguments():
         help="Where the collapsed class comes from",
     )
     return parser
+
+
+def planning_config(args):
+    """The configuration the task arguments describe."""
+    return PlanningConfig(args.domain, args.problem)
+
+
+def abstract_planning_config(args):
+    """The configuration the task and abstraction arguments describe."""
+    return AbstractPlanningConfig(
+        args.domain,
+        args.problem,
+        objects_to_abstract=args.objects_to_abstract,
+        abstract_name=args.abstract_name,
+        symmetry_time_limit=args.symmetry_time_limit,
+        abstraction_source=args.abstraction_source,
+    )

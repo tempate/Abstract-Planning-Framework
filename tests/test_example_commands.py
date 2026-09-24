@@ -7,11 +7,15 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
-from scripts import planner
+from core.planning import abstraction
+from scripts import planner, unsolvability
 from core.abstraction.collapse import AbstractionError
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
 from experiments.collect import _values
+
+# Each example runs the planner mode it is named after.
+EXAMPLES = ("asp", "fd", "abstraction-asp", "abstraction-fd")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -53,7 +57,7 @@ class ShellExampleTests(unittest.TestCase):
         return subprocess.run(command, cwd=PROJECT_ROOT, env=environment, capture_output=True, text=True, check=False)
 
     def test_examples_support_help(self):
-        for example in ("concrete", "abstract"):
+        for example in EXAMPLES:
             with self.subTest(example=example):
                 result = self._run(example, "--help")
 
@@ -61,16 +65,16 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.stdout.strip(), f"Usage: examples/{example}.sh")
 
     def test_examples_reject_positional_arguments(self):
-        for example in ("concrete", "abstract"):
+        for example in EXAMPLES:
             with self.subTest(example=example):
                 result = self._run(example, "unexpected", "/bin/echo")
 
                 self.assertEqual(result.returncode, 2)
                 self.assertIn("Usage:", result.stderr)
 
-    def test_examples_run_both_modes_on_one_comparable_task(self):
+    def test_examples_run_every_mode_on_one_comparable_task(self):
         commands = {}
-        for example in ("concrete", "abstract"):
+        for example in EXAMPLES:
             result = self._run(example, python_bin="/bin/echo")
             self.assertEqual(result.returncode, 0, result.stderr)
             commands[example] = result.stdout
@@ -80,12 +84,11 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertIn(f"-m scripts.planner {example}", command)
                 self.assertTrue(_argument_after(command, "--domain").endswith(".pddl"))
 
-        # The README compares the two runs, so they have to solve the same task.
-        self.assertEqual(
-            _argument_after(commands["concrete"], "--problem"), _argument_after(commands["abstract"], "--problem")
-        )
-        # The abstract example demonstrates automatic symmetry selection.
-        self.assertNotIn("--objects-to-abstract", commands["abstract"])
+        # The README compares the runs, so they have to solve the same task.
+        self.assertEqual(len({_argument_after(command, "--problem") for command in commands.values()}), 1)
+        # The abstraction examples demonstrate automatic symmetry selection.
+        for example in ("abstraction-asp", "abstraction-fd"):
+            self.assertNotIn("--objects-to-abstract", commands[example])
 
 
 class PlannerExitStatusTests(unittest.TestCase):
@@ -99,7 +102,7 @@ class PlannerExitStatusTests(unittest.TestCase):
         output = StringIO()
         with patch.object(planner, "_compute", side_effect=UnsolvableTaskError("task is unsolvable")):
             with redirect_stdout(output):
-                status = self._main(["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl"])
+                status = self._main(["asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(status, 1)
         self.assertIn("No plan: task is unsolvable", output.getvalue())
@@ -109,13 +112,13 @@ class PlannerExitStatusTests(unittest.TestCase):
         output = StringIO()
         with patch.object(planner, "_compute", side_effect=KeyError("plan")):
             with redirect_stdout(output):
-                status = self._main(["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl"])
+                status = self._main(["asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(STATUS_BY_EXIT_CODE[status], "error")
         self.assertIn("KeyError", output.getvalue())
 
     def test_both_modes_report_failure_when_no_plan_is_found(self):
-        for mode in ("concrete", "abstract"):
+        for mode in ("asp", "abstraction-asp"):
             with self.subTest(mode=mode):
                 with (
                     patch.object(planner, "_compute", return_value={"success": False}),
@@ -129,19 +132,19 @@ class PlannerExitStatusTests(unittest.TestCase):
         errors = StringIO()
         with patch.object(planner, "_compute", side_effect=AbstractionError("no abstractable object classes")):
             with redirect_stderr(errors), self.assertRaises(SystemExit) as raised:
-                self._main(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
+                self._main(["abstraction-asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(raised.exception.code, 2)
         self.assertIn("no abstractable object classes", errors.getvalue())
 
     def test_explicit_selection_reaches_the_planning_pipeline(self):
         with (
-            patch.object(planner, "solve_via_abstraction", return_value={"success": True}) as compute,
+            patch.object(abstraction, "solve", return_value={"success": True}) as compute,
             patch.object(planner, "print_planning_result"),
         ):
             status = self._main(
                 [
-                    "abstract",
+                    "abstraction-asp",
                     "--domain",
                     "domain.pddl",
                     "--problem",
@@ -159,6 +162,35 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertEqual(config.domain_path, "domain.pddl")
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual(config.abstract_name, "combined")
+
+    def test_both_drivers_pass_the_abstraction_source_on(self):
+        drivers = (
+            (planner, "abstraction-fd", "solve", "print_planning_result"),
+            (unsolvability, "abstraction-fd", "check_solvability", "print_verdict"),
+        )
+        for driver, mode, pipeline, printer in drivers:
+            with self.subTest(driver=driver.__name__):
+                with (
+                    patch.object(abstraction, pipeline, return_value={"success": True}) as compute,
+                    patch.object(driver, printer),
+                    patch.object(
+                        sys,
+                        "argv",
+                        [
+                            "driver",
+                            mode,
+                            "--domain",
+                            "d.pddl",
+                            "--problem",
+                            "p.pddl",
+                            "--abstraction-source",
+                            "resources",
+                        ],
+                    ),
+                ):
+                    driver.main()
+
+                self.assertEqual(compute.call_args.args[0].abstraction_source, "resources")
 
 
 if __name__ == "__main__":

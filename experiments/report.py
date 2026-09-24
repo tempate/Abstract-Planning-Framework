@@ -7,11 +7,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from experiments.run import MODES, PROJECT_ROOT
+from experiments.run import ABSTRACTION_PREFIX, MODES, PROJECT_ROOT
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
-MODE_LABELS = {"abstract": "Abstract pipeline", "concrete": "Concrete pipeline", "lama": "LAMA-first"}
+MODE_LABELS = {
+    "abstraction-asp": "Abstraction + ASP",
+    "abstraction-fd": "Abstraction + FD",
+    "asp": "ASP",
+    "fd": "FD",
+}
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
 VERDICTS = ("unsolvable", "unknown")
@@ -19,6 +24,7 @@ VERDICTS = ("unsolvable", "unknown")
 KILLED_IN_PHASE = {
     "abstract_asp": "Searching for the abstract plan",
     "abstract_solving": "Guided concrete search",
+    "abstract_fd_search": "Guided concrete search",
     "guided_concrete_solving": "Extended concrete search",
 }
 
@@ -26,23 +32,24 @@ KILLED_IN_PHASE = {
 def main():
     args = _argument_parser().parse_args()
     modes, problems, dropped = _finished_problems(args.results)
-    baselines = [mode for mode in modes if mode != "abstract"]
+    abstractions = [mode for mode in modes if mode.startswith(ABSTRACTION_PREFIX)]
+    baselines = [mode for mode in modes if mode not in abstractions]
 
     # A decide run reports no plan, horizon or refinement, so none of the other
     # tables have anything to say about one.
     verdict_run = _is_verdict_run(problems)
     if verdict_run:
         sections = [_verdicts(problems, modes)]
-        sections += [_verdict_head_to_head(problems, baseline) for baseline in baselines]
+        sections += [_verdict_head_to_head(problems, mode, baseline) for mode in abstractions for baseline in baselines]
     else:
         sections = [_coverage(problems, modes)]
-        sections += [_head_to_head(problems, baseline) for baseline in baselines]
+        sections += [_head_to_head(problems, mode, baseline) for mode in abstractions for baseline in baselines]
 
-    # Only the abstract pipeline has an abstraction to report on.
-    if "abstract" in modes:
-        sections.append(_timeout_phases(problems))
+    # Only a mode through an abstraction has one to report on.
+    for mode in abstractions:
+        sections.append(_timeout_phases(problems, mode))
         if not verdict_run:
-            sections += [_refinement_outcomes(problems), _relaxed_deletes(problems)]
+            sections += [_refinement_outcomes(problems, mode), _relaxed_deletes(problems, mode)]
 
     summary = _summary(modes, problems, dropped)
     reports_file = Path(args.results).parent / "report.md"
@@ -154,28 +161,28 @@ VERDICT_COMPARISON = {
 }
 
 
-def _head_to_head(problems, baseline):
-    return _compare(problems, baseline, lambda row: row["status"] == "success", PLAN_COMPARISON)
+def _head_to_head(problems, mode, baseline):
+    return _compare(problems, mode, baseline, lambda row: row["status"] == "success", PLAN_COMPARISON)
 
 
-def _verdict_head_to_head(problems, baseline):
-    return _compare(problems, baseline, lambda row: row["verdict"] == "unsolvable", VERDICT_COMPARISON)
+def _verdict_head_to_head(problems, mode, baseline):
+    return _compare(problems, mode, baseline, lambda row: row["verdict"] == "unsolvable", VERDICT_COMPARISON)
 
 
-def _compare(problems, baseline, succeeded, labels):
-    """Compare the abstract pipeline with one baseline on what both succeeded at.
+def _compare(problems, abstraction, baseline, succeeded, labels):
+    """Compare a mode through an abstraction with one baseline on what both succeeded at.
 
     Pairwise rather than over every mode at once: intersecting three ways would
     drop the problems one baseline missed out of the others' comparison, moving
     numbers for a reason that has nothing to do with either of them.
     """
-    pair = ("abstract", baseline)
+    pair = (abstraction, baseline)
     both = [problem for problem in problems if all(succeeded(problem[mode]) for mode in pair)]
     shared = len(both)
 
     faster = {mode: 0 for mode in pair}
     for problem in both:
-        winner = "abstract" if _runtime(problem["abstract"]) < _runtime(problem[baseline]) else baseline
+        winner = abstraction if _runtime(problem[abstraction]) < _runtime(problem[baseline]) else baseline
         faster[winner] += 1
 
     times = {mode: [_runtime(problem[mode]) for problem in both] for mode in pair}
@@ -187,7 +194,7 @@ def _compare(problems, baseline, succeeded, labels):
     lines.append(_wide(labels["alone"], [alone[mode] for mode in pair]))
     lines.append(_wide(labels["median"], [_median(times[mode]) for mode in pair]))
     lines.append(_wide(labels["total"], [_seconds(sum(times[mode])) for mode in pair]))
-    return f"Head to head: abstract vs {MODE_LABELS[baseline]}", lines
+    return f"Head to head: {MODE_LABELS[abstraction]} vs {MODE_LABELS[baseline]}", lines
 
 
 def _discarded_the_abstract_plan(row):
@@ -196,8 +203,8 @@ def _discarded_the_abstract_plan(row):
     return int(row["decrements"]) == int(row["abstract_plan_length"])
 
 
-def _timeout_phases(problems):
-    timeouts = [modes["abstract"] for modes in problems if modes["abstract"]["status"] == "timed out"]
+def _timeout_phases(problems, mode):
+    timeouts = [modes[mode] for modes in problems if modes[mode]["status"] == "timed out"]
     counts = {}
     for row in timeouts:
         phase = KILLED_IN_PHASE.get(row["last_completed_phase"], row["last_completed_phase"])
@@ -207,15 +214,15 @@ def _timeout_phases(problems):
             phase = "Abstract plan discarded"
         counts[phase] = counts.get(phase, 0) + 1
 
-    lines = _narrow_header("Where the abstract pipeline was killed", "Timeouts")
+    lines = _narrow_header(f"Where {MODE_LABELS[mode]} was killed", "Timeouts")
     for phase, count in sorted(counts.items(), key=lambda item: -item[1]):
         lines.append(_narrow(phase, _share(count, len(timeouts), 0)))
     lines.append(_narrow("Total", len(timeouts)))
-    return "Where the timeouts died", lines
+    return f"Where the timeouts of {MODE_LABELS[mode]} died", lines
 
 
-def _refinement_outcomes(problems):
-    successes = [modes["abstract"] for modes in problems if modes["abstract"]["status"] == "success"]
+def _refinement_outcomes(problems, mode):
+    successes = [modes[mode] for modes in problems if modes[mode]["status"] == "success"]
     counts = {"refined": 0, "switched": 0, "discarded": 0}
     for row in successes:
         if int(row["increments"]) > 0:
@@ -231,19 +238,19 @@ def _refinement_outcomes(problems):
     lines.append(_narrow("Refined after switching some actions off", _share(counts["switched"], total, 0)))
     lines.append(_narrow("Abstract plan discarded, solved above it", _share(counts["discarded"], total, 0)))
     lines.append(_narrow("Total", total))
-    return "How the successes were solved", lines
+    return f"How the successes of {MODE_LABELS[mode]} were solved", lines
 
 
-def _relaxed_deletes(problems):
-    successes = [modes["abstract"] for modes in problems if modes["abstract"]["status"] == "success"]
+def _relaxed_deletes(problems, mode):
+    successes = [modes[mode] for modes in problems if modes[mode]["status"] == "success"]
     rows = []
     for row in successes:
         if int(row["increments"]) == 0 and row.get("relaxed_deletes"):
             rows.append(row)
     if not rows:
         if successes and not any(row.get("relaxed_deletes") for row in successes):
-            return "Deletes relaxed", ["This CSV predates the relaxed-deletes counter"]
-        return "Deletes relaxed", ["No success was solved with its abstract plan"]
+            return f"Deletes relaxed by {MODE_LABELS[mode]}", ["This CSV predates the relaxed-deletes counter"]
+        return f"Deletes relaxed by {MODE_LABELS[mode]}", ["No success was solved with its abstract plan"]
 
     counts = {bucket: 0 for bucket in RELAXED_DELETE_BUCKETS}
     for row in rows:
@@ -254,7 +261,7 @@ def _relaxed_deletes(problems):
     for bucket in RELAXED_DELETE_BUCKETS:
         lines.append(_narrow(bucket, _share(counts[bucket], total, 0)))
     lines.append(_narrow("Total", total))
-    return f"Deletes relaxed, over the {total} successes whose abstract plan was used", lines
+    return f"Deletes relaxed by {MODE_LABELS[mode]}, over the {total} successes whose abstract plan was used", lines
 
 
 def _relaxed_delete_bucket(relaxed_deletes):

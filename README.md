@@ -27,11 +27,13 @@ pre-commit install
 ## Try it
 
 ```bash
-./examples/concrete.sh
-./examples/abstract.sh
+./examples/fd.sh
+./examples/asp.sh
+./examples/abstraction-fd.sh
+./examples/abstraction-asp.sh
 ```
 
-Both solve the same task, so the runs are comparable. See
+All four solve the same task, so the runs are comparable. See
 [examples/README.md](examples/README.md).
 
 ## Command-line tools
@@ -40,21 +42,24 @@ Both solve the same task, so the runs are comparable. See
 python -m scripts.planner --help
 ```
 
-- `concrete` solves the PDDL task directly.
-- `lama` solves it with plain Fast Downward (`--alias lama-first`), as an
-  external baseline to compare the other two against.
-- `abstract` collapses a symmetric object class, solves the abstraction, and uses
-  its plan to guide the concrete search. It asks PDDL Symmetries for the class;
-  pass `--objects-to-abstract NAME...` to choose one yourself. Finding no
-  symmetric class is an error, not a fallback to concrete search.
+- `fd` solves the PDDL task with plain Fast Downward (`--alias lama-first`), as
+  an external baseline.
+- `asp` solves it directly with ASP.
+- `abstraction-fd` collapses a symmetric object class, solves the abstraction
+  with Fast Downward's lama-first, and refines that plan with ASP.
+- `abstraction-asp` does the same, but solves the abstraction with ASP.
+
+Both abstraction modes ask PDDL Symmetries for the class. Pass
+`--objects-to-abstract NAME...` to choose one yourself. Finding no symmetric
+class is an error, not a fallback to concrete search.
 
 ## Benchmark suite
 
 Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
 Slurm task per mode and problem, each capped at 30 minutes and 8192 MiB.
-`--modes abstract concrete lama` submits all three; the default is `abstract`
-alone.
+`--modes fd asp abstraction-fd abstraction-asp` submits all four; the default is the track's
+first mode alone. The unsolvability track runs `abstraction-fd` and `fd`.
 
 ```bash
 python -m experiments.submit
