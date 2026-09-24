@@ -9,6 +9,9 @@
 \newtheorem{theorem}{Theorem}
 \newtheorem{corollary}{Corollary}
 
+\theoremstyle{definition}
+\newtheorem{assumption}{Assumption}
+
 \begin{document}
 
 Many planning tasks contain objects that behave alike, such as several packages that differ only in their names. We collapse such objects into a single representative and plan in the resulting abstraction. The abstract task is smaller, so a planner solves it faster, and we then refine its plan into a plan for the original task. For the approach to be sound, the abstraction must not lose plans. If the original task is solvable, the abstraction must be solvable too, so an unsolvable abstraction proves the original task unsolvable.
@@ -197,5 +200,78 @@ Let $\pi = a_1 \dots a_n$ solve $\Pi$. By the theorem, $\pi^r = a_1^r \dots a_n^
 Read the other way, if $\Pi^r$ has no plan, then neither does $\Pi$, so proving that $\Pi^r$ is unsolvable proves that $\Pi$ is unsolvable.
 
 The converse fails. $\Pi^r$ may have a plan even when $\Pi$ has none, because $\alpha$ forgets which object of $C$ an atom is about, and the relaxation keeps atoms that $\Pi$ deletes. A plan of $\Pi^r$ is therefore only a candidate, and we still have to refine it into a plan of $\Pi$.
+
+\section{Refinement}\label{sec:refinement}
+
+The refinement takes a plan $\beta = b_1 \dots b_H$ of $\Pi^r$ and searches for a plan of $\Pi$ that follows it. The search lays the concrete plan out on a time line of $h$ steps. It puts the $i$-th abstract action at step $2i$ and leaves every odd step up to $2H+1$ as a gap, which holds one concrete action or none. A \emph{switch} at step $2i$ decides whether the search must realize $b_i$ there. When no plan follows the abstract plan, the search turns the switches off from the last one back, and then adds steps to the time line.
+
+\begin{definition}\label{def:realizes}
+An action $a \in A$ \emph{realizes} an action $b$ of $\Pi^r$ if $a^r = b$.
+\end{definition}
+
+\begin{definition}\label{def:steps}
+A \emph{step sequence} of length $h$ is a sequence $x = x_1 \dots x_h$ with each $x_t \in A \cup \{\bot\}$, where $\bot$ marks an empty step. The plan $\mathrm{plan}(x)$ consists of the actions of $x$ in their order, with every $\bot$ removed.
+
+The sequence $x$ \emph{runs} from a state $s \subseteq F$ if every action $x_t$ is applicable in $s_{t-1}$, where $s_0 = s$, and $s_t = s_{t-1}[x_t]$ for an action $x_t$ and $s_t = s_{t-1}$ for $x_t = \bot$. It then ends in $s_h$.
+\end{definition}
+
+An empty step leaves the state as it is, so a step sequence runs exactly when its plan is applicable, and both end in the same state.
+
+\begin{lemma}\label{lem:steps}
+A step sequence $x$ runs from $s$ if and only if $\mathrm{plan}(x)$ is applicable in $s$, and $x$ then ends in $s[\mathrm{plan}(x)]$.
+\end{lemma}
+
+\begin{proof}
+By induction on the length $h$ of $x$. For $h = 0$, both $x$ and $\mathrm{plan}(x)$ are empty, the empty plan is applicable in $s$, and $x$ ends in $s_0 = s = s[\varepsilon]$. For $h \geq 1$, let $x = y\,x_h$. By the induction hypothesis, $y$ runs from $s$ if and only if $\mathrm{plan}(y)$ is applicable in $s$, and both then end in $u = s[\mathrm{plan}(y)]$. If $x_h = \bot$, then $\mathrm{plan}(x) = \mathrm{plan}(y)$, and $x$ ends in $s_h = s_{h-1} = u$. If $x_h \in A$, then $\mathrm{plan}(x) = \mathrm{plan}(y)\,x_h$. Both $x$ and $\mathrm{plan}(x)$ then additionally need $x_h$ to be applicable in $u$, and both end in $u[x_h]$.
+\end{proof}
+
+The layout the refinement imposes depends on the abstract plan, on the length of the time line, and on which switches are on. Let $m = 2H+1$, the length of the time line the refinement starts with.
+
+\begin{definition}\label{def:admissible}
+Let $h \geq m$ and $S \subseteq \{1,\dots,H\}$ be the set of switches that are on. A step sequence $x$ of length $h$ is \emph{admissible} for $\beta$, $h$, and $S$ if
+\begin{enumerate}
+  \item $x_t = \bot$ only when $t$ is odd and $t \leq m$, and
+  \item $x_{2i}$ realizes $b_i$ for every $i \in S$.
+\end{enumerate}
+The refinement \emph{accepts} $x$ at $h$ and $S$ if $x$ is admissible for $\beta$, $h$, and $S$, runs from $I$, and ends in a state that contains $G$.
+\end{definition}
+
+The refinement asks an ASP solver for an accepted step sequence. Fast Downward translates $\Pi$ into a finite-domain task, and plasp turns the result into facts for an encoding with one step per time point. The encoding chooses exactly one action at every step outside the gaps and the switches, and at most one action at a gap. At a step whose switch is on, a mapping rule chooses exactly one action that realizes the abstract action there. Every chosen action has to meet its preconditions in the state before it, effects and inertia fix the state after it, and the goal has to hold after the last step. We take the translation and the encoding as correct.
+
+\begin{assumption}\label{ass:encoding}
+At every $h \geq m$ and $S \subseteq \{1,\dots,H\}$, the answer sets of the program correspond exactly to the step sequences the refinement accepts at $h$ and $S$.
+\end{assumption}
+
+The search tries the switch sets $S_k = \{1,\dots,H-k\}$ at $h = m$ for $k = 0,\dots,H$, and then $S = \emptyset$ at $h = m+1, m+2, \dots$, one solver call each. It stops at the first call that has an answer set and returns $\mathrm{plan}(x)$ for the accepted $x$ of that answer set.
+
+With every switch off, only the gaps can stay empty, and the refinement admits a range of plan lengths that moves up with $h$.
+
+\begin{lemma}\label{lem:lengths}
+Let $h \geq m$. For every plan $\pi$ that solves $\Pi$ and has $n$ actions with $H + (h - m) \leq n \leq h$, the refinement accepts at $h$ and $\emptyset$ some $x$ with $\mathrm{plan}(x) = \pi$.
+\end{lemma}
+
+\begin{proof}
+The time line has $H + 1$ gaps, the odd steps up to $m$. Since $n \leq h$ and $h - n \leq h - H - (h - m) = H + 1$, we can choose $h - n$ of the gaps. Let $x$ hold $\bot$ at the chosen gaps and the actions of $\pi$ in order at the remaining $n$ steps. Then $x$ satisfies the first condition of Definition~\ref{def:admissible}, and the second holds trivially for $S = \emptyset$, so $x$ is admissible. Since $\mathrm{plan}(x) = \pi$ and $\pi$ solves $\Pi$, the plan $\mathrm{plan}(x)$ is applicable in $I$ and $G \subseteq I[\pi]$. By Lemma~\ref{lem:steps}, $x$ runs from $I$ and ends in $I[\pi]$, so the refinement accepts $x$.
+\end{proof}
+
+\begin{theorem}[Completeness]\label{thm:complete}
+If $\Pi$ has a plan with at least $H$ actions, then the search stops after finitely many solver calls.
+\end{theorem}
+
+\begin{proof}
+Let $\pi$ solve $\Pi$ with $n \geq H$ actions, and let $h = \max(m, n)$. If $h = m$, then $H \leq n \leq m$. If $h = n > m$, then $H + (h - m) \leq n$ because $H \leq m$, and $n \leq h$. In both cases Lemma~\ref{lem:lengths} gives a step sequence the refinement accepts at $h$ and $\emptyset$, so by Assumption~\ref{ass:encoding} the program has an answer set there. The search reaches $h$ and $\emptyset$ after $H + 1 + (h - m)$ calls, unless an earlier call already stops it.
+\end{proof}
+
+The condition on the length of the plan is necessary. Every admissible step sequence at $h$ and $\emptyset$ holds at least $H + (h - m) \geq H$ actions, because only the gaps can stay empty. If every plan of $\Pi$ has fewer than $H$ actions, the refinement accepts no step sequence at any $h$ and $S$, and the search never stops. A shortest abstract plan rules this out.
+
+\begin{corollary}\label{cor:shortest}
+If $\beta$ is a shortest plan of $\Pi^r$ and $\Pi$ is solvable, then the search stops after finitely many solver calls.
+\end{corollary}
+
+\begin{proof}
+A shortest plan of $\Pi$ has at least $H$ actions by Corollary~\ref{cor:length}, so Theorem~\ref{thm:complete} applies.
+\end{proof}
+
+The ASP search for the abstract plan raises its horizon from zero with exactly one action per step. With the same assumption about the translation of $\Pi^r$, it returns a shortest plan of $\Pi^r$, and Corollary~\ref{cor:shortest} covers it. A satisficing planner such as LAMA may return a longer abstract plan. The refinement then stays complete only for tasks with a plan at least as long as the abstract one.
 
 \end{document}
