@@ -8,7 +8,7 @@ import json
 import re
 from pathlib import Path
 
-from core.metrics import COUNTER_LABELS, DURATION_LABELS
+from core.metrics import COUNTER_LABELS, DURATION_LABELS, RATIO_LABELS
 from experiments.run import MANIFEST_NAME, MODES, RESULTS_DIR, _human_status
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
@@ -17,6 +17,7 @@ FIELDS = (
     "domain",
     "problem",
     "mode",
+    "symmetry_class",
     "status",
     "wall_time_seconds",
     "last_completed_phase",
@@ -24,6 +25,7 @@ FIELDS = (
     "verdict",
     "plan_valid",
     *COUNTER_LABELS,
+    *RATIO_LABELS,
     "abstracted_object_count",
     "abstracted_object_type",
     "error_message",
@@ -54,7 +56,7 @@ def collect(*results_dirs):
                 continue
 
             if result.get("mode") in MODES:
-                results[(result["domain"], result["problem"], result["mode"])] = result
+                results[(result["domain"], result["problem"], result["mode"], _class_of(result))] = result
 
         manifest = results_dir / MANIFEST_NAME
         if manifest.is_file():
@@ -63,20 +65,30 @@ def collect(*results_dirs):
     keys.update(results)
 
     rows = []
-    for domain, problem, mode in sorted(keys):
-        result = results.get((domain, problem, mode))
+    for domain, problem, mode, symmetry_class in sorted(keys):
+        result = results.get((domain, problem, mode, symmetry_class))
         values = _missing_values() if result is None else _values(result)
-        rows.append({"domain": domain, "problem": problem, "mode": mode, **values})
+        rows.append({"domain": domain, "problem": problem, "mode": mode, "symmetry_class": symmetry_class, **values})
     return rows
+
+
+def _class_of(result):
+    """The index of the class a result collapsed, blank where the run chose its own."""
+    symmetry_class = result.get("symmetry_class")
+    return "" if symmetry_class is None else str(symmetry_class)
 
 
 def _manifest_keys(manifest):
     entries = json.loads(manifest.read_text(encoding="utf-8"))["expected_results"]
-    return {(entry["domain"], entry["problem"], entry["mode"]) for entry in entries if entry["mode"] in MODES}
+    return {
+        (entry["domain"], entry["problem"], entry["mode"], _class_of(entry))
+        for entry in entries
+        if entry["mode"] in MODES
+    }
 
 
 def _missing_values():
-    return {field: "" for field in FIELDS[4:]} | {"status": "missing"}
+    return {field: "" for field in FIELDS[5:]} | {"status": "missing"}
 
 
 def _values(result):
@@ -93,6 +105,7 @@ def _values(result):
         "verdict": _value(output, "Verdict"),
         "plan_valid": _value(output, "Plan valid"),
         **{name: counters.get(name, "") for name in COUNTER_LABELS},
+        **{name: metrics.get("ratios", {}).get(name, "") for name in RATIO_LABELS},
         **_abstraction_values(output, metrics.get("abstraction")),
         "error_message": _error_message(result),
     }
@@ -103,6 +116,7 @@ def _metrics(output, progress=None):
     metrics = {
         "durations": _metric_group(output, DURATION_LABELS, float),
         "counters": _metric_group(output, COUNTER_LABELS, int),
+        "ratios": _metric_group(output, RATIO_LABELS, float),
     }
     if metrics["durations"] or metrics["counters"]:
         return metrics
@@ -155,7 +169,7 @@ def _error_message(result):
 
 
 def _key(row):
-    return (row["domain"], row["problem"], row["mode"])
+    return (row["domain"], row["problem"], row["mode"], row.get("symmetry_class", ""))
 
 
 def _preserved_rows(collected, csv_file):
@@ -202,15 +216,16 @@ def main(results_dirs=RESULTS_DIR, csv_file=None):
 
 def _track_results_file(results_dirs):
     """The results file of the track the runs were submitted for."""
-    tracks = set()
+    targets = set()
     for results_dir in results_dirs:
-        manifest = Path(results_dir) / MANIFEST_NAME
+        manifest_file = Path(results_dir) / MANIFEST_NAME
+        manifest = json.loads(manifest_file.read_text(encoding="utf-8")) if manifest_file.is_file() else {}
         # A run submitted before the manifest named its track is a plan run.
-        track = json.loads(manifest.read_text(encoding="utf-8")).get("track") if manifest.is_file() else None
-        tracks.add(track or DEFAULT_TRACK)
-    if len(tracks) > 1:
-        raise SystemExit(f"The runs belong to different tracks: {', '.join(sorted(tracks))}")
-    return TRACKS[tracks.pop()].results_file
+        targets.add((manifest.get("track") or DEFAULT_TRACK, bool(manifest.get("every_class"))))
+    if len(targets) > 1:
+        raise SystemExit(f"The runs belong to different tracks: {', '.join(sorted(map(str, targets)))}")
+    track, every_class = targets.pop()
+    return TRACKS[track].class_results_file if every_class else TRACKS[track].results_file
 
 
 def _argument_parser():

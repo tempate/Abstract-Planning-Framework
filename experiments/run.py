@@ -23,11 +23,22 @@ MANIFEST_NAME = "manifest.json"
 # plan, which ASP then refines.
 MODES = ("abstraction-asp", "abstraction-fd", "asp", "fd")
 ABSTRACTION_PREFIX = "abstraction-"
+# What a job that collapses no given class passes, since the cluster substitutes
+# its arguments positionally and cannot leave one out.
+NO_CLASS = "-"
 
 
 def main():
     args = _argument_parser().parse_args()
-    result = _run_task(args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout, track=args.track)
+    result = _run_task(
+        args.mode,
+        args.domain_name,
+        args.domain,
+        args.problem,
+        timeout=args.timeout,
+        track=args.track,
+        symmetry_class=args.symmetry_class,
+    )
     print(f"{args.domain_name}/{args.problem.name}: {args.mode} {_human_status(result)}", flush=True)
 
 
@@ -46,11 +57,25 @@ def _argument_parser():
         default=DEFAULT_TRACK,
         help="Track the problem belongs to, which names the driver that runs it",
     )
+    parser.add_argument(
+        "--symmetry-class",
+        type=_optional_index,
+        default=None,
+        help=f"Position of the class to collapse in the track's classes.json, or {NO_CLASS} to let the driver choose",
+    )
     return parser
 
 
-def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK):
-    result_file = Path(results_dir) / domain_name / problem.stem / f"{mode}.json"
+def _optional_index(value):
+    return None if value == NO_CLASS else int(value)
+
+
+def _run_task(
+    mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK, symmetry_class=None
+):
+    # One file per class, or two classes of one problem overwrite each other.
+    stem = mode if symmetry_class is None else f"{mode}-{symmetry_class}"
+    result_file = Path(results_dir) / domain_name / problem.stem / f"{stem}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
     started_at = datetime.now(timezone.utc).isoformat()
     initial = {
@@ -60,6 +85,7 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
         "wall_time_seconds": 0.0,
         "output": "",
         "mode": mode,
+        "symmetry_class": symmetry_class,
         "track": track,
         "domain": domain_name,
         "problem": problem.name,
@@ -70,12 +96,14 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
 
     environment = os.environ.copy()
     environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
-    command = _planner_command(domain, problem, mode, track)
+    objects = None if symmetry_class is None else _class_objects(track, domain_name, problem, symmetry_class)
+    command = _planner_command(domain, problem, mode, track, objects)
     result = _run_pipeline(command, timeout, environment)
     progress = _read_progress(result_file)
     result.update(
         {
             "mode": mode,
+            "symmetry_class": symmetry_class,
             "track": track,
             "domain": domain_name,
             "problem": problem.name,
@@ -167,10 +195,21 @@ def _machine_status(return_code, timed_out, interrupted=False):
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
-def _planner_command(domain, problem, mode, track=DEFAULT_TRACK):
+def _class_objects(track, domain_name, problem, symmetry_class):
+    """Name the objects of one class, looked up because CopperBench splits an instance parameter on commas."""
+    key = f"{domain_name}/{problem.name}"
+    try:
+        return tuple(TRACKS[track].classes()[key][symmetry_class])
+    except (TypeError, KeyError, IndexError):
+        raise SystemExit(f"{key} has no symmetry class {symmetry_class} in {TRACKS[track].classes_file}") from None
+
+
+def _planner_command(domain, problem, mode, track=DEFAULT_TRACK, objects=None):
     command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
     if mode.startswith(ABSTRACTION_PREFIX):
         command.extend(TRACKS[track].abstract_arguments)
+    if objects:
+        command.extend(["--objects-to-abstract", *objects])
     return command
 
 

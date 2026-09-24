@@ -70,6 +70,18 @@ unsolvable; satprob and unknownprob are skipped.
 empty directory, because collect reads every result underneath. Nothing is
 deleted, so those siblings accumulate until pruned by hand.
 
+To run every symmetry class of each problem instead of the one the selection
+picks, enumerate the classes once and submit with `--every-class`:
+
+```bash
+python -m experiments.classes --track unsolvability/symmetries --jobs 2
+python -m experiments.submit --track unsolvability --modes abstraction-fd --every-class
+```
+
+It takes the abstraction modes only, and `experiments.fetch` collects the run
+into the track's `classes/results.csv`, never its `results.csv`. `experiments.report`
+does not read a class column, so read that CSV directly.
+
 To submit a subset, name it:
 
 ```bash

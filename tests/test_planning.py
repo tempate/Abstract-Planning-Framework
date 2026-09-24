@@ -22,6 +22,7 @@ def _generated_abstraction():
         abstraction=Abstraction("item_abs", ("a", "b"), "item"),
         relaxed_deletes=(),
         relaxed_inequalities=(),
+        statistics={"counters": {}, "ratios": {}},
     )
 
 
