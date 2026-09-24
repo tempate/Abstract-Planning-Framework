@@ -21,7 +21,14 @@ from core.metrics import PlanningMetrics
 from core.outcomes import NoResourcesError, NoSymmetriesError
 from core.planning.config import RESOURCES, AbstractPlanningConfig
 
-__all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "NoSymmetriesError", "build_abstract_problem"]
+__all__ = [
+    "Abstraction",
+    "AbstractionError",
+    "AbstractionResult",
+    "NoSymmetriesError",
+    "build_abstract_problem",
+    "usable_abstractions",
+]
 
 
 @dataclass(frozen=True)
@@ -113,33 +120,38 @@ def _candidate_classes(config, metrics):
     return symmetry_classes
 
 
-def _select_abstraction(problem, symmetry_classes, abstract_name=None):
-    """Select the largest of the candidate classes.
+def usable_abstractions(problem, symmetry_classes, abstract_name=None):
+    """Build an abstraction per class the collapse accepts, and say why one was refused.
 
-    Collapsing more objects is what lowers the abstract horizon, so size alone decides.
+    PDDL Symmetries prints its classes in an order that varies between
+    processes, so they are put in one canonical order here. Everything that
+    identifies a class by its position reads that order.
     """
-    candidate = None
-    rejection = None
-
-    # PDDL Symmetries prints its classes in an order that varies between
-    # processes, and the first of the largest wins, so two runs of one problem
-    # could collapse different classes of the same size.
     ordered_classes = sorted(sorted(symmetry_class) for symmetry_class in symmetry_classes)
 
+    abstractions = []
+    rejection = None
     for symmetry_class in ordered_classes:
         try:
-            abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
+            abstractions.append(_create_abstraction(problem, symmetry_class, abstract_name))
         except AbstractionError as error:
             # One unusable class does not make the others unusable, so keep the
             # reason for the case where none of them works.
             rejection = rejection or error
-            continue
-        if candidate is None or len(abstraction.objects) > len(candidate.objects):
-            candidate = abstraction
+    return abstractions, rejection
 
-    if candidate is None:
+
+def _select_abstraction(problem, symmetry_classes, abstract_name=None):
+    """Select the largest of the candidate classes.
+
+    Collapsing more objects is what lowers the abstract horizon, so size alone
+    decides. max keeps the first of the largest, and the order is canonical, so
+    two runs of one problem cannot collapse different classes of the same size.
+    """
+    abstractions, rejection = usable_abstractions(problem, symmetry_classes, abstract_name)
+    if not abstractions:
         raise rejection
-    return candidate
+    return max(abstractions, key=lambda abstraction: len(abstraction.objects))
 
 
 def _create_abstraction(problem, object_names, abstract_name):
