@@ -14,6 +14,9 @@ from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
 from experiments.collect import _values
 
+# Each example runs the planner mode it is named after.
+EXAMPLES = ("asp", "fd", "abstraction-asp", "abstraction-fd")
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
@@ -54,7 +57,7 @@ class ShellExampleTests(unittest.TestCase):
         return subprocess.run(command, cwd=PROJECT_ROOT, env=environment, capture_output=True, text=True, check=False)
 
     def test_examples_support_help(self):
-        for example in ("asp", "abstraction-asp"):
+        for example in EXAMPLES:
             with self.subTest(example=example):
                 result = self._run(example, "--help")
 
@@ -62,16 +65,16 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.stdout.strip(), f"Usage: examples/{example}.sh")
 
     def test_examples_reject_positional_arguments(self):
-        for example in ("asp", "abstraction-asp"):
+        for example in EXAMPLES:
             with self.subTest(example=example):
                 result = self._run(example, "unexpected", "/bin/echo")
 
                 self.assertEqual(result.returncode, 2)
                 self.assertIn("Usage:", result.stderr)
 
-    def test_examples_run_both_modes_on_one_comparable_task(self):
+    def test_examples_run_every_mode_on_one_comparable_task(self):
         commands = {}
-        for example in ("asp", "abstraction-asp"):
+        for example in EXAMPLES:
             result = self._run(example, python_bin="/bin/echo")
             self.assertEqual(result.returncode, 0, result.stderr)
             commands[example] = result.stdout
@@ -81,12 +84,11 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertIn(f"-m scripts.planner {example}", command)
                 self.assertTrue(_argument_after(command, "--domain").endswith(".pddl"))
 
-        # The README compares the two runs, so they have to solve the same task.
-        self.assertEqual(
-            _argument_after(commands["asp"], "--problem"), _argument_after(commands["abstraction-asp"], "--problem")
-        )
-        # The abstract example demonstrates automatic symmetry selection.
-        self.assertNotIn("--objects-to-abstract", commands["abstraction-asp"])
+        # The README compares the runs, so they have to solve the same task.
+        self.assertEqual(len({_argument_after(command, "--problem") for command in commands.values()}), 1)
+        # The abstraction examples demonstrate automatic symmetry selection.
+        for example in ("abstraction-asp", "abstraction-fd"):
+            self.assertNotIn("--objects-to-abstract", commands[example])
 
 
 class PlannerExitStatusTests(unittest.TestCase):
