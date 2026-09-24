@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-09-24 11:25 — experiments/resources/results.csv
+2026-09-24 11:30 — experiments/plan/resources/results.csv
 
 330 problems compared over abstract
 

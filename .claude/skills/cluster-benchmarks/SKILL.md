@@ -177,7 +177,7 @@ one of them: the worker catches its SIGINT and writes `interrupted`.
 ## Before reporting on a run
 
 ```bash
-awk -F, '$4=="running"' experiments/symmetries/results.csv | wc -l
+awk -F, '$4=="running"' experiments/plan/symmetries/results.csv | wc -l
 ```
 
 `running` rows are jobs killed without a terminal status, not live work. Report a
@@ -191,8 +191,8 @@ collected before #101, a crash reads `no plan found` and a memory kill `running`
 
 When results land, do all five without being asked:
 
-1. collect into `experiments/symmetries/results.csv`
-2. `python -m experiments.report` to regenerate `experiments/symmetries/reports.md`
+1. collect into `experiments/plan/symmetries/results.csv`
+2. `python -m experiments.report` to regenerate `experiments/plan/symmetries/reports.md`
 3. commit both with the message `Update results`
 4. push
 5. rewrite the description of the branch's PR around the run's numbers, following **Writing the PR** in the `pull-requests` skill, and drop any numbers or run IDs from earlier runs

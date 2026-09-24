@@ -23,7 +23,7 @@ from experiments.tracks import TRACKS
 # One detection grounds a whole task, and Daniel's machine is what he works on.
 WORKERS = 1
 DEFAULT_TIMEOUT = 60
-TRACK = TRACKS["resources"]
+TRACK = TRACKS["plan/resources"]
 OUTPUT = TRACK.runnable_file
 LOG = OUTPUT.with_suffix(".log")
 FOUND = "resource"

@@ -24,8 +24,12 @@ DEFAULT_PARTITION = "sunnycove"
 
 
 def main():
-    args = _argument_parser().parse_args()
-    track = TRACKS[args.track]
+    parser = _argument_parser()
+    args = parser.parse_args()
+    track_name = f"{args.track}/{args.abstraction_source}"
+    if track_name not in TRACKS:
+        parser.error(f"no track abstracts {args.abstraction_source} to answer {args.track}")
+    track = TRACKS[track_name]
     tasks = list(
         _benchmark_tasks(
             benchmarks_dir=track.benchmarks_dir,
@@ -44,7 +48,7 @@ def main():
         )
     if not args.dry_run:
         _set_aside_results_dir()
-        _write_manifest(tasks, track=args.track)
+        _write_manifest(tasks, track=track_name)
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
         config_file = _write_copperbench_config(
             tasks,
@@ -53,7 +57,7 @@ def main():
             memory_limit=args.memory_limit,
             max_parallel_jobs=args.max_parallel_jobs,
             partition=args.partition,
-            track=args.track,
+            track=track_name,
         )
         if args.dry_run:
             _report_run(tasks, config_file, definition_dir)
@@ -169,11 +173,18 @@ def _argument_parser():
         action="store_true",
         help="Submit every problem of the suite, not only the ones the track lists as runnable",
     )
+    question, source = DEFAULT_TRACK.split("/")
     parser.add_argument(
         "--track",
-        choices=sorted(TRACKS),
-        default=DEFAULT_TRACK,
-        help="Benchmark track to submit: its problems, and the driver that runs them",
+        choices=sorted({name.split("/")[0] for name in TRACKS}),
+        default=question,
+        help="What the run asks of each problem: a plan, or a proof that none exists",
+    )
+    parser.add_argument(
+        "--abstraction-source",
+        choices=sorted({name.split("/")[1] for name in TRACKS}),
+        default=source,
+        help="What the abstract mode collapses",
     )
     return parser
 

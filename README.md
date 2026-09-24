@@ -59,14 +59,17 @@ alone.
 ```bash
 python -m experiments.submit
 python -m experiments.collect
-python -m experiments.report experiments/symmetries/results.csv
+python -m experiments.report experiments/plan/symmetries/results.csv
 ```
 
-- `experiments/symmetries/suite.py` holds the domains, but a problem is submitted
-  only when `experiments/symmetries/symmetries.txt` records an abstraction class
-  for it.
+- `experiments/plan/suite.py` holds the domains, but a problem is submitted
+  only when `experiments/plan/symmetries/symmetries.txt` records an abstraction
+  class for it.
   That file's header carries the command that regenerates it.
-- `--track unsolvability` submits `experiments/unsolvability/` over unsolve-ipc-2016
+- `--abstraction-source resources` submits `experiments/plan/resources/`, the
+  problems `resources.txt` lists, and collapses a resource instead of a symmetry
+  class.
+- `--track unsolvability` submits `experiments/unsolvability/symmetries/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
   a plan. Only the probNN problems run, the ones known to be unsolvable.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
@@ -74,7 +77,7 @@ python -m experiments.report experiments/symmetries/results.csv
 - `collect` rewrites the `results.csv` of the track the run's manifest names,
   replacing only the (domain, problem, mode) results the run holds, so a
   baseline or a gap-filling run can be collected on its own.
-  `report` rewrites `experiments/symmetries/reports.md`, comparing only the
+  `report` rewrites the `reports.md` beside the CSV, comparing only the
   problems every mode finished and saying how many it dropped.
 
 ## Tests

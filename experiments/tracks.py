@@ -3,8 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-import experiments.resources as resources
-from experiments.symmetries import suite as symmetries
+from experiments.plan import suite as plan
 from experiments.unsolvability import suite as unsolvability
 
 # The benchmark collections. A track says which of their problems it runs; it
@@ -43,28 +42,29 @@ class Track:
         return frozenset(problems)
 
 
+# Keyed by the question a track asks, then by what it abstracts to answer it.
 TRACKS = {
-    "symmetries": Track(
-        directory=Path(symmetries.__file__).parent,
-        suite=symmetries.SUITE,
+    "plan/symmetries": Track(
+        directory=Path(plan.__file__).parent / "symmetries",
+        suite=plan.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
     ),
-    # The symmetry track's problems, restricted to the ones numeric-fast-downward
-    # finds a resource for, and planned from that resource's objects.
-    "resources": Track(
-        directory=Path(resources.__file__).parent,
-        suite=symmetries.SUITE,
+    # The same suite, restricted to the problems numeric-fast-downward finds a
+    # resource for, and planned from that resource's objects.
+    "plan/resources": Track(
+        directory=Path(plan.__file__).parent / "resources",
+        suite=plan.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         runnable_name="resources.txt",
         abstract_arguments=("--abstraction-source", "resources"),
     ),
-    "unsolvability": Track(
-        directory=Path(unsolvability.__file__).parent,
+    "unsolvability/symmetries": Track(
+        directory=Path(unsolvability.__file__).parent / "symmetries",
         suite=unsolvability.SUITE,
         benchmarks_dir=BENCHMARKS / "unsolve-ipc-2016",
         driver="scripts.unsolvability",
     ),
 }
-DEFAULT_TRACK = "symmetries"
+DEFAULT_TRACK = "plan/symmetries"

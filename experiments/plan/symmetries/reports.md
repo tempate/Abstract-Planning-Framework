@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-09-24 10:54 — experiments/plan/results.csv
+2026-09-24 11:30 — experiments/plan/symmetries/results.csv
 
 667 problems compared over abstract, concrete, lama
 
