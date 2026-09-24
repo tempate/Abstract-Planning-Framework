@@ -249,6 +249,13 @@ def _write_copperbench_config(
 
 
 def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstraction-asp",), domains=None, problems=None):
+    for domain_name, domain, problem in _benchmark_problems(benchmarks_dir, suite, runnable, domains, problems):
+        for mode in modes:
+            yield mode, domain_name, domain, problem
+
+
+def _benchmark_problems(benchmarks_dir, suite, runnable, domains=None, problems=None):
+    """Walk the problems a track submits, with the domain file each one needs."""
     if domains is not None:
         unknown = sorted(set(domains) - set(suite))
         if unknown:
@@ -263,9 +270,7 @@ def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstraction-asp",)
                 continue
             if problems is not None and not {problem.name, problem.stem} & set(problems):
                 continue
-            domain = _find_domain(problem)
-            for mode in modes:
-                yield mode, domain_name, domain, problem
+            yield domain_name, _find_domain(problem), problem
 
 
 def _is_domain_file(name):
