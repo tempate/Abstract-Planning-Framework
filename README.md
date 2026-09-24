@@ -44,7 +44,9 @@ python -m scripts.planner --help
 - `fd` solves it with plain Fast Downward (`--alias lama-first`), as an
   external baseline to compare the other two against.
 - `abstraction-asp` collapses a symmetric object class, solves the abstraction
-  with ASP, and uses its plan to guide the concrete search. It asks PDDL Symmetries for the class;
+  with ASP, and uses its plan to guide the concrete search.
+- `abstraction-fd` does the same, but finds the abstract plan with Fast
+  Downward's lama-first. ASP still refines it. It asks PDDL Symmetries for the class;
   pass `--objects-to-abstract NAME...` to choose one yourself. Finding no
   symmetric class is an error, not a fallback to concrete search.
 
@@ -53,7 +55,7 @@ python -m scripts.planner --help
 Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
 Slurm task per mode and problem, each capped at 30 minutes and 8192 MiB.
-`--modes abstraction-asp asp fd` submits all three; the default is the track's
+`--modes abstraction-asp abstraction-fd asp fd` submits all four; the default is the track's
 first mode alone. The unsolvability track runs `abstraction-fd` and `fd`.
 
 ```bash

@@ -47,7 +47,7 @@ left the suite keeps its old row until you delete it.
 ## Submitting
 
 ```bash
-python -m experiments.submit --modes abstraction-asp asp fd
+python -m experiments.submit --modes abstraction-asp abstraction-fd asp fd
 ```
 
 Submit every mode you want compared: `experiments.report` pairs **all** of them

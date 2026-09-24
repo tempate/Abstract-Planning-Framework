@@ -1,8 +1,10 @@
 """Plan and decide with Fast Downward."""
 
-from core.integrations.fast_downward import find_plan, has_plan, parse_plan_actions
+from dataclasses import replace
+
+from core.integrations.fast_downward import find_plan, find_sas_plan, has_plan, parse_plan_actions
 from core.metrics import PlanningMetrics
-from core.outcomes import SOLVABLE, UNSOLVABLE
+from core.outcomes import SOLVABLE, UNSOLVABLE, UnsolvableTaskError
 from core.planning.config import PlanningConfig
 from core.planning.execution import temp_run_dir
 from core.planning.validation import validated
@@ -50,3 +52,18 @@ def check_solvability(config: PlanningConfig, on_update=None):
         "run_id": run_id,
         "metrics": metrics.as_dict(),
     }
+
+
+def find_abstract_plan(base_dir, abstract_sas, metrics):
+    """Search the abstract task with LAMA-first, returning its actions and its horizon."""
+    with metrics.measure("abstract_fd_search"):
+        plan = find_sas_plan(base_dir, abstract_sas, "abstract")
+    # The abstraction over-approximates, so an abstract task without a plan
+    # proves the concrete one has none either.
+    if plan is None:
+        raise UnsolvableTaskError("Fast Downward found no abstract plan")
+
+    # Fast Downward counts from 0 and ASP from 1, where the mapping expects it.
+    actions = tuple(replace(action, time_step=action.time_step + 1) for action in parse_plan_actions(plan))
+    metrics.set_counter("abstract_plan_length", len(actions))
+    return actions, len(actions)

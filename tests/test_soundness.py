@@ -12,7 +12,7 @@ from unified_planning.plans import ActionInstance, SequentialPlan
 from core.abstraction.factory import build_abstract_problem
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.unified_planning import parse_problem
-from core.planning import abstraction, asp
+from core.planning import abstraction, asp, fd
 from core.planning.config import AbstractPlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
@@ -101,12 +101,13 @@ class SoundnessTests(unittest.TestCase):
     @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
     def test_the_refined_plan_solves_the_concrete_task(self):
         for objects in CLASSES:
-            with self.subTest(objects=objects):
-                with redirect_stdout(StringIO()):
-                    result = abstraction.solve(self._config(objects), asp.find_abstract_plan)
-                steps = [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
+            for search in (asp.find_abstract_plan, fd.find_abstract_plan):
+                with self.subTest(objects=objects, search=search.__module__):
+                    with redirect_stdout(StringIO()):
+                        result = abstraction.solve(self._config(objects), search)
+                    steps = [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
 
-                self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
+                    self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
 
 
 if __name__ == "__main__":

@@ -24,6 +24,7 @@ VERDICTS = ("unsolvable", "unknown")
 KILLED_IN_PHASE = {
     "abstract_asp": "Searching for the abstract plan",
     "abstract_solving": "Guided concrete search",
+    "abstract_fd_search": "Guided concrete search",
     "guided_concrete_solving": "Extended concrete search",
 }
 

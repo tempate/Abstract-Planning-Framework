@@ -76,6 +76,20 @@ def find_plan(base_dir, domain_path, problem_path, label):
     _raise_failure(completed_process, label)
 
 
+def find_sas_plan(base_dir, sas_path, label):
+    """Search an already translated task with LAMA-first, returning its plan or None."""
+    plan_path = os.path.join(base_dir, f"{label}.plan")
+    command = [sys.executable, FAST_DOWNWARD_SCRIPT, "--plan-file", plan_path, "--alias", LAMA_FIRST, sas_path]
+    completed_process = subprocess.run(command, capture_output=True, text=True)
+
+    if completed_process.returncode == _SUCCESS:
+        return _read_plan(plan_path)
+    if completed_process.returncode == _SEARCH_UNSOLVABLE:
+        return None
+
+    _raise_failure(completed_process, label)
+
+
 def _search(base_dir, domain_path, problem_path, label, driver=(), search=()):
     """Translate and search one task, returning the process and its plan file.
 

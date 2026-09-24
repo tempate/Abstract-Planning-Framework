@@ -10,6 +10,7 @@ from core.abstraction.factory import Abstraction, build_abstract_problem
 from core.integrations.unified_planning import read_problem
 from core.outcomes import UnsolvableTaskError
 from core.abstraction.factory import write_abstract_problem
+from core.metrics import PlanningMetrics
 from core.planning import abstraction, fd
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from scripts.utils.arguments import positive_int
@@ -36,6 +37,11 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
         self.assertEqual(result["configuration"], config.as_dict())
         # The plan carries no occurs/2 atoms for the collector to count.
         self.assertEqual(result["metrics"]["counters"]["plan_length"], 2)
+
+    @patch("core.planning.fd.find_sas_plan", return_value=None)
+    def test_an_abstract_task_without_a_plan_proves_the_concrete_one_unsolvable(self, _find_sas_plan):
+        with self.assertRaises(UnsolvableTaskError):
+            fd.find_abstract_plan("run-dir", "abstract.sas", PlanningMetrics())
 
     @patch("core.planning.fd.find_plan")
     def test_an_unsolvable_task_is_not_a_plan(self, find_plan):
