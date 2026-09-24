@@ -109,8 +109,13 @@ def _copy_action(action, rewrite, deletes_to_relax):
 
 
 def _copy_initial_values(problem, collapsed_problem, rewrite):
+    # A number nothing reads, such as what priced an action before the costs
+    # were dropped, cannot change a plan, and two objects rarely agree on it.
+    unread = {fluent for fluent in problem.get_unused_fluents() if not fluent.type.is_bool_type()}
     collapsed_initial_values = {}
     for fluent, value in problem.explicit_initial_values.items():
+        if fluent.fluent() in unread:
+            continue
         collapsed_fluent = rewrite(fluent)
         collapsed_value = rewrite(value)
         existing_value = collapsed_initial_values.get(collapsed_fluent)

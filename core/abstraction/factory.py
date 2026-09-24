@@ -48,6 +48,10 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     # the instantaneous ones are shaped for.
     validate_supported_problem(problem)
 
+    # The search wants any plan, not a cheap one, so the costs go before the
+    # collapse, which would otherwise merge the values that price actions.
+    problem = without_action_costs(problem)
+
     if config.objects_to_abstract is None:
         candidate_classes = _candidate_classes(config, metrics)
 
@@ -196,7 +200,7 @@ def write_abstract_problem(problem, base_dir):
     input_directory = Path(base_dir, "generated-abstraction")
     input_directory.mkdir(parents=True, exist_ok=True)
 
-    serialized = write_problem(without_action_costs(problem))
+    serialized = write_problem(problem)
 
     domain_path = input_directory / "domain.pddl"
     domain_path.write_text(serialized.domain, encoding="utf-8")
