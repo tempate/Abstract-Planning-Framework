@@ -1,10 +1,11 @@
 """Solve a task with plain Fast Downward, as an external baseline."""
 
-from core.integrations.fast_downward import find_plan, has_plan
+from core.integrations.fast_downward import find_plan, has_plan, parse_plan_actions
 from core.metrics import PlanningMetrics
 from core.outcomes import SOLVABLE, UNSOLVABLE
 from core.planning.config import PlanningConfig
 from core.planning.execution import temp_run_dir
+from core.planning.validation import validated
 
 LABEL = "lama"
 
@@ -27,6 +28,10 @@ def solve_directly(config: PlanningConfig, on_update=None):
         "plan": plan,
         "success": plan is not None,
         "run_id": run_id,
+        # Outside the measured phases, so that checking a plan cannot move a
+        # timing. Fast Downward is trusted, so this is the control that says the
+        # check itself agrees with a planner we did not write.
+        "plan_valid": validated(config, plan, parse_plan_actions),
         "metrics": metrics.as_dict(),
     }
 

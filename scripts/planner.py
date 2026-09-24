@@ -44,6 +44,8 @@ def print_planning_result(result):
     """Print a planning result."""
     print("\n=== RESULT ===")
     print(f"Plan found: {'yes' if result['plan'] is not None else 'no'}")
+    if result.get("plan_valid"):
+        print(f"Plan valid: {result['plan_valid']}")
 
     length = result["metrics"]["counters"].get("plan_length")
     if result["plan"] is not None:

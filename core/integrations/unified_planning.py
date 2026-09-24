@@ -3,12 +3,13 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from unified_planning.engines import CompilationKind
+from unified_planning.engines import CompilationKind, ValidationResultStatus
 from unified_planning.environment import get_environment
 from unified_planning.io import PDDLReader, PDDLWriter
 from unified_planning.model import Problem
 from unified_planning.model.metrics import MinimizeActionCosts, MinimizeExpressionOnFinalState
-from unified_planning.shortcuts import Compiler
+from unified_planning.plans import ActionInstance, SequentialPlan
+from unified_planning.shortcuts import Compiler, PlanValidator
 
 # `(:metric minimize (total-cost))` reads back as a final-state expression.
 COST_METRICS = (MinimizeActionCosts, MinimizeExpressionOnFinalState)
@@ -108,3 +109,29 @@ def without_action_costs(problem):
             else:
                 action.add_effect(effect.fluent, effect.value, effect.condition)
     return stripped
+
+
+def validate_plan(problem, actions):
+    """Say whether a plan achieves the goal of the problem it claims to solve.
+
+    Answers "unchecked" rather than "invalid" when the plan cannot be expressed
+    against the problem at all, so that a name the plan source spells
+    differently reads as a gap in this check and not as an unsound plan.
+    """
+    try:
+        plan = SequentialPlan(
+            [
+                ActionInstance(problem.action(action.name), tuple(problem.object(name) for name in action.args))
+                for action in actions
+            ]
+        )
+    except Exception as error:
+        return f"unchecked: {error}"
+
+    try:
+        with PlanValidator(problem_kind=problem.kind, plan_kind=plan.kind) as validator:
+            status = validator.validate(problem, plan).status
+    except Exception as error:
+        return f"unchecked: {error}"
+
+    return "valid" if status == ValidationResultStatus.VALID else "invalid"
