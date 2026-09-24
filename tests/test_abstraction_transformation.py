@@ -7,6 +7,7 @@ from unified_planning.shortcuts import (
     BoolType,
     DurativeAction,
     Fluent,
+    GT,
     InstantaneousAction,
     IntType,
     MaximizeExpressionOnFinalState,
@@ -85,6 +86,13 @@ def _two_object_problem(name, type_name):
     problem = Problem(name)
     item = UserType(type_name)
     return problem, item, problem.add_object("a", item), problem.add_object("b", item)
+
+
+def _read_by_an_action(problem, fluent, item):
+    """Give the problem an action whose precondition reads the fluent, so its values are in use."""
+    read = InstantaneousAction("read", **{f"x{index}": item for index in range(fluent.arity)})
+    read.add_precondition(GT(fluent(*read.parameters), 0))
+    problem.add_action(read)
 
 
 def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
@@ -253,9 +261,23 @@ class AbstractionTransformationTests(unittest.TestCase):
         problem.add_fluent(value)
         problem.set_initial_value(value(a, b), 1)
         problem.set_initial_value(value(b, a), 2)
+        _read_by_an_action(problem, value, item)
 
         with self.assertRaisesRegex(AbstractionError, "conflicting initial values"):
             _build_from_problem(problem, ["a", "b"])
+
+    def test_a_number_nothing_reads_is_dropped_rather_than_collapsed(self):
+        """What prices an action is such a number once the costs are gone, and
+        two objects rarely agree on it."""
+        problem, item, a, b = _two_object_problem("unread", "unread_item")
+        value = Fluent("value", IntType(), left=item, right=item)
+        problem.add_fluent(value)
+        problem.set_initial_value(value(a, b), 1)
+        problem.set_initial_value(value(b, a), 2)
+
+        result = _build_from_problem(problem, ["a", "b"])
+
+        self.assertFalse(any(fluent.fluent() == value for fluent in result.problem.explicit_initial_values))
 
     def test_deduplicates_equal_initial_values(self):
         problem, item, a, b = _two_object_problem("equal-values", "equal_value_item")
@@ -263,6 +285,7 @@ class AbstractionTransformationTests(unittest.TestCase):
         problem.add_fluent(value)
         problem.set_initial_value(value(a), 1)
         problem.set_initial_value(value(b), 1)
+        _read_by_an_action(problem, value, item)
 
         result = _build_from_problem(problem, ["a", "b"])
         abstract_object = result.problem.object("equal_value_item_abs")

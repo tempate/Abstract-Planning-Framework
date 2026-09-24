@@ -18,19 +18,21 @@ class Track:
     suite: list[str]
     benchmarks_dir: Path
     driver: str
+    # Passed to the driver's abstract mode only; concrete has no class to choose.
+    abstract_arguments: tuple[str, ...] = ()
 
     @property
     def results_file(self):
         return self.directory / "results.csv"
 
     @property
-    def symmetries_file(self):
-        return self.directory / "symmetries.txt"
+    def runnable_file(self):
+        return self.directory / "problems.txt"
 
     def runnable(self):
-        """The (domain, problem) pairs worth submitting: those the symmetries file records a class for."""
+        """The (domain, problem) pairs worth submitting: those the runnable file lists."""
         problems = set()
-        for line in self.symmetries_file.read_text(encoding="utf-8").splitlines():
+        for line in self.runnable_file.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if line and not line.startswith("#"):
                 domain, _, problem = line.partition("/")
@@ -38,18 +40,28 @@ class Track:
         return frozenset(problems)
 
 
+# Keyed by the question a track asks, then by what it abstracts to answer it.
 TRACKS = {
-    "plan": Track(
-        directory=Path(plan.__file__).parent,
+    "plan/symmetries": Track(
+        directory=Path(plan.__file__).parent / "symmetries",
         suite=plan.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
     ),
-    "unsolvability": Track(
-        directory=Path(unsolvability.__file__).parent,
+    # The same suite, restricted to the problems numeric-fast-downward finds a
+    # resource for, and planned from that resource's objects.
+    "plan/resources": Track(
+        directory=Path(plan.__file__).parent / "resources",
+        suite=plan.SUITE,
+        benchmarks_dir=BENCHMARKS / "downward-benchmarks",
+        driver="scripts.planner",
+        abstract_arguments=("--abstraction-source", "resources"),
+    ),
+    "unsolvability/symmetries": Track(
+        directory=Path(unsolvability.__file__).parent / "symmetries",
         suite=unsolvability.SUITE,
         benchmarks_dir=BENCHMARKS / "unsolve-ipc-2016",
         driver="scripts.unsolvability",
     ),
 }
-DEFAULT_TRACK = "plan"
+DEFAULT_TRACK = "plan/symmetries"

@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-09-18 11:18 — experiments/unsolvability/results.csv
+2026-09-24 11:30 — experiments/unsolvability/symmetries/results.csv
 
 168 problems compared over abstract, concrete
 

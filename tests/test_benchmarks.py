@@ -539,10 +539,10 @@ class BenchmarkTests(unittest.TestCase):
     def test_a_run_is_collected_into_the_results_of_its_track(self):
         task = [("concrete", "example", Path("domain.pddl"), Path("p01.pddl"))]
         with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
-            _write_manifest(task, plan, track="plan")
-            _write_manifest(task, decide, track="unsolvability")
+            _write_manifest(task, plan, track="plan/symmetries")
+            _write_manifest(task, decide, track="unsolvability/symmetries")
 
-            self.assertEqual(_track_results_file([decide]), TRACKS["unsolvability"].results_file)
+            self.assertEqual(_track_results_file([decide]), TRACKS["unsolvability/symmetries"].results_file)
             with self.assertRaises(SystemExit):
                 _track_results_file([plan, decide])
 
@@ -628,7 +628,7 @@ class ReportTests(unittest.TestCase):
             with patch("sys.argv", ["report", str(results)]), contextlib.redirect_stdout(io.StringIO()):
                 experiments.report.main()
 
-            self.assertTrue((Path(directory) / "reports.md").is_file())
+            self.assertTrue((Path(directory) / "report.md").is_file())
 
     def test_the_report_survives_a_run_with_no_shared_solves(self):
         problems = [

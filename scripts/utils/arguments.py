@@ -2,6 +2,8 @@
 
 import argparse
 
+from core.planning.config import ABSTRACTION_SOURCES, SYMMETRIES
+
 
 def positive_int(value):
     """Parse a positive integer for argparse."""
@@ -26,5 +28,11 @@ def abstraction_arguments():
     parser.add_argument("--abstract-name", help="Name of the collapsed object")
     parser.add_argument(
         "--symmetry-time-limit", type=positive_int, default=300, help="Symmetry discovery time limit in seconds"
+    )
+    parser.add_argument(
+        "--abstraction-source",
+        choices=ABSTRACTION_SOURCES,
+        default=SYMMETRIES,
+        help="Where the collapsed class comes from",
     )
     return parser

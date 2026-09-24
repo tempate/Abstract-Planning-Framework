@@ -165,7 +165,10 @@ def _machine_status(return_code, timed_out, interrupted=False):
 
 
 def _planner_command(domain, problem, mode, track=DEFAULT_TRACK):
-    return [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
+    command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
+    if mode == "abstract":
+        command.extend(TRACKS[track].abstract_arguments)
+    return command
 
 
 def _human_status(result):
@@ -174,6 +177,7 @@ def _human_status(result):
         "success": "success",
         "no_plan": "no plan found",
         "no_symmetries": "no symmetries",
+        "no_resources": "no resources",
         "symmetry_timeout": "symmetry timeout",
         "timed_out": "timed out",
         "running": "running",

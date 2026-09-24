@@ -31,6 +31,14 @@ class NoSymmetriesError(PlanningOutcomeError):
     label = "No symmetries"
 
 
+class NoResourcesError(PlanningOutcomeError):
+    """Raised when resource detection finds no variable with objects to collapse."""
+
+    status = "no_resources"
+    exit_code = 6
+    label = "No resources"
+
+
 class OutOfMemoryError(PlanningOutcomeError):
     """Raised when a planning task is killed for outgrowing the memory it has."""
 
@@ -57,5 +65,6 @@ STATUS_BY_EXIT_CODE = {
     IntegrationError.exit_code: IntegrationError.status,
     SymmetryTimeoutError.exit_code: SymmetryTimeoutError.status,
     NoSymmetriesError.exit_code: NoSymmetriesError.status,
+    NoResourcesError.exit_code: NoResourcesError.status,
     OutOfMemoryError.exit_code: OutOfMemoryError.status,
 }

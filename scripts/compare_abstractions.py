@@ -94,7 +94,7 @@ def _argument_parser():
 
 
 def _first_problem_of_each_domain(domains=None):
-    track = TRACKS["plan"]
+    track = TRACKS["plan/symmetries"]
     first = {}
     for domain, problem in sorted(track.runnable()):
         if domains is None or domain in domains:
