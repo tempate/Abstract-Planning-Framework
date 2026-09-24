@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.planning import abstraction
-from scripts import planner
+from scripts import planner, unsolvability
 from core.abstraction.collapse import AbstractionError
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
@@ -160,6 +160,35 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertEqual(config.domain_path, "domain.pddl")
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual(config.abstract_name, "combined")
+
+    def test_both_drivers_pass_the_abstraction_source_on(self):
+        drivers = (
+            (planner, "abstraction-fd", "solve", "print_planning_result"),
+            (unsolvability, "abstraction-fd", "check_solvability", "print_verdict"),
+        )
+        for driver, mode, pipeline, printer in drivers:
+            with self.subTest(driver=driver.__name__):
+                with (
+                    patch.object(abstraction, pipeline, return_value={"success": True}) as compute,
+                    patch.object(driver, printer),
+                    patch.object(
+                        sys,
+                        "argv",
+                        [
+                            "driver",
+                            mode,
+                            "--domain",
+                            "d.pddl",
+                            "--problem",
+                            "p.pddl",
+                            "--abstraction-source",
+                            "resources",
+                        ],
+                    ),
+                ):
+                    driver.main()
+
+                self.assertEqual(compute.call_args.args[0].abstraction_source, "resources")
 
 
 if __name__ == "__main__":

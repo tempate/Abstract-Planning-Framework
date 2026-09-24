@@ -3,9 +3,8 @@
 import argparse
 
 from core.planning import abstraction, asp, fd
-from core.planning.config import AbstractPlanningConfig, PlanningConfig
 
-from .utils.arguments import abstraction_arguments, task_arguments
+from .utils.arguments import abstract_planning_config, abstraction_arguments, planning_config, task_arguments
 from .utils.entry import run
 from .utils.reporting import print_metrics, progress_callback
 
@@ -21,26 +20,14 @@ def _report(result):
 
 def _compute(args):
     on_update = progress_callback()
-    common = {"domain_path": args.domain, "problem_path": args.problem}
-    config = PlanningConfig(**common)
-
     if args.mode == "asp":
-        return asp.solve(config, on_update)
+        return asp.solve(planning_config(args), on_update)
     if args.mode == "fd":
-        return fd.solve(config, on_update)
-
-    config = AbstractPlanningConfig(
-        **common,
-        objects_to_abstract=args.objects_to_abstract,
-        abstract_name=args.abstract_name,
-        symmetry_time_limit=args.symmetry_time_limit,
-        abstraction_source=args.abstraction_source,
-    )
-
+        return fd.solve(planning_config(args), on_update)
     if args.mode == "abstraction-asp":
-        return abstraction.solve(config, asp.find_abstract_plan, on_update)
+        return abstraction.solve(abstract_planning_config(args), asp.find_abstract_plan, on_update)
     if args.mode == "abstraction-fd":
-        return abstraction.solve(config, fd.find_abstract_plan, on_update)
+        return abstraction.solve(abstract_planning_config(args), fd.find_abstract_plan, on_update)
 
 
 def print_planning_result(result):
