@@ -27,8 +27,8 @@ pre-commit install
 ## Try it
 
 ```bash
-./examples/concrete.sh
-./examples/abstract.sh
+./examples/asp.sh
+./examples/abstraction-asp.sh
 ```
 
 Both solve the same task, so the runs are comparable. See
@@ -40,11 +40,11 @@ Both solve the same task, so the runs are comparable. See
 python -m scripts.planner --help
 ```
 
-- `concrete` solves the PDDL task directly.
-- `lama` solves it with plain Fast Downward (`--alias lama-first`), as an
+- `asp` solves the PDDL task directly with ASP.
+- `fd` solves it with plain Fast Downward (`--alias lama-first`), as an
   external baseline to compare the other two against.
-- `abstract` collapses a symmetric object class, solves the abstraction, and uses
-  its plan to guide the concrete search. It asks PDDL Symmetries for the class;
+- `abstraction-asp` collapses a symmetric object class, solves the abstraction
+  with ASP, and uses its plan to guide the concrete search. It asks PDDL Symmetries for the class;
   pass `--objects-to-abstract NAME...` to choose one yourself. Finding no
   symmetric class is an error, not a fallback to concrete search.
 
@@ -53,8 +53,8 @@ python -m scripts.planner --help
 Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
 Slurm task per mode and problem, each capped at 30 minutes and 8192 MiB.
-`--modes abstract concrete lama` submits all three; the default is `abstract`
-alone.
+`--modes abstraction-asp asp fd` submits all three; the default is the track's
+first mode alone. The unsolvability track runs `abstraction-fd` and `fd`.
 
 ```bash
 python -m experiments.submit

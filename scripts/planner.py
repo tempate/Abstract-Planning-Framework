@@ -24,11 +24,11 @@ def _report(result):
 def _compute(args):
     on_update = progress_callback()
     common = {"domain_path": args.domain, "problem_path": args.problem}
-    if args.mode == "concrete":
+    if args.mode == "asp":
         return solve_with_asp(PlanningConfig(**common), on_update)
-    if args.mode == "lama":
+    if args.mode == "fd":
         return solve_directly(PlanningConfig(**common), on_update)
-    if args.mode == "abstract":
+    if args.mode == "abstraction-asp":
         return solve_via_abstraction(
             AbstractPlanningConfig(
                 **common,
@@ -76,21 +76,21 @@ def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_subparsers(dest="mode", required=True, title="planning modes")
     modes.add_parser(
-        "concrete",
+        "asp",
         parents=[shared],
-        help="Solve the task directly",
+        help="Solve the task with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "lama",
+        "fd",
         parents=[shared],
-        help="Solve with plain Fast Downward as a baseline",
+        help="Solve the task with Fast Downward's lama-first",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "abstract",
+        "abstraction-asp",
         parents=[shared, abstract],
-        help="Solve through abstraction",
+        help="Find an abstract plan with ASP, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     return parser

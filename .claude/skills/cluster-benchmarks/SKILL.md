@@ -47,19 +47,18 @@ left the suite keeps its old row until you delete it.
 ## Submitting
 
 ```bash
-python -m experiments.submit --modes abstract concrete lama
+python -m experiments.submit --modes abstraction-asp asp fd
 ```
 
 Submit every mode you want compared: `experiments.report` pairs **all** of them
 and drops any problem missing one, so a mode left out of a run shrinks every
-table. `lama` is plain Fast Downward, the external baseline. Runs go to
+table. `fd` is plain Fast Downward, the external baseline. Runs go to
 `sunnycove` by default, one CPU generation, so timings are comparable across a
 run. Only pass `--partition any` to fill a queue you do not intend to publish
 timings from: it spans two CPU generations and caps each job at one hour.
 
-`--track unsolvability` takes only `abstract` and `concrete`: `scripts.unsolvability`
-has no `lama` subcommand, and its concrete mode already is a plain Fast Downward
-search.
+`--track unsolvability` runs `abstraction-fd` and `fd`, and submit refuses any
+mode a track does not run.
 
 `--track unsolvability` swaps the suite for unsolve-ipc-2016 and the planner for
 `scripts.unsolvability`, which reports a verdict instead of a plan. The CSV
@@ -119,7 +118,7 @@ minutes a job. Smoke-test anyway when the branch touches the pipeline itself,
 which the preflight cannot judge:
 
 ```bash
-./examples/abstract.sh   # driverlog p07: collapses three packages, plan length 15
+./examples/abstraction-asp.sh   # driverlog p07: collapses three packages, plan length 15
 ```
 
 Pick a problem the branch solves quickly. A refinement branch can time out on a

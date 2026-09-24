@@ -1,13 +1,13 @@
 # Benchmark report
 
-2026-09-24 14:32 — experiments/plan/resources/results.csv
+2026-09-24 14:38 — experiments/plan/resources/results.csv
 
-330 problems compared over abstract, concrete, lama
+330 problems compared over abstraction-asp, asp, fd
 
 ## Coverage
 
 ```
-Metric                                      Abstract pipeline  Concrete pipeline         LAMA-first
+Metric                                      Abstraction + ASP                ASP                 FD
 ---------------------------------------------------------------------------------------------------
 Plans found                                        76 (23.0%)         72 (21.8%)        305 (92.4%)
 Timeouts                                          254 (77.0%)        258 (78.2%)          22 (6.7%)
@@ -16,10 +16,10 @@ Others                                               0 (0.0%)           0 (0.0%)
 Total problems                                            330                330                330
 ```
 
-## Head to head: abstract vs Concrete pipeline
+## Head to head: Abstraction + ASP vs ASP
 
 ```
-Metric                                      Abstract pipeline  Concrete pipeline
+Metric                                      Abstraction + ASP                ASP
 --------------------------------------------------------------------------------
 Plans found by both                                        70                 70
 Faster when both found a plan                      26 (37.1%)         44 (62.9%)
@@ -28,10 +28,10 @@ Median runtime when both found a plan                 10.12 s             7.20 s
 Total runtime across shared solves                 3,803.93 s         5,966.09 s
 ```
 
-## Head to head: abstract vs LAMA-first
+## Head to head: Abstraction + ASP vs FD
 
 ```
-Metric                                      Abstract pipeline         LAMA-first
+Metric                                      Abstraction + ASP                 FD
 --------------------------------------------------------------------------------
 Plans found by both                                        76                 76
 Faster when both found a plan                        6 (7.9%)         70 (92.1%)
@@ -40,10 +40,10 @@ Median runtime when both found a plan                 11.04 s             2.97 s
 Total runtime across shared solves                 7,620.39 s           417.07 s
 ```
 
-## Where the timeouts died
+## Where the timeouts of Abstraction + ASP died
 
 ```
-Where the abstract pipeline was killed               Timeouts
+Where Abstraction + ASP was killed                   Timeouts
 -------------------------------------------------------------
 Searching for the abstract plan                     159 (63%)
 Abstract plan discarded                              82 (32%)
@@ -52,7 +52,7 @@ pnf_translation                                        5 (2%)
 Total                                                     254
 ```
 
-## How the successes were solved
+## How the successes of Abstraction + ASP were solved
 
 ```
 How the 76 successes were solved                     Problems
@@ -63,7 +63,7 @@ Abstract plan discarded, solved above it               7 (9%)
 Total                                                      76
 ```
 
-## Deletes relaxed, over the 69 successes whose abstract plan was used
+## Deletes relaxed by Abstraction + ASP, over the 69 successes whose abstract plan was used
 
 ```
 Deletes relaxed                                      Problems

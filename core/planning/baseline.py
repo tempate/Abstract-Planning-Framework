@@ -15,7 +15,7 @@ def solve_directly(config: PlanningConfig, on_update=None):
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir(LABEL) as (base_dir, run_id):
-            with metrics.measure("lama_fd"):
+            with metrics.measure("fd_search"):
                 plan = find_plan(base_dir, config.domain_path, config.problem_path, LABEL)
 
             # An already satisfied goal gives an empty plan, which is a solved

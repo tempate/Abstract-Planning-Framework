@@ -18,7 +18,9 @@ class Track:
     suite: list[str]
     benchmarks_dir: Path
     driver: str
-    # Passed to the driver's abstract mode only; concrete has no class to choose.
+    # The driver's modes, the first of them submitted by default.
+    modes: tuple[str, ...]
+    # Passed to the modes through an abstraction only; the others have no class to choose.
     abstract_arguments: tuple[str, ...] = ()
 
     @property
@@ -47,6 +49,7 @@ TRACKS = {
         suite=plan.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
+        modes=("abstraction-asp", "asp", "fd"),
     ),
     # The same suite, restricted to the problems numeric-fast-downward finds a
     # resource for, and planned from that resource's objects.
@@ -55,6 +58,7 @@ TRACKS = {
         suite=plan.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
+        modes=("abstraction-asp", "asp", "fd"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
     "unsolvability/symmetries": Track(
@@ -62,6 +66,7 @@ TRACKS = {
         suite=unsolvability.SUITE,
         benchmarks_dir=BENCHMARKS / "unsolve-ipc-2016",
         driver="scripts.unsolvability",
+        modes=("abstraction-fd", "fd"),
     ),
 }
 DEFAULT_TRACK = "plan/symmetries"

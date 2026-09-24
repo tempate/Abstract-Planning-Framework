@@ -1,6 +1,6 @@
 # Problems for which PDDL Symmetries reported an abstraction class.
 # Regenerate from a collected run:
-#   awk -F, '$3=="abstract" && $4!="no symmetries" && NR>1 {print $1"/"$2}' results.csv | sort -u
+#   awk -F, '$3=="abstraction-asp" && $4!="no symmetries" && NR>1 {print $1"/"$2}' results.csv | sort -u
 # That awk holds for a run of the problems already listed here, where anything
 # but "no symmetries" had a class. A discovery run over problems not yet listed
 # also yields "symmetry timeout", which is not a class, so take the recorded

@@ -30,12 +30,16 @@ def main():
     if track_name not in TRACKS:
         parser.error(f"no track abstracts {args.abstraction_source} to answer {args.track}")
     track = TRACKS[track_name]
+    modes = args.modes or track.modes[:1]
+    unknown = sorted(set(modes) - set(track.modes))
+    if unknown:
+        parser.error(f"{track_name} has no mode {', '.join(unknown)}; it runs {', '.join(track.modes)}")
     tasks = list(
         _benchmark_tasks(
             benchmarks_dir=track.benchmarks_dir,
             suite=track.suite,
             runnable=None if args.all_problems else track.runnable(),
-            modes=args.modes,
+            modes=modes,
             domains=args.domains,
             problems=args.problems,
         )
@@ -154,8 +158,7 @@ def _argument_parser():
         "--modes",
         nargs="+",
         choices=MODES,
-        default=["abstract"],
-        help="Ways to solve every problem, one cluster job each",
+        help="Ways to solve every problem, one cluster job each, by default the track's first mode",
     )
     parser.add_argument(
         "--dry-run",
@@ -184,7 +187,7 @@ def _argument_parser():
         "--abstraction-source",
         choices=sorted({name.split("/")[1] for name in TRACKS}),
         default=source,
-        help="What the abstract mode collapses",
+        help="What the modes through an abstraction collapse",
     )
     return parser
 
@@ -245,7 +248,7 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstract",), domains=None, problems=None):
+def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstraction-asp",), domains=None, problems=None):
     if domains is not None:
         unknown = sorted(set(domains) - set(suite))
         if unknown:

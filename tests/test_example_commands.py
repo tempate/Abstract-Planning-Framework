@@ -53,7 +53,7 @@ class ShellExampleTests(unittest.TestCase):
         return subprocess.run(command, cwd=PROJECT_ROOT, env=environment, capture_output=True, text=True, check=False)
 
     def test_examples_support_help(self):
-        for example in ("concrete", "abstract"):
+        for example in ("asp", "abstraction-asp"):
             with self.subTest(example=example):
                 result = self._run(example, "--help")
 
@@ -61,7 +61,7 @@ class ShellExampleTests(unittest.TestCase):
                 self.assertEqual(result.stdout.strip(), f"Usage: examples/{example}.sh")
 
     def test_examples_reject_positional_arguments(self):
-        for example in ("concrete", "abstract"):
+        for example in ("asp", "abstraction-asp"):
             with self.subTest(example=example):
                 result = self._run(example, "unexpected", "/bin/echo")
 
@@ -70,7 +70,7 @@ class ShellExampleTests(unittest.TestCase):
 
     def test_examples_run_both_modes_on_one_comparable_task(self):
         commands = {}
-        for example in ("concrete", "abstract"):
+        for example in ("asp", "abstraction-asp"):
             result = self._run(example, python_bin="/bin/echo")
             self.assertEqual(result.returncode, 0, result.stderr)
             commands[example] = result.stdout
@@ -82,10 +82,10 @@ class ShellExampleTests(unittest.TestCase):
 
         # The README compares the two runs, so they have to solve the same task.
         self.assertEqual(
-            _argument_after(commands["concrete"], "--problem"), _argument_after(commands["abstract"], "--problem")
+            _argument_after(commands["asp"], "--problem"), _argument_after(commands["abstraction-asp"], "--problem")
         )
         # The abstract example demonstrates automatic symmetry selection.
-        self.assertNotIn("--objects-to-abstract", commands["abstract"])
+        self.assertNotIn("--objects-to-abstract", commands["abstraction-asp"])
 
 
 class PlannerExitStatusTests(unittest.TestCase):
@@ -99,7 +99,7 @@ class PlannerExitStatusTests(unittest.TestCase):
         output = StringIO()
         with patch.object(planner, "_compute", side_effect=UnsolvableTaskError("task is unsolvable")):
             with redirect_stdout(output):
-                status = self._main(["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl"])
+                status = self._main(["asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(status, 1)
         self.assertIn("No plan: task is unsolvable", output.getvalue())
@@ -109,13 +109,13 @@ class PlannerExitStatusTests(unittest.TestCase):
         output = StringIO()
         with patch.object(planner, "_compute", side_effect=KeyError("plan")):
             with redirect_stdout(output):
-                status = self._main(["concrete", "--domain", "domain.pddl", "--problem", "problem.pddl"])
+                status = self._main(["asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(STATUS_BY_EXIT_CODE[status], "error")
         self.assertIn("KeyError", output.getvalue())
 
     def test_both_modes_report_failure_when_no_plan_is_found(self):
-        for mode in ("concrete", "abstract"):
+        for mode in ("asp", "abstraction-asp"):
             with self.subTest(mode=mode):
                 with (
                     patch.object(planner, "_compute", return_value={"success": False}),
@@ -129,7 +129,7 @@ class PlannerExitStatusTests(unittest.TestCase):
         errors = StringIO()
         with patch.object(planner, "_compute", side_effect=AbstractionError("no abstractable object classes")):
             with redirect_stderr(errors), self.assertRaises(SystemExit) as raised:
-                self._main(["abstract", "--domain", "domain.pddl", "--problem", "problem.pddl"])
+                self._main(["abstraction-asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(raised.exception.code, 2)
         self.assertIn("no abstractable object classes", errors.getvalue())
@@ -141,7 +141,7 @@ class PlannerExitStatusTests(unittest.TestCase):
         ):
             status = self._main(
                 [
-                    "abstract",
+                    "abstraction-asp",
                     "--domain",
                     "domain.pddl",
                     "--problem",

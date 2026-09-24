@@ -1,7 +1,7 @@
 """Decide one PDDL task with Fast Downward, directly or through its abstraction.
 
 The abstraction over-approximates, so the two modes answer different questions.
-``concrete`` settles the task: solvable or unsolvable. ``abstract`` searches the
+``fd`` settles the task: solvable or unsolvable. ``abstraction-fd`` searches the
 abstraction instead, where no plan proves the concrete task unsolvable but a plan
 may exist only because of the relaxation, and is reported as unknown.
 """
@@ -29,9 +29,9 @@ def _report(result):
 def _compute(args):
     on_update = progress_callback()
     common = {"domain_path": args.domain, "problem_path": args.problem}
-    if args.mode == "concrete":
+    if args.mode == "fd":
         return check_solvability_directly(PlanningConfig(**common), on_update)
-    if args.mode == "abstract":
+    if args.mode == "abstraction-fd":
         return check_solvability_via_abstraction(
             AbstractPlanningConfig(
                 **common,
@@ -57,13 +57,13 @@ def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     modes = parser.add_subparsers(dest="mode", required=True, title="decision modes")
     modes.add_parser(
-        "concrete",
+        "fd",
         parents=[shared],
         help="Search the task itself",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "abstract",
+        "abstraction-fd",
         parents=[shared, abstract],
         help="Search its abstraction",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

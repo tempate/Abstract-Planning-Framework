@@ -30,10 +30,10 @@ class ExampleWorkflowTests(unittest.TestCase):
         self.assertEqual(result.stdout.count("Plan found: yes"), expected_plans, result.stdout)
 
     def test_driverlog_concrete_example_finds_a_plan(self):
-        self._assert_success(self._run("concrete"))
+        self._assert_success(self._run("asp"))
 
     def test_driverlog_abstract_example_runs_the_refinement_pipeline(self):
-        result = self._run("abstract")
+        result = self._run("abstraction-asp")
 
         self._assert_success(result)
         self.assertRegex(result.stdout, r"(?m)^Collapsed \['package.*\] into object_abs")

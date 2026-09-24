@@ -18,8 +18,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = PROJECT_ROOT / "runs"
 DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"
-# Every way one problem gets solved, in the order a report reads them.
-MODES = ("abstract", "concrete", "lama")
+# Every way one problem gets solved, in the order a report reads them. A mode
+# names the solver that finds the plan, or through an abstraction the abstract
+# plan, which ASP then refines.
+MODES = ("abstraction-asp", "abstraction-fd", "asp", "fd")
+ABSTRACTION_PREFIX = "abstraction-"
 
 
 def main():
@@ -166,7 +169,7 @@ def _machine_status(return_code, timed_out, interrupted=False):
 
 def _planner_command(domain, problem, mode, track=DEFAULT_TRACK):
     command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
-    if mode == "abstract":
+    if mode.startswith(ABSTRACTION_PREFIX):
         command.extend(TRACKS[track].abstract_arguments)
     return command
 
