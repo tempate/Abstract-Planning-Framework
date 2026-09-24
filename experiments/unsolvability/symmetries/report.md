@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-09-24 11:59 — experiments/unsolvability/symmetries/results.csv
+2026-09-24 12:32 — experiments/unsolvability/symmetries/results.csv
 
 168 problems compared over abstraction-fd, fd
 

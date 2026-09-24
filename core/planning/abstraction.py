@@ -84,7 +84,7 @@ def check_solvability(config: AbstractPlanningConfig, on_update=None):
                 with metrics.measure("abstract_pddl_writing"):
                     domain_path, problem_path = write_abstract_problem(abstract_problem.problem, base_dir)
 
-                with metrics.measure("abstract_fd"):
+                with metrics.measure("abstract_fd_search"):
                     found = has_plan(base_dir, domain_path, problem_path, "abstract")
             except UnsolvableTaskError:
                 # Symmetry discovery reads the concrete task, so proving it

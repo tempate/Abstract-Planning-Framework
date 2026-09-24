@@ -43,7 +43,7 @@ def check_solvability(config: PlanningConfig, on_update=None):
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir("concrete") as (base_dir, run_id):
-            with metrics.measure("concrete_fd"):
+            with metrics.measure("fd_search"):
                 found = has_plan(base_dir, config.domain_path, config.problem_path, "concrete")
 
     return {
