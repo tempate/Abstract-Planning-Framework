@@ -2,10 +2,8 @@
 
 import argparse
 
-from core.planning.abstract import solve_via_abstraction
-from core.planning.concrete import solve_with_asp
+from core.planning import abstraction, asp, fd
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
-from core.planning.baseline import solve_directly
 
 from .utils.arguments import abstraction_arguments, task_arguments
 from .utils.entry import run
@@ -25,11 +23,11 @@ def _compute(args):
     on_update = progress_callback()
     common = {"domain_path": args.domain, "problem_path": args.problem}
     if args.mode == "asp":
-        return solve_with_asp(PlanningConfig(**common), on_update)
+        return asp.solve(PlanningConfig(**common), on_update)
     if args.mode == "fd":
-        return solve_directly(PlanningConfig(**common), on_update)
+        return fd.solve(PlanningConfig(**common), on_update)
     if args.mode == "abstraction-asp":
-        return solve_via_abstraction(
+        return abstraction.solve(
             AbstractPlanningConfig(
                 **common,
                 objects_to_abstract=args.objects_to_abstract,
@@ -37,6 +35,7 @@ def _compute(args):
                 symmetry_time_limit=args.symmetry_time_limit,
                 abstraction_source=args.abstraction_source,
             ),
+            asp.find_abstract_plan,
             on_update,
         )
 

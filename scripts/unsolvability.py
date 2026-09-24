@@ -9,8 +9,7 @@ may exist only because of the relaxation, and is reported as unknown.
 import argparse
 
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
-from core.planning.abstract import check_solvability_via_abstraction
-from core.planning.baseline import check_solvability_directly
+from core.planning import abstraction, fd
 
 from .utils.arguments import abstraction_arguments, task_arguments
 from .utils.entry import run
@@ -30,9 +29,9 @@ def _compute(args):
     on_update = progress_callback()
     common = {"domain_path": args.domain, "problem_path": args.problem}
     if args.mode == "fd":
-        return check_solvability_directly(PlanningConfig(**common), on_update)
+        return fd.check_solvability(PlanningConfig(**common), on_update)
     if args.mode == "abstraction-fd":
-        return check_solvability_via_abstraction(
+        return abstraction.check_solvability(
             AbstractPlanningConfig(
                 **common,
                 objects_to_abstract=args.objects_to_abstract,

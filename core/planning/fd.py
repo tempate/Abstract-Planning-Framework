@@ -1,4 +1,4 @@
-"""Solve a task with plain Fast Downward, as an external baseline."""
+"""Plan and decide with Fast Downward."""
 
 from core.integrations.fast_downward import find_plan, has_plan, parse_plan_actions
 from core.metrics import PlanningMetrics
@@ -7,10 +7,10 @@ from core.planning.config import PlanningConfig
 from core.planning.execution import temp_run_dir
 from core.planning.validation import validated
 
-LABEL = "lama"
+LABEL = "fd"
 
 
-def solve_directly(config: PlanningConfig, on_update=None):
+def solve(config: PlanningConfig, on_update=None):
     """Search one PDDL task with LAMA-first, reporting it like our own pipelines."""
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
@@ -36,7 +36,7 @@ def solve_directly(config: PlanningConfig, on_update=None):
     }
 
 
-def check_solvability_directly(config: PlanningConfig, on_update=None):
+def check_solvability(config: PlanningConfig, on_update=None):
     """Search the concrete task, which settles it either way."""
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):

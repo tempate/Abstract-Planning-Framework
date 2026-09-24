@@ -7,6 +7,7 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
+from core.planning import abstraction
 from scripts import planner
 from core.abstraction.collapse import AbstractionError
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
@@ -136,7 +137,7 @@ class PlannerExitStatusTests(unittest.TestCase):
 
     def test_explicit_selection_reaches_the_planning_pipeline(self):
         with (
-            patch.object(planner, "solve_via_abstraction", return_value={"success": True}) as compute,
+            patch.object(abstraction, "solve", return_value={"success": True}) as compute,
             patch.object(planner, "print_planning_result"),
         ):
             status = self._main(

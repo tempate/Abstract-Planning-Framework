@@ -12,7 +12,7 @@ from unified_planning.plans import ActionInstance, SequentialPlan
 from core.abstraction.factory import build_abstract_problem
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.unified_planning import parse_problem
-from core.planning.abstract import solve_via_abstraction
+from core.planning import abstraction, asp
 from core.planning.config import AbstractPlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
@@ -103,7 +103,7 @@ class SoundnessTests(unittest.TestCase):
         for objects in CLASSES:
             with self.subTest(objects=objects):
                 with redirect_stdout(StringIO()):
-                    result = solve_via_abstraction(self._config(objects))
+                    result = abstraction.solve(self._config(objects), asp.find_abstract_plan)
                 steps = [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
 
                 self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
