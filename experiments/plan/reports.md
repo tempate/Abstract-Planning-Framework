@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-09-22 09:39 — experiments/plan/results.csv
+2026-09-24 10:54 — experiments/plan/results.csv
 
-665 problems compared over abstract, concrete, lama; 2 dropped as unfinished
+667 problems compared over abstract, concrete, lama
 
 ## Coverage
 
 ```
 Metric                                      Abstract pipeline  Concrete pipeline         LAMA-first
 ---------------------------------------------------------------------------------------------------
-Plans found                                       135 (20.3%)        112 (16.8%)        600 (90.2%)
-Timeouts                                          518 (77.9%)        541 (81.4%)          41 (6.2%)
-Out of memory                                       12 (1.8%)          12 (1.8%)          23 (3.5%)
-Others                                               0 (0.0%)           0 (0.0%)           1 (0.2%)
-Total problems                                            665                665                665
+Plans found                                       135 (20.2%)        113 (16.9%)        602 (90.3%)
+Timeouts                                          519 (77.8%)        541 (81.1%)          42 (6.3%)
+Out of memory                                       13 (1.9%)          13 (1.9%)          22 (3.3%)
+Others                                               0 (0.0%)           0 (0.0%)           1 (0.1%)
+Total problems                                            667                667                667
 ```
 
 ## Head to head: abstract vs Concrete pipeline
@@ -21,11 +21,11 @@ Total problems                                            665                665
 ```
 Metric                                      Abstract pipeline  Concrete pipeline
 --------------------------------------------------------------------------------
-Plans found by both                                       110                110
-Faster when both found a plan                      39 (35.5%)         71 (64.5%)
-Plan found when the other did not                          25                  2
-Median runtime when both found a plan                  7.99 s            10.10 s
-Total runtime across shared solves                 7,925.11 s        10,601.69 s
+Plans found by both                                       111                111
+Faster when both found a plan                      43 (38.7%)         68 (61.3%)
+Plan found when the other did not                          24                  2
+Median runtime when both found a plan                  8.09 s            10.35 s
+Total runtime across shared solves                 8,268.69 s        12,840.20 s
 ```
 
 ## Head to head: abstract vs LAMA-first
@@ -34,10 +34,10 @@ Total runtime across shared solves                 7,925.11 s        10,601.69 s
 Metric                                      Abstract pipeline         LAMA-first
 --------------------------------------------------------------------------------
 Plans found by both                                       135                135
-Faster when both found a plan                        1 (0.7%)        134 (99.3%)
-Plan found when the other did not                           0                465
-Median runtime when both found a plan                 11.54 s             2.43 s
-Total runtime across shared solves                20,380.81 s           533.75 s
+Faster when both found a plan                        4 (3.0%)        131 (97.0%)
+Plan found when the other did not                           0                467
+Median runtime when both found a plan                 11.07 s             3.11 s
+Total runtime across shared solves                21,616.50 s           626.21 s
 ```
 
 ## Where the timeouts died
@@ -45,10 +45,10 @@ Total runtime across shared solves                20,380.81 s           533.75 s
 ```
 Where the abstract pipeline was killed               Timeouts
 -------------------------------------------------------------
-Searching for the abstract plan                     452 (87%)
-Guided concrete search                                33 (6%)
+Searching for the abstract plan                     454 (87%)
 Abstract plan discarded                               33 (6%)
-Total                                                     518
+Guided concrete search                                32 (6%)
+Total                                                     519
 ```
 
 ## How the successes were solved
