@@ -18,8 +18,6 @@ class Track:
     suite: list[str]
     benchmarks_dir: Path
     driver: str
-    # Where the problems worth submitting are listed, beside the results.
-    runnable_name: str = "symmetries.txt"
     # Passed to the driver's abstract mode only; concrete has no class to choose.
     abstract_arguments: tuple[str, ...] = ()
 
@@ -29,7 +27,7 @@ class Track:
 
     @property
     def runnable_file(self):
-        return self.directory / self.runnable_name
+        return self.directory / "problems.txt"
 
     def runnable(self):
         """The (domain, problem) pairs worth submitting: those the runnable file lists."""
@@ -57,7 +55,6 @@ TRACKS = {
         suite=plan.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        runnable_name="resources.txt",
         abstract_arguments=("--abstraction-source", "resources"),
     ),
     "unsolvability/symmetries": Track(

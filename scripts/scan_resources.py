@@ -1,6 +1,6 @@
 """Report which suite problems have a resource variable worth collapsing.
 
-Writes the list the resources track submits, the way ``symmetries.txt`` lists
+Writes the list the resources track submits, the way ``symmetries/problems.txt`` lists
 what PDDL Symmetries can abstract.  Detection runs the whole numeric-fast-downward
 translate-and-preprocess chain per problem, so this takes a while and is run by
 hand rather than as part of a benchmark run.

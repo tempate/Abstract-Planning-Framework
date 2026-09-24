@@ -17,4 +17,4 @@ theory/*.fls
 theory/*.fdb_latexmk
 theory/*.synctex.gz
 theory/*.pdf
-experiments/plan/resources/resources.log
+experiments/plan/resources/problems.log

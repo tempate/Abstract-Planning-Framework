@@ -45,7 +45,7 @@ def main():
             sections += [_refinement_outcomes(problems), _relaxed_deletes(problems)]
 
     summary = _summary(modes, problems, dropped)
-    reports_file = Path(args.results).parent / "reports.md"
+    reports_file = Path(args.results).parent / "report.md"
     _print_report(sections)
     _write_report(sections, args.results, reports_file, summary)
     print(f"\n{summary}")

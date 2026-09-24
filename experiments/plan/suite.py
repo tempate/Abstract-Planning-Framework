@@ -10,7 +10,7 @@ which no relaxed delete reaches, but which collapsing two objects into one symbo
 does, by making the two sides equal.
 
 A problem is only worth submitting when some source can abstract it, so
-``symmetries.txt`` lists the ones PDDL Symmetries reports a class for, whose header carries the command that regenerates it
+``symmetries/problems.txt`` lists the ones PDDL Symmetries reports a class for, whose header carries the command that regenerates it
 from a collected run.
 """
 

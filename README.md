@@ -63,11 +63,11 @@ python -m experiments.report experiments/plan/symmetries/results.csv
 ```
 
 - `experiments/plan/suite.py` holds the domains, but a problem is submitted
-  only when `experiments/plan/symmetries/symmetries.txt` records an abstraction
+  only when `experiments/plan/symmetries/problems.txt` records an abstraction
   class for it.
   That file's header carries the command that regenerates it.
 - `--abstraction-source resources` submits `experiments/plan/resources/`, the
-  problems `resources.txt` lists, and collapses a resource instead of a symmetry
+  problems its `problems.txt` lists, and collapses a resource instead of a symmetry
   class.
 - `--track unsolvability` submits `experiments/unsolvability/symmetries/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
@@ -77,7 +77,7 @@ python -m experiments.report experiments/plan/symmetries/results.csv
 - `collect` rewrites the `results.csv` of the track the run's manifest names,
   replacing only the (domain, problem, mode) results the run holds, so a
   baseline or a gap-filling run can be collected on its own.
-  `report` rewrites the `reports.md` beside the CSV, comparing only the
+  `report` rewrites the `report.md` beside the CSV, comparing only the
   problems every mode finished and saying how many it dropped.
 
 ## Tests

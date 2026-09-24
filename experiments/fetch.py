@@ -66,7 +66,7 @@ def _checkout_holds(commit):
     if completed.returncode != 0:
         # A commit this clone does not have.
         return False
-    return all(Path(name).name in ("results.csv", "reports.md") for name in completed.stdout.splitlines())
+    return all(Path(name).name in ("results.csv", "report.md") for name in completed.stdout.splitlines())
 
 
 def _pull(host, remote_dir, into, dry_run):

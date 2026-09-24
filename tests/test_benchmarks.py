@@ -628,7 +628,7 @@ class ReportTests(unittest.TestCase):
             with patch("sys.argv", ["report", str(results)]), contextlib.redirect_stdout(io.StringIO()):
                 experiments.report.main()
 
-            self.assertTrue((Path(directory) / "reports.md").is_file())
+            self.assertTrue((Path(directory) / "report.md").is_file())
 
     def test_the_report_survives_a_run_with_no_shared_solves(self):
         problems = [
