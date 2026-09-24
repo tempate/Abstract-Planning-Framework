@@ -274,4 +274,16 @@ A shortest plan of $\Pi$ has at least $H$ actions by Corollary~\ref{cor:length},
 
 The ASP search for the abstract plan raises its horizon from zero with exactly one action per step. With the same assumption about the translation of $\Pi^r$, it returns a shortest plan of $\Pi^r$, and Corollary~\ref{cor:shortest} covers it. A satisficing planner such as LAMA may return a longer abstract plan. The refinement then stays complete only for tasks with a plan at least as long as the abstract one.
 
+Every plan the search returns solves $\Pi$, whatever the abstract plan and whichever switches are on. The switches and the mapping only restrict which action occurs at a step. They never lift a precondition or the goal.
+
+\begin{theorem}[Soundness]\label{thm:sound}
+If the search returns a plan, then the plan solves $\Pi$.
+\end{theorem}
+
+\begin{proof}
+The search returns $\mathrm{plan}(x)$ for the step sequence $x$ of an answer set at some $h$ and $S$. By Assumption~\ref{ass:encoding}, the refinement accepts $x$ at $h$ and $S$, so $x$ runs from $I$ and ends in a state that contains $G$ by Definition~\ref{def:admissible}. By Lemma~\ref{lem:steps}, $\mathrm{plan}(x)$ is applicable in $I$, and $x$ ends in $I[\mathrm{plan}(x)]$, so $G \subseteq I[\mathrm{plan}(x)]$. Hence $\mathrm{plan}(x)$ solves $\Pi$ by Definition~\ref{def:solves}.
+\end{proof}
+
+With a shortest abstract plan, the three results together describe the whole pipeline. If $\Pi^r$ has no plan, then $\Pi$ has none. If $\Pi$ has a plan, the search returns one after finitely many solver calls. Every plan it returns solves $\Pi$.
+
 \end{document}
