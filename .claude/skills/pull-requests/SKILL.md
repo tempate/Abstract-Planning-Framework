@@ -1,6 +1,6 @@
 ---
 name: pull-requests
-description: Merge a pull request in this repo, including a stacked one, and clean up afterwards. Use when asked to merge a PR, wait for CI before merging, rebase a branch whose base has merged, or tidy up branches after a merge.
+description: Merge a pull request in this repo, stack PRs with gh stack, and clean up afterwards. Use when asked to merge a PR, stack a branch on another, wait for CI before merging, rebase a branch whose base has merged, or tidy up branches after a merge.
 ---
 
 # Pull requests
@@ -18,48 +18,49 @@ gh pr merge <n> --squash --delete-branch                        # --delete-branc
 ```
 
 `--delete-branch` is safe only when no open PR uses this branch as its base. If
-one does, follow **Stacked branches** below instead — that mistake cannot be
-undone.
+one does, the PR is part of a stack: merge it with `gh stack merge` below
+instead — deleting a base by hand cannot be undone.
 
 **`--auto` does not wait.** No required status checks are configured on this
 repo, so GitHub finds the merge conditions already met and merges at once, while
 the run is still in progress. Watch the run yourself, then merge.
 
 `MERGEABLE / UNSTABLE` from `gh pr view <n> --json mergeable,mergeStateStatus`
-means the branch merges cleanly but a check is still running. It is not a
-go-ahead.
+means the branch merges cleanly but a check ## Stacked branches
 
-## Stacked branches
-
-Branches here stack (`main → #65 → #68`). Merging the parent closes nothing;
-**deleting its branch is what closes the children**, so delete it last:
+Stacks use GitHub's native stacked pull requests (public preview) through the
+`gh stack` extension, installed with `gh extension install github/gh-stack`.
+Each PR targets the branch below it, and GitHub shows the stack on every PR.
 
 ```bash
-gh pr merge <parent> --squash                  # no --delete-branch
-python -m scripts.restack <parent branch>      # --dry-run first to see what moves
+gh stack link <bottom-pr> <next-pr> ...     # turn open PRs into a stack, bottom first
+gh stack checkout <pr>                      # track that stack locally
+gh stack add <branch>                       # start a new branch on top of the current one
+gh stack submit                             # push every branch, open or update its PR
+gh stack view                               # the stack, with each PR's state
 ```
 
-`scripts.restack` rebases every open PR based on the parent onto main in a
-scratch worktree, retargets it, force-pushes it with a lease, carries the PRs
-stacked on those down the chain, and deletes the parent branch last. It stops,
-pushing nothing of that child, if a rebase conflicts: resolve that one by hand.
-Watch CI on the moved PRs before merging the next.
+Merge from the bottom up, and watch CI on every PR you merge first:
 
-Check for stacked PRs before **any force-push** too: a PR based on the branch
-you rewrite keeps the old commits, so run `gh pr list --base <branch>` first and
-rebase those children onto the new tip.
+```bash
+gh stack merge <pr> --squash                # merges every PR up to and including <pr>
+gh stack sync                               # fetch, rebase what is left, prune merged branches
+```
 
-By hand, rebase the child **by base, not by merge**: the squashed parent shares
-no SHA with the copies of its commits sitting on the child, so only
-`git rebase --onto main <old parent tip>` drops them. The old tip is
-`origin/<parent>` until that ref goes.
+The PRs above the merged one stay open, retarget to the stack's base and get
+rebased by GitHub. That replaces `scripts.restack`, which is only for a stack
+made without `gh stack`. The first stacked merge here is still to come, so check
+`gh stack view` and the remaining PRs' bases after it.
+
+Rewriting a branch in the middle of a stack leaves the ones above on its old
+commits. `gh stack rebase` carries the change up the stack; then `gh stack push`.
 
 A child PR whose base branch was deleted is CLOSED and unrecoverable: `gh pr
 reopen` fails with `Could not open the pull request`, and `gh pr edit --base`
-with `Cannot change the base branch of a closed pull request`. The number and
-its review thread are gone. Recreating the deleted branch on the remote does
-reopen the path, but it is three remote writes to undo one avoidable mistake —
-ask before doing that, and don't rely on GitHub retargeting children by itself,
+with `Cannot change the base branch of a closed pull request`. Never delete a
+stacked branch by hand.
+
+en by itself,
 because it does not here.
 
 ## After a merge
