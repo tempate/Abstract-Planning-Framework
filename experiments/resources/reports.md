@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-09-24 10:54 — experiments/resources/results.csv
+2026-09-24 11:20 — experiments/resources/results.csv
 
-1716 problems compared over abstract
+640 problems compared over abstract
 
 ## Coverage
 
 ```
 Metric                                      Abstract pipeline
 -------------------------------------------------------------
-Plans found                                         72 (4.2%)
-Timeouts                                          200 (11.7%)
-Out of memory                                     302 (17.6%)
-Others                                           1142 (66.6%)
-Total problems                                           1716
+Plans found                                        72 (11.2%)
+Timeouts                                          200 (31.2%)
+Out of memory                                     302 (47.2%)
+Others                                             66 (10.3%)
+Total problems                                            640
 ```
 
 ## Where the timeouts died
