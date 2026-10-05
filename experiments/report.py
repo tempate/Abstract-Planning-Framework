@@ -21,13 +21,25 @@ UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
 VERDICTS = ("unsolvable", "unknown")
 # A killed run reports the phase it completed last, so it died in the next one.
+# In the order the abstraction pipelines run them, which the timeout table keeps.
 KILLED_IN_PHASE = {
+    "problem_reading": "Finding the object classes",
+    "symmetry_discovery": "Abstraction",
+    "resource_detection": "Abstraction",
+    # Measured on both sides of the PNF translation, so either translation follows it.
+    "abstraction": "Translating the task",
+    "pnf_translation": "Abstraction",
+    "concrete_fd": "Writing the abstract task",
+    "abstract_pddl_writing": "Translating the abstract task",
+    "abstract_fd": "Translating the task to ASP",
     "concrete_asp": "Searching for the abstract plan",
     "abstract_asp": "Searching for the abstract plan",
     "abstract_solving": "Guided concrete search",
     "abstract_fd_search": "Guided concrete search",
     "guided_concrete_solving": "Extended concrete search",
 }
+# The solvability check searches the abstract task straight from its PDDL.
+KILLED_IN_PHASE_DECIDING = KILLED_IN_PHASE | {"abstract_pddl_writing": "Searching for the abstract plan"}
 
 
 def main():
@@ -55,7 +67,7 @@ def main():
 
     # Only a mode through an abstraction has one to report on.
     if abstractions:
-        sections.append(_timeout_phases(problems, abstractions))
+        sections.append(_timeout_phases(problems, abstractions, verdict_run))
         if not verdict_run:
             sections += [_refinement_outcomes(problems, abstractions), _relaxed_deletes(problems, abstractions)]
     sections.append(_by_domain(problems, modes, verdict_run))
@@ -222,23 +234,31 @@ def _discarded_the_abstract_plan(row):
     return int(row["decrements"]) == int(row["abstract_plan_length"])
 
 
-def _timeout_phases(problems, abstractions):
+def _timeout_phases(problems, abstractions, verdict_run):
+    killed_in = KILLED_IN_PHASE_DECIDING if verdict_run else KILLED_IN_PHASE
+    pipeline = list(KILLED_IN_PHASE)
     counts = {mode: {} for mode in abstractions}
     totals = {}
+    positions = {}
     for mode in abstractions:
         timeouts = [modes[mode] for modes in problems if modes[mode]["status"] == "timed out"]
         totals[mode] = len(timeouts)
         for row in timeouts:
-            phase = KILLED_IN_PHASE.get(row["last_completed_phase"], row["last_completed_phase"])
+            completed = row["last_completed_phase"]
+            phase = killed_in.get(completed, completed)
             # The extended search is no longer a phase of its own. A guided search that
             # has switched off every abstract action is what used to enter it.
-            if phase == "Guided concrete search" and _discarded_the_abstract_plan(row):
+            unguided = phase == "Guided concrete search" and _discarded_the_abstract_plan(row)
+            if unguided:
                 phase = "Unguided concrete search"
             counts[mode][phase] = counts[mode].get(phase, 0) + 1
 
-    phases = {phase for mode in abstractions for phase in counts[mode]}
+            # A phase nobody has placed yet goes last rather than failing the report.
+            index = pipeline.index(completed) if completed in pipeline else len(pipeline)
+            positions[phase] = min(positions.get(phase, (index, unguided)), (index, unguided))
+
     lines = _wide_header("Killed during", abstractions)
-    for phase in sorted(phases, key=lambda phase: -sum(counts[mode].get(phase, 0) for mode in abstractions)):
+    for phase in sorted(positions, key=positions.get):
         lines.append(_wide(phase, [_share(counts[mode].get(phase, 0), totals[mode], 0) for mode in abstractions]))
     lines.append(_wide("Total", [totals[mode] for mode in abstractions]))
     return "Where the timeouts died", lines

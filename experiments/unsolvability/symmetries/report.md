@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-05 10:00 — experiments/unsolvability/symmetries/results.csv
+2026-10-05 10:03 — experiments/unsolvability/symmetries/results.csv
 
 168 problems compared over abs-fd, fd
 
@@ -34,7 +34,7 @@ Total runtime across shared proofs                 1,094.01 s         1,763.27 s
 ```
 Killed during                                        Abs + FD
 -------------------------------------------------------------
-abstract_pddl_writing                                3 (100%)
+Searching for the abstract plan                      3 (100%)
 Total                                                       3
 ```
 
