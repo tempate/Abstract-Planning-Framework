@@ -8,6 +8,7 @@ from unittest.mock import patch
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
 from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
+from core.integrations.numeric_fast_downward import ResourceDetection, ResourceVariable
 from core.outcomes import NoResourcesError
 from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
 from core.planning.config import AbstractPlanningConfig
@@ -143,12 +144,28 @@ class SymmetrySelectionTests(unittest.TestCase):
     def test_rejects_tasks_without_a_resource_as_having_no_resources(self):
         with (
             patch("core.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.abstraction.factory.detect_resources", return_value=()),
+            patch("core.abstraction.factory.detect_resources", return_value=ResourceDetection((), frozenset())),
         ):
             with self.assertRaises(NoResourcesError):
                 build_abstract_problem(
                     AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source="resources")
                 )
+
+    def test_a_resource_also_collapses_the_objects_of_its_type_the_grounding_dropped(self):
+        # vehicle-d is a value the grounding never reaches, and vehicle-c one it does but the resource never takes.
+        detection = ResourceDetection(
+            (ResourceVariable("var0", ("vehicle-a", "vehicle-b")),),
+            frozenset({"vehicle-a", "vehicle-b", "vehicle-c", "tool-a"}),
+        )
+        with (
+            patch("core.abstraction.factory.read_problem", return_value=self.problem),
+            patch("core.abstraction.factory.detect_resources", return_value=detection),
+        ):
+            result = build_abstract_problem(
+                AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source="resources")
+            )
+
+        self.assertEqual(set(result.abstraction.objects), {"vehicle-a", "vehicle-b", "vehicle-d"})
 
     def test_accepts_domain_constants_reported_by_pddl_symmetries(self):
         domain = """

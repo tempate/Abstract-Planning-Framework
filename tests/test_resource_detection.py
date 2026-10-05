@@ -2,7 +2,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from core.integrations.numeric_fast_downward import parse_resources, read_sas_variables, varying_objects
+from core.integrations.numeric_fast_downward import (
+    parse_resources,
+    read_sas_objects,
+    read_sas_variables,
+    varying_objects,
+)
 
 DETECTOR_OUTPUT = """we are here
 Detection time: 0.374387s
@@ -58,6 +63,18 @@ class SasReadingTests(unittest.TestCase):
 
         self.assertEqual(variables["var0"], ("Atom at(t0, l0)", "Atom at(t0, l1)"))
         self.assertEqual(variables["var1"], ("Atom fuel(t0, level0)",))
+
+    def test_the_grounded_objects_are_the_ones_an_atom_or_an_operator_names(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory, "output.sas")
+            path.write_text(
+                "begin_variable\nvar0\n-1\n2\nAtom fuel(t0, level1)\nAtom fuel(t0, level4)\nend_variable\n"
+                "begin_operator\ndrive t0 l0 l1 level1 level3 level4\n0\nend_operator\n",
+                encoding="utf-8",
+            )
+            objects = read_sas_objects(path)
+
+        self.assertEqual(objects, {"t0", "l0", "l1", "level1", "level3", "level4"})
 
 
 if __name__ == "__main__":

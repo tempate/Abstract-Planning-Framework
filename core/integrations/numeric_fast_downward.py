@@ -30,8 +30,16 @@ class ResourceVariable:
     objects: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class ResourceDetection:
+    """The resource variables of one task, and the objects its grounding kept."""
+
+    resources: tuple[ResourceVariable, ...]
+    grounded_objects: frozenset[str]
+
+
 def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME_LIMIT):
-    """Return the resource variables of one PDDL task, widest first."""
+    """Return the resource variables of one PDDL task, widest first, and the objects it grounds."""
     if not os.path.exists(NUMERIC_FAST_DOWNWARD_BIN):
         raise IntegrationError(
             f"numeric-fast-downward binary not found: {NUMERIC_FAST_DOWNWARD_BIN}; "
@@ -71,8 +79,9 @@ def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME
         diagnostics = "\n".join(output.strip() for output in (stdout, stderr) if output.strip())
         raise IntegrationError(f"Resource detection reported nothing:\n{diagnostics}")
 
-    values = read_sas_variables(os.path.join(base_dir, "output.sas"))
-    return parse_resources(stdout, values)
+    sas_path = os.path.join(base_dir, "output.sas")
+    resources = parse_resources(stdout, read_sas_variables(sas_path))
+    return ResourceDetection(resources, read_sas_objects(sas_path))
 
 
 def _kill_process_group(process):
@@ -112,6 +121,23 @@ def read_sas_variables(sas_path):
         variables[name] = tuple(lines[index + 4 : index + 4 + count])
         index += 4 + count
     return variables
+
+
+def read_sas_objects(sas_path):
+    """Return every object the grounded task names, in an atom or an operator."""
+    with open(sas_path, encoding="utf-8") as sas_file:
+        lines = [line.rstrip("\n") for line in sas_file]
+
+    objects = set()
+    for index, line in enumerate(lines):
+        if line == "begin_operator":
+            # The line after names the operator: its action, then its arguments.
+            objects.update(lines[index + 1].split()[1:])
+            continue
+        fields = _atom_fields(line)
+        if fields is not None:
+            objects.update(fields[1])
+    return frozenset(objects)
 
 
 def varying_objects(values):
