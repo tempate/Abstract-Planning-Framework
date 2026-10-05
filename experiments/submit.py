@@ -248,7 +248,7 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abstraction-asp",), domains=None, problems=None):
+def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abs-asp",), domains=None, problems=None):
     if domains is not None:
         unknown = sorted(set(domains) - set(suite))
         if unknown:

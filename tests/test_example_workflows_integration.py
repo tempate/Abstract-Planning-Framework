@@ -33,7 +33,7 @@ class ExampleWorkflowTests(unittest.TestCase):
         self._assert_success(self._run("asp"))
 
     def test_driverlog_abstract_example_runs_the_refinement_pipeline(self):
-        result = self._run("abstraction-asp")
+        result = self._run("abs-asp")
 
         self._assert_success(result)
         self.assertRegex(result.stdout, r"(?m)^Collapsed \['package.*\] into object_abs")

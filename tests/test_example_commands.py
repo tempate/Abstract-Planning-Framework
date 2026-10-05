@@ -15,7 +15,7 @@ from core.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
 from experiments.collect import _values
 
 # Each example runs the planner mode it is named after.
-EXAMPLES = ("asp", "fd", "abstraction-asp", "abstraction-fd")
+EXAMPLES = ("asp", "fd", "abs-asp", "abs-fd")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -87,7 +87,7 @@ class ShellExampleTests(unittest.TestCase):
         # The README compares the runs, so they have to solve the same task.
         self.assertEqual(len({_argument_after(command, "--problem") for command in commands.values()}), 1)
         # The abstraction examples demonstrate automatic symmetry selection.
-        for example in ("abstraction-asp", "abstraction-fd"):
+        for example in ("abs-asp", "abs-fd"):
             self.assertNotIn("--objects-to-abstract", commands[example])
 
 
@@ -118,7 +118,7 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertIn("KeyError", output.getvalue())
 
     def test_both_modes_report_failure_when_no_plan_is_found(self):
-        for mode in ("asp", "abstraction-asp"):
+        for mode in ("asp", "abs-asp"):
             with self.subTest(mode=mode):
                 with (
                     patch.object(planner, "_compute", return_value={"success": False}),
@@ -132,7 +132,7 @@ class PlannerExitStatusTests(unittest.TestCase):
         errors = StringIO()
         with patch.object(planner, "_compute", side_effect=AbstractionError("no abstractable object classes")):
             with redirect_stderr(errors), self.assertRaises(SystemExit) as raised:
-                self._main(["abstraction-asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
+                self._main(["abs-asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(raised.exception.code, 2)
         self.assertIn("no abstractable object classes", errors.getvalue())
@@ -144,7 +144,7 @@ class PlannerExitStatusTests(unittest.TestCase):
         ):
             status = self._main(
                 [
-                    "abstraction-asp",
+                    "abs-asp",
                     "--domain",
                     "domain.pddl",
                     "--problem",
@@ -165,8 +165,8 @@ class PlannerExitStatusTests(unittest.TestCase):
 
     def test_both_drivers_pass_the_abstraction_source_on(self):
         drivers = (
-            (planner, "abstraction-fd", "solve", "print_planning_result"),
-            (unsolvability, "abstraction-fd", "check_solvability", "print_verdict"),
+            (planner, "abs-fd", "solve", "print_planning_result"),
+            (unsolvability, "abs-fd", "check_solvability", "print_verdict"),
         )
         for driver, mode, pipeline, printer in drivers:
             with self.subTest(driver=driver.__name__):

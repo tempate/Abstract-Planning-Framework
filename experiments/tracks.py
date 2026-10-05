@@ -49,7 +49,7 @@ TRACKS = {
         suite=plan.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abstraction-asp", "abstraction-fd", "asp", "fd"),
+        modes=("abs-asp", "abs-fd", "asp", "fd"),
     ),
     # The same suite, restricted to the problems numeric-fast-downward finds a
     # resource for, and planned from that resource's objects.
@@ -58,7 +58,7 @@ TRACKS = {
         suite=plan.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abstraction-asp", "abstraction-fd", "asp", "fd"),
+        modes=("abs-asp", "abs-fd", "asp", "fd"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
     "unsolvability/symmetries": Track(
@@ -66,7 +66,7 @@ TRACKS = {
         suite=unsolvability.SUITE,
         benchmarks_dir=BENCHMARKS / "unsolve-ipc-2016",
         driver="scripts.unsolvability",
-        modes=("abstraction-fd", "fd"),
+        modes=("abs-fd", "fd"),
     ),
 }
 DEFAULT_TRACK = "plan/symmetries"

@@ -24,9 +24,9 @@ def _compute(args):
         return asp.solve(planning_config(args), on_update)
     if args.mode == "fd":
         return fd.solve(planning_config(args), on_update)
-    if args.mode == "abstraction-asp":
+    if args.mode == "abs-asp":
         return abstraction.solve(abstract_planning_config(args), asp.find_abstract_plan, on_update)
-    if args.mode == "abstraction-fd":
+    if args.mode == "abs-fd":
         return abstraction.solve(abstract_planning_config(args), fd.find_abstract_plan, on_update)
 
 
@@ -77,13 +77,13 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "abstraction-asp",
+        "abs-asp",
         parents=[shared, abstract],
         help="Find an abstract plan with ASP, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "abstraction-fd",
+        "abs-fd",
         parents=[shared, abstract],
         help="Find an abstract plan with Fast Downward's lama-first, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

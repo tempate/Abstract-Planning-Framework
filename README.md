@@ -29,8 +29,8 @@ pre-commit install
 ```bash
 ./examples/fd.sh
 ./examples/asp.sh
-./examples/abstraction-fd.sh
-./examples/abstraction-asp.sh
+./examples/abs-fd.sh
+./examples/abs-asp.sh
 ```
 
 All four solve the same task, so the runs are comparable. See
@@ -45,9 +45,9 @@ python -m scripts.planner --help
 - `fd` solves the PDDL task with plain Fast Downward (`--alias lama-first`), as
   an external baseline.
 - `asp` solves it directly with ASP.
-- `abstraction-fd` collapses a symmetric object class, solves the abstraction
+- `abs-fd` collapses a symmetric object class, solves the abstraction
   with Fast Downward's lama-first, and refines that plan with ASP.
-- `abstraction-asp` does the same, but solves the abstraction with ASP.
+- `abs-asp` does the same, but solves the abstraction with ASP.
 
 Both abstraction modes ask PDDL Symmetries for the class. Pass
 `--objects-to-abstract NAME...` to choose one yourself. Finding no symmetric
@@ -58,8 +58,8 @@ class is an error, not a fallback to concrete search.
 Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
 Slurm task per mode and problem, each capped at 30 minutes and 8192 MiB.
-`--modes fd asp abstraction-fd abstraction-asp` submits all four; the default is the track's
-first mode alone. The unsolvability track runs `abstraction-fd` and `fd`.
+`--modes fd asp abs-fd abs-asp` submits all four; the default is the track's
+first mode alone. The unsolvability track runs `abs-fd` and `fd`.
 
 ```bash
 python -m experiments.submit

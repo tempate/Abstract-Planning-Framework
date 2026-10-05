@@ -12,8 +12,8 @@ from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
 MODE_LABELS = {
-    "abstraction-asp": "Abstraction + ASP",
-    "abstraction-fd": "Abstraction + FD",
+    "abs-asp": "Abstraction + ASP",
+    "abs-fd": "Abstraction + FD",
     "asp": "ASP",
     "fd": "FD",
 }

@@ -1,8 +1,8 @@
 # Benchmark report
 
-2026-10-05 09:16 — experiments/plan/resources/results.csv
+2026-10-05 09:29 — experiments/plan/resources/results.csv
 
-330 problems compared over abstraction-asp, abstraction-fd, asp, fd
+330 problems compared over abs-asp, abs-fd, asp, fd
 
 ## Coverage
 

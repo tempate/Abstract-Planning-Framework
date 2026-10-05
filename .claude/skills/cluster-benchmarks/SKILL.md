@@ -47,7 +47,7 @@ left the suite keeps its old row until you delete it.
 ## Submitting
 
 ```bash
-python -m experiments.submit --modes abstraction-asp abstraction-fd asp fd
+python -m experiments.submit --modes abs-asp abs-fd asp fd
 ```
 
 Submit every mode you want compared: `experiments.report` pairs **all** of them
@@ -57,7 +57,7 @@ table. `fd` is plain Fast Downward, the external baseline. Runs go to
 run. Only pass `--partition any` to fill a queue you do not intend to publish
 timings from: it spans two CPU generations and caps each job at one hour.
 
-`--track unsolvability` runs `abstraction-fd` and `fd`, and submit refuses any
+`--track unsolvability` runs `abs-fd` and `fd`, and submit refuses any
 mode a track does not run.
 
 `--track unsolvability` swaps the suite for unsolve-ipc-2016 and the planner for
@@ -118,7 +118,7 @@ minutes a job. Smoke-test anyway when the branch touches the pipeline itself,
 which the preflight cannot judge:
 
 ```bash
-./examples/abstraction-asp.sh   # driverlog p07: collapses three packages, plan length 15
+./examples/abs-asp.sh   # driverlog p07: collapses three packages, plan length 15
 ```
 
 Pick a problem the branch solves quickly. A refinement branch can time out on a

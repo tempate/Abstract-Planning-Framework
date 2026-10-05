@@ -1,7 +1,7 @@
 """Decide one PDDL task with Fast Downward, directly or through its abstraction.
 
 The abstraction over-approximates, so the two modes answer different questions.
-``fd`` settles the task: solvable or unsolvable. ``abstraction-fd`` searches the
+``fd`` settles the task: solvable or unsolvable. ``abs-fd`` searches the
 abstraction instead, where no plan proves the concrete task unsolvable but a plan
 may exist only because of the relaxation, and is reported as unknown.
 """
@@ -28,7 +28,7 @@ def _compute(args):
     on_update = progress_callback()
     if args.mode == "fd":
         return fd.check_solvability(planning_config(args), on_update)
-    if args.mode == "abstraction-fd":
+    if args.mode == "abs-fd":
         return abstraction.check_solvability(abstract_planning_config(args), on_update)
 
 
@@ -52,7 +52,7 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "abstraction-fd",
+        "abs-fd",
         parents=[shared, abstract],
         help="Search its abstraction",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

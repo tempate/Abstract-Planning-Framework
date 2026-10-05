@@ -1,8 +1,8 @@
 # Benchmark report
 
-2026-10-05 09:16 — experiments/plan/symmetries/results.csv
+2026-10-05 09:29 — experiments/plan/symmetries/results.csv
 
-667 problems compared over abstraction-asp, abstraction-fd, asp, fd
+667 problems compared over abs-asp, abs-fd, asp, fd
 
 ## Coverage
 
