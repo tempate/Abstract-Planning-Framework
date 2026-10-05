@@ -233,7 +233,7 @@ def _timeout_phases(problems, abstractions):
             # The extended search is no longer a phase of its own. A guided search that
             # has switched off every abstract action is what used to enter it.
             if phase == "Guided concrete search" and _discarded_the_abstract_plan(row):
-                phase = "Abstract plan discarded"
+                phase = "Unguided concrete search"
             counts[mode][phase] = counts[mode].get(phase, 0) + 1
 
     phases = {phase for mode in abstractions for phase in counts[mode]}

@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-05 09:45 — experiments/unsolvability/symmetries/results.csv
+2026-10-05 10:00 — experiments/unsolvability/symmetries/results.csv
 
 168 problems compared over abs-fd, fd
 

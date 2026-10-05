@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-05 09:45 — experiments/plan/resources/results.csv
+2026-10-05 10:00 — experiments/plan/resources/results.csv
 
 330 problems compared over asp, abs-asp, abs-fd, fd
 
@@ -33,7 +33,7 @@ Total runtime across shared solves                 5,966.09 s         3,803.93 s
 ```
 Killed during                                       Abs + ASP           Abs + FD
 --------------------------------------------------------------------------------
-Abstract plan discarded                              82 (32%)          102 (58%)
+Unguided concrete search                             82 (32%)          102 (58%)
 Searching for the abstract plan                     159 (63%)             3 (2%)
 Guided concrete search                                 8 (3%)           66 (38%)
 pnf_translation                                        5 (2%)             5 (3%)

@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-05 09:45 — experiments/plan/symmetries/results.csv
+2026-10-05 10:00 — experiments/plan/symmetries/results.csv
 
 667 problems compared over asp, abs-asp, abs-fd, fd
 
@@ -35,7 +35,7 @@ Killed during                                       Abs + ASP           Abs + FD
 --------------------------------------------------------------------------------
 Searching for the abstract plan                     454 (87%)            11 (4%)
 Guided concrete search                                32 (6%)          264 (85%)
-Abstract plan discarded                               33 (6%)           36 (12%)
+Unguided concrete search                              33 (6%)           36 (12%)
 Total                                                     519                311
 ```
 
