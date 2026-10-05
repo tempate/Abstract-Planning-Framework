@@ -33,17 +33,22 @@ def main():
     args = _argument_parser().parse_args()
     modes, problems, dropped = _finished_problems(args.results)
     abstractions = [mode for mode in modes if mode.startswith(ABSTRACTION_PREFIX)]
-    baselines = [mode for mode in modes if mode not in abstractions]
+    # Each abstraction is compared with the solver that plans its abstract task.
+    pairs = []
+    for mode in abstractions:
+        solver = mode.removeprefix(ABSTRACTION_PREFIX)
+        if solver in modes:
+            pairs.append((mode, solver))
 
     # A decide run reports no plan, horizon or refinement, so none of the other
     # tables have anything to say about one.
     verdict_run = _is_verdict_run(problems)
     if verdict_run:
         sections = [_verdicts(problems, modes)]
-        sections += [_verdict_head_to_head(problems, mode, baseline) for mode in abstractions for baseline in baselines]
+        sections += [_verdict_head_to_head(problems, mode, solver) for mode, solver in pairs]
     else:
         sections = [_coverage(problems, modes)]
-        sections += [_head_to_head(problems, mode, baseline) for mode in abstractions for baseline in baselines]
+        sections += [_head_to_head(problems, mode, solver) for mode, solver in pairs]
 
     # Only a mode through an abstraction has one to report on.
     for mode in abstractions:

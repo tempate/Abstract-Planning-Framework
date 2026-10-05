@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-05 09:29 — experiments/plan/resources/results.csv
+2026-10-05 09:34 — experiments/plan/resources/results.csv
 
 330 problems compared over abs-asp, abs-fd, asp, fd
 
@@ -26,30 +26,6 @@ Faster when both found a plan                      26 (37.1%)         44 (62.9%)
 Plan found when the other did not                           6                  2
 Median runtime when both found a plan                 10.12 s             7.20 s
 Total runtime across shared solves                 3,803.93 s         5,966.09 s
-```
-
-## Head to head: Abstraction + ASP vs FD
-
-```
-Metric                                      Abstraction + ASP                 FD
---------------------------------------------------------------------------------
-Plans found by both                                        76                 76
-Faster when both found a plan                        6 (7.9%)         70 (92.1%)
-Plan found when the other did not                           0                229
-Median runtime when both found a plan                 11.04 s             2.97 s
-Total runtime across shared solves                 7,620.39 s           417.07 s
-```
-
-## Head to head: Abstraction + FD vs ASP
-
-```
-Metric                                       Abstraction + FD                ASP
---------------------------------------------------------------------------------
-Plans found by both                                        71                 71
-Faster when both found a plan                      23 (32.4%)         48 (67.6%)
-Plan found when the other did not                          53                  1
-Median runtime when both found a plan                  8.83 s             7.30 s
-Total runtime across shared solves                 2,787.76 s         5,761.68 s
 ```
 
 ## Head to head: Abstraction + FD vs FD
