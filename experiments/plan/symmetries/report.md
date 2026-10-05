@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-05 10:03 — experiments/plan/symmetries/results.csv
+2026-10-05 13:30 — experiments/plan/symmetries/results.csv
 
 667 problems compared over asp, abs-asp, abs-fd, fd
 
@@ -9,9 +9,9 @@
 ```
 Metric                                                    ASP          Abs + ASP           Abs + FD                 FD
 ----------------------------------------------------------------------------------------------------------------------
-Plans found                                       113 (16.9%)        135 (20.2%)        266 (39.9%)        602 (90.3%)
-Timeouts                                          541 (81.1%)        519 (77.8%)        311 (46.6%)          42 (6.3%)
-Out of memory                                       13 (1.9%)          13 (1.9%)         89 (13.3%)          22 (3.3%)
+Plans found                                       113 (16.9%)        135 (20.2%)        265 (39.7%)        602 (90.3%)
+Timeouts                                          541 (81.1%)        518 (77.7%)        312 (46.8%)          42 (6.3%)
+Out of memory                                       13 (1.9%)          14 (2.1%)         89 (13.3%)          22 (3.3%)
 Others                                               0 (0.0%)           0 (0.0%)           1 (0.1%)           1 (0.1%)
 Total problems                                            667                667                667                667
 ```
@@ -22,10 +22,10 @@ Total problems                                            667                667
 Metric                                                    ASP          Abs + ASP           Abs + FD                 FD
 ----------------------------------------------------------------------------------------------------------------------
 Plans found by both                                       111                111                261                261
-Faster when both found a plan                      68 (61.3%)         43 (38.7%)           9 (3.4%)        252 (96.6%)
-Plan found when the other did not                           2                 24                  5                341
-Median runtime when both found a plan                 10.35 s             8.09 s            15.11 s             3.49 s
-Total runtime across shared solves                12,840.20 s         8,268.69 s        26,836.01 s         3,923.05 s
+Faster when both found a plan                      68 (61.3%)         43 (38.7%)           7 (2.7%)        254 (97.3%)
+Plan found when the other did not                           2                 24                  4                341
+Median runtime when both found a plan                 10.35 s             8.09 s            16.17 s             3.49 s
+Total runtime across shared solves                12,840.20 s         8,268.69 s        27,763.12 s         3,923.05 s
 ```
 
 ## Where the timeouts died
@@ -33,10 +33,10 @@ Total runtime across shared solves                12,840.20 s         8,268.69 s
 ```
 Killed during                                       Abs + ASP           Abs + FD
 --------------------------------------------------------------------------------
-Searching for the abstract plan                     454 (87%)            11 (4%)
-Guided concrete search                                32 (6%)          264 (85%)
-Unguided concrete search                              33 (6%)           36 (12%)
-Total                                                     519                311
+Searching for the abstract plan                     453 (87%)            11 (4%)
+Guided concrete search                                32 (6%)          267 (86%)
+Unguided concrete search                              33 (6%)           34 (11%)
+Total                                                     518                312
 ```
 
 ## How the successes were solved
@@ -45,9 +45,9 @@ Total                                                     519                311
 Solved by                                           Abs + ASP           Abs + FD
 --------------------------------------------------------------------------------
 Abstract plan refined directly                       72 (53%)          159 (60%)
-Refined after switching some actions off             54 (40%)           98 (37%)
+Refined after switching some actions off             54 (40%)           97 (37%)
 Abstract plan discarded, solved above it               9 (7%)             9 (3%)
-Total                                                     135                266
+Total                                                     135                265
 ```
 
 ## Deletes relaxed, over the successes whose abstract plan was used
@@ -57,10 +57,10 @@ Deletes relaxed                                     Abs + ASP           Abs + FD
 --------------------------------------------------------------------------------
 None                                                 12 (10%)           28 (11%)
 1 to 4                                               77 (61%)          170 (66%)
-5 to 9                                                 9 (7%)           27 (11%)
+5 to 9                                                 9 (7%)           26 (10%)
 10 to 19                                             23 (18%)            24 (9%)
 20 or more                                             5 (4%)             8 (3%)
-Total                                                     126                257
+Total                                                     126                256
 ```
 
 ## Plans found by domain
@@ -77,7 +77,7 @@ depot                                   9          1          3          3      
 driverlog                              13          7          8         12         13
 elevators-sat08-strips                 30          1          1         12         30
 elevators-sat11-strips                 14          0          0          0         14
-floortile-sat11-strips                 20          0          0         12          7
+floortile-sat11-strips                 20          0          0         11          7
 gripper                                20          3          3          3         20
 hiking-sat14-strips                    20          2          6         17         20
 logistics00                            19          8         10         13         19
@@ -100,5 +100,5 @@ transport-sat11-strips                 20          0          0          0      
 woodworking-sat08-strips               27          3          3         17         27
 woodworking-sat11-strips               11          0          0          0         11
 zenotravel                             13          4          4          9         13
-Total                                 667        113        135        266        602
+Total                                 667        113        135        265        602
 ```
