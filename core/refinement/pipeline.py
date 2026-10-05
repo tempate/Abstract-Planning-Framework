@@ -3,12 +3,11 @@
 from dataclasses import dataclass
 
 from core.abstraction.factory import Abstraction
-from core.integrations.clingo import parse_plan_actions, plan_length
+from core.integrations.clingo import plan_length
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.refinement.mapping import build_mapping, mapped_horizon
 from core.search.relaxing import RelaxingSolver
-from core.search.incremental import IncrementalSolver
 
 
 @dataclass
@@ -20,12 +19,10 @@ class RefinementContext:
     run_id: str
     metrics: PlanningMetrics
     concrete_asp: str
-    abstract_asp: str
 
 
-def refine(context: RefinementContext):
-    """Obtain an abstract plan and use it to guide concrete search."""
-    abstract_plan, abstract_horizon = _solve_abstract_plan(context)
+def refine(context: RefinementContext, abstract_plan, abstract_horizon):
+    """Use an abstract plan to guide concrete search."""
     mapping = build_mapping(abstract_plan, context.abstraction)
     asp = "\n".join((context.concrete_asp, mapping))
     # The concrete search runs on the mapped time line, which surrounds every
@@ -41,31 +38,6 @@ def refine(context: RefinementContext):
         "success": plan is not None,
         "run_id": context.run_id,
     }
-
-
-def _solve_abstract_plan(context):
-    """Search for the shortest abstract plan, returning its actions and its horizon."""
-
-    def record_attempt(horizon, solve_calls):
-        context.metrics.set_counters(
-            {
-                "abstract_plan_length": horizon,
-                "abstract_solve_calls": solve_calls,
-            }
-        )
-
-    with context.metrics.measure("abstract_solving"):
-        solver = IncrementalSolver(context.abstract_asp)
-        solve_result = solver.search(on_attempt=record_attempt)
-
-    context.metrics.set_counters(
-        {
-            "abstract_plan_length": solve_result.horizon,
-            "abstract_solve_calls": solve_result.attempts,
-        }
-    )
-
-    return parse_plan_actions(solve_result.plan), solve_result.horizon
 
 
 def _solve_concrete_plan(context, asp, mapped):

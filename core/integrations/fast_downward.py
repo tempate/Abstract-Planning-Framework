@@ -55,25 +55,21 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
 def has_plan(base_dir, domain_path, problem_path, label):
     """Translate and search one PDDL task, reporting only whether it has a plan."""
     completed_process, _ = _search(base_dir, domain_path, problem_path, label, search=("--search", SEARCH))
-
-    if completed_process.returncode == _SUCCESS:
-        return True
-    if completed_process.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
-        return False
-
-    _raise_failure(completed_process, label)
+    return _found_plan(completed_process, label)
 
 
 def find_plan(base_dir, domain_path, problem_path, label):
     """Search one PDDL task with LAMA-first, returning its plan or None."""
     completed_process, plan_path = _search(base_dir, domain_path, problem_path, label, driver=("--alias", LAMA_FIRST))
+    return _read_plan(plan_path) if _found_plan(completed_process, label) else None
 
-    if completed_process.returncode == _SUCCESS:
-        return _read_plan(plan_path)
-    if completed_process.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
-        return None
 
-    _raise_failure(completed_process, label)
+def find_sas_plan(base_dir, sas_path, label):
+    """Search an already translated task with LAMA-first, returning its plan or None."""
+    plan_path = os.path.join(base_dir, f"{label}.plan")
+    command = [sys.executable, FAST_DOWNWARD_SCRIPT, "--plan-file", plan_path, "--alias", LAMA_FIRST, sas_path]
+    completed_process = subprocess.run(command, capture_output=True, text=True)
+    return _read_plan(plan_path) if _found_plan(completed_process, label) else None
 
 
 def _search(base_dir, domain_path, problem_path, label, driver=(), search=()):
@@ -116,6 +112,15 @@ def _read_plan(plan_path):
     """Read the actions of a plan file, which ends in a comment naming its cost."""
     with open(plan_path, encoding="utf-8") as plan_file:
         return [line.strip() for line in plan_file if line.strip() and not line.startswith(";")]
+
+
+def _found_plan(completed_process, label):
+    """Tell a search that found a plan from one that proved there is none, raising on anything else."""
+    if completed_process.returncode == _SUCCESS:
+        return True
+    if completed_process.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
+        return False
+    _raise_failure(completed_process, label)
 
 
 def _raise_failure(completed_process, label):
