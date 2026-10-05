@@ -21,7 +21,7 @@ MANIFEST_NAME = "manifest.json"
 # Every way one problem gets solved, in the order a report reads them. A mode
 # names the solver that finds the plan, or through an abstraction the abstract
 # plan, which ASP then refines.
-MODES = ("abs-asp", "abs-fd", "asp", "fd")
+MODES = ("asp", "abs-asp", "abs-fd", "fd")
 ABSTRACTION_PREFIX = "abs-"
 
 

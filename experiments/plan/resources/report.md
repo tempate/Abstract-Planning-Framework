@@ -1,113 +1,87 @@
 # Benchmark report
 
-2026-10-05 09:34 — experiments/plan/resources/results.csv
+2026-10-05 09:45 — experiments/plan/resources/results.csv
 
-330 problems compared over abs-asp, abs-fd, asp, fd
+330 problems compared over asp, abs-asp, abs-fd, fd
 
 ## Coverage
 
 ```
-Metric                                      Abstraction + ASP   Abstraction + FD                ASP                 FD
+Metric                                                    ASP          Abs + ASP           Abs + FD                 FD
 ----------------------------------------------------------------------------------------------------------------------
-Plans found                                        76 (23.0%)        124 (37.6%)         72 (21.8%)        305 (92.4%)
-Timeouts                                          254 (77.0%)        176 (53.3%)        258 (78.2%)          22 (6.7%)
-Out of memory                                        0 (0.0%)          29 (8.8%)           0 (0.0%)           1 (0.3%)
-Others                                               0 (0.0%)           1 (0.3%)           0 (0.0%)           2 (0.6%)
+Plans found                                        72 (21.8%)         76 (23.0%)        124 (37.6%)        305 (92.4%)
+Timeouts                                          258 (78.2%)        254 (77.0%)        176 (53.3%)          22 (6.7%)
+Out of memory                                        0 (0.0%)           0 (0.0%)          29 (8.8%)           1 (0.3%)
+Others                                               0 (0.0%)           0 (0.0%)           1 (0.3%)           2 (0.6%)
 Total problems                                            330                330                330                330
 ```
 
-## Head to head: Abstraction + ASP vs ASP
+## Head to head
 
 ```
-Metric                                      Abstraction + ASP                ASP
+Metric                                                    ASP          Abs + ASP           Abs + FD                 FD
+----------------------------------------------------------------------------------------------------------------------
+Plans found by both                                        70                 70                124                124
+Faster when both found a plan                      44 (62.9%)         26 (37.1%)           3 (2.4%)        121 (97.6%)
+Plan found when the other did not                           2                  6                  0                181
+Median runtime when both found a plan                  7.20 s            10.12 s            14.90 s             3.15 s
+Total runtime across shared solves                 5,966.09 s         3,803.93 s         7,999.37 s           769.71 s
+```
+
+## Where the timeouts died
+
+```
+Killed during                                       Abs + ASP           Abs + FD
 --------------------------------------------------------------------------------
-Plans found by both                                        70                 70
-Faster when both found a plan                      26 (37.1%)         44 (62.9%)
-Plan found when the other did not                           6                  2
-Median runtime when both found a plan                 10.12 s             7.20 s
-Total runtime across shared solves                 3,803.93 s         5,966.09 s
+Abstract plan discarded                              82 (32%)          102 (58%)
+Searching for the abstract plan                     159 (63%)             3 (2%)
+Guided concrete search                                 8 (3%)           66 (38%)
+pnf_translation                                        5 (2%)             5 (3%)
+Total                                                     254                176
 ```
 
-## Head to head: Abstraction + FD vs FD
+## How the successes were solved
 
 ```
-Metric                                       Abstraction + FD                 FD
+Solved by                                           Abs + ASP           Abs + FD
 --------------------------------------------------------------------------------
-Plans found by both                                       124                124
-Faster when both found a plan                        3 (2.4%)        121 (97.6%)
-Plan found when the other did not                           0                181
-Median runtime when both found a plan                 14.90 s             3.15 s
-Total runtime across shared solves                 7,999.37 s           769.71 s
+Abstract plan refined directly                       54 (71%)           91 (73%)
+Refined after switching some actions off             15 (20%)           26 (21%)
+Abstract plan discarded, solved above it               7 (9%)             7 (6%)
+Total                                                      76                124
 ```
 
-## Where the timeouts of Abstraction + ASP died
+## Deletes relaxed, over the successes whose abstract plan was used
 
 ```
-Where Abstraction + ASP was killed                   Timeouts
--------------------------------------------------------------
-Searching for the abstract plan                     159 (63%)
-Abstract plan discarded                              82 (32%)
-Guided concrete search                                 8 (3%)
-pnf_translation                                        5 (2%)
-Total                                                     254
+Deletes relaxed                                     Abs + ASP           Abs + FD
+--------------------------------------------------------------------------------
+None                                                   0 (0%)             0 (0%)
+1 to 4                                               54 (78%)           69 (59%)
+5 to 9                                                7 (10%)           15 (13%)
+10 to 19                                              8 (12%)           14 (12%)
+20 or more                                             0 (0%)           19 (16%)
+Total                                                      69                117
 ```
 
-## How the successes of Abstraction + ASP were solved
+## Plans found by domain
 
 ```
-How the 76 successes were solved                     Problems
--------------------------------------------------------------
-Abstract plan refined directly                       54 (71%)
-Refined after switching some actions off             15 (20%)
-Abstract plan discarded, solved above it               7 (9%)
-Total                                                      76
-```
-
-## Deletes relaxed by Abstraction + ASP, over the 69 successes whose abstract plan was used
-
-```
-Deletes relaxed                                      Problems
--------------------------------------------------------------
-None                                                   0 (0%)
-1 to 4                                               54 (78%)
-5 to 9                                                7 (10%)
-10 to 19                                              8 (12%)
-20 or more                                             0 (0%)
-Total                                                      69
-```
-
-## Where the timeouts of Abstraction + FD died
-
-```
-Where Abstraction + FD was killed                    Timeouts
--------------------------------------------------------------
-Abstract plan discarded                             102 (58%)
-Guided concrete search                               66 (38%)
-pnf_translation                                        5 (3%)
-concrete_asp                                           3 (2%)
-Total                                                     176
-```
-
-## How the successes of Abstraction + FD were solved
-
-```
-How the 124 successes were solved                    Problems
--------------------------------------------------------------
-Abstract plan refined directly                       91 (73%)
-Refined after switching some actions off             26 (21%)
-Abstract plan discarded, solved above it               7 (6%)
-Total                                                     124
-```
-
-## Deletes relaxed by Abstraction + FD, over the 117 successes whose abstract plan was used
-
-```
-Deletes relaxed                                      Problems
--------------------------------------------------------------
-None                                                   0 (0%)
-1 to 4                                               69 (59%)
-5 to 9                                               15 (13%)
-10 to 19                                             14 (12%)
-20 or more                                           19 (16%)
-Total                                                     117
+Domain                           Problems        ASP  Abs + ASP   Abs + FD         FD
+-------------------------------------------------------------------------------------
+data-network-sat18-strips              15          0          1          1         12
+elevators-sat08-strips                 30          1          3          7         30
+elevators-sat11-strips                 14          0          0          0         14
+freecell                               73         10         10         10         72
+mprime                                 29         29         29         28         29
+mystery                                26         17         15         17         17
+nomystery-sat11-strips                 19          2          3         10         12
+openstacks-sat08-strips                27          3          3         24         27
+openstacks-sat11-strips                 7          0          0          4          7
+thoughtful-sat14-strips                20          0          1          5         15
+tpp                                    24          5          5          5         24
+transport-sat08-strips                 30          5          6         13         30
+transport-sat11-strips                 13          0          0          0         13
+transport-sat14-strips                  3          0          0          0          3
+Total                                 330         72         76        124        305
 ```

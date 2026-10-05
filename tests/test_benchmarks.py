@@ -638,7 +638,7 @@ class ReportTests(unittest.TestCase):
             }
         ]
 
-        _title, lines = _head_to_head(problems, "abs-asp", "asp")
+        _title, lines = _head_to_head(problems, [("abs-asp", "asp")])
 
         median = next(line for line in lines if line.startswith("Median runtime"))
         self.assertNotIn(" s", median)
@@ -665,27 +665,20 @@ class ReportTests(unittest.TestCase):
 
         self.assertEqual(counted, [len(problems)] * len(modes))
 
-    def test_a_baseline_is_compared_against_the_abstract_pipeline_alone(self):
-        """Intersecting all three would drop the problems one baseline missed out
-        of the others' comparison, moving numbers for an unrelated reason."""
+    def test_each_abstraction_is_compared_against_its_solver_alone(self):
+        """Intersecting every mode would drop the problems one solver missed out
+        of the other pair's comparison, moving numbers for an unrelated reason."""
+        success = {"status": "success", "wall_time_seconds": "1.0"}
+        timeout = {"status": "timed out", "wall_time_seconds": "1800.0"}
         problems = [
-            {
-                "abs-asp": {"status": "success", "wall_time_seconds": "1.0"},
-                "asp": {"status": "success", "wall_time_seconds": "2.0"},
-                "fd": {"status": "success", "wall_time_seconds": "3.0"},
-            },
-            {
-                "abs-asp": {"status": "success", "wall_time_seconds": "1.0"},
-                "asp": {"status": "success", "wall_time_seconds": "2.0"},
-                "fd": {"status": "timed out", "wall_time_seconds": "1800.0"},
-            },
+            {"asp": success, "abs-asp": success, "abs-fd": success, "fd": success},
+            {"asp": success, "abs-asp": success, "abs-fd": success, "fd": timeout},
         ]
 
-        _title, concrete = _head_to_head(problems, "abs-asp", "asp")
-        _title, lama = _head_to_head(problems, "abs-asp", "fd")
+        _title, lines = _head_to_head(problems, [("abs-asp", "asp"), ("abs-fd", "fd")])
 
-        self.assertIn("2", next(line for line in concrete if line.startswith("Plans found by both")))
-        self.assertIn("1", next(line for line in lama if line.startswith("Plans found by both")))
+        shared = next(line for line in lines if line.startswith("Plans found by both"))
+        self.assertEqual(re.findall(r"\d+", shared), ["2", "2", "1", "1"])
 
     def test_the_report_covers_the_modes_the_results_hold(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -704,7 +697,7 @@ class ReportTests(unittest.TestCase):
 
             modes, problems, dropped = _finished_problems(results)
 
-        self.assertEqual(modes, ("abs-asp", "asp", "fd"))
+        self.assertEqual(modes, ("asp", "abs-asp", "fd"))
         self.assertEqual(len(problems), 1)
         self.assertEqual(dropped, 1)
 
