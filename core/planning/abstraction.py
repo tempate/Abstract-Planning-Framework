@@ -1,6 +1,7 @@
 """Prepare and dispatch abstraction-based planning workflows."""
 
 import os
+from dataclasses import replace
 
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import has_plan, pddl_to_sas
@@ -30,9 +31,19 @@ def _abstract_and_refine(config, find_abstract_plan, base_dir, run_id, metrics):
     abstract_problem = build_abstract_problem(config, metrics)
     report_abstraction(abstract_problem, metrics)
 
-    concrete_sas, abstract_sas = _to_sas(base_dir, abstract_problem.problem, config, metrics)
+    concrete_sas, abstract_sas, original_names = _to_sas(base_dir, abstract_problem.problem, config, metrics)
     concrete_asp = _to_asp(concrete_sas, metrics)
     abstract_plan, abstract_horizon = find_abstract_plan(base_dir, abstract_sas, metrics)
+    # The plan speaks the written task's names, and refinement matches them
+    # against the concrete task's.
+    abstract_plan = tuple(
+        replace(
+            action,
+            name=original_names.get(action.name, action.name),
+            args=tuple(original_names.get(arg, arg) for arg in action.args),
+        )
+        for action in abstract_plan
+    )
 
     context = RefinementContext(
         config=config,
@@ -45,19 +56,19 @@ def _abstract_and_refine(config, find_abstract_plan, base_dir, run_id, metrics):
 
 
 def _to_sas(base_dir, problem, config, metrics):
-    """Translate the concrete and abstract tasks and return their SAS files."""
+    """Translate the concrete and abstract tasks, returning their SAS files and the writer's renamings."""
     with metrics.measure("concrete_fd"):
         concrete_dir = os.path.join(base_dir, "concrete")
         concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
 
     with metrics.measure("abstract_pddl_writing"):
-        domain_path, problem_path = write_abstract_problem(problem, base_dir)
+        domain_path, problem_path, original_names = write_abstract_problem(problem, base_dir)
 
     with metrics.measure("abstract_fd"):
         abstract_dir = os.path.join(base_dir, "abstract")
         abstract_sas = pddl_to_sas(abstract_dir, domain_path, problem_path, "abstract")
 
-    return concrete_sas, abstract_sas
+    return concrete_sas, abstract_sas, original_names
 
 
 def _to_asp(concrete_sas, metrics):
@@ -82,7 +93,7 @@ def check_solvability(config: AbstractPlanningConfig, on_update=None):
                 report_abstraction(abstract_problem, metrics)
 
                 with metrics.measure("abstract_pddl_writing"):
-                    domain_path, problem_path = write_abstract_problem(abstract_problem.problem, base_dir)
+                    domain_path, problem_path, _ = write_abstract_problem(abstract_problem.problem, base_dir)
 
                 with metrics.measure("abstract_fd_search"):
                     found = has_plan(base_dir, domain_path, problem_path, "abstract")

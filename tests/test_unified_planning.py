@@ -111,6 +111,23 @@ class UnifiedPlanningCodecTests(unittest.TestCase):
 
         self.assertEqual(problem.object("cart").type.name, "cart")
 
+    def test_reports_the_original_name_of_what_the_writer_renames(self):
+        domain = """
+(define (domain grid)
+  (:predicates (at ?x) (up ?x ?y))
+  (:action up
+    :parameters (?x ?y)
+    :precondition (and (at ?x) (up ?x ?y))
+    :effect (and (not (at ?x)) (at ?y))))
+"""
+        problem = "(define (problem p) (:domain grid) (:objects a b) (:init (at a) (up a b)) (:goal (at b)))"
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            serialized = write_problem(parse_problem(domain, problem))
+
+        (written,) = [name for name, original in serialized.original_names.items() if original == "up"]
+        self.assertIn(f"(:action {written}", serialized.domain)
+
     def test_round_trips_a_task_with_action_costs(self):
         source = parse_problem(ROUND_TRIP_DOMAIN, ROUND_TRIP_PROBLEM)
 

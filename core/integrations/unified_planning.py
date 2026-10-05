@@ -25,6 +25,9 @@ class PddlText:
 
     domain: str
     problem: str
+    # Written name to original, for the actions and objects the writer had to
+    # rename, such as an action sharing its name with a predicate.
+    original_names: dict[str, str]
 
 
 def read_problem(domain_path, problem_path):
@@ -48,9 +51,16 @@ def write_problem(problem: Problem):
     """Serialize a Unified Planning problem as a matched PDDL pair."""
     try:
         writer = PDDLWriter(problem)
-        return PddlText(writer.get_domain(), writer.get_problem())
+        domain, problem_text = writer.get_domain(), writer.get_problem()
     except Exception as error:
         raise PddlError(f"Could not serialize PDDL task: {error}") from error
+
+    original_names = {}
+    for item in (*problem.actions, *problem.all_objects):
+        written = writer.get_pddl_name(item)
+        if written != item.name:
+            original_names[written] = item.name
+    return PddlText(domain, problem_text, original_names)
 
 
 def to_positive_normal_form(problem):

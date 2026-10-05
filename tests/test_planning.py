@@ -62,7 +62,7 @@ def _stubbed_decision(found):
         patch(
             "core.planning.abstraction.build_abstract_problem", return_value=_generated_abstraction()
         ) as build_abstract_problem,
-        patch("core.planning.abstraction.write_abstract_problem", return_value=("domain.pddl", "problem.pddl")),
+        patch("core.planning.abstraction.write_abstract_problem", return_value=("domain.pddl", "problem.pddl", {})),
         patch("core.planning.abstraction.has_plan", return_value=found),
     ):
         temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
@@ -126,7 +126,7 @@ class GeneratedAbstractionTests(unittest.TestCase):
             config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"], abstract_name="combined")
 
             abstract_problem = build_abstract_problem(config)
-            abstract_domain, abstract_problem_path = write_abstract_problem(abstract_problem.problem, root / "run")
+            abstract_domain, abstract_problem_path, _ = write_abstract_problem(abstract_problem.problem, root / "run")
             generated = read_problem(abstract_domain, abstract_problem_path)
 
         self.assertEqual(abstract_problem.abstraction.name, "combined")
