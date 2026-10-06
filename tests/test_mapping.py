@@ -68,6 +68,19 @@ switch(2).
 
         self.assertTrue(result.unsatisfiable)
 
+    def test_one_solve_gives_up_only_the_abstract_actions_that_do_not_refine(self):
+        abstract_plan = (
+            PlanAction("inspect", ("item1",), 1),
+            PlanAction("inspect", ("item2",), 2),
+            PlanAction("inspect", ("item1",), 3),
+        )
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
+        program = 'action(action(("inspect","item1"))).\n' + build_mapping(abstract_plan, abstraction)
+
+        plan = IncrementalSolver(program, horizon=7, domain_heuristic=True).solve()
+
+        self.assertEqual({atom for atom in plan if atom.startswith("switch(")}, {"switch(2)", "switch(6)"})
+
     def _models(self, program, horizon):
         control = IncrementalSolver(program, horizon).control
         control.configuration.solve.models = 0

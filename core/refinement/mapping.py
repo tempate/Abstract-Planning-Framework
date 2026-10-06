@@ -26,6 +26,10 @@ def build_mapping(abstract_plan, abstraction):
     for object_name in abstraction.objects:
         mapping_rules.append(f"concrete_object({_quote(object_name)}).")
 
+    # The encodings show occurs/2 only, so the switches are shown for the
+    # caller to read how much of the abstract plan was kept.
+    mapping_rules.append("#show switch/1.")
+
     # Mark the odd time steps as gaps so the encoding lets them stay empty.
     abstract_horizon = max((action.time_step for action in abstract_plan), default=0)
     for time_step in range(1, mapped_horizon(abstract_horizon) + 1, 2):
@@ -37,6 +41,10 @@ def build_mapping(abstract_plan, abstraction):
         # A switch per step, so the search can give up the abstract plan one action at a time.
         switch = f"switch({time_step})"
         mapping_rules.append(f"0 {{ {switch} }} 1.")
+
+        # Decide the switches first and try them on, so the solver starts from the
+        # whole abstract plan and gives up only the steps a conflict forces it to.
+        mapping_rules.append(f"#heuristic {switch}. [1,true]")
 
         # While the switch is on, some grounding of the abstract action occurs at its step.
         action_str, conds_str = _action_pattern(action, abstraction)

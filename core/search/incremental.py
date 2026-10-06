@@ -19,11 +19,11 @@ class SolveResult:
 class IncrementalSolver(Solver):
     """One Clingo control whose horizon can be raised without regrounding."""
 
-    def __init__(self, asp, horizon=0):
+    def __init__(self, asp, horizon=0, domain_heuristic=False):
         if horizon < 0:
             raise ValueError("Horizon must be nonnegative")
 
-        super().__init__(asp)
+        super().__init__(asp, domain_heuristic)
 
         for time_step in range(1, horizon + 1):
             self.control.ground([("step", [clingo.Number(time_step)])])

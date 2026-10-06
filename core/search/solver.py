@@ -8,8 +8,11 @@ THREADS = 1
 class Solver:
     """A Clingo control holding the base program, solved one call at a time."""
 
-    def __init__(self, asp):
+    def __init__(self, asp, domain_heuristic=False):
         arguments = ["-t", str(THREADS), "--warn=none"]
+        # Without this the #heuristic directives in the program are read and ignored.
+        if domain_heuristic:
+            arguments.append("--heuristic=Domain")
         self.control = clingo.Control(arguments)
         self.control.configuration.solve.models = 1
         self.control.add("base", [], asp)
