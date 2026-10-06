@@ -23,7 +23,7 @@ _OUT_OF_MEMORY = (20, 22, 24, 247)
 # of the real one. The verdict only reaches us through what it printed.
 _UNSOLVABLE_MARKER = "Generating unsolvable task"
 
-SEARCH = "astar(blind())"
+SEARCH = "astar(hmax())"
 LAMA_FIRST = "lama-first"
 
 
