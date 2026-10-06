@@ -53,7 +53,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     problem = without_action_costs(problem)
 
     if config.objects_to_abstract is None:
-        candidate_classes = _candidate_classes(config, metrics)
+        candidate_classes = _candidate_classes(config, problem, metrics)
 
     with metrics.measure("abstraction"):
         if config.objects_to_abstract is None:
@@ -86,15 +86,18 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     )
 
 
-def _candidate_classes(config, metrics):
+def _candidate_classes(config, problem, metrics):
     """Find the object classes this run may collapse, from the source it was given."""
     if config.abstraction_source == RESOURCES:
         with metrics.measure("resource_detection"):
             with tempfile.TemporaryDirectory(prefix="apf-resources-") as directory:
-                resources = detect_resources(directory, config.domain_path, config.problem_path)
-        if not resources:
+                detection = detect_resources(directory, config.domain_path, config.problem_path)
+        if not detection.resources:
             raise NoResourcesError("Resource detection found no abstractable object classes")
-        return [resource.objects for resource in resources]
+        return [
+            _with_ungrounded_objects(problem, resource.objects, detection.grounded_objects)
+            for resource in detection.resources
+        ]
 
     with metrics.measure("symmetry_discovery"):
         symmetry_classes = find_symmetric_object_sets(
@@ -103,6 +106,22 @@ def _candidate_classes(config, metrics):
     if not symmetry_classes:
         raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")
     return symmetry_classes
+
+
+def _with_ungrounded_objects(problem, objects, grounded_objects):
+    """The resource's objects, and those of their type that the grounded task never names."""
+    # The grounding drops the values a resource can never take, as nomystery's
+    # fuel levels no sequence of drives reaches, but the static facts still name
+    # them. Left concrete, they let an abstract plan pick a value no concrete
+    # plan can.
+    objects_by_name = {item.name.casefold(): item for item in problem.all_objects}
+    object_type = objects_by_name[objects[0].casefold()].type
+    ungrounded = [
+        item.name
+        for item in problem.all_objects
+        if item.type == object_type and item.name.casefold() not in grounded_objects
+    ]
+    return (*objects, *ungrounded)
 
 
 def _select_abstraction(problem, symmetry_classes, abstract_name=None):
