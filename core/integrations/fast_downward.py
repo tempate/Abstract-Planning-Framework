@@ -23,7 +23,16 @@ _OUT_OF_MEMORY = (20, 22, 24, 247)
 # of the real one. The verdict only reaches us through what it printed.
 _UNSOLVABLE_MARKER = "Generating unsolvable task"
 
-SEARCH = "astar(blind())"
+# Merge-and-shrink with bisimulation detects dead ends, as the Unsolvability
+# IPC 2016 entries did, so both sides are proved by a state-of-the-art search.
+SEARCH = (
+    "astar(merge_and_shrink("
+    "shrink_strategy=shrink_bisimulation(greedy=false),"
+    "merge_strategy=merge_sccs(order_of_sccs=topological,"
+    "merge_selector=score_based_filtering(scoring_functions=[goal_relevance(),dfp(),total_order()])),"
+    "label_reduction=exact(before_shrinking=true,before_merging=false),"
+    "max_states=50000,threshold_before_merge=1))"
+)
 LAMA_FIRST = "lama-first"
 
 
