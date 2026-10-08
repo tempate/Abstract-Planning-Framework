@@ -24,30 +24,3 @@ def sas_to_asp(sas_path):
         raise IntegrationError(f"plasp failed:\n{completed_process.stderr}")
     fragments = (encoding, time_encoding, completed_process.stdout)
     return "\n".join(fragment.rstrip("\n") for fragment in fragments) + "\n"
-
-
-def add_switch_to_asp_rule(asp):
-    """Guard the exact encoding's occurrence constraint with a switch, and let gaps stay empty."""
-    rule_to_modify = "1 {occurs(Action, t) : action(Action)} 1."
-    modified_rule = "\n".join(
-        (
-            "1 {occurs(Action, t) : action(Action)} 1 :- not switch(t), not gap(t).",
-            "0 {occurs(Action, t) : action(Action)} 1 :- gap(t).",
-        )
-    )
-
-    lines = []
-    guarded = 0
-    for line in asp.splitlines():
-        if line.strip() == rule_to_modify:
-            lines.append(modified_rule)
-            guarded += 1
-        else:
-            lines.append(line)
-
-    # Without the guard the switches never suppress the rule, so the abstract
-    # plan would silently stop constraining the concrete search.
-    if guarded == 0:
-        raise IntegrationError("No occurrence rule to guard with switches in the exact encoding")
-
-    return "\n".join(lines) + ("\n" if asp.endswith("\n") else "")

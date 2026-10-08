@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import find_plan, has_plan, pddl_to_sas
-from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
+from core.integrations.plasp import sas_to_asp
 from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
 from core.plan import PlanAction
 
@@ -165,10 +165,6 @@ class PlaspPostProcessingTests(unittest.TestCase):
                 program = sas_to_asp(str(sas))
 
             self.assertEqual(program, "exact.\nactions.\ntranslated.\n")
-
-    def test_switch_guard_rejects_an_encoding_without_the_occurrence_rule(self):
-        with self.assertRaisesRegex(IntegrationError, "No occurrence rule"):
-            add_switch_to_asp_rule("before.\nafter.\n")
 
 
 if __name__ == "__main__":

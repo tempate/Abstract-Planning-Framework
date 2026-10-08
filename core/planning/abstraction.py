@@ -5,7 +5,7 @@ from dataclasses import replace
 
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import has_plan, pddl_to_sas
-from core.integrations.plasp import add_switch_to_asp_rule, sas_to_asp
+from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
 from core.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
@@ -74,8 +74,7 @@ def _to_sas(base_dir, problem, config, metrics):
 def _to_asp(concrete_sas, metrics):
     """Translate the concrete SAS file into the ASP program the refinement searches."""
     with metrics.measure("concrete_asp"):
-        concrete_asp = sas_to_asp(concrete_sas)
-        return add_switch_to_asp_rule(concrete_asp)
+        return sas_to_asp(concrete_sas)
 
 
 def check_solvability(config: AbstractPlanningConfig, on_update=None):
