@@ -64,7 +64,7 @@ action(action(("move","item1"))).
 switch(2).
 """ + mapping
 
-        result = IncrementalSolver(program, horizon=2).control.solve()
+        result = IncrementalSolver(program, init_horizon=2).control.solve()
 
         self.assertTrue(result.unsatisfiable)
 

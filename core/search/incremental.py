@@ -19,27 +19,25 @@ class SolveResult:
 class IncrementalSolver(Solver):
     """One Clingo control whose horizon can be raised without regrounding."""
 
-    def __init__(self, asp, horizon=0):
-        if horizon < 0:
+    def __init__(self, asp, init_horizon=0):
+        if init_horizon < 0:
             raise ValueError("Horizon must be nonnegative")
 
         super().__init__(asp)
 
-        for time_step in range(1, horizon + 1):
+        for time_step in range(1, init_horizon + 1):
             self.control.ground([("step", [clingo.Number(time_step)])])
 
-        self.horizon = horizon
-        self._check_goal()
+        self.horizon = init_horizon
+        self._add_goal()
 
     def search(self, assumptions=(), on_attempt=None):
-        """Raise the horizon until the program becomes satisfiable.
-
-        ``on_attempt`` receives the horizon being tried and the number of solver
-        calls made so far, so callers can report progress while the search runs.
-        """
+        """Raise the horizon until the program becomes satisfiable."""
         attempts = 0
         while True:
             attempts += 1
+
+            # Allow callers to report progress while the search runs.
             if on_attempt is not None:
                 on_attempt(self.horizon, attempts)
 
@@ -51,15 +49,19 @@ class IncrementalSolver(Solver):
 
     def extend(self):
         """Raise the horizon by one, keeping everything grounded so far."""
-        self.control.release_external(_query(self.horizon))
+        self._delete_goal()
         self.horizon += 1
         self.control.ground([("step", [clingo.Number(self.horizon)])])
-        self._check_goal()
+        self._add_goal()
 
-    def _check_goal(self):
+    def _add_goal(self):
         """Ground the goal test for the current horizon and activate it."""
         self.control.ground([("check", [clingo.Number(self.horizon)])])
         self.control.assign_external(_query(self.horizon), True)
+
+    def _delete_goal(self):
+        """Deactivate the goal test for the current horizon."""
+        self.control.release_external(_query(self.horizon))
 
 
 def _query(horizon):
