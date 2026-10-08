@@ -24,7 +24,7 @@ class RefinementContext:
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Use an abstract plan to guide concrete search."""
     mapping = build_mapping(abstract_plan, context.abstraction)
-    asp = "\n".join((context.concrete_asp, mapping))
+    asp = context.concrete_asp + "\n" + mapping
     # The concrete search runs on the mapped time line, which surrounds every
     # abstract action with a gap for one optional concrete action.
     plan = _solve_concrete_plan(context, asp, mapped_horizon(abstract_horizon))
@@ -40,37 +40,35 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     }
 
 
-def _solve_concrete_plan(context, asp, mapped):
+def _solve_concrete_plan(context, asp, init_horizon):
     """Refine the abstract plan, then search above its horizon if it does not refine."""
     # Publish the counters before searching so an interrupted run still has them.
-    _publish_counters(context, decrements=0, increments=0, solve_calls=0)
+    counters = {
+        "increments": 0,
+        "decrements": 0,
+        "concrete_solve_calls": 0,
+    }
+    context.metrics.set_counters(counters)
 
     def record_attempt(horizon, dropped, solve_calls):
-        _publish_counters(context, decrements=dropped, increments=horizon - mapped, solve_calls=solve_calls)
+        counters["increments"] = horizon - init_horizon
+        counters["decrements"] = dropped
+        counters["concrete_solve_calls"] = solve_calls
+        context.metrics.set_counters(counters)
 
     with context.metrics.measure("guided_concrete_solving"):
-        solver = RelaxingSolver(asp, mapped)
-        # Give up the abstract plan from its end, so what survives is a prefix of it.
-        result = solver.search(list(reversed(_switches(solver))), record_attempt)
+        solver = RelaxingSolver(asp, init_horizon)
+        result = solver.search(_switches(solver), record_attempt)
 
-    _publish_counters(
-        context, decrements=result.dropped, increments=result.horizon - mapped, solve_calls=result.attempts
-    )
+    record_attempt(result.horizon, result.dropped, result.attempts)
     return result.plan
 
 
 def _switches(solver):
-    """The switches holding the abstract plan, ordered by time step rather than lexically."""
-    switches = [atom.symbol for atom in solver.control.symbolic_atoms if atom.symbol.name == "switch"]
-    return sorted(switches, key=lambda switch: switch.arguments[0].number)
+    """The switches holding the abstract plan, latest first, so that what survives relaxation is a prefix of it."""
+    switches = []
+    for atom in solver.control.symbolic_atoms:
+        if atom.symbol.name == "switch":
+            switches.append(atom.symbol)
 
-
-def _publish_counters(context, *, decrements, increments, solve_calls):
-    """Report the concrete search's progress so far."""
-    context.metrics.set_counters(
-        {
-            "decrements": decrements,
-            "increments": increments,
-            "concrete_solve_calls": solve_calls,
-        }
-    )
+    return sorted(switches, key=lambda switch: switch.arguments[0].number, reverse=True)
