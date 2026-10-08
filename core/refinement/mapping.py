@@ -14,55 +14,50 @@ def mapped_horizon(abstract_horizon):
 
 
 def build_mapping(abstract_plan, abstraction):
-    """Map an abstract plan to compatible grounded concrete actions.
+    """Map an abstract plan to compatible grounded concrete actions."""
+    rules = []
 
-    args equal to the abstraction name become independent variables
-    ranging over its objects.  The concrete ASP ``action/1`` relation then
-    limits the choices to grounded actions that actually exist.  The actions
-    take the even time steps, leaving a gap around each for one action or none.
-    """
-    mapping_rules = []
+    abstract_plan = sorted(abstract_plan, key=lambda action: action.time_step)
+    abstract_horizon = abstract_plan[-1].time_step if len(abstract_plan) > 0 else 0
+    concrete_horizon = mapped_horizon(abstract_horizon)
 
     for object_name in abstraction.objects:
-        mapping_rules.append(f"concrete_object({_quote(object_name)}).")
+        rules.append(f"concrete_object({_quote(object_name)}).")
 
-    # Mark the odd time steps as gaps so the encoding lets them stay empty.
-    abstract_horizon = max((action.time_step for action in abstract_plan), default=0)
-    for time_step in range(1, mapped_horizon(abstract_horizon) + 1, 2):
-        mapping_rules.append(f"gap({time_step}).")
-
-    for action in sorted(abstract_plan, key=lambda action: action.time_step):
+    for action in abstract_plan:
         time_step = concrete_time_step(action.time_step)
 
         # A switch per step, so the search can give up the abstract plan one action at a time.
         switch = f"switch({time_step})"
-        mapping_rules.append(f"0 {{ {switch} }} 1.")
+        rules.append(f"0 {{ {switch} }} 1.")
 
         # While the switch is on, some grounding of the abstract action occurs at its step.
         action_str, conds_str = _action_pattern(action, abstraction)
-        rule = f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1 :- {switch}."
-        mapping_rules.append(rule)
+        rules.append(f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1 :- {switch}.")
 
-    return "\n".join(mapping_rules)
+    # Mark the odd time steps as gaps so the encoding lets them stay empty.
+    for t in range(1, concrete_horizon + 1, 2):
+        rules.append(f"gap({t}).")
+
+    return "\n".join(rules)
 
 
 def _action_pattern(action, abstraction):
     """Extract the action pattern and independent variables from an abstract action."""
-    variables = []
+    vars = []
     args = []
     for arg in action.args:
         if arg.casefold() == abstraction.name.casefold():
-            variable = f"ConcreteObject{len(variables) + 1}"
-            variables.append(variable)
-            args.append(variable)
+            var = f"ConcreteObject{len(vars) + 1}"
+            vars.append(var)
+            args.append(var)
         else:
             args.append(_quote(arg))
 
-    action_str = f"action(({','.join((_quote(action.name), *args))}))"
+    action_name = _quote(action.name)
+    action_str = f"action(({','.join((action_name, *args))}))"
 
-    conds = []
-    for variable in variables:
-        conds.append(f"concrete_object({variable})")
+    conds = [f"concrete_object({var})" for var in vars]
     conds.append(f"action({action_str})")
     conds_str = ", ".join(conds)
 
