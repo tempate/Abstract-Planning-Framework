@@ -34,6 +34,8 @@ SEARCH = (
     "max_states=50000,threshold_before_merge=1))"
 )
 LAMA_FIRST = "lama-first"
+# Optimal, so it gives the shortest plan to compare plan lengths against.
+LMCUT = "astar(lmcut())"
 
 
 def pddl_to_sas(base_dir, domain_path, problem_path, label):
@@ -67,9 +69,10 @@ def has_plan(base_dir, domain_path, problem_path, label):
     return _found_plan(completed_process, label)
 
 
-def find_plan(base_dir, domain_path, problem_path, label):
-    """Search one PDDL task with LAMA-first, returning its plan or None."""
-    completed_process, plan_path = _search(base_dir, domain_path, problem_path, label, driver=("--alias", LAMA_FIRST))
+def find_plan(base_dir, domain_path, problem_path, label, search=None):
+    """Search one PDDL task with LAMA-first, or the search given, returning its plan or None."""
+    options = {"search": ("--search", search)} if search else {"driver": ("--alias", LAMA_FIRST)}
+    completed_process, plan_path = _search(base_dir, domain_path, problem_path, label, **options)
     return _read_plan(plan_path) if _found_plan(completed_process, label) else None
 
 

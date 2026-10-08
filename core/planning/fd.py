@@ -12,13 +12,13 @@ from core.planning.validation import validated
 LABEL = "fd"
 
 
-def solve(config: PlanningConfig, on_update=None):
-    """Search one PDDL task with LAMA-first, reporting it like our own pipelines."""
+def solve(config: PlanningConfig, on_update=None, search=None):
+    """Search one PDDL task with LAMA-first, or the search given, reporting it like our own pipelines."""
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir(LABEL) as (base_dir, run_id):
             with metrics.measure("fd_search"):
-                plan = find_plan(base_dir, config.domain_path, config.problem_path, LABEL)
+                plan = find_plan(base_dir, config.domain_path, config.problem_path, LABEL, search)
 
             # An already satisfied goal gives an empty plan, which is a solved
             # task rather than a failure, so the length is set on any plan.

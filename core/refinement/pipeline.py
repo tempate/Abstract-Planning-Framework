@@ -25,7 +25,7 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Use an abstract plan to guide concrete search."""
     horizon = mapped_horizon(abstract_horizon)
 
-    asp = add_gaps(context.concrete_asp, horizon)
+    asp = add_gaps(context.concrete_asp, horizon, context.config.minimize_gaps)
     asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction)
 
     plan = _solve_concrete_plan(context, asp, horizon, switches(abstract_plan))

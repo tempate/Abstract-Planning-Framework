@@ -16,6 +16,7 @@ MODE_LABELS = {
     "abs-fd": "Abs + FD",
     "asp": "ASP",
     "fd": "FD",
+    "fd-lmcut": "FD (LM-cut)",
 }
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
