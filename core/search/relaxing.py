@@ -5,13 +5,6 @@ from dataclasses import dataclass
 from core.search.incremental import IncrementalSolver, SolveResult
 
 
-@dataclass(frozen=True)
-class RelaxedResult(SolveResult):
-    """A plan, and how many assumptions had to be given up to reach it."""
-
-    dropped: int
-
-
 class RelaxingSolver(IncrementalSolver):
     """An incremental solver that relaxes the assumptions it cannot satisfy."""
 
@@ -30,7 +23,7 @@ class RelaxingSolver(IncrementalSolver):
 
             plan = self.solve(list(assumptions.items()))
             if plan is not None:
-                return RelaxedResult(plan, self.horizon, attempts, dropped)
+                return SolveResult(plan, self.horizon, attempts, dropped)
 
             if dropped < len(symbols):
                 assumptions[symbols[dropped]] = False

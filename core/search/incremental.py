@@ -1,19 +1,8 @@
 """Incremental horizon search over an ASP planning program."""
 
-from dataclasses import dataclass
-
 import clingo
 
-from core.search.solver import Solver
-
-
-@dataclass(frozen=True)
-class SolveResult:
-    """Result of an incremental horizon search."""
-
-    plan: list[str]
-    horizon: int
-    attempts: int
+from core.search.solver import Solver, SolveResult
 
 
 class IncrementalSolver(Solver):
