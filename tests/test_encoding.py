@@ -36,6 +36,24 @@ switch(2).
         self.assertTrue(any('occurs(action(("unrelated","x")),1)' in model for model in models))
         self.assertTrue(any(not model & in_first_gap for model in models))
 
+    def test_minimized_gaps_stay_empty_when_they_can(self):
+        abstract_plan = (PlanAction("inspect", ("item1",), 1),)
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
+        mapping = concretize_abstract_actions(abstract_plan, abstraction)
+        program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1), minimize=True) + """
+action(action(("inspect","item1"))).
+action(action(("unrelated","x"))).
+switch(2).
+""" + mapping
+
+        control = IncrementalSolver(program, init_horizon=3).control
+        control.configuration.solve.opt_mode = "optN"
+        optimal = self._models(program, horizon=3, control=control, optimal_only=True)
+        in_gaps = {f'occurs(action(("unrelated","x")),{step})' for step in (1, 3)}
+
+        self.assertTrue(optimal)
+        self.assertTrue(all(not model & in_gaps for model in optimal))
+
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
         abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))
@@ -70,13 +88,14 @@ switch(2).
         # Steps 10 and 2, ordered by number rather than as text.
         self.assertEqual([str(switch) for switch in switches(abstract_plan)], ["switch(10)", "switch(2)"])
 
-    def _models(self, program, horizon):
-        control = IncrementalSolver(program, horizon).control
+    def _models(self, program, horizon, control=None, optimal_only=False):
+        control = control or IncrementalSolver(program, horizon).control
         control.configuration.solve.models = 0
         models = []
         with control.solve(yield_=True) as handle:
             for model in handle:
-                models.append({str(symbol) for symbol in model.symbols(atoms=True)})
+                if not optimal_only or model.optimality_proven:
+                    models.append({str(symbol) for symbol in model.symbols(atoms=True)})
         return models
 
 

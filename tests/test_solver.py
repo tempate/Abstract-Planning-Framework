@@ -9,6 +9,11 @@ class SolverTests(unittest.TestCase):
 
         self.assertEqual(plan, ["ready"])
 
+    def test_weak_constraints_choose_the_optimal_model(self):
+        plan = Solver("1 { pick(1..5) } 1. :~ pick(X). [X]\n#show pick/1.").solve()
+
+        self.assertEqual(plan, ["pick(1)"])
+
     def test_unsatisfiable_program_has_no_plan(self):
         self.assertIsNone(Solver(":-.\n").solve())
 

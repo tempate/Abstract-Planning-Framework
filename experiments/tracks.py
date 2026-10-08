@@ -61,6 +61,15 @@ TRACKS = {
         modes=("abs-asp", "abs-fd", "asp", "fd"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
+    # The symmetries track, refined to the plan that fills the fewest gaps.
+    "plan/symmetries-min-gaps": Track(
+        directory=Path(plan.__file__).parent / "symmetries-min-gaps",
+        suite=plan.SUITE,
+        benchmarks_dir=BENCHMARKS / "downward-benchmarks",
+        driver="scripts.planner",
+        modes=("abs-asp", "abs-fd", "fd-lmcut"),
+        abstract_arguments=("--minimize-gaps",),
+    ),
     "unsolvability/symmetries": Track(
         directory=Path(unsolvability.__file__).parent / "symmetries",
         suite=unsolvability.SUITE,

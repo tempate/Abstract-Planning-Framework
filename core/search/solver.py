@@ -20,13 +20,18 @@ class Solver:
     def __init__(self, asp):
         arguments = ["-t", str(THREADS), "--warn=none"]
         self.control = clingo.Control(arguments)
-        self.control.configuration.solve.models = 1
+        self.control.configuration.solve.models = 0
         self.control.add("base", [], asp)
         self.control.ground([("base", [])])
 
     def solve(self, assumptions=()):
-        """Return the shown atoms from the first model, or None when there is none."""
+        """Return the shown atoms from the best model, or None when there is none."""
+        plan = None
         with self.control.solve(yield_=True, assumptions=assumptions) as handle:
-            for plan in handle:
-                return [str(atom) for atom in plan.symbols(shown=True)]
-        return None
+            # Without weak constraints the first model is as good as any. With them,
+            # each model improves on the last, and the last one is optimal.
+            for model in handle:
+                plan = [str(atom) for atom in model.symbols(shown=True)]
+                if not model.cost:
+                    break
+        return plan

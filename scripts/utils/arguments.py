@@ -35,6 +35,7 @@ def abstraction_arguments():
         default=SYMMETRIES,
         help="Where the collapsed class comes from",
     )
+    parser.add_argument("--minimize-gaps", action="store_true", help="Refine to the plan with the fewest filled gaps")
     return parser
 
 
@@ -52,4 +53,5 @@ def abstract_planning_config(args):
         abstract_name=args.abstract_name,
         symmetry_time_limit=args.symmetry_time_limit,
         abstraction_source=args.abstraction_source,
+        minimize_gaps=args.minimize_gaps,
     )
