@@ -23,6 +23,8 @@ class RelaxingSolver(IncrementalSolver):
 
         while True:
             attempts += 1
+
+            # Allow callers to report progress while the search runs.
             if on_attempt is not None:
                 on_attempt(self.horizon, dropped, attempts)
 
