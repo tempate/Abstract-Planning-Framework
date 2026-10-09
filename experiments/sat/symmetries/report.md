@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-05 13:30 — experiments/plan/symmetries/results.csv
+2026-10-09 15:15 — experiments/sat/symmetries/results.csv
 
 667 problems compared over asp, abs-asp, abs-fd, fd
 
@@ -26,6 +26,10 @@ Faster when both found a plan                      68 (61.3%)         43 (38.7%)
 Plan found when the other did not                           2                 24                  4                341
 Median runtime when both found a plan                 10.35 s             8.09 s            16.17 s             3.49 s
 Total runtime across shared solves                12,840.20 s         8,268.69 s        27,763.12 s         3,923.05 s
+Shorter plan when both found one                   82 (73.9%)           0 (0.0%)         52 (19.9%)        151 (57.9%)
+Same plan length when both found one               29 (26.1%)         29 (26.1%)         58 (22.2%)         58 (22.2%)
+Median plan length when both found one                     12                 16                 43                 37
+Total plan length across shared solves                  1,603              2,172             18,186             15,946
 ```
 
 ## Where the timeouts died

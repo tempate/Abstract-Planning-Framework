@@ -57,10 +57,10 @@ table. `fd` is plain Fast Downward, the external baseline. Runs go to
 run. Only pass `--partition any` to fill a queue you do not intend to publish
 timings from: it spans two CPU generations and caps each job at one hour.
 
-`--track unsolvability` runs `abs-fd` and `fd`, and submit refuses any
+`--track unsat` runs `abs-fd` and `fd`, and submit refuses any
 mode a track does not run.
 
-`--track unsolvability` swaps the suite for unsolve-ipc-2016 and the planner for
+`--track unsat` swaps the suite for unsolve-ipc-2016 and the planner for
 `scripts.unsolvability`, which reports a verdict instead of a plan. The CSV
 carries it in the `verdict` column. Only the probNN problems run, the ones known
 unsolvable; satprob and unknownprob are skipped.
@@ -176,7 +176,7 @@ one of them: the worker catches its SIGINT and writes `interrupted`.
 ## Before reporting on a run
 
 ```bash
-awk -F, '$4=="running"' experiments/plan/symmetries/results.csv | wc -l
+awk -F, '$4=="running"' experiments/sat/symmetries/results.csv | wc -l
 ```
 
 `running` rows are jobs killed without a terminal status, not live work. Report a
@@ -190,8 +190,8 @@ collected before #101, a crash reads `no plan found` and a memory kill `running`
 
 When results land, do all five without being asked:
 
-1. collect into `experiments/plan/symmetries/results.csv`
-2. `python -m experiments.report` to regenerate `experiments/plan/symmetries/report.md`
+1. collect into `experiments/sat/symmetries/results.csv`
+2. `python -m experiments.report` to regenerate `experiments/sat/symmetries/report.md`
 3. commit both with the message `Update results`
 4. push
 5. rewrite the description of the branch's PR around the run's numbers, following **Writing the PR** in the `pull-requests` skill, and drop any numbers or run IDs from earlier runs
