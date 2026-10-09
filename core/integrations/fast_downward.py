@@ -76,10 +76,11 @@ def find_plan(base_dir, domain_path, problem_path, label, search=None):
     return _read_plan(plan_path) if _found_plan(completed_process, label) else None
 
 
-def find_sas_plan(base_dir, sas_path, label):
-    """Search an already translated task with LAMA-first, returning its plan or None."""
+def find_sas_plan(base_dir, sas_path, label, search=None):
+    """Search an already translated task with LAMA-first, or the search given, returning its plan or None."""
     plan_path = os.path.join(base_dir, f"{label}.plan")
-    command = [sys.executable, FAST_DOWNWARD_SCRIPT, "--plan-file", plan_path, "--alias", LAMA_FIRST, sas_path]
+    command = [sys.executable, FAST_DOWNWARD_SCRIPT, "--plan-file", plan_path]
+    command += [sas_path, "--search", search] if search else ["--alias", LAMA_FIRST, sas_path]
     completed_process = subprocess.run(command, capture_output=True, text=True)
     return _read_plan(plan_path) if _found_plan(completed_process, label) else None
 

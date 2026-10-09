@@ -61,14 +61,15 @@ TRACKS = {
         modes=("abs-asp", "abs-fd", "asp", "fd"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
-    # The sat symmetries suite, refined to the plan that fills the fewest gaps.
+    # The sat symmetries suite, refined to the plan that fills the fewest gaps,
+    # with abs-fd searching the abstract task optimally like its fd-lmcut baseline.
     "opt": Track(
         directory=Path(__file__).parent / "opt",
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-fd", "fd-lmcut"),
-        abstract_arguments=("--minimize-gaps",),
+        abstract_arguments=("--minimize-gaps", "--lmcut"),
     ),
     "unsat": Track(
         directory=Path(unsat.__file__).parent,

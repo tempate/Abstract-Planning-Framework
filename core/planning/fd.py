@@ -54,10 +54,10 @@ def check_solvability(config: PlanningConfig, on_update=None):
     }
 
 
-def find_abstract_plan(base_dir, abstract_sas, metrics):
-    """Search the abstract task with LAMA-first, returning its actions and its horizon."""
+def find_abstract_plan(base_dir, abstract_sas, metrics, search=None):
+    """Search the abstract task with LAMA-first, or the search given, returning its actions and its horizon."""
     with metrics.measure("abstract_fd_search"):
-        plan = find_sas_plan(base_dir, abstract_sas, "abstract")
+        plan = find_sas_plan(base_dir, abstract_sas, "abstract", search)
     # The abstraction over-approximates, so an abstract task without a plan
     # proves the concrete one has none either.
     if plan is None:

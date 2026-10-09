@@ -1,6 +1,7 @@
 """Solve one PDDL task concretely or through an automatically generated abstraction."""
 
 import argparse
+from functools import partial
 
 from core.integrations.fast_downward import LMCUT
 from core.planning import abstraction, asp, fd
@@ -30,7 +31,8 @@ def _compute(args):
     if args.mode == "abs-asp":
         return abstraction.solve(abstract_planning_config(args), asp.find_abstract_plan, on_update)
     if args.mode == "abs-fd":
-        return abstraction.solve(abstract_planning_config(args), fd.find_abstract_plan, on_update)
+        find_abstract_plan = partial(fd.find_abstract_plan, search=LMCUT if args.lmcut else None)
+        return abstraction.solve(abstract_planning_config(args), find_abstract_plan, on_update)
 
 
 def print_planning_result(result):

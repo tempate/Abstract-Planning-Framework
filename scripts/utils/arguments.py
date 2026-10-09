@@ -36,6 +36,11 @@ def abstraction_arguments():
         help="Where the collapsed class comes from",
     )
     parser.add_argument("--minimize-gaps", action="store_true", help="Refine to the plan with the fewest filled gaps")
+    parser.add_argument(
+        "--lmcut",
+        action="store_true",
+        help="Search the abstract task with A* and LM-cut instead of lama-first (abs-fd)",
+    )
     return parser
 
 
