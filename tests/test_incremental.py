@@ -12,7 +12,7 @@ step(0).
 #program step(t).
 step(t).
 """
-        plan = IncrementalSolver(program, horizon=3).solve()
+        plan = IncrementalSolver(program, init_horizon=3).solve()
 
         self.assertEqual(set(plan), {"step(0)", "step(1)", "step(2)", "step(3)"})
 
@@ -45,7 +45,7 @@ reached(t).
 """
         attempts = []
 
-        result = IncrementalSolver(program, horizon=2).search(
+        result = IncrementalSolver(program, init_horizon=2).search(
             on_attempt=lambda horizon, calls: attempts.append((horizon, calls))
         )
 
@@ -65,7 +65,7 @@ reached(t).
 #external query(t).
 :- query(t), t < 2.
 """
-        solver = IncrementalSolver(program, horizon=1)
+        solver = IncrementalSolver(program, init_horizon=1)
         control = solver.control
 
         self.assertIsNone(solver.solve())

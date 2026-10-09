@@ -1,8 +1,17 @@
 """One Clingo control over a grounded ASP program."""
 
+from dataclasses import dataclass
 import clingo
 
 THREADS = 1
+
+
+@dataclass(frozen=True)
+class SolveResult:
+    plan: list[str]
+    horizon: int
+    attempts: int = 0
+    dropped: int = 0  # assumptions given up before the program became satisfiable
 
 
 class Solver:

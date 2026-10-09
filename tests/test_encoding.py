@@ -1,20 +1,16 @@
 import unittest
 from types import SimpleNamespace
 
-from core.search.incremental import IncrementalSolver
-from core.integrations.plasp import add_switch_to_asp_rule
 from core.plan import PlanAction
-from core.refinement.mapping import build_mapping
+from core.refinement.encoding import add_gaps, concretize_abstract_actions, mapped_horizon, switches
+from core.search.incremental import IncrementalSolver
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
 
 
-class MappingTests(unittest.TestCase):
+class EncodingTests(unittest.TestCase):
     def test_every_abstract_action_is_surrounded_by_a_gap(self):
-        abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item2",), 2))
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
-
-        mapping = build_mapping(abstract_plan, abstraction)
+        mapping = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(2))
 
         # The actions take the even steps 2 and 4, the gaps the odd ones around them.
         self.assertIn("gap(1).", mapping)
@@ -26,8 +22,8 @@ class MappingTests(unittest.TestCase):
     def test_a_gap_holds_any_concrete_action_or_none(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = build_mapping(abstract_plan, abstraction)
-        program = add_switch_to_asp_rule(OCCURRENCE_ENCODING) + """
+        mapping = concretize_abstract_actions(abstract_plan, abstraction)
+        program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1)) + """
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
 switch(2).
@@ -43,7 +39,7 @@ switch(2).
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
         abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))
-        mapping = build_mapping(abstract_plan, abstraction)
+        mapping = concretize_abstract_actions(abstract_plan, abstraction)
         program = """
 action(action(("link","a","b"))).
 switch(2).
@@ -58,15 +54,21 @@ switch(2).
     def test_mapping_rejects_plan_actions_that_are_not_concrete_actions(self):
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
-        mapping = build_mapping(abstract_plan, abstraction)
+        mapping = concretize_abstract_actions(abstract_plan, abstraction)
         program = """
 action(action(("move","item1"))).
 switch(2).
 """ + mapping
 
-        result = IncrementalSolver(program, horizon=2).control.solve()
+        result = IncrementalSolver(program, init_horizon=2).control.solve()
 
         self.assertTrue(result.unsatisfiable)
+
+    def test_switches_give_up_the_abstract_plan_from_its_end(self):
+        abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item2",), 5))
+
+        # Steps 10 and 2, ordered by number rather than as text.
+        self.assertEqual([str(switch) for switch in switches(abstract_plan)], ["switch(10)", "switch(2)"])
 
     def _models(self, program, horizon):
         control = IncrementalSolver(program, horizon).control

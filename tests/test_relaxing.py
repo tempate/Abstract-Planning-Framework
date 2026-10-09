@@ -11,7 +11,7 @@ def _keep(number):
 
 class RelaxingSolverTests(unittest.TestCase):
     def _search(self, program, numbers, on_attempt=None):
-        solver = RelaxingSolver(program, horizon=0)
+        solver = RelaxingSolver(program, init_horizon=0)
         return solver.search([_keep(number) for number in numbers], on_attempt)
 
     def test_keeps_every_assumption_when_they_hold_together(self):
