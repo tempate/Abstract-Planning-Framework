@@ -59,22 +59,24 @@ Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
 Slurm task per mode and problem, each capped at 30 minutes and 8192 MiB.
 `--modes fd asp abs-fd abs-asp` submits all four; the default is the track's
-first mode alone. The unsolvability track runs `abs-fd` and `fd`.
+first mode alone. The unsat track runs `abs-fd` and `fd`.
 
 ```bash
 python -m experiments.submit
 python -m experiments.collect
-python -m experiments.report experiments/plan/symmetries/results.csv
+python -m experiments.report experiments/sat/symmetries/results.csv
 ```
 
-- `experiments/plan/suite.py` holds the domains, but a problem is submitted
-  only when `experiments/plan/symmetries/problems.txt` records an abstraction
+- `experiments/sat/suite.py` holds the domains, but a problem is submitted
+  only when `experiments/sat/symmetries/problems.txt` records an abstraction
   class for it.
   That file's header carries the command that regenerates it.
-- `--abstraction-source resources` submits `experiments/plan/resources/`, the
+- `--abstraction-source resources` submits `experiments/sat/resources/`, the
   problems its `problems.txt` lists, and collapses a resource instead of a symmetry
   class.
-- `--track unsolvability` submits `experiments/unsolvability/symmetries/` over unsolve-ipc-2016
+- `--track opt` submits `experiments/opt/`, the symmetries problems refined to the
+  plan that fills the fewest gaps, with `fd-lmcut` as the baseline.
+- `--track unsat` submits `experiments/unsat/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
   a plan. Only the probNN problems run, the ones known to be unsolvable.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an

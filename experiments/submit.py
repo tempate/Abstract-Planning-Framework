@@ -21,14 +21,13 @@ DEFAULT_MEMORY_LIMIT = 8 * 1024
 # "any" partition is not: it spans broadwell and sunnycove, and caps a job at one
 # hour, which silently bounds --timeout.
 DEFAULT_PARTITION = "sunnycove"
+DEFAULT_SOURCE = DEFAULT_TRACK.split("/")[1]
 
 
 def main():
     parser = _argument_parser()
     args = parser.parse_args()
-    track_name = f"{args.track}/{args.abstraction_source}"
-    if track_name not in TRACKS:
-        parser.error(f"no track abstracts {args.abstraction_source} to answer {args.track}")
+    track_name = _track_name(args, parser)
     track = TRACKS[track_name]
     modes = args.modes or track.modes[:1]
     unknown = sorted(set(modes) - set(track.modes))
@@ -68,6 +67,18 @@ def main():
             return
         print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
+
+
+def _track_name(args, parser):
+    """The track the arguments name: sat by its abstraction source, unsat and opt by themselves."""
+    if args.track in TRACKS:
+        if args.abstraction_source is not None:
+            parser.error(f"{args.track} has no abstraction source to choose")
+        return args.track
+    track_name = f"{args.track}/{args.abstraction_source or DEFAULT_SOURCE}"
+    if track_name not in TRACKS:
+        parser.error(f"no track abstracts {args.abstraction_source} to answer {args.track}")
+    return track_name
 
 
 def _report_run(tasks, config_file, definition_dir):
@@ -176,18 +187,16 @@ def _argument_parser():
         action="store_true",
         help="Submit every problem of the suite, not only the ones the track lists as runnable",
     )
-    question, source = DEFAULT_TRACK.split("/")
     parser.add_argument(
         "--track",
         choices=sorted({name.split("/")[0] for name in TRACKS}),
-        default=question,
-        help="What the run asks of each problem: a plan, or a proof that none exists",
+        default=DEFAULT_TRACK.split("/")[0],
+        help="What the run asks of each problem: a plan (sat), an optimal plan (opt), or a proof that none exists (unsat)",
     )
     parser.add_argument(
         "--abstraction-source",
-        choices=sorted({name.split("/")[1] for name in TRACKS}),
-        default=source,
-        help="What the modes through an abstraction collapse",
+        choices=sorted({name.split("/")[1] for name in TRACKS if "/" in name}),
+        help=f"What the modes through an abstraction collapse, for sat only (default: {DEFAULT_SOURCE})",
     )
     return parser
 

@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-06 10:01 — experiments/plan/resources/results.csv
+2026-10-06 10:01 — experiments/sat/resources/results.csv
 
 330 problems compared over asp, abs-asp, abs-fd, fd
 

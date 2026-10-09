@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-05 13:30 — experiments/plan/symmetries/results.csv
+2026-10-05 13:30 — experiments/sat/symmetries/results.csv
 
 667 problems compared over asp, abs-asp, abs-fd, fd
 

@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-09 15:05 — experiments/plan/symmetries-min-gaps/results.csv
+2026-10-09 15:05 — experiments/opt/results.csv
 
 667 problems compared over asp, abs-asp, abs-fd, fd-lmcut
 
