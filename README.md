@@ -75,8 +75,9 @@ python -m experiments.report experiments/sat/symmetries/results.csv
   problems its `problems.txt` lists, and collapses a resource instead of a symmetry
   class.
 - `--track opt` submits `experiments/opt/`, the problems of the optimal suite with a
-  symmetry class, refined to the plan that fills the fewest gaps, with `fd-lmcut`
-  as the baseline. `abs-fd` searches the abstract task with LM-cut there too.
+  symmetry class, refined to the plan that fills the fewest gaps, with `asp` and
+  `fd-lmcut` as the baselines. `abs-fd` searches the abstract task with LM-cut
+  there too.
 - `--track unsat` submits `experiments/unsat/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
   a plan. Only the probNN problems run, the ones known to be unsolvable.

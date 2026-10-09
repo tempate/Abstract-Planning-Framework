@@ -69,7 +69,7 @@ TRACKS = {
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abs-asp", "abs-fd", "fd-lmcut"),
+        modes=("abs-asp", "abs-fd", "asp", "fd-lmcut"),
         abstract_arguments=("--minimize-gaps", "--lmcut"),
     ),
     "unsat": Track(
