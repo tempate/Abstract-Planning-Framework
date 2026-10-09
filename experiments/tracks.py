@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from experiments.opt import suite as opt
 from experiments.sat import suite as sat
 from experiments.unsat import suite as unsat
 
@@ -61,11 +62,11 @@ TRACKS = {
         modes=("abs-asp", "abs-fd", "asp", "fd"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
-    # The sat symmetries suite, refined to the plan that fills the fewest gaps,
-    # with abs-fd searching the abstract task optimally like its fd-lmcut baseline.
+    # The optimal suite, refined to the plan that fills the fewest gaps, with
+    # abs-fd searching the abstract task optimally like its fd-lmcut baseline.
     "opt": Track(
-        directory=Path(__file__).parent / "opt",
-        suite=sat.SUITE,
+        directory=Path(opt.__file__).parent,
+        suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-fd", "fd-lmcut"),
