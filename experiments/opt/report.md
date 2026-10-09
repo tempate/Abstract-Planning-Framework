@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-09 15:05 — experiments/opt/results.csv
+2026-10-09 15:15 — experiments/opt/results.csv
 
 667 problems compared over asp, abs-asp, abs-fd, fd-lmcut
 
@@ -19,13 +19,17 @@ Total problems                                            667                667
 ## Head to head
 
 ```
-Metric                                                    ASP          Abs + ASP
---------------------------------------------------------------------------------
-Plans found by both                                       105                105
-Faster when both found a plan                      62 (59.0%)         43 (41.0%)
-Plan found when the other did not                           8                  9
-Median runtime when both found a plan                  9.72 s             6.78 s
-Total runtime across shared solves                11,404.18 s         7,993.46 s
+Metric                                                    ASP          Abs + ASP           Abs + FD        FD (LM-cut)
+----------------------------------------------------------------------------------------------------------------------
+Plans found by both                                       105                105                147                147
+Faster when both found a plan                      62 (59.0%)         43 (41.0%)         40 (27.2%)        107 (72.8%)
+Plan found when the other did not                           8                  9                 39                 68
+Median runtime when both found a plan                  9.72 s             6.78 s             6.09 s             3.11 s
+Total runtime across shared solves                11,404.18 s         7,993.46 s         8,060.10 s         8,079.71 s
+Shorter plan when both found one                   31 (29.5%)           0 (0.0%)           2 (1.4%)        100 (68.0%)
+Same plan length when both found one               74 (70.5%)         74 (70.5%)         45 (30.6%)         45 (30.6%)
+Median plan length when both found one                     11                 12                 20                 18
+Total plan length across shared solves                  1,441              1,520              7,567              5,762
 ```
 
 ## Where the timeouts died

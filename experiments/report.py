@@ -47,12 +47,7 @@ def main():
     args = _argument_parser().parse_args()
     modes, problems, dropped = _finished_problems(args.results)
     abstractions = [mode for mode in modes if mode.startswith(ABSTRACTION_PREFIX)]
-    # Each abstraction is compared with the solver that plans its abstract task.
-    pairs = []
-    for mode in abstractions:
-        solver = mode.removeprefix(ABSTRACTION_PREFIX)
-        if solver in modes:
-            pairs.append((mode, solver))
+    pairs = _pairs(abstractions, modes)
 
     # A decide run reports no plan, horizon or refinement, so none of the other
     # tables have anything to say about one.
@@ -79,6 +74,18 @@ def main():
     _write_report(sections, args.results, reports_file, summary)
     print(f"\n{summary}")
     print(f"Wrote this report to {_relative(reports_file)}")
+
+
+def _pairs(abstractions, modes):
+    """Pair each abstraction with the solver that plans its abstract task, or, when
+    the run has no plain one, a configuration of it such as fd-lmcut."""
+    pairs = []
+    for abstraction in abstractions:
+        solver = abstraction.removeprefix(ABSTRACTION_PREFIX)
+        candidates = [mode for mode in modes if mode == solver or mode.startswith(f"{solver}-")]
+        if candidates:
+            pairs.append((abstraction, solver if solver in candidates else candidates[0]))
+    return pairs
 
 
 def _summary(modes, problems, dropped):
@@ -173,6 +180,10 @@ PLAN_COMPARISON = {
     "alone": "Plan found when the other did not",
     "median": "Median runtime when both found a plan",
     "total": "Total runtime across shared solves",
+    "shorter": "Shorter plan when both found one",
+    "equal": "Same plan length when both found one",
+    "median_length": "Median plan length when both found one",
+    "total_length": "Total plan length across shared solves",
 }
 VERDICT_COMPARISON = {
     "shared": "Proved unsolvable by both",
@@ -216,17 +227,36 @@ def _compare_pair(problems, abstraction, solver, succeeded):
         winner = abstraction if _runtime(problem[abstraction]) < _runtime(problem[solver]) else solver
         faster[winner] += 1
 
+    # A verdict run reports no plan, so only the problems with both lengths compare.
+    measured = [problem for problem in both if all(_plan_length(problem[mode]) is not None for mode in pair)]
+    shorter = {mode: 0 for mode in pair}
+    for problem in measured:
+        lengths = {mode: _plan_length(problem[mode]) for mode in pair}
+        if lengths[abstraction] != lengths[solver]:
+            shorter[min(pair, key=lengths.get)] += 1
+    equal = len(measured) - sum(shorter.values())
+
     columns = {}
     for mode in sorted(pair, key=MODES.index):
         times = [_runtime(problem[mode]) for problem in both]
+        lengths = [_plan_length(problem[mode]) for problem in measured]
         columns[mode] = {
             "shared": shared,
             "faster": _share(faster[mode], shared, 1),
             "alone": sum(succeeded(problem[mode]) for problem in problems) - shared,
             "median": _median(times),
             "total": _seconds(sum(times)),
+            "shorter": _share(shorter[mode], len(measured), 1),
+            "equal": _share(equal, len(measured), 1),
+            "median_length": f"{statistics.median(lengths):g}" if lengths else "n/a",
+            "total_length": f"{sum(lengths):,}",
         }
     return columns
+
+
+def _plan_length(row):
+    length = row.get("plan_length", "").strip()
+    return int(float(length)) if length else None
 
 
 def _discarded_the_abstract_plan(row):
