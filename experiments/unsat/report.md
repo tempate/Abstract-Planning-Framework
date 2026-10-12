@@ -1,13 +1,13 @@
 # Benchmark report
 
-2026-10-07 09:25 — experiments/unsat/results.csv
+2026-10-12 12:09 — experiments/unsat/results.csv
 
 168 problems compared over abs-fd, fd
 
 ## Verdicts
 
 ```
-Verdict                                              Abs + FD                 FD
+Verdict                                                   FDᵅ                 FD
 --------------------------------------------------------------------------------
 Unsolvable                                         26 (15.5%)         56 (33.3%)
 Unknown                                            41 (24.4%)           0 (0.0%)
@@ -20,7 +20,7 @@ Total problems                                            168                168
 ## Head to head
 
 ```
-Metric                                               Abs + FD                 FD
+Metric                                                    FDᵅ                 FD
 --------------------------------------------------------------------------------
 Proved unsolvable by both                                  24                 24
 Faster when both proved it                         14 (58.3%)         10 (41.7%)
@@ -32,7 +32,7 @@ Total runtime across shared proofs                 1,526.28 s         2,755.60 s
 ## Where the timeouts died
 
 ```
-Killed during                                        Abs + FD
+Killed during                                             FDᵅ
 -------------------------------------------------------------
 Searching for the abstract plan                     40 (100%)
 Total                                                      40
@@ -41,7 +41,7 @@ Total                                                      40
 ## Proved unsolvable by domain
 
 ```
-Domain                           Problems   Abs + FD         FD
+Domain                           Problems        FDᵅ         FD
 ---------------------------------------------------------------
 bag-barman                             13          0          5
 bag-gripper                            22          0          3

@@ -1,13 +1,13 @@
 # Benchmark report
 
-2026-10-09 15:15 — experiments/sat/resources/results.csv
+2026-10-12 12:09 — experiments/sat/resources/results.csv
 
 330 problems compared over asp, abs-asp, abs-fd, fd
 
 ## Coverage
 
 ```
-Metric                                                    ASP          Abs + ASP           Abs + FD                 FD
+Metric                                                    ASP               ASPᵅ                FDᵅ                 FD
 ----------------------------------------------------------------------------------------------------------------------
 Plans found                                        72 (21.8%)         81 (24.5%)        124 (37.6%)        305 (92.4%)
 Timeouts                                          258 (78.2%)        249 (75.5%)        176 (53.3%)          22 (6.7%)
@@ -19,7 +19,7 @@ Total problems                                            330                330
 ## Head to head
 
 ```
-Metric                                                    ASP          Abs + ASP           Abs + FD                 FD
+Metric                                                    ASP               ASPᵅ                FDᵅ                 FD
 ----------------------------------------------------------------------------------------------------------------------
 Plans found by both                                        70                 70                124                124
 Faster when both found a plan                      47 (67.1%)         23 (32.9%)           3 (2.4%)        121 (97.6%)
@@ -35,7 +35,7 @@ Total plan length across shared solves                    622                957
 ## Where the timeouts died
 
 ```
-Killed during                                       Abs + ASP           Abs + FD
+Killed during                                            ASPᵅ                FDᵅ
 --------------------------------------------------------------------------------
 Abstraction                                            5 (2%)             5 (3%)
 Writing the abstract task                              1 (0%)             0 (0%)
@@ -48,7 +48,7 @@ Total                                                     249                176
 ## How the successes were solved
 
 ```
-Solved by                                           Abs + ASP           Abs + FD
+Solved by                                                ASPᵅ                FDᵅ
 --------------------------------------------------------------------------------
 Abstract plan refined directly                       61 (75%)           91 (73%)
 Refined after switching some actions off             13 (16%)           26 (21%)
@@ -59,7 +59,7 @@ Total                                                      81                124
 ## Deletes relaxed, over the successes whose abstract plan was used
 
 ```
-Deletes relaxed                                     Abs + ASP           Abs + FD
+Deletes relaxed                                          ASPᵅ                FDᵅ
 --------------------------------------------------------------------------------
 None                                                   0 (0%)             0 (0%)
 1 to 4                                               59 (80%)           69 (59%)
@@ -72,7 +72,7 @@ Total                                                      74                117
 ## Plans found by domain
 
 ```
-Domain                           Problems        ASP  Abs + ASP   Abs + FD         FD
+Domain                           Problems        ASP       ASPᵅ        FDᵅ         FD
 -------------------------------------------------------------------------------------
 data-network-sat18-strips              15          0          1          1         12
 elevators-sat08-strips                 30          1          3          7         30

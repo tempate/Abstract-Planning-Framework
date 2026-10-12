@@ -1,13 +1,13 @@
 # Benchmark report
 
-2026-10-12 12:05 — experiments/sat/symmetries/results.csv
+2026-10-12 12:09 — experiments/sat/symmetries/results.csv
 
 884 problems compared over asp, abs-asp, abs-fd, fd
 
 ## Coverage
 
 ```
-Metric                                                    ASP          Abs + ASP           Abs + FD                 FD
+Metric                                                    ASP               ASPᵅ                FDᵅ                 FD
 ----------------------------------------------------------------------------------------------------------------------
 Plans found                                       155 (17.5%)        182 (20.6%)        347 (39.3%)        771 (87.2%)
 Timeouts                                          716 (81.0%)        667 (75.5%)        377 (42.6%)          71 (8.0%)
@@ -19,7 +19,7 @@ Total problems                                            884                884
 ## Head to head
 
 ```
-Metric                                                    ASP          Abs + ASP           Abs + FD                 FD
+Metric                                                    ASP               ASPᵅ                FDᵅ                 FD
 ----------------------------------------------------------------------------------------------------------------------
 Plans found by both                                       151                151                331                331
 Faster when both found a plan                      98 (64.9%)         53 (35.1%)           7 (2.1%)        324 (97.9%)
@@ -35,7 +35,7 @@ Total plan length across shared solves                  2,011              2,736
 ## Where the timeouts died
 
 ```
-Killed during                                       Abs + ASP           Abs + FD
+Killed during                                            ASPᵅ                FDᵅ
 --------------------------------------------------------------------------------
 Searching for the abstract plan                     583 (87%)            11 (3%)
 Guided concrete search                                41 (6%)          307 (81%)
@@ -46,7 +46,7 @@ Total                                                     667                377
 ## How the successes were solved
 
 ```
-Solved by                                           Abs + ASP           Abs + FD
+Solved by                                                ASPᵅ                FDᵅ
 --------------------------------------------------------------------------------
 Abstract plan refined directly                       94 (52%)          190 (55%)
 Refined after switching some actions off             75 (41%)          144 (41%)
@@ -57,7 +57,7 @@ Total                                                     182                347
 ## Deletes relaxed, over the successes whose abstract plan was used
 
 ```
-Deletes relaxed                                     Abs + ASP           Abs + FD
+Deletes relaxed                                          ASPᵅ                FDᵅ
 --------------------------------------------------------------------------------
 None                                                  12 (7%)           33 (10%)
 1 to 4                                              107 (63%)          211 (63%)
@@ -70,7 +70,7 @@ Total                                                     169                334
 ## Plans found by domain
 
 ```
-Domain                           Problems        ASP  Abs + ASP   Abs + FD         FD
+Domain                           Problems        ASP       ASPᵅ        FDᵅ         FD
 -------------------------------------------------------------------------------------
 agricola-sat18-strips                  20          0          0          0         12
 airport                                42         11         14         18         27

@@ -1,13 +1,13 @@
 # Benchmark report
 
-2026-10-12 11:46 — experiments/opt/results.csv
+2026-10-12 12:09 — experiments/opt/results.csv
 
 866 problems compared over asp, abs-asp, abs-fd, fd-lmcut
 
 ## Coverage
 
 ```
-Metric                                                    ASP          Abs + ASP           Abs + FD        FD (LM-cut)
+Metric                                                    ASP               ASPᵅ             LMcutᵅ              LMcut
 ----------------------------------------------------------------------------------------------------------------------
 Plans found                                       222 (25.6%)        216 (24.9%)        279 (32.2%)        410 (47.3%)
 Timeouts                                          643 (74.2%)        628 (72.5%)        567 (65.5%)        454 (52.4%)
@@ -19,7 +19,7 @@ Total problems                                            866                866
 ## Head to head
 
 ```
-Metric                                                    ASP          Abs + ASP           Abs + FD        FD (LM-cut)
+Metric                                                    ASP               ASPᵅ             LMcutᵅ              LMcut
 ----------------------------------------------------------------------------------------------------------------------
 Plans found by both                                       196                196                261                261
 Faster when both found a plan                     127 (64.8%)         69 (35.2%)         40 (15.3%)        221 (84.7%)
@@ -35,7 +35,7 @@ Total plan length across shared solves                  2,794              3,002
 ## Where the timeouts died
 
 ```
-Killed during                                       Abs + ASP           Abs + FD
+Killed during                                            ASPᵅ             LMcutᵅ
 --------------------------------------------------------------------------------
 Searching for the abstract plan                     494 (79%)          347 (61%)
 Guided concrete search                               80 (13%)          149 (26%)
@@ -46,7 +46,7 @@ Total                                                     628                567
 ## How the successes were solved
 
 ```
-Solved by                                           Abs + ASP           Abs + FD
+Solved by                                                ASPᵅ             LMcutᵅ
 --------------------------------------------------------------------------------
 Abstract plan refined directly                      120 (56%)          159 (57%)
 Refined after switching some actions off             81 (38%)          105 (38%)
@@ -57,7 +57,7 @@ Total                                                     216                279
 ## Deletes relaxed, over the successes whose abstract plan was used
 
 ```
-Deletes relaxed                                     Abs + ASP           Abs + FD
+Deletes relaxed                                          ASPᵅ             LMcutᵅ
 --------------------------------------------------------------------------------
 None                                                  13 (6%)            25 (9%)
 1 to 4                                              148 (74%)          188 (71%)
@@ -70,7 +70,7 @@ Total                                                     201                264
 ## Plans found by domain
 
 ```
-Domain                           Problems        ASP  Abs + ASP   Abs + FDFD (LM-cut)
+Domain                           Problems        ASP       ASPᵅ     LMcutᵅ      LMcut
 -------------------------------------------------------------------------------------
 agricola-opt18-strips                  20          8          3          0          0
 airport                                42         11         11         11         22
