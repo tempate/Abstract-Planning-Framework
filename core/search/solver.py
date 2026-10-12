@@ -17,10 +17,12 @@ class SolveResult:
 class Solver:
     """A Clingo control holding the base program, solved one call at a time."""
 
-    def __init__(self, asp):
+    def __init__(self, asp, optimize=False):
         arguments = ["-t", str(THREADS), "--warn=none"]
         self.control = clingo.Control(arguments)
-        self.control.configuration.solve.models = 0
+        # Reaching the optimum takes every improving model, but the first model
+        # is all a program without weak constraints needs.
+        self.control.configuration.solve.models = 0 if optimize else 1
         self.control.add("base", [], asp)
         self.control.ground([("base", [])])
 
