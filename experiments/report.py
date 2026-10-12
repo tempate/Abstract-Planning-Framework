@@ -31,14 +31,14 @@ KILLED_IN_PHASE = {
     "concrete_fd": "Writing the abstract task",
     "abstract_pddl_writing": "Translating the abstract task",
     "abstract_fd": "Translating the task to ASP",
-    "concrete_asp": "Searching for the abstract plan",
-    "abstract_asp": "Searching for the abstract plan",
+    "concrete_asp": "Abstract search",
+    "abstract_asp": "Abstract search",
     "abstract_solving": "Guided concrete search",
     "abstract_fd_search": "Guided concrete search",
     "guided_concrete_solving": "Extended concrete search",
 }
 # The solvability check searches the abstract task straight from its PDDL.
-KILLED_IN_PHASE_DECIDING = KILLED_IN_PHASE | {"abstract_pddl_writing": "Searching for the abstract plan"}
+KILLED_IN_PHASE_DECIDING = KILLED_IN_PHASE | {"abstract_pddl_writing": "Abstract search"}
 
 
 def main():
@@ -188,21 +188,21 @@ def _verdict_counts(problems, modes, verdict):
 
 PLAN_COMPARISON = {
     "shared": "Plans found by both",
-    "faster": "Faster when both found a plan",
-    "alone": "Plan found when the other did not",
-    "median": "Median runtime when both found a plan",
-    "total": "Total runtime across shared solves",
-    "shorter": "Shorter plan when both found one",
-    "equal": "Same plan length when both found one",
-    "median_length": "Median plan length when both found one",
-    "total_length": "Total plan length across shared solves",
+    "faster": "Faster",
+    "alone": "Found when the other did not",
+    "median": "Median runtime",
+    "total": "Total runtime",
+    "shorter": "Shorter plan",
+    "equal": "Same plan length",
+    "median_length": "Median plan length",
+    "total_length": "Total plan length",
 }
 VERDICT_COMPARISON = {
     "shared": "Proved unsolvable by both",
-    "faster": "Faster when both proved it",
-    "alone": "Proved it when the other did not",
-    "median": "Median runtime when both proved it",
-    "total": "Total runtime across shared proofs",
+    "faster": "Faster",
+    "alone": "Proved when the other did not",
+    "median": "Median runtime",
+    "total": "Total runtime",
 }
 
 
@@ -223,7 +223,7 @@ def _compare(problems, pairs, succeeded, metrics, labels):
     lines = _wide_header("Metric", columns, labels)
     for key, label in metrics.items():
         lines.append(_wide(label, [columns[mode][key] for mode in columns]))
-    return "Head to head", lines
+    return "Head to head, over the problems both solved", lines
 
 
 def _compare_pair(problems, abstraction, solver, succeeded):
@@ -322,9 +322,9 @@ def _refinement_outcomes(problems, abstractions, labels):
                 counts[mode]["refined"] += 1
 
     outcomes = (
-        ("refined", "Abstract plan refined directly"),
-        ("switched", "Refined after switching some actions off"),
-        ("discarded", "Abstract plan discarded, solved above it"),
+        ("refined", "Refined directly"),
+        ("switched", "Refined, some actions off"),
+        ("discarded", "Solved above the abstract plan"),
     )
     lines = _wide_header("Solved by", abstractions, labels)
     for key, label in outcomes:
@@ -334,7 +334,7 @@ def _refinement_outcomes(problems, abstractions, labels):
 
 
 def _relaxed_deletes(problems, abstractions, labels):
-    title = "Deletes relaxed, over the successes whose abstract plan was used"
+    title = "Deletes relaxed by the refined plans"
     used = {}
     for mode in abstractions:
         successes = [modes[mode] for modes in problems if modes[mode]["status"] == "success"]
@@ -452,11 +452,11 @@ def _wide_header(label, modes, labels):
 
 
 def _wide(label, values):
-    return f"{label:<44}" + "  ".join(f"{value:>17}" for value in values)
+    return f"{label:<30}" + "".join(f"{value:>13}" for value in values)
 
 
 def _compact(label, values):
-    return f"{label:<30}" + "".join(f"{value:>11}" for value in values)
+    return f"{label:<28}" + "".join(f"{value:>10}" for value in values)
 
 
 def _print_report(sections):

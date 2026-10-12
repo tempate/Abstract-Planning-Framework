@@ -704,7 +704,7 @@ class ReportTests(unittest.TestCase):
         shorter = next(line for line in lines if line.startswith("Shorter plan"))
         total = next(line for line in lines if line.startswith("Total plan length"))
         self.assertEqual(re.findall(r"(\d+) \(", shorter), ["1", "0"])
-        self.assertEqual(re.findall(r"\d+", total.split("solves")[1]), ["16", "18"])
+        self.assertEqual(re.findall(r"\d+", total.removeprefix("Total plan length")), ["16", "18"])
 
     def test_the_report_covers_the_modes_the_results_hold(self):
         with tempfile.TemporaryDirectory() as directory:
