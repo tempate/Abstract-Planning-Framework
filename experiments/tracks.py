@@ -64,8 +64,8 @@ TRACKS = {
     ),
     # The optimal suite, refined to the plan that fills the fewest gaps, with
     # abs-fd searching the abstract task optimally like its fd-lmcut baseline.
-    "opt": Track(
-        directory=Path(opt.__file__).parent,
+    "opt/symmetries": Track(
+        directory=Path(opt.__file__).parent / "symmetries",
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
