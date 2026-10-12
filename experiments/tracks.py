@@ -3,8 +3,9 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from experiments.plan import suite as plan
-from experiments.unsolvability import suite as unsolvability
+from experiments.opt import suite as opt
+from experiments.sat import suite as sat
+from experiments.unsat import suite as unsat
 
 # The benchmark collections. A track says which of their problems it runs; it
 # does not own the PDDL, so that two tracks over one collection cannot drift
@@ -42,31 +43,41 @@ class Track:
         return frozenset(problems)
 
 
-# Keyed by the question a track asks, then by what it abstracts to answer it.
+# Keyed by the question a track asks, then, for sat, by what it abstracts to answer it.
 TRACKS = {
-    "plan/symmetries": Track(
-        directory=Path(plan.__file__).parent / "symmetries",
-        suite=plan.SUITE,
+    "sat/symmetries": Track(
+        directory=Path(sat.__file__).parent / "symmetries",
+        suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-fd", "asp", "fd"),
     ),
     # The same suite, restricted to the problems numeric-fast-downward finds a
     # resource for, and planned from that resource's objects.
-    "plan/resources": Track(
-        directory=Path(plan.__file__).parent / "resources",
-        suite=plan.SUITE,
+    "sat/resources": Track(
+        directory=Path(sat.__file__).parent / "resources",
+        suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-fd", "asp", "fd"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
-    "unsolvability/symmetries": Track(
-        directory=Path(unsolvability.__file__).parent / "symmetries",
-        suite=unsolvability.SUITE,
+    # The optimal suite, refined to the plan that fills the fewest gaps, with
+    # abs-fd searching the abstract task optimally like its fd-lmcut baseline.
+    "opt": Track(
+        directory=Path(opt.__file__).parent,
+        suite=opt.SUITE,
+        benchmarks_dir=BENCHMARKS / "downward-benchmarks",
+        driver="scripts.planner",
+        modes=("abs-asp", "abs-fd", "asp", "fd-lmcut"),
+        abstract_arguments=("--minimize-gaps", "--lmcut"),
+    ),
+    "unsat": Track(
+        directory=Path(unsat.__file__).parent,
+        suite=unsat.SUITE,
         benchmarks_dir=BENCHMARKS / "unsolve-ipc-2016",
         driver="scripts.unsolvability",
         modes=("abs-fd", "fd"),
     ),
 }
-DEFAULT_TRACK = "plan/symmetries"
+DEFAULT_TRACK = "sat/symmetries"

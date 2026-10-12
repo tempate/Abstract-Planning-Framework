@@ -11,11 +11,10 @@ from experiments.run import ABSTRACTION_PREFIX, MODES, PROJECT_ROOT
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
-MODE_LABELS = {
-    "abs-asp": "Abs + ASP",
-    "abs-fd": "Abs + FD",
+SOLVER_LABELS = {
     "asp": "ASP",
     "fd": "FD",
+    "fd-lmcut": "LMcut",
 }
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
@@ -32,45 +31,44 @@ KILLED_IN_PHASE = {
     "concrete_fd": "Writing the abstract task",
     "abstract_pddl_writing": "Translating the abstract task",
     "abstract_fd": "Translating the task to ASP",
-    "concrete_asp": "Searching for the abstract plan",
-    "abstract_asp": "Searching for the abstract plan",
+    "concrete_asp": "Abstract search",
+    "abstract_asp": "Abstract search",
     "abstract_solving": "Guided concrete search",
     "abstract_fd_search": "Guided concrete search",
     "guided_concrete_solving": "Extended concrete search",
 }
 # The solvability check searches the abstract task straight from its PDDL.
-KILLED_IN_PHASE_DECIDING = KILLED_IN_PHASE | {"abstract_pddl_writing": "Searching for the abstract plan"}
+KILLED_IN_PHASE_DECIDING = KILLED_IN_PHASE | {"abstract_pddl_writing": "Abstract search"}
 
 
 def main():
     args = _argument_parser().parse_args()
     modes, problems, dropped = _finished_problems(args.results)
     abstractions = [mode for mode in modes if mode.startswith(ABSTRACTION_PREFIX)]
-    # Each abstraction is compared with the solver that plans its abstract task.
-    pairs = []
-    for mode in abstractions:
-        solver = mode.removeprefix(ABSTRACTION_PREFIX)
-        if solver in modes:
-            pairs.append((mode, solver))
+    pairs = _pairs(abstractions, modes)
+    labels = _labels(abstractions, pairs)
 
     # A decide run reports no plan, horizon or refinement, so none of the other
     # tables have anything to say about one.
     verdict_run = _is_verdict_run(problems)
     if verdict_run:
-        sections = [_verdicts(problems, modes)]
+        sections = [_verdicts(problems, modes, labels)]
         if pairs:
-            sections.append(_verdict_head_to_head(problems, pairs))
+            sections.append(_verdict_head_to_head(problems, pairs, labels))
     else:
-        sections = [_coverage(problems, modes)]
+        sections = [_coverage(problems, modes, labels)]
         if pairs:
-            sections.append(_head_to_head(problems, pairs))
+            sections.append(_head_to_head(problems, pairs, labels))
 
     # Only a mode through an abstraction has one to report on.
     if abstractions:
-        sections.append(_timeout_phases(problems, abstractions, verdict_run))
+        sections.append(_timeout_phases(problems, abstractions, verdict_run, labels))
         if not verdict_run:
-            sections += [_refinement_outcomes(problems, abstractions), _relaxed_deletes(problems, abstractions)]
-    sections.append(_by_domain(problems, modes, verdict_run))
+            sections += [
+                _refinement_outcomes(problems, abstractions, labels),
+                _relaxed_deletes(problems, abstractions, labels),
+            ]
+    sections.append(_by_domain(problems, modes, verdict_run, labels))
 
     summary = _summary(modes, problems, dropped)
     reports_file = Path(args.results).parent / "report.md"
@@ -78,6 +76,28 @@ def main():
     _write_report(sections, args.results, reports_file, summary)
     print(f"\n{summary}")
     print(f"Wrote this report to {_relative(reports_file)}")
+
+
+def _pairs(abstractions, modes):
+    """Pair each abstraction with the solver that plans its abstract task, or, when
+    the run has no plain one, a configuration of it such as fd-lmcut."""
+    pairs = []
+    for abstraction in abstractions:
+        solver = abstraction.removeprefix(ABSTRACTION_PREFIX)
+        candidates = [mode for mode in modes if mode == solver or mode.startswith(f"{solver}-")]
+        if candidates:
+            pairs.append((abstraction, solver if solver in candidates else candidates[0]))
+    return pairs
+
+
+def _labels(abstractions, pairs):
+    """Name each abstraction after the solver it is compared with, marked with an alpha."""
+    labels = dict(SOLVER_LABELS)
+    solvers = dict(pairs)
+    for abstraction in abstractions:
+        solver = solvers.get(abstraction, abstraction.removeprefix(ABSTRACTION_PREFIX))
+        labels[abstraction] = f"{SOLVER_LABELS[solver]}ᵅ"
+    return labels
 
 
 def _summary(modes, problems, dropped):
@@ -129,17 +149,17 @@ def _is_verdict_run(problems):
     return False
 
 
-def _verdicts(problems, modes):
+def _verdicts(problems, modes, labels):
     rows = [(verdict.capitalize(), _verdict_counts(problems, modes, verdict)) for verdict in VERDICTS]
-    return "Verdicts", _outcome_table(problems, modes, "Verdict", rows)
+    return "Verdicts", _outcome_table(problems, modes, "Verdict", rows, labels)
 
 
-def _coverage(problems, modes):
+def _coverage(problems, modes, labels):
     rows = [("Plans found", _status_counts(problems, modes, "success"))]
-    return "Coverage", _outcome_table(problems, modes, "Metric", rows)
+    return "Coverage", _outcome_table(problems, modes, "Metric", rows, labels)
 
 
-def _outcome_table(problems, modes, heading, rows):
+def _outcome_table(problems, modes, heading, rows, labels):
     """Count each mode's outcomes, ending with the ones the given rows, timeouts and memory leave out."""
     total = len(problems)
     rows = rows + [
@@ -150,7 +170,7 @@ def _outcome_table(problems, modes, heading, rows):
     # the total even when a status nobody has named yet turns up.
     other = {mode: total - sum(counts[mode] for _label, counts in rows) for mode in modes}
 
-    lines = _wide_header(heading, modes)
+    lines = _wide_header(heading, modes, labels)
     for label, counts in (*rows, ("Others", other)):
         lines.append(_wide(label, [_share(counts[mode], total, 1) for mode in modes]))
     lines.append(_wide("Total problems", [total for _ in modes]))
@@ -168,38 +188,42 @@ def _verdict_counts(problems, modes, verdict):
 
 PLAN_COMPARISON = {
     "shared": "Plans found by both",
-    "faster": "Faster when both found a plan",
-    "alone": "Plan found when the other did not",
-    "median": "Median runtime when both found a plan",
-    "total": "Total runtime across shared solves",
+    "faster": "Faster",
+    "alone": "Found when the other did not",
+    "median": "Median runtime",
+    "total": "Total runtime",
+    "shorter": "Shorter plan",
+    "equal": "Same plan length",
+    "median_length": "Median plan length",
+    "total_length": "Total plan length",
 }
 VERDICT_COMPARISON = {
     "shared": "Proved unsolvable by both",
-    "faster": "Faster when both proved it",
-    "alone": "Proved it when the other did not",
-    "median": "Median runtime when both proved it",
-    "total": "Total runtime across shared proofs",
+    "faster": "Faster",
+    "alone": "Proved when the other did not",
+    "median": "Median runtime",
+    "total": "Total runtime",
 }
 
 
-def _head_to_head(problems, pairs):
-    return _compare(problems, pairs, lambda row: row["status"] == "success", PLAN_COMPARISON)
+def _head_to_head(problems, pairs, labels):
+    return _compare(problems, pairs, lambda row: row["status"] == "success", PLAN_COMPARISON, labels)
 
 
-def _verdict_head_to_head(problems, pairs):
-    return _compare(problems, pairs, lambda row: row["verdict"] == "unsolvable", VERDICT_COMPARISON)
+def _verdict_head_to_head(problems, pairs, labels):
+    return _compare(problems, pairs, lambda row: row["verdict"] == "unsolvable", VERDICT_COMPARISON, labels)
 
 
-def _compare(problems, pairs, succeeded, labels):
+def _compare(problems, pairs, succeeded, metrics, labels):
     """Compare each abstraction with its solver, side by side, on what both succeeded at."""
     columns = {}
     for abstraction, solver in pairs:
         columns |= _compare_pair(problems, abstraction, solver, succeeded)
 
-    lines = _wide_header("Metric", columns)
-    for key, label in labels.items():
+    lines = _wide_header("Metric", columns, labels)
+    for key, label in metrics.items():
         lines.append(_wide(label, [columns[mode][key] for mode in columns]))
-    return "Head to head", lines
+    return "Head to head, over the problems both solved", lines
 
 
 def _compare_pair(problems, abstraction, solver, succeeded):
@@ -215,17 +239,36 @@ def _compare_pair(problems, abstraction, solver, succeeded):
         winner = abstraction if _runtime(problem[abstraction]) < _runtime(problem[solver]) else solver
         faster[winner] += 1
 
+    # A verdict run reports no plan, so only the problems with both lengths compare.
+    measured = [problem for problem in both if all(_plan_length(problem[mode]) is not None for mode in pair)]
+    shorter = {mode: 0 for mode in pair}
+    for problem in measured:
+        lengths = {mode: _plan_length(problem[mode]) for mode in pair}
+        if lengths[abstraction] != lengths[solver]:
+            shorter[min(pair, key=lengths.get)] += 1
+    equal = len(measured) - sum(shorter.values())
+
     columns = {}
     for mode in sorted(pair, key=MODES.index):
         times = [_runtime(problem[mode]) for problem in both]
+        lengths = [_plan_length(problem[mode]) for problem in measured]
         columns[mode] = {
             "shared": shared,
             "faster": _share(faster[mode], shared, 1),
             "alone": sum(succeeded(problem[mode]) for problem in problems) - shared,
             "median": _median(times),
             "total": _seconds(sum(times)),
+            "shorter": _share(shorter[mode], len(measured), 1),
+            "equal": _share(equal, len(measured), 1),
+            "median_length": f"{statistics.median(lengths):g}" if lengths else "n/a",
+            "total_length": f"{sum(lengths):,}",
         }
     return columns
+
+
+def _plan_length(row):
+    length = row.get("plan_length", "").strip()
+    return int(float(length)) if length else None
 
 
 def _discarded_the_abstract_plan(row):
@@ -234,7 +277,7 @@ def _discarded_the_abstract_plan(row):
     return int(row["decrements"]) == int(row["abstract_plan_length"])
 
 
-def _timeout_phases(problems, abstractions, verdict_run):
+def _timeout_phases(problems, abstractions, verdict_run, labels):
     killed_in = KILLED_IN_PHASE_DECIDING if verdict_run else KILLED_IN_PHASE
     pipeline = list(KILLED_IN_PHASE)
     counts = {mode: {} for mode in abstractions}
@@ -257,14 +300,14 @@ def _timeout_phases(problems, abstractions, verdict_run):
             index = pipeline.index(completed) if completed in pipeline else len(pipeline)
             positions[phase] = min(positions.get(phase, (index, unguided)), (index, unguided))
 
-    lines = _wide_header("Killed during", abstractions)
+    lines = _wide_header("Killed during", abstractions, labels)
     for phase in sorted(positions, key=positions.get):
         lines.append(_wide(phase, [_share(counts[mode].get(phase, 0), totals[mode], 0) for mode in abstractions]))
     lines.append(_wide("Total", [totals[mode] for mode in abstractions]))
     return "Where the timeouts died", lines
 
 
-def _refinement_outcomes(problems, abstractions):
+def _refinement_outcomes(problems, abstractions, labels):
     counts = {mode: {"refined": 0, "switched": 0, "discarded": 0} for mode in abstractions}
     totals = {}
     for mode in abstractions:
@@ -279,19 +322,19 @@ def _refinement_outcomes(problems, abstractions):
                 counts[mode]["refined"] += 1
 
     outcomes = (
-        ("refined", "Abstract plan refined directly"),
-        ("switched", "Refined after switching some actions off"),
-        ("discarded", "Abstract plan discarded, solved above it"),
+        ("refined", "Refined directly"),
+        ("switched", "Refined, some actions off"),
+        ("discarded", "Solved above the abstract plan"),
     )
-    lines = _wide_header("Solved by", abstractions)
+    lines = _wide_header("Solved by", abstractions, labels)
     for key, label in outcomes:
         lines.append(_wide(label, [_share(counts[mode][key], totals[mode], 0) for mode in abstractions]))
     lines.append(_wide("Total", [totals[mode] for mode in abstractions]))
     return "How the successes were solved", lines
 
 
-def _relaxed_deletes(problems, abstractions):
-    title = "Deletes relaxed, over the successes whose abstract plan was used"
+def _relaxed_deletes(problems, abstractions, labels):
+    title = "Deletes relaxed by the refined plans"
     used = {}
     for mode in abstractions:
         successes = [modes[mode] for modes in problems if modes[mode]["status"] == "success"]
@@ -308,14 +351,14 @@ def _relaxed_deletes(problems, abstractions):
         for row in used[mode]:
             counts[mode][_relaxed_delete_bucket(int(row["relaxed_deletes"]))] += 1
 
-    lines = _wide_header("Deletes relaxed", abstractions)
+    lines = _wide_header("Deletes relaxed", abstractions, labels)
     for bucket in RELAXED_DELETE_BUCKETS:
         lines.append(_wide(bucket, [_share(counts[mode][bucket], len(used[mode]), 0) for mode in abstractions]))
     lines.append(_wide("Total", [len(used[mode]) for mode in abstractions]))
     return title, lines
 
 
-def _by_domain(problems, modes, verdict_run):
+def _by_domain(problems, modes, verdict_run, labels):
     if verdict_run:
         title, succeeded = "Proved unsolvable by domain", lambda row: row["verdict"] == "unsolvable"
     else:
@@ -329,7 +372,7 @@ def _by_domain(problems, modes, verdict_run):
         for mode in modes:
             counts[mode] += succeeded(problem[mode])
 
-    header = _compact("Domain", ["Problems", *(MODE_LABELS[mode] for mode in modes)])
+    header = _compact("Domain", ["Problems", *(labels[mode] for mode in modes)])
     lines = [header, "-" * len(header)]
     for domain in sorted(domains):
         counts = domains[domain]
@@ -403,17 +446,17 @@ def _bold(text):
     return f"\033[1m{text}\033[0m" if sys.stdout.isatty() else text
 
 
-def _wide_header(label, modes):
-    header = _wide(label, [MODE_LABELS[mode] for mode in modes])
+def _wide_header(label, modes, labels):
+    header = _wide(label, [labels[mode] for mode in modes])
     return [header, "-" * len(header)]
 
 
 def _wide(label, values):
-    return f"{label:<44}" + "  ".join(f"{value:>17}" for value in values)
+    return f"{label:<30}" + "".join(f"{value:>13}" for value in values)
 
 
 def _compact(label, values):
-    return f"{label:<30}" + "".join(f"{value:>11}" for value in values)
+    return f"{label:<28}" + "".join(f"{value:>10}" for value in values)
 
 
 def _print_report(sections):

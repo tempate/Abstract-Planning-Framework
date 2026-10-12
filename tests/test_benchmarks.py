@@ -26,7 +26,7 @@ from experiments.run import (
 )
 import experiments.report
 import experiments.submit
-from experiments.report import _coverage, _finished_problems, _head_to_head
+from experiments.report import SOLVER_LABELS, _coverage, _finished_problems, _head_to_head, _labels, _pairs
 from experiments.submit import (
     MANIFEST_NAME,
     _benchmark_tasks,
@@ -539,10 +539,10 @@ class BenchmarkTests(unittest.TestCase):
     def test_a_run_is_collected_into_the_results_of_its_track(self):
         task = [("asp", "example", Path("domain.pddl"), Path("p01.pddl"))]
         with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
-            _write_manifest(task, plan, track="plan/symmetries")
-            _write_manifest(task, decide, track="unsolvability/symmetries")
+            _write_manifest(task, plan, track="sat/symmetries")
+            _write_manifest(task, decide, track="unsat")
 
-            self.assertEqual(_track_results_file([decide]), TRACKS["unsolvability/symmetries"].results_file)
+            self.assertEqual(_track_results_file([decide]), TRACKS["unsat"].results_file)
             with self.assertRaises(SystemExit):
                 _track_results_file([plan, decide])
 
@@ -638,7 +638,7 @@ class ReportTests(unittest.TestCase):
             }
         ]
 
-        _title, lines = _head_to_head(problems, [("abs-asp", "asp")])
+        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], _labels(["abs-asp"], [("abs-asp", "asp")]))
 
         median = next(line for line in lines if line.startswith("Median runtime"))
         self.assertNotIn(" s", median)
@@ -655,7 +655,7 @@ class ReportTests(unittest.TestCase):
         )
         problems = [dict(zip(modes, ({"status": status} for status in row))) for row in statuses]
 
-        _title, lines = _coverage(problems, modes)
+        _title, lines = _coverage(problems, modes, _labels(["abs-asp"], [("abs-asp", "asp")]))
 
         counted = [0] * len(modes)
         for label in ("Plans found", "Timeouts", "Out of memory", "Others"):
@@ -675,10 +675,36 @@ class ReportTests(unittest.TestCase):
             {"asp": success, "abs-asp": success, "abs-fd": success, "fd": timeout},
         ]
 
-        _title, lines = _head_to_head(problems, [("abs-asp", "asp"), ("abs-fd", "fd")])
+        pairs = [("abs-asp", "asp"), ("abs-fd", "fd")]
+        _title, lines = _head_to_head(problems, pairs, _labels(["abs-asp", "abs-fd"], pairs))
 
         shared = next(line for line in lines if line.startswith("Plans found by both"))
         self.assertEqual(re.findall(r"\d+", shared), ["2", "2", "1", "1"])
+
+    def test_an_abstraction_falls_back_to_a_configuration_of_its_solver(self):
+        self.assertEqual(_pairs(["abs-fd"], ("abs-fd", "fd-lmcut")), [("abs-fd", "fd-lmcut")])
+        self.assertEqual(_pairs(["abs-fd"], ("abs-fd", "fd", "fd-lmcut")), [("abs-fd", "fd")])
+
+    def test_an_abstraction_is_named_after_the_solver_it_is_compared_with(self):
+        labels = _labels(["abs-fd"], [("abs-fd", "fd-lmcut")])
+        self.assertTrue(labels["abs-fd"].startswith(SOLVER_LABELS["fd-lmcut"]))
+
+    def test_the_head_to_head_compares_plan_lengths_on_shared_solves(self):
+        def solved(length):
+            return {"status": "success", "wall_time_seconds": "1.0", "plan_length": str(length)}
+
+        problems = [
+            {"abs-asp": solved(10), "asp": solved(8)},
+            {"abs-asp": solved(8), "asp": solved(8)},
+            {"abs-asp": solved(5), "asp": {"status": "timed out", "wall_time_seconds": "1800.0"}},
+        ]
+
+        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], _labels(["abs-asp"], [("abs-asp", "asp")]))
+
+        shorter = next(line for line in lines if line.startswith("Shorter plan"))
+        total = next(line for line in lines if line.startswith("Total plan length"))
+        self.assertEqual(re.findall(r"(\d+) \(", shorter), ["1", "0"])
+        self.assertEqual(re.findall(r"\d+", total.removeprefix("Total plan length")), ["16", "18"])
 
     def test_the_report_covers_the_modes_the_results_hold(self):
         with tempfile.TemporaryDirectory() as directory:

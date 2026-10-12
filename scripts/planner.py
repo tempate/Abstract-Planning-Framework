@@ -1,7 +1,9 @@
 """Solve one PDDL task concretely or through an automatically generated abstraction."""
 
 import argparse
+from functools import partial
 
+from core.integrations.fast_downward import LMCUT
 from core.planning import abstraction, asp, fd
 
 from .utils.arguments import abstract_planning_config, abstraction_arguments, planning_config, task_arguments
@@ -24,10 +26,13 @@ def _compute(args):
         return asp.solve(planning_config(args), on_update)
     if args.mode == "fd":
         return fd.solve(planning_config(args), on_update)
+    if args.mode == "fd-lmcut":
+        return fd.solve(planning_config(args), on_update, LMCUT)
     if args.mode == "abs-asp":
         return abstraction.solve(abstract_planning_config(args), asp.find_abstract_plan, on_update)
     if args.mode == "abs-fd":
-        return abstraction.solve(abstract_planning_config(args), fd.find_abstract_plan, on_update)
+        find_abstract_plan = partial(fd.find_abstract_plan, search=LMCUT if args.lmcut else None)
+        return abstraction.solve(abstract_planning_config(args), find_abstract_plan, on_update)
 
 
 def print_planning_result(result):
@@ -74,6 +79,12 @@ def _argument_parser():
         "fd",
         parents=[shared],
         help="Solve the task with Fast Downward's lama-first",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
+        "fd-lmcut",
+        parents=[shared],
+        help="Solve the task optimally with Fast Downward's A* and LM-cut",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(

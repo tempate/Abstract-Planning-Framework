@@ -34,6 +34,8 @@ SEARCH = (
     "max_states=50000,threshold_before_merge=1))"
 )
 LAMA_FIRST = "lama-first"
+# Optimal, so it gives the shortest plan to compare plan lengths against.
+LMCUT = "astar(lmcut())"
 
 
 def pddl_to_sas(base_dir, domain_path, problem_path, label):
@@ -67,16 +69,18 @@ def has_plan(base_dir, domain_path, problem_path, label):
     return _found_plan(completed_process, label)
 
 
-def find_plan(base_dir, domain_path, problem_path, label):
-    """Search one PDDL task with LAMA-first, returning its plan or None."""
-    completed_process, plan_path = _search(base_dir, domain_path, problem_path, label, driver=("--alias", LAMA_FIRST))
+def find_plan(base_dir, domain_path, problem_path, label, search=None):
+    """Search one PDDL task with LAMA-first, or the search given, returning its plan or None."""
+    options = {"search": ("--search", search)} if search else {"driver": ("--alias", LAMA_FIRST)}
+    completed_process, plan_path = _search(base_dir, domain_path, problem_path, label, **options)
     return _read_plan(plan_path) if _found_plan(completed_process, label) else None
 
 
-def find_sas_plan(base_dir, sas_path, label):
-    """Search an already translated task with LAMA-first, returning its plan or None."""
+def find_sas_plan(base_dir, sas_path, label, search=None):
+    """Search an already translated task with LAMA-first, or the search given, returning its plan or None."""
     plan_path = os.path.join(base_dir, f"{label}.plan")
-    command = [sys.executable, FAST_DOWNWARD_SCRIPT, "--plan-file", plan_path, "--alias", LAMA_FIRST, sas_path]
+    command = [sys.executable, FAST_DOWNWARD_SCRIPT, "--plan-file", plan_path]
+    command += [sas_path, "--search", search] if search else ["--alias", LAMA_FIRST, sas_path]
     completed_process = subprocess.run(command, capture_output=True, text=True)
     return _read_plan(plan_path) if _found_plan(completed_process, label) else None
 
