@@ -72,6 +72,14 @@ TRACKS = {
         modes=("abs-asp", "abs-fd", "asp", "fd-lmcut"),
         abstract_arguments=("--minimize-gaps", "--lmcut"),
     ),
+    "opt/resources": Track(
+        directory=Path(opt.__file__).parent / "resources",
+        suite=opt.SUITE,
+        benchmarks_dir=BENCHMARKS / "downward-benchmarks",
+        driver="scripts.planner",
+        modes=("abs-asp", "abs-fd", "asp", "fd-lmcut"),
+        abstract_arguments=("--minimize-gaps", "--lmcut", "--abstraction-source", "resources"),
+    ),
     "unsat": Track(
         directory=Path(unsat.__file__).parent,
         suite=unsat.SUITE,

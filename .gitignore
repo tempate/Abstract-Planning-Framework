@@ -9,4 +9,4 @@ __pycache__/
 runs/
 .claude/settings.local.json
 
-experiments/sat/resources/problems.log
+experiments/*/resources/problems.log
