@@ -16,45 +16,46 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from core.integrations.numeric_fast_downward import detect_resources
+from core.integrations.numeric_fast_downward import DETECTION_TIME_LIMIT, detect_resources
 from core.outcomes import IntegrationError
 from experiments.tracks import TRACKS
 
 # One detection grounds a whole task, and Daniel's machine is what he works on.
 WORKERS = 1
-DEFAULT_TIMEOUT = 60
-TRACK = TRACKS["sat/resources"]
-OUTPUT = TRACK.runnable_file
-LOG = OUTPUT.with_suffix(".log")
+DEFAULT_TIMEOUT = DETECTION_TIME_LIMIT
+DEFAULT_TRACK = "sat/resources"
 FOUND = "resource"
-SUITE = TRACK.suite
 HEADER = """# Problems with a resource variable the detector found objects for.
 # Regenerate with:
-#   python -m scripts.scan_resources
+#   python -m scripts.scan_resources --track {track}
 """
 
 
 def main():
     args = _argument_parser().parse_args()
+    track = TRACKS[args.track]
+    output = args.output or track.runnable_file
+    log_file = args.log or output.with_suffix(".log")
+    benchmarks = args.benchmarks or track.benchmarks_dir
     # A plain kill would stop this process and orphan the detector it is waiting
     # on; as an exit, it unwinds through the detector's cleanup instead.
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(1))
 
-    scanned = _read_log(args.log)
-    tasks = sorted(_tasks(args.benchmarks), key=lambda task: task[2].stat().st_size)
+    scanned = _read_log(log_file)
+    tasks = sorted(_tasks(benchmarks, track.suite), key=lambda task: task[2].stat().st_size)
     pending = [task for task in tasks if _name(task) not in scanned]
-    print(f"Scanning {len(pending)} of {len(tasks)} problems; {len(tasks) - len(pending)} already in {args.log}")
+    print(f"Scanning {len(pending)} of {len(tasks)} problems; {len(tasks) - len(pending)} already in {log_file}")
 
-    args.log.parent.mkdir(parents=True, exist_ok=True)
-    with ThreadPoolExecutor(max_workers=args.workers) as pool, open(args.log, "a", encoding="utf-8") as log:
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    with ThreadPoolExecutor(max_workers=args.workers) as pool, open(log_file, "a", encoding="utf-8") as log:
         for name, outcome in pool.map(lambda task: _scan(*task, args.timeout), pending):
             log.write(f"{name}\t{outcome}\n")
             log.flush()
             scanned[name] = outcome
-            _write_list(args.output, scanned)
+            _write_list(output, scanned, args.track)
 
     found = sum(outcome.startswith(FOUND) for outcome in scanned.values())
-    print(f"{found} of {len(scanned)} scanned problems carry a resource; wrote {args.output}")
+    print(f"{found} of {len(scanned)} scanned problems carry a resource; wrote {output}")
 
 
 def _read_log(path):
@@ -67,9 +68,9 @@ def _read_log(path):
     return scanned
 
 
-def _write_list(path, scanned):
+def _write_list(path, scanned, track):
     lines = sorted(name for name, outcome in scanned.items() if outcome.startswith(FOUND))
-    path.write_text(HEADER + "".join(f"{line}\n" for line in lines), encoding="utf-8")
+    path.write_text(HEADER.format(track=track) + "".join(f"{line}\n" for line in lines), encoding="utf-8")
 
 
 def _name(task):
@@ -77,8 +78,8 @@ def _name(task):
     return f"{domain_name}/{problem.name}"
 
 
-def _tasks(benchmarks):
-    for domain_name in SUITE:
+def _tasks(benchmarks, suite):
+    for domain_name in suite:
         directory = Path(benchmarks) / domain_name
         if not directory.is_dir():
             continue
@@ -103,7 +104,7 @@ def _scan(domain_name, domain, problem, timeout):
     name = _name((domain_name, domain, problem))
     try:
         with tempfile.TemporaryDirectory(prefix="apf-scan-") as directory:
-            resources = detect_resources(directory, domain, problem, timeout=timeout)
+            resources = detect_resources(directory, domain, problem, timeout=timeout).resources
     except (IntegrationError, OSError) as error:
         outcome = f"failed: {str(error).splitlines()[0]}"
     else:
@@ -118,9 +119,15 @@ def _scan(domain_name, domain, problem, timeout):
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--benchmarks", type=Path, default=TRACK.benchmarks_dir, help="Benchmark suite directory")
-    parser.add_argument("--output", type=Path, default=OUTPUT, help="Problem list to write")
-    parser.add_argument("--log", type=Path, default=LOG, help="Every outcome so far, which a rerun resumes from")
+    parser.add_argument(
+        "--track",
+        choices=sorted(name for name in TRACKS if name.endswith("/resources")),
+        default=DEFAULT_TRACK,
+        help="Track whose suite to scan and whose problem list to write",
+    )
+    parser.add_argument("--benchmarks", type=Path, help="Benchmark suite directory; defaults to the track's")
+    parser.add_argument("--output", type=Path, help="Problem list to write; defaults to the track's")
+    parser.add_argument("--log", type=Path, help="Every outcome so far, which a rerun resumes from")
     parser.add_argument("--timeout", type=int, default=DEFAULT_TIMEOUT, help="Detection limit per problem in seconds")
     parser.add_argument("--workers", type=int, default=WORKERS, help="Problems to scan at a time")
     return parser

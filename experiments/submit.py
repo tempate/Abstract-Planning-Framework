@@ -70,7 +70,7 @@ def main():
 
 
 def _track_name(args, parser):
-    """The track the arguments name: sat by its abstraction source, unsat and opt by themselves."""
+    """The track the arguments name: sat and opt by their abstraction source, unsat by itself."""
     if args.track in TRACKS:
         if args.abstraction_source is not None:
             parser.error(f"{args.track} has no abstraction source to choose")
