@@ -79,7 +79,7 @@ python -m experiments.report experiments/sat/symmetries/results.csv
   `asp` and `fd-lmcut` as the baselines. `abs-fd` searches the abstract task with
   LM-cut there too. `--abstraction-source resources` submits
   `experiments/opt/resources/` instead, whose list
-  `python -m scripts.scan_resources --track opt/resources` writes.
+  `python -m experiments.scan --track opt/resources` writes.
 - `--track unsat` submits `experiments/unsat/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
   a plan. Only the probNN problems run, the ones known to be unsolvable.
