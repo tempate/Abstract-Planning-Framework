@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from experiments.run import ABSTRACTION_PREFIX, MODES, PROJECT_ROOT
+from experiments.run import ABSTRACTION_PREFIX, MODES, PROJECT_ROOT, class_rank
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
@@ -70,6 +70,9 @@ def main():
                 _refinement_outcomes(problems, abstractions, labels),
                 _relaxed_deletes(problems, abstractions, labels),
             ]
+            classes = _classes(args.results, abstractions, labels)
+            if classes:
+                sections.append(classes)
     sections.append(_by_domain(problems, modes, verdict_run, labels))
 
     summary = _summary(modes, problems, dropped)
@@ -129,7 +132,9 @@ def _finished_problems(results_file):
     rows = {}
     with Path(results_file).open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
-            rows.setdefault((row["domain"], row["problem"]), {})[row["mode"]] = row
+            # The planner collapses the largest class. The others get a section of their own.
+            if class_rank(row["mode"], row.get("class")) in ("", "0"):
+                rows.setdefault((row["domain"], row["problem"]), {})[row["mode"]] = row
 
     present = {mode for problem in rows.values() for mode in problem}
     modes = tuple(mode for mode in MODES if mode in present)
@@ -307,6 +312,50 @@ def _timeout_phases(problems, abstractions, verdict_run, labels):
         lines.append(_wide(phase, [_share(counts[mode].get(phase, 0), totals[mode], 0) for mode in abstractions]))
     lines.append(_wide("Total", [totals[mode] for mode in abstractions]))
     return "Where the timeouts died", lines
+
+
+def _classes(results_file, abstractions, labels):
+    """Compare the largest class with the best of all, over the problems with several finished classes."""
+    ranks = {}
+    with Path(results_file).open(encoding="utf-8", newline="") as stream:
+        for row in csv.DictReader(stream):
+            if row["mode"] in abstractions:
+                problem = ranks.setdefault((row["domain"], row["problem"], row["mode"]), {})
+                problem[class_rank(row["mode"], row.get("class"))] = row
+
+    compared = {mode: [] for mode in abstractions}
+    for (_domain, _problem, mode), rows in ranks.items():
+        if len(rows) > 1 and "0" in rows and all(row["status"] not in UNFINISHED_STATUSES for row in rows.values()):
+            compared[mode].append(rows)
+    if not any(compared.values()):
+        return None
+
+    values = {key: [] for key in ("problems", "largest", "any", "fastest", "ratio")}
+    for mode in abstractions:
+        largest_solved = any_solved = largest_fastest = 0
+        ratios = []
+        for rows in compared[mode]:
+            solved = {rank: _runtime(row) for rank, row in rows.items() if row["status"] == "success"}
+            largest_solved += "0" in solved
+            any_solved += bool(solved)
+            if solved:
+                best = min(solved.values())
+                largest_fastest += solved.get("0") == best
+                if "0" in solved:
+                    ratios.append(solved["0"] / best)
+        values["problems"].append(len(compared[mode]))
+        values["largest"].append(largest_solved)
+        values["any"].append(any_solved)
+        values["fastest"].append(_share(largest_fastest, any_solved, 0))
+        values["ratio"].append(f"{statistics.median(ratios):.2f}x" if ratios else "n/a")
+
+    lines = _wide_header("Over problems with 2+ classes", abstractions, labels)
+    lines.append(_wide("Problems", values["problems"]))
+    lines.append(_wide("Solved by the largest class", values["largest"]))
+    lines.append(_wide("Solved by some class", values["any"]))
+    lines.append(_wide("Largest class is fastest", values["fastest"]))
+    lines.append(_wide("Median time, largest / best", values["ratio"]))
+    return "Every class against the largest", lines
 
 
 def _refinement_outcomes(problems, abstractions, labels):
