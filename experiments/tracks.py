@@ -1,5 +1,6 @@
 """The benchmark tracks: the problems each one runs, the driver that runs them, and where the results go."""
 
+import re
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -105,3 +106,47 @@ TRACKS = {
     ),
 }
 DEFAULT_TRACK = "sat/symmetries"
+
+
+def is_domain_file(name):
+    """Tell a domain file from a problem file by name.
+
+    downward-benchmarks spells it out in full; unsolve-ipc-2016 shortens it to
+    domNN, satdomNN and unknowndomNN, against probNN, satprobNN and unknownprobNN.
+    """
+    return "domain" in name or re.match(r"(sat|unknown)?dom\d", name) is not None
+
+
+def has_other_status(name):
+    """Tell the problems standing around an unsolvable one from the problem itself.
+
+    unsolve-ipc-2016 names probNN for the instances known to be unsolvable,
+    satprobNN for the solvable twin beside it, and unknownprobNN for the ones
+    nobody settled. Only the first is what this suite asks about.
+    """
+    return name.startswith(("satprob", "unknownprob"))
+
+
+def find_domain(problem):
+    """Find the domain file using the naming conventions of the benchmark collections."""
+    candidates = [
+        "domain.pddl",
+        f"{problem.stem}-domain{problem.suffix}",
+        f"{problem.name[:3]}-domain.pddl",
+        f"domain_{problem.name}",
+        f"domain-{problem.name}",
+    ]
+    if "prob" in problem.stem:
+        # unsolve-ipc-2016 names the pair after each other: probNN.pddl with
+        # domNN.pddl, and likewise satprobNN and unknownprobNN. Guarded, or a
+        # problem with no prob in its name would answer as its own domain.
+        candidates.append(f"{problem.stem.replace('prob', 'dom', 1)}{problem.suffix}")
+        # bag-barman and bag-transport ship no satdomNN, and their satprobNN is
+        # probNN with a single symbol changed, so it belongs to the same domNN.
+        # Last, or diagnosis and cave-diving would take domNN over their satdomNN.
+        candidates.append(f"dom{problem.stem.partition('prob')[2]}{problem.suffix}")
+    for name in candidates:
+        domain = problem.parent / name
+        if domain.is_file():
+            return domain
+    raise FileNotFoundError(f"No domain file found for {problem}")
