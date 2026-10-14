@@ -13,8 +13,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from experiments.tracks import TRACKS
-from experiments.submit import _find_domain
+from experiments.tracks import TRACKS, find_domain
 from experiments.collect import FIELDS, _preserved_rows, _track_results_file, collect
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.reporting import update_result_progress
@@ -771,28 +770,28 @@ class DomainLookupTests(unittest.TestCase):
     def test_finds_a_domain_shared_by_every_problem(self):
         directory = self._collection(["domain.pddl", "p01.pddl"])
 
-        self.assertEqual(_find_domain(directory / "p01.pddl").name, "domain.pddl")
+        self.assertEqual(find_domain(directory / "p01.pddl").name, "domain.pddl")
 
     def test_finds_the_domain_numbered_with_the_problem(self):
         directory = self._collection(["dom01.pddl", "prob01.pddl", "dom02.pddl", "prob02.pddl"])
 
-        self.assertEqual(_find_domain(directory / "prob02.pddl").name, "dom02.pddl")
+        self.assertEqual(find_domain(directory / "prob02.pddl").name, "dom02.pddl")
 
     def test_finds_the_domain_of_a_named_problem_variant(self):
         directory = self._collection(["satdom02.pddl", "satprob02.pddl", "dom02.pddl", "prob02.pddl"])
 
-        self.assertEqual(_find_domain(directory / "satprob02.pddl").name, "satdom02.pddl")
+        self.assertEqual(find_domain(directory / "satprob02.pddl").name, "satdom02.pddl")
 
     def test_falls_back_to_the_domain_the_variant_shares_with_its_problem(self):
         directory = self._collection(["dom02.pddl", "prob02.pddl", "satprob02.pddl"])
 
-        self.assertEqual(_find_domain(directory / "satprob02.pddl").name, "dom02.pddl")
+        self.assertEqual(find_domain(directory / "satprob02.pddl").name, "dom02.pddl")
 
     def test_reports_a_problem_with_no_domain(self):
         directory = self._collection(["p01.pddl"])
 
         with self.assertRaises(FileNotFoundError):
-            _find_domain(directory / "p01.pddl")
+            find_domain(directory / "p01.pddl")
 
 
 if __name__ == "__main__":

@@ -16,8 +16,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from experiments.submit import _find_domain
-from experiments.tracks import TRACKS
+from experiments.tracks import TRACKS, find_domain
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TIMEOUT = 120
@@ -102,7 +101,7 @@ def _first_problem_of_each_domain(domains=None):
     tasks = []
     for domain, problem in first.items():
         path = track.benchmarks_dir / domain / problem
-        tasks.append((domain, _find_domain(path), path))
+        tasks.append((domain, find_domain(path), path))
     return tasks
 
 

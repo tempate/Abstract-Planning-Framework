@@ -3,7 +3,6 @@
 import argparse
 import json
 import os
-import re
 import shlex
 import subprocess
 import sys
@@ -12,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 from experiments.run import ABSTRACTION_PREFIX, DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR
-from experiments.tracks import DEFAULT_TRACK, TRACKS
+from experiments.tracks import DEFAULT_TRACK, TRACKS, find_domain, has_other_status, is_domain_file
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.arguments import positive_int
 
@@ -284,13 +283,13 @@ def _benchmark_tasks(
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
-            if _is_domain_file(problem.name) or _has_other_status(problem.name):
+            if is_domain_file(problem.name) or has_other_status(problem.name):
                 continue
             if runnable is not None and (domain_name, problem.name) not in runnable:
                 continue
             if problems is not None and not {problem.name, problem.stem} & set(problems):
                 continue
-            domain = _find_domain(problem)
+            domain = find_domain(problem)
             for mode in modes:
                 if not mode.startswith(ABSTRACTION_PREFIX):
                     yield mode, domain_name, domain, problem, None
@@ -298,50 +297,6 @@ def _benchmark_tasks(
                 count = 1 if class_counts is None else class_counts.get((domain_name, problem.name), 1)
                 for rank in range(from_rank, count):
                     yield mode, domain_name, domain, problem, rank
-
-
-def _is_domain_file(name):
-    """Tell a domain file from a problem file by name.
-
-    downward-benchmarks spells it out in full; unsolve-ipc-2016 shortens it to
-    domNN, satdomNN and unknowndomNN, against probNN, satprobNN and unknownprobNN.
-    """
-    return "domain" in name or re.match(r"(sat|unknown)?dom\d", name) is not None
-
-
-def _has_other_status(name):
-    """Tell the problems standing around an unsolvable one from the problem itself.
-
-    unsolve-ipc-2016 names probNN for the instances known to be unsolvable,
-    satprobNN for the solvable twin beside it, and unknownprobNN for the ones
-    nobody settled. Only the first is what this suite asks about.
-    """
-    return name.startswith(("satprob", "unknownprob"))
-
-
-def _find_domain(problem):
-    """Find the domain file using the naming conventions of the benchmark collections."""
-    candidates = [
-        "domain.pddl",
-        f"{problem.stem}-domain{problem.suffix}",
-        f"{problem.name[:3]}-domain.pddl",
-        f"domain_{problem.name}",
-        f"domain-{problem.name}",
-    ]
-    if "prob" in problem.stem:
-        # unsolve-ipc-2016 names the pair after each other: probNN.pddl with
-        # domNN.pddl, and likewise satprobNN and unknownprobNN. Guarded, or a
-        # problem with no prob in its name would answer as its own domain.
-        candidates.append(f"{problem.stem.replace('prob', 'dom', 1)}{problem.suffix}")
-        # bag-barman and bag-transport ship no satdomNN, and their satprobNN is
-        # probNN with a single symbol changed, so it belongs to the same domNN.
-        # Last, or diagnosis and cave-diving would take domNN over their satdomNN.
-        candidates.append(f"dom{problem.stem.partition('prob')[2]}{problem.suffix}")
-    for name in candidates:
-        domain = problem.parent / name
-        if domain.is_file():
-            return domain
-    raise FileNotFoundError(f"No domain file found for {problem}")
 
 
 if __name__ == "__main__":
