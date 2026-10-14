@@ -1,5 +1,6 @@
 """The benchmark tracks: the problems each one runs, the driver that runs them, and where the results go."""
 
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -31,6 +32,21 @@ class Track:
     @property
     def runnable_file(self):
         return self.directory / "problems.txt"
+
+    @property
+    def classes_file(self):
+        return self.directory / "classes.txt"
+
+    def class_counts(self):
+        """How many classes each problem can collapse, as classes.txt lists them, or None without one."""
+        if not self.classes_file.is_file():
+            return None
+        counts = Counter()
+        for line in self.classes_file.read_text(encoding="utf-8").splitlines():
+            if line.strip() and not line.startswith("#"):
+                domain, _, problem = line.split("\t")[0].partition("/")
+                counts[(domain, problem)] += 1
+        return counts
 
     def runnable(self):
         """The (domain, problem) pairs worth submitting: those the runnable file lists."""

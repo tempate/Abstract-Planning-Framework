@@ -190,7 +190,7 @@ class BenchmarkTests(unittest.TestCase):
             definition_dir.mkdir()
 
             config_file = _write_copperbench_config(
-                [("abs-asp", "example", domain, problem), ("asp", "example", domain, problem)],
+                [("abs-asp", "example", domain, problem, 0), ("asp", "example", domain, problem, None)],
                 definition_dir=definition_dir,
                 timeout=1800,
                 memory_limit=4096,
@@ -207,8 +207,8 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(
             instances,
             [
-                f"abs-asp example {domain.resolve()} {problem.resolve()}",
-                f"asp example {domain.resolve()} {problem.resolve()}",
+                f"abs-asp example {domain.resolve()} {problem.resolve()} 0",
+                f"asp example {domain.resolve()} {problem.resolve()} 0",
             ],
         )
 
@@ -224,15 +224,36 @@ class BenchmarkTests(unittest.TestCase):
 
             runnable = {("example", "p01.pddl")}
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable)), [("abs-asp", "example", domain, problem)]
+                list(_benchmark_tasks(root, ["example"], runnable)), [("abs-asp", "example", domain, problem, 0)]
             )
             self.assertEqual(
                 list(_benchmark_tasks(root, ["example"], runnable, modes=("abs-asp", "asp", "fd"))),
                 [
-                    ("abs-asp", "example", domain, problem),
-                    ("asp", "example", domain, problem),
-                    ("fd", "example", domain, problem),
+                    ("abs-asp", "example", domain, problem, 0),
+                    ("asp", "example", domain, problem, None),
+                    ("fd", "example", domain, problem, None),
                 ],
+            )
+
+    def test_an_abstract_mode_runs_once_per_class_from_the_first_rank_asked_for(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+
+            tasks = _benchmark_tasks(
+                root,
+                ["example"],
+                None,
+                modes=("abs-asp", "asp"),
+                class_counts={("example", "p01.pddl"): 3},
+                from_rank=1,
+            )
+
+            self.assertEqual(
+                [(mode, rank) for mode, _n, _d, _p, rank in tasks], [("abs-asp", 1), ("abs-asp", 2), ("asp", None)]
             )
 
     def test_only_problems_with_an_abstraction_class_are_submitted(self):
@@ -265,9 +286,9 @@ class BenchmarkTests(unittest.TestCase):
             by_problem = _benchmark_tasks(root, suite, runnable=None, domains=["two"], problems=["p02"])
             by_file_name = _benchmark_tasks(root, suite, runnable=None, problems=["p02.pddl"])
 
-            self.assertEqual({name for _m, name, _d, _p in by_domain}, {"two"})
-            self.assertEqual([(n, p.name) for _m, n, _d, p in by_problem], [("two", "p02.pddl")])
-            self.assertEqual({p.name for _m, _n, _d, p in by_file_name}, {"p02.pddl"})
+            self.assertEqual({name for _m, name, _d, _p, _r in by_domain}, {"two"})
+            self.assertEqual([(n, p.name) for _m, n, _d, p, _r in by_problem], [("two", "p02.pddl")])
+            self.assertEqual({p.name for _m, _n, _d, p, _r in by_file_name}, {"p02.pddl"})
 
     def test_a_misspelled_domain_is_refused_rather_than_submitting_nothing(self):
         with self.assertRaises(SystemExit) as refusal:
@@ -310,9 +331,9 @@ class BenchmarkTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
             self._write_result(first, "asp")
             self._write_result(first, "abs-asp", status="timeout")
-            _write_manifest([("abs-asp", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=first)
+            _write_manifest([("abs-asp", "example", Path("d.pddl"), Path("p01.pddl"), 0)], results_dir=first)
             self._write_result(second, "abs-asp")
-            _write_manifest([("fd", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=second)
+            _write_manifest([("fd", "example", Path("d.pddl"), Path("p01.pddl"), None)], results_dir=second)
 
             rows = collect(first, second)
 
@@ -523,8 +544,8 @@ class BenchmarkTests(unittest.TestCase):
             with self.subTest(completed=completed), tempfile.TemporaryDirectory() as directory:
                 problem = Path("p01.pddl")
                 tasks = [
-                    ("abs-asp", "example", Path("domain.pddl"), problem),
-                    ("asp", "example", Path("domain.pddl"), problem),
+                    ("abs-asp", "example", Path("domain.pddl"), problem, 0),
+                    ("asp", "example", Path("domain.pddl"), problem, None),
                 ]
                 manifest = _write_manifest(tasks, directory)
                 for mode in completed:
@@ -537,7 +558,7 @@ class BenchmarkTests(unittest.TestCase):
                 self.assertEqual([row["status"] for row in rows], statuses)
 
     def test_a_run_is_collected_into_the_results_of_its_track(self):
-        task = [("asp", "example", Path("domain.pddl"), Path("p01.pddl"))]
+        task = [("asp", "example", Path("domain.pddl"), Path("p01.pddl"), None)]
         with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
             _write_manifest(task, plan, track="sat/symmetries")
             _write_manifest(task, decide, track="unsat")
@@ -595,6 +616,16 @@ class CollectedCsvTests(unittest.TestCase):
         self.assertEqual(
             {(row["problem"], row["mode"]) for row in preserved}, {("p01.pddl", "abs-asp"), ("p01.pddl", "fd")}
         )
+
+    def test_a_new_class_leaves_the_row_of_one_collected_before_classes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            csv_file = self._write_csv(directory, [("example", "p01.pddl", "abs-asp", "success")])
+            collected = self._collected([("example", "p01.pddl", "abs-asp", "timed out")])
+            collected[0]["class"] = "1"
+
+            preserved = _preserved_rows(collected, csv_file)
+
+        self.assertEqual([(row["mode"], row["class"]) for row in preserved], [("abs-asp", "0")])
 
     def test_a_first_run_has_nothing_to_keep(self):
         with tempfile.TemporaryDirectory() as directory:
