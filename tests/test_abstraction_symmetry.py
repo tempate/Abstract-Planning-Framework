@@ -105,6 +105,21 @@ class SymmetrySelectionTests(unittest.TestCase):
 
         self.assertEqual(set(selected.objects), {"gadget1", "gadget2", "gadget3"})
 
+    def test_a_rank_past_the_largest_takes_the_next_class_down(self):
+        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
+        classes = [["item1", "item2"], ["gadget1", "gadget2", "gadget3"]]
+
+        self.assertEqual(set(_select_abstraction(source, classes, rank=1).objects), {"item1", "item2"})
+        with self.assertRaisesRegex(AbstractionError, "No class at rank 2"):
+            _select_abstraction(source, classes, rank=2)
+
+    def test_a_class_listed_twice_takes_one_rank(self):
+        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
+        classes = [["item1", "item2"], ["item2", "item1"]]
+
+        with self.assertRaisesRegex(AbstractionError, "No class at rank 1"):
+            _select_abstraction(source, classes, rank=1)
+
     def test_a_tie_is_settled_the_same_way_whatever_order_the_classes_arrive_in(self):
         # PDDL Symmetries prints its classes in a hash-dependent order, so a tie
         # on size must not be settled by whichever one it happened to print first.
