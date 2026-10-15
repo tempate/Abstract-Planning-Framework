@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-10-15 09:31 — experiments/opt/symmetries/results.csv
+2026-10-15 09:35 — experiments/opt/symmetries/results.csv
 
-866 problems compared over asp, abs-asp, abs-fd, fd-lmcut
+518 problems compared over asp, abs-asp, abs-fd, fd-lmcut
 
 ## Coverage
 
 ```
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
 ----------------------------------------------------------------------------------
-Plans found                     222 (25.6%)  126 (14.5%)  173 (20.0%)  410 (47.3%)
-Timeouts                        643 (74.2%)  384 (44.3%)  345 (39.8%)  454 (52.4%)
-Out of memory                      1 (0.1%)     8 (0.9%)     0 (0.0%)     0 (0.0%)
-Others                             0 (0.0%)  348 (40.2%)  348 (40.2%)     2 (0.2%)
-Total problems                          866          866          866          866
+Plans found                     128 (24.7%)  126 (24.3%)  173 (33.4%)  221 (42.7%)
+Timeouts                        389 (75.1%)  384 (74.1%)  345 (66.6%)  296 (57.1%)
+Out of memory                      1 (0.2%)     8 (1.5%)     0 (0.0%)     0 (0.0%)
+Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     1 (0.2%)
+Total problems                          518          518          518          518
 ```
 
 ## Head to head, over the problems both solved
@@ -23,7 +23,7 @@ Metric                                  ASP         ASPᵅ       LMcutᵅ       
 ----------------------------------------------------------------------------------
 Plans found by both                     115          115          167          167
 Faster                           76 (66.1%)   39 (33.9%)   29 (17.4%)  138 (82.6%)
-Found when the other did not            107           11            6          243
+Found when the other did not             13           11            6           54
 Median runtime                       7.11 s       8.23 s       8.48 s       3.28 s
 Total runtime                   10,436.37 s  10,451.93 s  20,541.46 s   7,256.52 s
 Shorter plan                     32 (27.8%)     0 (0.0%)     6 (3.6%)   36 (21.6%)
@@ -73,42 +73,37 @@ Total                                   121          168
 Domain                        Problems       ASP      ASPᵅ    LMcutᵅ     LMcut
 ------------------------------------------------------------------------------
 agricola-opt18-strips               20         8         3         0         0
-airport                             42        11        11        19        22
+airport                             19        11        11        19        19
 barman-opt11-strips                 20         0         0         0         4
 barman-opt14-strips                 14         0         0         0         0
 childsnack-opt14-strips             20         0         0         0         0
-depot                               22         4         1         3         8
-driverlog                           20         9         6        10        14
-elevators-opt08-strips              20         5         1         2        12
-elevators-opt11-strips              13         5         1         2        11
-floortile-opt11-strips              20         2         0         0         7
-floortile-opt14-strips              20         0         0         0         7
-grid                                 5         2         0         0         2
+depot                                9         1         1         3         3
+driverlog                           13         7         6        10        10
+elevators-opt08-strips               4         0         1         2         2
+elevators-opt11-strips               2         0         1         2         2
 gripper                             20         3         3         3         7
 hiking-opt14-strips                 20        12        13        11         9
-logistics00                         28        10         9        15        20
-logistics98                         35         3         0         4         6
+logistics00                         19         8         9        15        15
+logistics98                         31         1         0         4         4
 miconic                             11         1         2        11        11
-mprime                              35        34        20        16        24
-mystery                             28        19        10         8        17
-nomystery-opt11-strips              20        10         4         7        18
+mprime                              21        20        20        16        16
+mystery                             16        10        10         8         8
+nomystery-opt11-strips              10         4         4         7         8
 openstacks-opt08-strips             28         0         1         7        21
 openstacks-opt11-strips             20         0         0         5        18
 openstacks-opt14-strips             14         0         0         0         2
-pipesworld-notankage                49        13         9         9        17
-pipesworld-tankage                  49         9         9         8        11
+pipesworld-notankage                34        10         9         9        13
+pipesworld-tankage                  47         8         9         8         9
 quantum-layout-opt23-strips          7         4         3         3         4
-satellite                           36         6         5         8        12
-sokoban-opt08-strips                29         4         1         2        29
-sokoban-opt11-strips                19         1         1         2        19
-tetris-opt14-strips                 16         2         0         0         5
+satellite                           34         5         5         8        10
+sokoban-opt08-strips                 3         1         1         2         3
+sokoban-opt11-strips                 2         1         1         2         2
 tpp                                 29         4         4         4         6
-transport-opt08-strips              30        10         3         3        11
-transport-opt11-strips              20         5         0         0         6
-transport-opt14-strips              20         3         2         2         6
+transport-opt08-strips               4         3         3         3         3
+transport-opt14-strips               4         1         2         2         2
 visitall-opt11-strips                1         1         1         1         1
-woodworking-opt08-strips            28         9         0         1        18
-woodworking-opt11-strips            20         6         0         0        14
-zenotravel                          18         7         3         7        11
-Total                              866       222       126       173       410
+woodworking-opt08-strips             5         0         0         1         1
+woodworking-opt11-strips             4         0         0         0         1
+zenotravel                          13         4         3         7         7
+Total                              518       128       126       173       221
 ```
