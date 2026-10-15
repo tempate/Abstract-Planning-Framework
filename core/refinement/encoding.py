@@ -4,14 +4,19 @@ import json
 
 import clingo
 
+# Gaps added before the first abstract action and after the last, on top of
+# the one gap that surrounds every abstract action, for the concrete actions
+# that set the plan up or finish it off.
+PADDING = 3
+
 
 def mapped_horizon(abstract_horizon):
-    """Return the concrete horizon holding every abstract action and its gaps."""
-    return _concrete_time_step(abstract_horizon) + 1
+    """Return the concrete horizon holding every abstract action, its gaps and the padding."""
+    return _concrete_time_step(abstract_horizon) + 1 + PADDING
 
 
-def add_gaps(asp, horizon, minimize=False):
-    """Let the odd time steps up to the horizon stay empty, preferring empty ones if minimizing."""
+def add_gaps(asp, abstract_horizon, minimize=False):
+    """Let every time step that holds no abstract action stay empty, preferring empty ones if minimizing."""
     # Remove the rule forcing actions into every time step,
     # since gaps may not run an action.
     asp = asp.replace("1 {occurs(Action, t) : action(Action)} 1.", "")
@@ -24,7 +29,8 @@ def add_gaps(asp, horizon, minimize=False):
     if minimize:
         gap_rules.append(":~ gap(t), occurs(Action, t). [1@1, t]")
     gap_rules.append("#program base.")
-    gap_rules += [f"gap({t})." for t in range(1, horizon + 1, 2)]
+    action_steps = {_concrete_time_step(step) for step in range(1, abstract_horizon + 1)}
+    gap_rules += [f"gap({t})." for t in range(1, mapped_horizon(abstract_horizon) + 1) if t not in action_steps]
     return asp + "\n" + "\n".join(gap_rules) + "\n"
 
 
@@ -61,8 +67,8 @@ def _switch(time_step):
 
 
 def _concrete_time_step(abstract_time_step):
-    """Place an abstract action after the gap that precedes it."""
-    return 2 * abstract_time_step
+    """Place an abstract action after the padding and the gap that precede it."""
+    return 2 * abstract_time_step + PADDING
 
 
 def _action_pattern(action, abstraction):
