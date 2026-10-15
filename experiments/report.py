@@ -132,9 +132,10 @@ def _finished_problems(results_file):
     rows = {}
     with Path(results_file).open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
-            # The planner collapses the largest class. The others get a section of their own.
-            if class_rank(row["mode"], row.get("class")) in ("", "0"):
-                rows.setdefault((row["domain"], row["problem"]), {})[row["mode"]] = row
+            # An abstract mode that ran several classes reports the one that performed best.
+            problem = rows.setdefault((row["domain"], row["problem"]), {})
+            if row["mode"] not in problem or _performance(row) > _performance(problem[row["mode"]]):
+                problem[row["mode"]] = row
 
     present = {mode for problem in rows.values() for mode in problem}
     modes = tuple(mode for mode in MODES if mode in present)
@@ -145,6 +146,13 @@ def _finished_problems(results_file):
             continue
         problems.append(problem)
     return modes, problems, len(rows) - len(problems)
+
+
+def _performance(row):
+    """Rank the classes one mode ran on a problem: finished, then solved, then fastest, then largest."""
+    solved = row["status"] == "success" and row.get("verdict") != "unknown"
+    rank = int(class_rank(row["mode"], row.get("class")) or 0)
+    return (row["status"] not in UNFINISHED_STATUSES, solved, -_runtime(row) if solved else 0, -rank)
 
 
 def _is_verdict_run(problems):

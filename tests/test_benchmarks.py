@@ -757,6 +757,26 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(len(problems), 1)
         self.assertEqual(dropped, 1)
 
+    def test_an_abstract_mode_reports_its_best_class(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                # The largest class times out, a smaller one solves, the smallest solves slower.
+                runs = [("asp", "", "success", "5"), ("abs-asp", "0", "timed out", "1800")]
+                runs += [("abs-asp", "1", "success", "40"), ("abs-asp", "2", "success", "90")]
+                for mode, rank, status, seconds in runs:
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {"domain": "example", "problem": "p01.pddl", "mode": mode, "class": rank}
+                        | {"status": status, "wall_time_seconds": seconds}
+                    )
+
+            _modes, problems, _dropped = _finished_problems(results)
+
+        self.assertEqual(problems[0]["abs-asp"]["class"], "1")
+
 
 class DomainLookupTests(unittest.TestCase):
     def _collection(self, names):
