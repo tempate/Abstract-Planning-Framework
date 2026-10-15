@@ -1,13 +1,13 @@
 # Benchmark report
 
-2026-10-12 12:18 — experiments/sat/resources/results.csv
+2026-10-15 09:36 — experiments/sat/resources/results.csv
 
 330 problems compared over asp, abs-asp, abs-fd, fd
 
 ## Coverage
 
 ```
-Metric                                  ASP         ASPᵅ          FDᵅ           FD
+Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
 Plans found                      72 (21.8%)   81 (24.5%)  124 (37.6%)  305 (92.4%)
 Timeouts                        258 (78.2%)  249 (75.5%)  176 (53.3%)    22 (6.7%)
@@ -19,7 +19,7 @@ Total problems                          330          330          330          3
 ## Head to head, over the problems both solved
 
 ```
-Metric                                  ASP         ASPᵅ          FDᵅ           FD
+Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
 Plans found by both                      70           70          124          124
 Faster                           47 (67.1%)   23 (32.9%)     3 (2.4%)  121 (97.6%)
@@ -35,7 +35,7 @@ Total plan length                       622          957        6,172        5,0
 ## Where the timeouts died
 
 ```
-Killed during                          ASPᵅ          FDᵅ
+Killed during                          ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 Abstraction                          5 (2%)       5 (3%)
 Writing the abstract task            1 (0%)       0 (0%)
@@ -48,7 +48,7 @@ Total                                   249          176
 ## How the successes were solved
 
 ```
-Solved by                              ASPᵅ          FDᵅ
+Solved by                              ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 Refined directly                   61 (75%)     91 (73%)
 Refined, some actions off          13 (16%)     26 (21%)
@@ -59,7 +59,7 @@ Total                                    81          124
 ## Deletes relaxed by the refined plans
 
 ```
-Deletes relaxed                        ASPᵅ          FDᵅ
+Deletes relaxed                        ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 None                                 0 (0%)       0 (0%)
 1 to 4                             59 (80%)     69 (59%)
@@ -72,7 +72,7 @@ Total                                    74          117
 ## Plans found by domain
 
 ```
-Domain                        Problems       ASP      ASPᵅ       FDᵅ        FD
+Domain                        Problems       ASP      ASPᵅ     LAMAᵅ      LAMA
 ------------------------------------------------------------------------------
 data-network-sat18-strips           15         0         1         1        12
 elevators-sat08-strips              30         1         3         7        30

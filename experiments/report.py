@@ -13,9 +13,11 @@ from experiments.tracks import DEFAULT_TRACK, TRACKS
 DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
 SOLVER_LABELS = {
     "asp": "ASP",
-    "fd": "FD",
+    "fd": "LAMA",
     "fd-lmcut": "LMcut",
 }
+# A verdict run decides solvability with merge-and-shrink, not with LAMA.
+VERDICT_LABELS = SOLVER_LABELS | {"fd": "M&S"}
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
 VERDICTS = ("unsolvable", "unknown")
@@ -46,11 +48,11 @@ def main():
     modes, problems, dropped = _finished_problems(args.results)
     abstractions = [mode for mode in modes if mode.startswith(ABSTRACTION_PREFIX)]
     pairs = _pairs(abstractions, modes)
-    labels = _labels(abstractions, pairs)
 
     # A decide run reports no plan, horizon or refinement, so none of the other
     # tables have anything to say about one.
     verdict_run = _is_verdict_run(problems)
+    labels = _labels(abstractions, pairs, VERDICT_LABELS if verdict_run else SOLVER_LABELS)
     if verdict_run:
         sections = [_verdicts(problems, modes, labels)]
         if pairs:
@@ -90,13 +92,13 @@ def _pairs(abstractions, modes):
     return pairs
 
 
-def _labels(abstractions, pairs):
+def _labels(abstractions, pairs, solver_labels=SOLVER_LABELS):
     """Name each abstraction after the solver it is compared with, marked with an alpha."""
-    labels = dict(SOLVER_LABELS)
+    labels = dict(solver_labels)
     solvers = dict(pairs)
     for abstraction in abstractions:
         solver = solvers.get(abstraction, abstraction.removeprefix(ABSTRACTION_PREFIX))
-        labels[abstraction] = f"{SOLVER_LABELS[solver]}ᵅ"
+        labels[abstraction] = f"{solver_labels[solver]}ᵅ"
     return labels
 
 
