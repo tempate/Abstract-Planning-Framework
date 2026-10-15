@@ -34,8 +34,9 @@ SEARCH = (
     "max_states=50000,threshold_before_merge=1))"
 )
 LAMA_FIRST = "lama-first"
-# Optimal, so it gives the shortest plan to compare plan lengths against.
-LMCUT = "astar(lmcut())"
+# Optimal, so it gives the shortest plan to compare plan lengths against. Unit
+# costs make it minimize length like ASP and the abstraction, which drops costs.
+LMCUT = "astar(eval_modify_costs(lmcut(),cost_type=one),cost_type=one)"
 
 
 def pddl_to_sas(base_dir, domain_path, problem_path, label):
