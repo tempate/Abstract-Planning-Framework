@@ -9,30 +9,33 @@ OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)}
 
 
 class EncodingTests(unittest.TestCase):
-    def test_every_abstract_action_is_surrounded_by_a_gap(self):
-        mapping = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(2))
+    def test_every_step_without_an_abstract_action_is_a_gap(self):
+        abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item2",), 2))
+        actions = sorted(_step(switch) for switch in switches(abstract_plan))
+        mapping = add_gaps(OCCURRENCE_ENCODING, 2)
+        gaps = {step for step in range(1, mapped_horizon(2) + 1) if f"gap({step})." in mapping}
 
-        # The actions take the even steps 2 and 4, the gaps the odd ones around them.
-        self.assertIn("gap(1).", mapping)
-        self.assertIn("gap(3).", mapping)
-        self.assertIn("gap(5).", mapping)
-        self.assertNotIn("gap(2).", mapping)
-        self.assertNotIn("gap(4).", mapping)
+        self.assertEqual(gaps, set(range(1, mapped_horizon(2) + 1)) - set(actions))
+        # One gap between the actions, and more than one before the first and after the last.
+        self.assertEqual(actions[1] - actions[0], 2)
+        self.assertGreater(actions[0] - 1, 1)
+        self.assertGreater(mapped_horizon(2) - actions[1], 1)
 
     def test_a_gap_holds_any_concrete_action_or_none(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1)) + """
+        step = _step(switches(abstract_plan)[0])
+        program = add_gaps(OCCURRENCE_ENCODING, 1) + f"""
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
-switch(2).
+switch({step}).
 """ + mapping
 
-        models = self._models(program, horizon=3)
+        models = self._models(program, horizon=mapped_horizon(1))
         in_first_gap = {'occurs(action(("inspect","item1")),1)', 'occurs(action(("unrelated","x")),1)'}
 
-        self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
+        self.assertTrue(all(f'occurs(action(("inspect","item1")),{step})' in model for model in models))
         self.assertTrue(any('occurs(action(("unrelated","x")),1)' in model for model in models))
         self.assertTrue(any(not model & in_first_gap for model in models))
 
@@ -40,16 +43,18 @@ switch(2).
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1), minimize=True) + """
+        step = _step(switches(abstract_plan)[0])
+        program = add_gaps(OCCURRENCE_ENCODING, 1, minimize=True) + f"""
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
-switch(2).
+switch({step}).
 """ + mapping
 
-        control = IncrementalSolver(program, init_horizon=3).control
+        control = IncrementalSolver(program, init_horizon=mapped_horizon(1)).control
         control.configuration.solve.opt_mode = "optN"
-        optimal = self._models(program, horizon=3, control=control, optimal_only=True)
-        in_gaps = {f'occurs(action(("unrelated","x")),{step})' for step in (1, 3)}
+        optimal = self._models(program, horizon=mapped_horizon(1), control=control, optimal_only=True)
+        gaps = set(range(1, mapped_horizon(1) + 1)) - {step}
+        in_gaps = {f'occurs(action(("unrelated","x")),{gap})' for gap in gaps}
 
         self.assertTrue(optimal)
         self.assertTrue(all(not model & in_gaps for model in optimal))
@@ -58,35 +63,39 @@ switch(2).
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
         abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = """
+        step = _step(switches(abstract_plan)[0])
+        program = f"""
 action(action(("link","a","b"))).
-switch(2).
+switch({step}).
 """ + mapping
 
-        models = self._models(program, horizon=2)
+        models = self._models(program, horizon=step)
 
         self.assertTrue(models)
-        self.assertTrue(all('occurs(action(("link","a","b")),2)' in model for model in models))
-        self.assertTrue(all('occurs(action(("link","a","a")),2)' not in model for model in models))
+        self.assertTrue(all(f'occurs(action(("link","a","b")),{step})' in model for model in models))
+        self.assertTrue(all(f'occurs(action(("link","a","a")),{step})' not in model for model in models))
 
     def test_mapping_rejects_plan_actions_that_are_not_concrete_actions(self):
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = """
+        step = _step(switches(abstract_plan)[0])
+        program = f"""
 action(action(("move","item1"))).
-switch(2).
+switch({step}).
 """ + mapping
 
-        result = IncrementalSolver(program, init_horizon=2).control.solve()
+        result = IncrementalSolver(program, init_horizon=step).control.solve()
 
         self.assertTrue(result.unsatisfiable)
 
     def test_switches_give_up_the_abstract_plan_from_its_end(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item2",), 5))
 
-        # Steps 10 and 2, ordered by number rather than as text.
-        self.assertEqual([str(switch) for switch in switches(abstract_plan)], ["switch(10)", "switch(2)"])
+        # Ordered by number rather than as text, which would put a two-digit step first.
+        steps = [_step(switch) for switch in switches(abstract_plan)]
+        self.assertEqual(steps, sorted(steps, reverse=True))
+        self.assertGreaterEqual(steps[0], 10)
 
     def _models(self, program, horizon, control=None, optimal_only=False):
         control = control or IncrementalSolver(program, horizon).control
@@ -97,6 +106,10 @@ switch(2).
                 if not optimal_only or model.optimality_proven:
                     models.append({str(symbol) for symbol in model.symbols(atoms=True)})
         return models
+
+
+def _step(switch):
+    return switch.arguments[0].number
 
 
 if __name__ == "__main__":
