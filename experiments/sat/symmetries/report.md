@@ -1,13 +1,13 @@
 # Benchmark report
 
-2026-10-15 09:35 — experiments/sat/symmetries/results.csv
+2026-10-15 09:36 — experiments/sat/symmetries/results.csv
 
 557 problems compared over asp, abs-asp, abs-fd, fd
 
 ## Coverage
 
 ```
-Metric                                  ASP         ASPᵅ          FDᵅ           FD
+Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
 Plans found                     104 (18.7%)  116 (20.8%)  270 (48.5%)  507 (91.0%)
 Timeouts                        440 (79.0%)  429 (77.0%)  191 (34.3%)    35 (6.3%)
@@ -19,7 +19,7 @@ Total problems                          557          557          557          5
 ## Head to head, over the problems both solved
 
 ```
-Metric                                  ASP         ASPᵅ          FDᵅ           FD
+Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
 Plans found by both                      99           99          267          267
 Faster                           51 (51.5%)   48 (48.5%)    18 (6.7%)  249 (93.3%)
@@ -35,7 +35,7 @@ Total plan length                     1,407        1,935       19,274       16,0
 ## Where the timeouts died
 
 ```
-Killed during                          ASPᵅ          FDᵅ
+Killed during                          ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 Abstract search                   402 (94%)      17 (9%)
 Guided concrete search              10 (2%)    157 (82%)
@@ -46,7 +46,7 @@ Total                                   429          191
 ## How the successes were solved
 
 ```
-Solved by                              ASPᵅ          FDᵅ
+Solved by                              ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 Refined directly                   82 (71%)    214 (79%)
 Refined, some actions off          29 (25%)     51 (19%)
@@ -57,7 +57,7 @@ Total                                   116          270
 ## Deletes relaxed by the refined plans
 
 ```
-Deletes relaxed                        ASPᵅ          FDᵅ
+Deletes relaxed                        ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 None                               12 (11%)     29 (11%)
 1 to 4                             68 (61%)    193 (73%)
@@ -70,7 +70,7 @@ Total                                   111          265
 ## Plans found by domain
 
 ```
-Domain                        Problems       ASP      ASPᵅ       FDᵅ        FD
+Domain                        Problems       ASP      ASPᵅ     LAMAᵅ      LAMA
 ------------------------------------------------------------------------------
 agricola-sat18-strips               20         0         0         0        12
 airport                             19        11        11        19        19
