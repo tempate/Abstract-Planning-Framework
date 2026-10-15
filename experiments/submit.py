@@ -71,11 +71,7 @@ def main():
 
 
 def _track_name(args, parser):
-    """The track the arguments name: sat and opt by their abstraction source, unsat by itself."""
-    if args.track in TRACKS:
-        if args.abstraction_source is not None:
-            parser.error(f"{args.track} has no abstraction source to choose")
-        return args.track
+    """The track the arguments name: the question it answers and the source it abstracts."""
     track_name = f"{args.track}/{args.abstraction_source or DEFAULT_SOURCE}"
     if track_name not in TRACKS:
         parser.error(f"no track abstracts {args.abstraction_source} to answer {args.track}")
