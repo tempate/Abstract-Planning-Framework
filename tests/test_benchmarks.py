@@ -560,9 +560,9 @@ class BenchmarkTests(unittest.TestCase):
         task = [("asp", "example", Path("domain.pddl"), Path("p01.pddl"), None)]
         with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
             _write_manifest(task, plan, track="sat/symmetries")
-            _write_manifest(task, decide, track="unsat")
+            _write_manifest(task, decide, track="unsat/symmetries")
 
-            self.assertEqual(_track_results_file([decide]), TRACKS["unsat"].results_file)
+            self.assertEqual(_track_results_file([decide]), TRACKS["unsat/symmetries"].results_file)
             with self.assertRaises(SystemExit):
                 _track_results_file([plan, decide])
 
