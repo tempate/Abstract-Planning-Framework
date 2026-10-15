@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-15 09:28 — experiments/opt/resources/results.csv
+2026-10-15 15:06 — experiments/opt/resources/results.csv
 
 373 problems compared over asp, abs-asp, abs-fd, fd-lmcut
 
@@ -65,6 +65,18 @@ None                                 0 (0%)       0 (0%)
 10 to 19                             6 (5%)     23 (12%)
 20 or more                           0 (0%)      13 (7%)
 Total                                   125          187
+```
+
+## Every class against the largest
+
+```
+Over problems with 2+ classes          ASPᵅ       LMcutᵅ
+--------------------------------------------------------
+Problems                                115          115
+Solved by the largest class              53           69
+Solved by some class                     58           79
+Largest class is fastest           30 (52%)     33 (42%)
+Median time, largest / best           1.00x        1.02x
 ```
 
 ## Plans found by domain
