@@ -689,6 +689,15 @@ class ReportTests(unittest.TestCase):
         labels = _labels(["abs-fd"], [("abs-fd", "fd-lmcut")])
         self.assertTrue(labels["abs-fd"].startswith(SOLVER_LABELS["fd-lmcut"]))
 
+    def test_a_mode_keeping_only_the_abstract_length_pairs_with_its_solver_under_its_own_name(self):
+        modes = ("abs-fd", "len-fd", "fd-lmcut")
+        pairs = _pairs(["abs-fd", "len-fd"], modes)
+        labels = _labels(["abs-fd", "len-fd"], pairs)
+
+        self.assertIn(("len-fd", "fd-lmcut"), pairs)
+        self.assertTrue(labels["len-fd"].startswith(SOLVER_LABELS["fd-lmcut"]))
+        self.assertNotEqual(labels["len-fd"], labels["abs-fd"])
+
     def test_the_head_to_head_compares_plan_lengths_on_shared_solves(self):
         def solved(length):
             return {"status": "success", "wall_time_seconds": "1.0", "plan_length": str(length)}
