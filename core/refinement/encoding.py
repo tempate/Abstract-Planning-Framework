@@ -10,8 +10,8 @@ def mapped_horizon(abstract_horizon):
     return _concrete_time_step(abstract_horizon) + 1
 
 
-def add_gaps(asp, horizon, minimize=False):
-    """Let the odd time steps up to the horizon stay empty, preferring empty ones if minimizing."""
+def add_gaps(asp, horizon, optimize=False):
+    """Let the odd time steps up to the horizon stay empty, preferring empty ones if optimizing."""
     # Remove the rule forcing actions into every time step,
     # since gaps may not run an action.
     asp = asp.replace("1 {occurs(Action, t) : action(Action)} 1.", "")
@@ -22,7 +22,7 @@ def add_gaps(asp, horizon, minimize=False):
         "0 {occurs(Action, t) : action(Action)} 1 :- gap(t).",
     ]
 
-    if minimize:
+    if optimize:
         rules.append(":~ gap(t), occurs(Action, t). [1@2, t]")
 
     rules.append("#program base.")
@@ -32,7 +32,7 @@ def add_gaps(asp, horizon, minimize=False):
     return asp + "\n" + "\n".join(rules) + "\n"
 
 
-def concretize_abstract_actions(abstract_plan, abstraction, minimize=False):
+def concretize_abstract_actions(abstract_plan, abstraction, optimize=False):
     """Map an abstract plan to compatible grounded concrete actions."""
     rules = [f"concrete_object({_quote(name)})." for name in abstraction.objects]
 
@@ -43,7 +43,7 @@ def concretize_abstract_actions(abstract_plan, abstraction, minimize=False):
         switch = _switch(time_step)
 
         rules.append(f"0 {{ {switch} }} 1.")
-        if minimize:
+        if optimize:
             rules.append(f":~ not {switch}. [1@1, {time_step}]")
 
         # While the switch is on, some grounding of the abstract action occurs at its step.
