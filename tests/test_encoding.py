@@ -40,7 +40,7 @@ switch(2).
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1), minimize=True) + """
+        program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1), optimize=True) + """
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
 switch(2).
@@ -54,12 +54,12 @@ switch(2).
         self.assertTrue(optimal)
         self.assertTrue(all(not model & in_gaps for model in optimal))
 
-    def test_minimizing_keeps_the_abstract_plan_unless_a_shorter_plan_drops_it(self):
+    def test_optimizing_keeps_the_abstract_plan_unless_a_shorter_plan_drops_it(self):
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
 
         def optimal_switches(concrete_actions):
-            mapping = concretize_abstract_actions((PlanAction("inspect", ("item1",), 1),), abstraction, minimize=True)
-            program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1), minimize=True) + concrete_actions + mapping
+            mapping = concretize_abstract_actions((PlanAction("inspect", ("item1",), 1),), abstraction, optimize=True)
+            program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1), optimize=True) + concrete_actions + mapping
             control = IncrementalSolver(program, init_horizon=3).control
             control.configuration.solve.opt_mode = "optN"
             optimal = self._models(program, horizon=3, control=control, optimal_only=True)
