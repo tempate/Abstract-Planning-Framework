@@ -25,13 +25,13 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Use an abstract plan to guide concrete search."""
     horizon = mapped_horizon(abstract_horizon)
 
-    minimize = context.config.minimize_gaps
-    asp = add_gaps(context.concrete_asp, horizon, minimize)
-    asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, minimize)
+    optimize = context.config.optimize
+    asp = add_gaps(context.concrete_asp, horizon, optimize)
+    asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, optimize)
 
-    # Minimizing leaves every switch free, so the first horizon with a plan holds
+    # Optimizing leaves every switch free, so the first horizon with a plan holds
     # the shortest one, and no switch needs giving up by hand.
-    plan = _solve_concrete_plan(context, asp, horizon, () if minimize else switches(abstract_plan))
+    plan = _solve_concrete_plan(context, asp, horizon, () if optimize else switches(abstract_plan))
     if plan is not None:
         context.metrics.set_counter("plan_length", plan_length(plan))
 
@@ -60,7 +60,7 @@ def _solve_concrete_plan(context, asp, init_horizon, switches):
         context.metrics.set_counters(counters)
 
     with context.metrics.measure("guided_concrete_solving"):
-        solver = RelaxingSolver(asp, init_horizon, context.config.minimize_gaps)
+        solver = RelaxingSolver(asp, init_horizon, context.config.optimize)
         result = solver.search(switches, record_attempt)
 
     record_attempt(result.horizon, result.dropped, result.attempts)
