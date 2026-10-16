@@ -25,10 +25,13 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Use an abstract plan to guide concrete search."""
     horizon = mapped_horizon(abstract_horizon)
 
-    asp = add_gaps(context.concrete_asp, horizon, context.config.minimize_gaps)
-    asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction)
+    minimize = context.config.minimize_gaps
+    asp = add_gaps(context.concrete_asp, horizon, minimize)
+    asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, minimize)
 
-    plan = _solve_concrete_plan(context, asp, horizon, switches(abstract_plan))
+    # Minimizing leaves every switch free, so the first horizon with a plan holds
+    # the shortest one, and no switch needs giving up by hand.
+    plan = _solve_concrete_plan(context, asp, horizon, () if minimize else switches(abstract_plan))
     if plan is not None:
         context.metrics.set_counter("plan_length", plan_length(plan))
 
