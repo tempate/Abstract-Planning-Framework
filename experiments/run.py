@@ -20,9 +20,10 @@ DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"
 # Every way one problem gets solved, in the order a report reads them. A mode
 # names the solver that finds the plan, or through an abstraction the abstract
-# plan, which ASP then refines.
-MODES = ("asp", "abs-asp", "abs-fd", "fd", "fd-lmcut")
+# plan, which ASP then refines, or whose length ASP starts its search from.
+MODES = ("asp", "abs-asp", "len-asp", "abs-fd", "len-fd", "fd", "fd-lmcut")
 ABSTRACTION_PREFIX = "abs-"
+LENGTH_PREFIX = "len-"
 
 
 def main():
@@ -169,7 +170,7 @@ def _machine_status(return_code, timed_out, interrupted=False):
 
 def _planner_command(domain, problem, mode, track=DEFAULT_TRACK):
     command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
-    if mode.startswith(ABSTRACTION_PREFIX):
+    if mode.startswith((ABSTRACTION_PREFIX, LENGTH_PREFIX)):
         command.extend(TRACKS[track].abstract_arguments)
     return command
 

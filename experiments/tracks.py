@@ -50,7 +50,7 @@ TRACKS = {
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abs-asp", "abs-fd", "asp", "fd"),
+        modes=("abs-asp", "abs-fd", "len-asp", "len-fd", "asp", "fd"),
     ),
     # The same suite, restricted to the problems numeric-fast-downward finds a
     # resource for, and planned from that resource's objects.
@@ -59,17 +59,17 @@ TRACKS = {
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abs-asp", "abs-fd", "asp", "fd"),
+        modes=("abs-asp", "abs-fd", "len-asp", "len-fd", "asp", "fd"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
     # The optimal suite, refined to the plan that fills the fewest gaps, with
-    # abs-fd searching the abstract task optimally like its fd-lmcut baseline.
+    # abs-fd and len-fd searching the abstract task optimally like their fd-lmcut baseline.
     "opt/symmetries": Track(
         directory=Path(opt.__file__).parent / "symmetries",
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abs-asp", "abs-fd", "asp", "fd-lmcut"),
+        modes=("abs-asp", "abs-fd", "len-asp", "len-fd", "asp", "fd-lmcut"),
         abstract_arguments=("--minimize-gaps", "--lmcut"),
     ),
     "opt/resources": Track(
@@ -77,7 +77,7 @@ TRACKS = {
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abs-asp", "abs-fd", "asp", "fd-lmcut"),
+        modes=("abs-asp", "abs-fd", "len-asp", "len-fd", "asp", "fd-lmcut"),
         abstract_arguments=("--minimize-gaps", "--lmcut", "--abstraction-source", "resources"),
     ),
     "unsat": Track(

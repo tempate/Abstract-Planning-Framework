@@ -33,6 +33,11 @@ def _compute(args):
     if args.mode == "abs-fd":
         find_abstract_plan = partial(fd.find_abstract_plan, search=LMCUT if args.lmcut else None)
         return abstraction.solve(abstract_planning_config(args), find_abstract_plan, on_update)
+    if args.mode == "len-asp":
+        return abstraction.solve(abstract_planning_config(args), asp.find_abstract_plan, on_update, refine_plan=False)
+    if args.mode == "len-fd":
+        find_abstract_plan = partial(fd.find_abstract_plan, search=LMCUT if args.lmcut else None)
+        return abstraction.solve(abstract_planning_config(args), find_abstract_plan, on_update, refine_plan=False)
 
 
 def print_planning_result(result):
@@ -97,6 +102,18 @@ def _argument_parser():
         "abs-fd",
         parents=[shared, abstract],
         help="Find an abstract plan with Fast Downward's lama-first, then refine it with ASP",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
+        "len-asp",
+        parents=[shared, abstract],
+        help="Find an abstract plan with ASP, then solve the task with ASP from that plan's length",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
+        "len-fd",
+        parents=[shared, abstract],
+        help="Find an abstract plan with Fast Downward's lama-first, then solve the task with ASP from that plan's length",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     return parser

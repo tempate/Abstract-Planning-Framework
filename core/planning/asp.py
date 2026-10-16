@@ -25,7 +25,7 @@ def solve(config: PlanningConfig, on_update=None):
 def _translate_and_solve(config, base_dir, run_id, metrics):
     sas_file = _to_sas(base_dir, config, metrics)
     asp = _to_asp(sas_file, metrics)
-    return _search(asp, config, run_id, metrics)
+    return search(asp, config, run_id, metrics)
 
 
 def _to_sas(base_dir, config, metrics):
@@ -40,14 +40,14 @@ def _to_asp(sas_file, metrics):
         return sas_to_asp(sas_file)
 
 
-def _search(asp, config, run_id, metrics):
-    """Solve the program, raising the horizon until a plan is found."""
+def search(asp, config, run_id, metrics, init_horizon=0):
+    """Solve the program, raising the horizon from ``init_horizon`` until a plan is found."""
 
     def record_attempt(_horizon, solve_calls):
         metrics.set_counter("concrete_solve_calls", solve_calls)
 
     with metrics.measure("guided_concrete_solving"):
-        solver = IncrementalSolver(asp)
+        solver = IncrementalSolver(asp, init_horizon)
         solve_result = solver.search(on_attempt=record_attempt)
 
     metrics.set_counter("concrete_solve_calls", solve_result.attempts)
