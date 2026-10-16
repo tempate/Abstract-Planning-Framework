@@ -3,7 +3,6 @@
 import argparse
 import json
 import os
-import re
 import shlex
 import subprocess
 import sys
@@ -11,8 +10,8 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR
-from experiments.tracks import DEFAULT_TRACK, TRACKS
+from experiments.run import ABSTRACTION_PREFIX, DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR
+from experiments.tracks import DEFAULT_TRACK, TRACKS, find_domain, has_other_status, is_domain_file
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.arguments import positive_int
 
@@ -41,6 +40,8 @@ def main():
             modes=modes,
             domains=args.domains,
             problems=args.problems,
+            class_counts=track.class_counts(),
+            from_rank=args.from_rank,
         )
     )
     _check_worktree_is_built()
@@ -65,16 +66,12 @@ def main():
         if args.dry_run:
             _report_run(tasks, config_file, definition_dir)
             return
-        print(f"Submitting {len(tasks)} cluster jobs (one per mode and benchmark problem)")
+        print(f"Submitting {len(tasks)} cluster jobs (one per mode, benchmark problem and class)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
 
 
 def _track_name(args, parser):
-    """The track the arguments name: sat and opt by their abstraction source, unsat by itself."""
-    if args.track in TRACKS:
-        if args.abstraction_source is not None:
-            parser.error(f"{args.track} has no abstraction source to choose")
-        return args.track
+    """The track the arguments name: the question it answers and the source it abstracts."""
     track_name = f"{args.track}/{args.abstraction_source or DEFAULT_SOURCE}"
     if track_name not in TRACKS:
         parser.error(f"no track abstracts {args.abstraction_source} to answer {args.track}")
@@ -85,7 +82,7 @@ def _report_run(tasks, config_file, definition_dir):
     """Print what a submission would send, so a submit-side change can be checked for free."""
     definition_dir = Path(definition_dir)
     instances = (definition_dir / "instances.txt").read_text(encoding="utf-8").splitlines()
-    print(f"Would submit {len(tasks)} cluster jobs (one per mode and benchmark problem)")
+    print(f"Would submit {len(tasks)} cluster jobs (one per mode, benchmark problem and class)")
     print(config_file.read_text(encoding="utf-8").strip())
     print((definition_dir / "configs.txt").read_text(encoding="utf-8").strip())
     for instance in instances[:3]:
@@ -131,7 +128,8 @@ def _set_aside_results_dir(results_dir=RESULTS_DIR):
 def _write_manifest(tasks, results_dir=RESULTS_DIR, track=DEFAULT_TRACK):
     """Record every result expected from a submitted benchmark run, and the code that runs it."""
     expected_results = [
-        {"domain": domain_name, "problem": problem.name, "mode": mode} for mode, domain_name, _domain, problem in tasks
+        {"domain": domain_name, "problem": problem.name, "mode": mode, "class": rank}
+        for mode, domain_name, _domain, problem, rank in tasks
     ]
     manifest = {"version": 1, "track": track, "commit": _head_commit(), "expected_results": expected_results}
     path = Path(results_dir) / MANIFEST_NAME
@@ -181,6 +179,12 @@ def _argument_parser():
     )
     parser.add_argument(
         "--problems", nargs="+", help="Submit only these problem files, named p01.pddl or p01, within each domain"
+    )
+    parser.add_argument(
+        "--from-rank",
+        type=int,
+        default=0,
+        help="Run abstract modes only on the classes from this rank down, to skip those already collected",
     )
     parser.add_argument(
         "--all-problems",
@@ -233,12 +237,14 @@ def _write_copperbench_config(
         "$timeout",
         "--track",
         track,
+        "--class-rank",
+        "$5",
     ]
     configs_file.write_text(shlex.join(worker) + "\n", encoding="utf-8")
 
     instances = []
-    for mode, domain_name, domain, problem in tasks:
-        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()}")
+    for mode, domain_name, domain, problem, rank in tasks:
+        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()} {rank or 0}")
     instances_file.write_text("\n".join(instances) + "\n", encoding="utf-8")
 
     config = {
@@ -257,7 +263,14 @@ def _write_copperbench_config(
     return config_file
 
 
-def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abs-asp",), domains=None, problems=None):
+def _benchmark_tasks(
+    benchmarks_dir, suite, runnable, modes=("abs-asp",), domains=None, problems=None, class_counts=None, from_rank=0
+):
+    """One task per concrete mode and problem, and per abstract mode, problem and class rank.
+
+    Without class counts, or for a problem they do not list, an abstract mode
+    collapses the largest class only.
+    """
     if domains is not None:
         unknown = sorted(set(domains) - set(suite))
         if unknown:
@@ -266,59 +279,20 @@ def _benchmark_tasks(benchmarks_dir, suite, runnable, modes=("abs-asp",), domain
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
-            if _is_domain_file(problem.name) or _has_other_status(problem.name):
+            if is_domain_file(problem.name) or has_other_status(problem.name):
                 continue
             if runnable is not None and (domain_name, problem.name) not in runnable:
                 continue
             if problems is not None and not {problem.name, problem.stem} & set(problems):
                 continue
-            domain = _find_domain(problem)
+            domain = find_domain(problem)
             for mode in modes:
-                yield mode, domain_name, domain, problem
-
-
-def _is_domain_file(name):
-    """Tell a domain file from a problem file by name.
-
-    downward-benchmarks spells it out in full; unsolve-ipc-2016 shortens it to
-    domNN, satdomNN and unknowndomNN, against probNN, satprobNN and unknownprobNN.
-    """
-    return "domain" in name or re.match(r"(sat|unknown)?dom\d", name) is not None
-
-
-def _has_other_status(name):
-    """Tell the problems standing around an unsolvable one from the problem itself.
-
-    unsolve-ipc-2016 names probNN for the instances known to be unsolvable,
-    satprobNN for the solvable twin beside it, and unknownprobNN for the ones
-    nobody settled. Only the first is what this suite asks about.
-    """
-    return name.startswith(("satprob", "unknownprob"))
-
-
-def _find_domain(problem):
-    """Find the domain file using the naming conventions of the benchmark collections."""
-    candidates = [
-        "domain.pddl",
-        f"{problem.stem}-domain{problem.suffix}",
-        f"{problem.name[:3]}-domain.pddl",
-        f"domain_{problem.name}",
-        f"domain-{problem.name}",
-    ]
-    if "prob" in problem.stem:
-        # unsolve-ipc-2016 names the pair after each other: probNN.pddl with
-        # domNN.pddl, and likewise satprobNN and unknownprobNN. Guarded, or a
-        # problem with no prob in its name would answer as its own domain.
-        candidates.append(f"{problem.stem.replace('prob', 'dom', 1)}{problem.suffix}")
-        # bag-barman and bag-transport ship no satdomNN, and their satprobNN is
-        # probNN with a single symbol changed, so it belongs to the same domNN.
-        # Last, or diagnosis and cave-diving would take domNN over their satdomNN.
-        candidates.append(f"dom{problem.stem.partition('prob')[2]}{problem.suffix}")
-    for name in candidates:
-        domain = problem.parent / name
-        if domain.is_file():
-            return domain
-    raise FileNotFoundError(f"No domain file found for {problem}")
+                if not mode.startswith(ABSTRACTION_PREFIX):
+                    yield mode, domain_name, domain, problem, None
+                    continue
+                count = 1 if class_counts is None else class_counts.get((domain_name, problem.name), 1)
+                for rank in range(from_rank, count):
+                    yield mode, domain_name, domain, problem, rank
 
 
 if __name__ == "__main__":

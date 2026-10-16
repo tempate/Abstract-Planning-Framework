@@ -27,8 +27,24 @@ ABSTRACTION_PREFIX = "abs-"
 
 def main():
     args = _argument_parser().parse_args()
-    result = _run_task(args.mode, args.domain_name, args.domain, args.problem, timeout=args.timeout, track=args.track)
+    result = _run_task(
+        args.mode,
+        args.domain_name,
+        args.domain,
+        args.problem,
+        timeout=args.timeout,
+        track=args.track,
+        class_rank=args.class_rank,
+    )
     print(f"{args.domain_name}/{args.problem.name}: {args.mode} {_human_status(result)}", flush=True)
+
+
+def class_rank(mode, rank):
+    """The class a result collapsed, as the CSV writes it: none for a concrete mode,
+    and the largest for an abstract one run before results recorded their class."""
+    if not mode.startswith(ABSTRACTION_PREFIX):
+        return ""
+    return "0" if rank in (None, "") else str(rank)
 
 
 def _argument_parser():
@@ -46,11 +62,21 @@ def _argument_parser():
         default=DEFAULT_TRACK,
         help="Track the problem belongs to, which names the driver that runs it",
     )
+    parser.add_argument(
+        "--class-rank",
+        type=int,
+        default=0,
+        help="Candidate class an abstract mode collapses, counting from the largest (0); concrete modes ignore it",
+    )
     return parser
 
 
-def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK):
-    result_file = Path(results_dir) / domain_name / problem.stem / f"{mode}.json"
+def _run_task(
+    mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK, class_rank=0
+):
+    abstract = mode.startswith(ABSTRACTION_PREFIX)
+    name = f"{mode}-{class_rank}" if abstract else mode
+    result_file = Path(results_dir) / domain_name / problem.stem / f"{name}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
     started_at = datetime.now(timezone.utc).isoformat()
     initial = {
@@ -60,6 +86,7 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
         "wall_time_seconds": 0.0,
         "output": "",
         "mode": mode,
+        **({"class": class_rank} if abstract else {}),
         "track": track,
         "domain": domain_name,
         "problem": problem.name,
@@ -70,12 +97,13 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
 
     environment = os.environ.copy()
     environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
-    command = _planner_command(domain, problem, mode, track)
+    command = _planner_command(domain, problem, mode, track, class_rank)
     result = _run_pipeline(command, timeout, environment)
     progress = _read_progress(result_file)
     result.update(
         {
             "mode": mode,
+            **({"class": class_rank} if abstract else {}),
             "track": track,
             "domain": domain_name,
             "problem": problem.name,
@@ -167,10 +195,11 @@ def _machine_status(return_code, timed_out, interrupted=False):
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
-def _planner_command(domain, problem, mode, track=DEFAULT_TRACK):
+def _planner_command(domain, problem, mode, track=DEFAULT_TRACK, class_rank=0):
     command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
     if mode.startswith(ABSTRACTION_PREFIX):
         command.extend(TRACKS[track].abstract_arguments)
+        command.extend(["--class-rank", str(class_rank)])
     return command
 
 

@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-15 09:36 — experiments/unsat/results.csv
+2026-10-16 13:41 — experiments/unsat/symmetries/results.csv
 
 111 problems compared over abs-fd, fd
 
@@ -26,7 +26,7 @@ Proved unsolvable by both                21           21
 Faster                           13 (61.9%)    8 (38.1%)
 Proved when the other did not             2           26
 Median runtime                       6.91 s       5.47 s
-Total runtime                      983.65 s   2,585.27 s
+Total runtime                      608.88 s   2,585.27 s
 ```
 
 ## Where the timeouts died

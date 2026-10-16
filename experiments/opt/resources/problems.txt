@@ -1,6 +1,6 @@
 # Problems with a resource variable the detector found objects for.
 # Regenerate with:
-#   python -m scripts.scan_resources --track opt/resources
+#   python -m experiments.scan --track opt/resources
 data-network-opt18-strips/p01.pddl
 data-network-opt18-strips/p02.pddl
 data-network-opt18-strips/p03.pddl
