@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-15 12:32 — experiments/opt/symmetries/results.csv
+2026-10-16 13:42 — experiments/opt/symmetries/results.csv
 
 518 problems compared over asp, abs-asp, abs-fd, fd-lmcut
 
@@ -9,8 +9,8 @@
 ```
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
 ----------------------------------------------------------------------------------
-Plans found                     128 (24.7%)  126 (24.3%)  173 (33.4%)  193 (37.3%)
-Timeouts                        389 (75.1%)  384 (74.1%)  345 (66.6%)  324 (62.5%)
+Plans found                     128 (24.7%)  127 (24.5%)  183 (35.3%)  193 (37.3%)
+Timeouts                        389 (75.1%)  383 (73.9%)  335 (64.7%)  324 (62.5%)
 Out of memory                      1 (0.2%)     8 (1.5%)     0 (0.0%)     0 (0.0%)
 Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     1 (0.2%)
 Total problems                          518          518          518          518
@@ -21,15 +21,15 @@ Total problems                          518          518          518          5
 ```
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
 ----------------------------------------------------------------------------------
-Plans found by both                     115          115          167          167
-Faster                           76 (66.1%)   39 (33.9%)   45 (26.9%)  122 (73.1%)
-Found when the other did not             13           11            6           26
-Median runtime                       7.11 s       8.23 s       8.48 s       3.50 s
-Total runtime                   10,436.37 s  10,451.93 s  20,541.46 s  11,189.99 s
-Shorter plan                     32 (27.8%)     0 (0.0%)     0 (0.0%)   36 (21.6%)
-Same plan length                 83 (72.2%)   83 (72.2%)  131 (78.4%)  131 (78.4%)
-Median plan length                       11           13           19           19
-Total plan length                     1,699        1,788        4,393        4,219
+Plans found by both                     115          115          172          172
+Faster                           70 (60.9%)   45 (39.1%)   56 (32.6%)  116 (67.4%)
+Found when the other did not             13           12           11           21
+Median runtime                       7.11 s       7.20 s       7.50 s       3.67 s
+Total runtime                   10,436.37 s   9,063.92 s  19,283.72 s  14,480.17 s
+Shorter plan                     33 (28.7%)     0 (0.0%)     0 (0.0%)   43 (25.0%)
+Same plan length                 82 (71.3%)   82 (71.3%)  129 (75.0%)  129 (75.0%)
+Median plan length                       11           13           21           19
+Total plan length                     1,699        1,804        4,566        4,350
 ```
 
 ## Where the timeouts died
@@ -37,10 +37,10 @@ Total plan length                     1,699        1,788        4,393        4,2
 ```
 Killed during                          ASPᵅ       LMcutᵅ
 --------------------------------------------------------
-Abstract search                   334 (87%)    275 (80%)
-Guided concrete search              33 (9%)     53 (15%)
+Abstract search                   334 (87%)    273 (81%)
+Guided concrete search              32 (8%)     45 (13%)
 Unguided concrete search            17 (4%)      17 (5%)
-Total                                   384          345
+Total                                   383          335
 ```
 
 ## How the successes were solved
@@ -48,10 +48,10 @@ Total                                   384          345
 ```
 Solved by                              ASPᵅ       LMcutᵅ
 --------------------------------------------------------
-Refined directly                   98 (78%)    133 (77%)
-Refined, some actions off          23 (18%)     35 (20%)
-Solved above the abstract plan       5 (4%)       5 (3%)
-Total                                   126          173
+Refined directly                   99 (78%)    144 (79%)
+Refined, some actions off          26 (20%)     38 (21%)
+Solved above the abstract plan       2 (2%)       1 (1%)
+Total                                   127          183
 ```
 
 ## Deletes relaxed by the refined plans
@@ -59,12 +59,24 @@ Total                                   126          173
 ```
 Deletes relaxed                        ASPᵅ       LMcutᵅ
 --------------------------------------------------------
-None                               13 (11%)     23 (14%)
-1 to 4                             85 (70%)    122 (73%)
-5 to 9                               4 (3%)       4 (2%)
-10 to 19                           18 (15%)     18 (11%)
+None                               13 (10%)     23 (13%)
+1 to 4                             88 (70%)    134 (74%)
+5 to 9                               6 (5%)       9 (5%)
+10 to 19                           17 (14%)      15 (8%)
 20 or more                           1 (1%)       1 (1%)
-Total                                   121          168
+Total                                   125          182
+```
+
+## Every class against the largest
+
+```
+Over problems with 2+ classes          ASPᵅ       LMcutᵅ
+--------------------------------------------------------
+Problems                                322          322
+Solved by the largest class              59           64
+Solved by some class                     60           74
+Largest class is fastest           28 (47%)     28 (38%)
+Median time, largest / best           1.01x        1.02x
 ```
 
 ## Plans found by domain
@@ -77,7 +89,7 @@ airport                             19        11        11        19        19
 barman-opt11-strips                 20         0         0         0         4
 barman-opt14-strips                 14         0         0         0         0
 childsnack-opt14-strips             20         0         0         0         0
-depot                                9         1         1         3         3
+depot                                9         1         1         5         3
 driverlog                           13         7         6        10        10
 elevators-opt08-strips               4         0         1         2         3
 elevators-opt11-strips               2         0         1         2         2
@@ -89,21 +101,21 @@ miconic                             11         1         2        11        11
 mprime                              21        20        20        16        16
 mystery                             16        10        10         8         8
 nomystery-opt11-strips              10         4         4         7         8
-openstacks-opt08-strips             28         0         1         7         8
+openstacks-opt08-strips             28         0         1         8         8
 openstacks-opt11-strips             20         0         0         5         5
 openstacks-opt14-strips             14         0         0         0         0
 pipesworld-notankage                34        10         9         9        13
-pipesworld-tankage                  47         8         9         8         9
+pipesworld-tankage                  47         8        10        10         9
 quantum-layout-opt23-strips          7         4         3         3         4
-satellite                           34         5         5         8        10
+satellite                           34         5         5        10        10
 sokoban-opt08-strips                 3         1         1         2         2
 sokoban-opt11-strips                 2         1         1         2         2
-tpp                                 29         4         4         4         6
+tpp                                 29         4         4         7         6
 transport-opt08-strips               4         3         3         3         3
 transport-opt14-strips               4         1         2         2         2
 visitall-opt11-strips                1         1         1         1         1
 woodworking-opt08-strips             5         0         0         1         1
 woodworking-opt11-strips             4         0         0         0         1
 zenotravel                          13         4         3         7         7
-Total                              518       128       126       173       193
+Total                              518       128       127       183       193
 ```
