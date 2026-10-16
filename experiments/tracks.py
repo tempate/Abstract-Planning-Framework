@@ -62,7 +62,7 @@ TRACKS = {
         modes=("abs-asp", "abs-fd", "asp", "fd"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
-    # The optimal suite, refined to the plan that fills the fewest gaps, with
+    # The optimal suite, refined to the shortest plan, with
     # abs-fd searching the abstract task optimally like its fd-lmcut baseline.
     "opt/symmetries": Track(
         directory=Path(opt.__file__).parent / "symmetries",
@@ -70,7 +70,7 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-fd", "asp", "fd-lmcut"),
-        abstract_arguments=("--minimize-gaps", "--lmcut"),
+        abstract_arguments=("--optimize", "--lmcut"),
     ),
     "opt/resources": Track(
         directory=Path(opt.__file__).parent / "resources",
@@ -78,7 +78,7 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-fd", "asp", "fd-lmcut"),
-        abstract_arguments=("--minimize-gaps", "--lmcut", "--abstraction-source", "resources"),
+        abstract_arguments=("--optimize", "--lmcut", "--abstraction-source", "resources"),
     ),
     "unsat": Track(
         directory=Path(unsat.__file__).parent,
