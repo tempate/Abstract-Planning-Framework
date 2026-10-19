@@ -11,7 +11,16 @@ from datetime import datetime
 from pathlib import Path
 
 from experiments.report import best_classes
-from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR, collapses_a_class
+from experiments.run import (
+    ABSTRACTION_PREFIX,
+    DEFAULT_TIMEOUT,
+    LENGTH_PREFIX,
+    MANIFEST_NAME,
+    MODES,
+    PROJECT_ROOT,
+    RESULTS_DIR,
+    collapses_a_class,
+)
 from experiments.tracks import DEFAULT_TRACK, TRACKS, find_domain, has_other_status, is_domain_file
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.arguments import positive_int
@@ -286,7 +295,8 @@ def _benchmark_tasks(
 
     Without class counts, or for a problem they do not list, an abstract mode
     collapses the largest class only. With the best class of each abstract mode
-    and problem, it runs that one class instead, and every class where none is known.
+    and problem, it runs that one class instead, unless its rank is below from_rank,
+    and every class where none is known.
     """
     if domains is not None:
         unknown = sorted(set(domains) - set(suite))
@@ -309,8 +319,10 @@ def _benchmark_tasks(
                     continue
                 count = 1 if class_counts is None else class_counts.get((domain_name, problem.name), 1)
                 ranks = range(from_rank, count)
-                if best is not None and (domain_name, problem.name, mode) in best:
-                    ranks = [best[(domain_name, problem.name, mode)]]
+                # A length mode searches from its abstract mode's plan, so it takes that mode's best class.
+                key = (domain_name, problem.name, mode.replace(LENGTH_PREFIX, ABSTRACTION_PREFIX, 1))
+                if best is not None and key in best:
+                    ranks = [best[key]] if best[key] >= from_rank else []
                 for rank in ranks:
                     yield mode, domain_name, domain, problem, rank
 
