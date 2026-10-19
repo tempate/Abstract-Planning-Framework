@@ -777,6 +777,26 @@ class ReportTests(unittest.TestCase):
 
         self.assertEqual(problems[0]["abs-asp"]["class"], "1")
 
+    def test_an_abstract_mode_no_class_solves_reports_the_class_that_got_furthest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                # The largest class dies in the abstract search, a smaller one while refining.
+                runs = [("asp", "", "concrete_asp"), ("abs-asp", "0", "concrete_asp")]
+                runs += [("abs-asp", "1", "abstract_solving")]
+                for mode, rank, phase in runs:
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {"domain": "example", "problem": "p01.pddl", "mode": mode, "class": rank}
+                        | {"status": "timed out", "wall_time_seconds": "1800", "last_completed_phase": phase}
+                    )
+
+            _modes, problems, _dropped = _finished_problems(results)
+
+        self.assertEqual(problems[0]["abs-asp"]["class"], "1")
+
 
 class DomainLookupTests(unittest.TestCase):
     def _collection(self, names):
