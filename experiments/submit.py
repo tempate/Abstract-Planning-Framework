@@ -11,7 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 from experiments.report import best_classes
-from experiments.run import ABSTRACTION_PREFIX, DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR
+from experiments.run import DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR, collapses_a_class
 from experiments.tracks import DEFAULT_TRACK, TRACKS, find_domain, has_other_status, is_domain_file
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.arguments import positive_int
@@ -304,7 +304,7 @@ def _benchmark_tasks(
                 continue
             domain = find_domain(problem)
             for mode in modes:
-                if not mode.startswith(ABSTRACTION_PREFIX):
+                if not collapses_a_class(mode):
                     yield mode, domain_name, domain, problem, None
                     continue
                 count = 1 if class_counts is None else class_counts.get((domain_name, problem.name), 1)

@@ -20,9 +20,10 @@ DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"
 # Every way one problem gets solved, in the order a report reads them. A mode
 # names the solver that finds the plan, or through an abstraction the abstract
-# plan, which ASP then refines.
-MODES = ("asp", "abs-asp", "abs-fd", "fd", "fd-lmcut")
+# plan, which ASP then refines, or whose length ASP starts its search from.
+MODES = ("asp", "abs-asp", "len-asp", "abs-fd", "len-fd", "fd", "fd-lmcut")
 ABSTRACTION_PREFIX = "abs-"
+LENGTH_PREFIX = "len-"
 
 
 def main():
@@ -39,10 +40,15 @@ def main():
     print(f"{args.domain_name}/{args.problem.name}: {args.mode} {_human_status(result)}", flush=True)
 
 
+def collapses_a_class(mode):
+    """Whether a mode runs once per class: through the abstraction, or from its plan's length."""
+    return mode.startswith((ABSTRACTION_PREFIX, LENGTH_PREFIX))
+
+
 def class_rank(mode, rank):
     """The class a result collapsed, as the CSV writes it: none for a concrete mode,
     and the largest for an abstract one run before results recorded their class."""
-    if not mode.startswith(ABSTRACTION_PREFIX):
+    if not collapses_a_class(mode):
         return ""
     return "0" if rank in (None, "") else str(rank)
 
@@ -74,7 +80,7 @@ def _argument_parser():
 def _run_task(
     mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK, class_rank=0
 ):
-    abstract = mode.startswith(ABSTRACTION_PREFIX)
+    abstract = collapses_a_class(mode)
     name = f"{mode}-{class_rank}" if abstract else mode
     result_file = Path(results_dir) / domain_name / problem.stem / f"{name}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
@@ -197,7 +203,7 @@ def _machine_status(return_code, timed_out, interrupted=False):
 
 def _planner_command(domain, problem, mode, track=DEFAULT_TRACK, class_rank=0):
     command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
-    if mode.startswith(ABSTRACTION_PREFIX):
+    if collapses_a_class(mode):
         command.extend(TRACKS[track].abstract_arguments)
         command.extend(["--class-rank", str(class_rank)])
     return command

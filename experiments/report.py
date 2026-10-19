@@ -7,7 +7,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from experiments.run import ABSTRACTION_PREFIX, MODES, PROJECT_ROOT
+from experiments.run import ABSTRACTION_PREFIX, LENGTH_PREFIX, MODES, PROJECT_ROOT, collapses_a_class
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
@@ -47,12 +47,13 @@ def main():
     args = _argument_parser().parse_args()
     modes, problems, dropped = _finished_problems(args.results)
     abstractions = [mode for mode in modes if mode.startswith(ABSTRACTION_PREFIX)]
-    pairs = _pairs(abstractions, modes)
+    lengths = [mode for mode in modes if mode.startswith(LENGTH_PREFIX)]
+    pairs = _pairs(abstractions + lengths, modes)
 
     # A decide run reports no plan, horizon or refinement, so none of the other
     # tables have anything to say about one.
     verdict_run = _is_verdict_run(problems)
-    labels = _labels(abstractions, pairs, VERDICT_LABELS if verdict_run else SOLVER_LABELS)
+    labels = _labels(abstractions + lengths, pairs, VERDICT_LABELS if verdict_run else SOLVER_LABELS)
     if verdict_run:
         sections = [_verdicts(problems, modes, labels)]
         if pairs:
@@ -85,7 +86,7 @@ def _pairs(abstractions, modes):
     the run has no plain one, a configuration of it such as fd-lmcut."""
     pairs = []
     for abstraction in abstractions:
-        solver = abstraction.removeprefix(ABSTRACTION_PREFIX)
+        solver = _solver(abstraction)
         candidates = [mode for mode in modes if mode == solver or mode.startswith(f"{solver}-")]
         if candidates:
             pairs.append((abstraction, solver if solver in candidates else candidates[0]))
@@ -93,13 +94,20 @@ def _pairs(abstractions, modes):
 
 
 def _labels(abstractions, pairs, solver_labels=SOLVER_LABELS):
-    """Name each abstraction after the solver it is compared with, marked with an alpha."""
+    """Name each abstraction after the solver it is compared with, marked with an
+    alpha when it refines the abstract plan and a plus when it keeps only its length."""
     labels = dict(solver_labels)
     solvers = dict(pairs)
     for abstraction in abstractions:
-        solver = solvers.get(abstraction, abstraction.removeprefix(ABSTRACTION_PREFIX))
-        labels[abstraction] = f"{solver_labels[solver]}ᵅ"
+        solver = solvers.get(abstraction, _solver(abstraction))
+        mark = "⁺" if abstraction.startswith(LENGTH_PREFIX) else "ᵅ"
+        labels[abstraction] = f"{solver_labels[solver]}{mark}"
     return labels
+
+
+def _solver(abstraction):
+    """The solver that plans the abstract task of a mode through an abstraction."""
+    return abstraction.removeprefix(ABSTRACTION_PREFIX).removeprefix(LENGTH_PREFIX)
 
 
 def _summary(modes, problems, dropped):
@@ -150,7 +158,7 @@ def best_classes(results_file):
     best = {}
     with Path(results_file).open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
-            if not row["mode"].startswith(ABSTRACTION_PREFIX):
+            if not collapses_a_class(row["mode"]):
                 continue
             key = (row["domain"], row["problem"], row["mode"])
             if key not in best or _performance(row) > _performance(best[key]):

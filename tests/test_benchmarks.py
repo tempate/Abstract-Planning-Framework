@@ -255,6 +255,20 @@ class BenchmarkTests(unittest.TestCase):
                 [(mode, rank) for mode, _n, _d, _p, rank in tasks], [("abs-asp", 1), ("abs-asp", 2), ("asp", None)]
             )
 
+    def test_a_length_mode_runs_once_per_class_like_an_abstract_one(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+
+            tasks = _benchmark_tasks(
+                root, ["example"], None, modes=("len-fd",), class_counts={("example", "p01.pddl"): 2}
+            )
+
+            self.assertEqual([(mode, rank) for mode, _n, _d, _p, rank in tasks], [("len-fd", 0), ("len-fd", 1)])
+
     def test_an_abstract_mode_runs_only_its_best_class_where_one_is_known(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -755,6 +769,15 @@ class ReportTests(unittest.TestCase):
     def test_an_abstraction_is_named_after_the_solver_it_is_compared_with(self):
         labels = _labels(["abs-fd"], [("abs-fd", "fd-lmcut")])
         self.assertTrue(labels["abs-fd"].startswith(SOLVER_LABELS["fd-lmcut"]))
+
+    def test_a_mode_keeping_only_the_abstract_length_pairs_with_its_solver_under_its_own_name(self):
+        modes = ("abs-fd", "len-fd", "fd-lmcut")
+        pairs = _pairs(["abs-fd", "len-fd"], modes)
+        labels = _labels(["abs-fd", "len-fd"], pairs)
+
+        self.assertIn(("len-fd", "fd-lmcut"), pairs)
+        self.assertTrue(labels["len-fd"].startswith(SOLVER_LABELS["fd-lmcut"]))
+        self.assertNotEqual(labels["len-fd"], labels["abs-fd"])
 
     def test_the_head_to_head_compares_plan_lengths_on_shared_solves(self):
         def solved(length):
