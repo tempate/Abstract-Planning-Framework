@@ -35,6 +35,12 @@ def abstraction_arguments():
         default=SYMMETRIES,
         help="Where the collapsed class comes from",
     )
+    parser.add_argument(
+        "--class-rank",
+        type=int,
+        default=0,
+        help="Collapse the candidate class at this rank, counting from the largest (0)",
+    )
     parser.add_argument("--minimize-gaps", action="store_true", help="Refine to the plan with the fewest filled gaps")
     parser.add_argument(
         "--lmcut",
@@ -59,4 +65,5 @@ def abstract_planning_config(args):
         symmetry_time_limit=args.symmetry_time_limit,
         abstraction_source=args.abstraction_source,
         minimize_gaps=args.minimize_gaps,
+        class_rank=args.class_rank,
     )

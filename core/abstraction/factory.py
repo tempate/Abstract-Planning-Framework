@@ -57,7 +57,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
 
     with metrics.measure("abstraction"):
         if config.objects_to_abstract is None:
-            abstraction = _select_abstraction(problem, candidate_classes, config.abstract_name)
+            abstraction = _select_abstraction(problem, candidate_classes, config.abstract_name, config.class_rank)
         else:
             abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
 
@@ -124,33 +124,33 @@ def _with_ungrounded_objects(problem, objects, grounded_objects):
     return (*objects, *ungrounded)
 
 
-def _select_abstraction(problem, symmetry_classes, abstract_name=None):
-    """Select the largest of the candidate classes.
+def _select_abstraction(problem, symmetry_classes, abstract_name=None, rank=0):
+    """Select the candidate class at this rank, largest first.
 
     Collapsing more objects is what lowers the abstract horizon, so size alone decides.
     """
-    candidate = None
+    abstractions = []
     rejection = None
 
-    # PDDL Symmetries prints its classes in an order that varies between
-    # processes, and the first of the largest wins, so two runs of one problem
-    # could collapse different classes of the same size.
-    ordered_classes = sorted(sorted(symmetry_class) for symmetry_class in symmetry_classes)
+    # PDDL Symmetries prints its classes in a varying order, so sort them by name
+    # first. Two resources can share their objects, so drop repeated classes.
+    ordered_classes = sorted({tuple(sorted(symmetry_class)) for symmetry_class in symmetry_classes})
 
     for symmetry_class in ordered_classes:
         try:
-            abstraction = _create_abstraction(problem, symmetry_class, abstract_name)
+            abstractions.append(_create_abstraction(problem, symmetry_class, abstract_name))
         except AbstractionError as error:
             # One unusable class does not make the others unusable, so keep the
             # reason for the case where none of them works.
             rejection = rejection or error
-            continue
-        if candidate is None or len(abstraction.objects) > len(candidate.objects):
-            candidate = abstraction
 
-    if candidate is None:
+    if not abstractions:
         raise rejection
-    return candidate
+    if rank >= len(abstractions):
+        raise AbstractionError(f"No class at rank {rank}: only {len(abstractions)} can be collapsed")
+
+    abstractions.sort(key=lambda abstraction: -len(abstraction.objects))
+    return abstractions[rank]
 
 
 def _create_abstraction(problem, object_names, abstract_name):

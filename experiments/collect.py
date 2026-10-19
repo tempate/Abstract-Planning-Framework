@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 
 from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from experiments.run import MANIFEST_NAME, MODES, RESULTS_DIR, _human_status
+from experiments.run import MANIFEST_NAME, MODES, RESULTS_DIR, _human_status, class_rank
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
@@ -17,6 +17,7 @@ FIELDS = (
     "domain",
     "problem",
     "mode",
+    "class",
     "status",
     "wall_time_seconds",
     "last_completed_phase",
@@ -54,7 +55,13 @@ def collect(*results_dirs):
                 continue
 
             if result.get("mode") in MODES:
-                results[(result["domain"], result["problem"], result["mode"])] = result
+                key = (
+                    result["domain"],
+                    result["problem"],
+                    result["mode"],
+                    class_rank(result["mode"], result.get("class")),
+                )
+                results[key] = result
 
         manifest = results_dir / MANIFEST_NAME
         if manifest.is_file():
@@ -63,20 +70,26 @@ def collect(*results_dirs):
     keys.update(results)
 
     rows = []
-    for domain, problem, mode in sorted(keys):
-        result = results.get((domain, problem, mode))
+    for domain, problem, mode, rank in sorted(keys):
+        result = results.get((domain, problem, mode, rank))
         values = _missing_values() if result is None else _values(result)
-        rows.append({"domain": domain, "problem": problem, "mode": mode, **values})
+        rows.append({"domain": domain, "problem": problem, "mode": mode, "class": rank, **values})
     return rows
 
 
 def _manifest_keys(manifest):
     entries = json.loads(manifest.read_text(encoding="utf-8"))["expected_results"]
-    return {(entry["domain"], entry["problem"], entry["mode"]) for entry in entries if entry["mode"] in MODES}
+    keys = set()
+    for entry in entries:
+        mode = entry["mode"]
+        if mode in MODES:
+            rank = class_rank(mode, entry.get("class"))
+            keys.add((entry["domain"], entry["problem"], mode, rank))
+    return keys
 
 
 def _missing_values():
-    return {field: "" for field in FIELDS[4:]} | {"status": "missing"}
+    return {field: "" for field in FIELDS[5:]} | {"status": "missing"}
 
 
 def _values(result):
@@ -155,7 +168,7 @@ def _error_message(result):
 
 
 def _key(row):
-    return (row["domain"], row["problem"], row["mode"])
+    return (row["domain"], row["problem"], row["mode"], class_rank(row["mode"], row.get("class")))
 
 
 def _preserved_rows(collected, csv_file):
@@ -174,6 +187,7 @@ def _preserved_rows(collected, csv_file):
             kept = {}
             for field in FIELDS:
                 kept[field] = row.get(field, "")
+            kept["class"] = _key(row)[3]
             preserved.append(kept)
     return preserved
 

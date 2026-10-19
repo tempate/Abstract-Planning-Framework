@@ -129,7 +129,10 @@ def _finished_problems(results_file):
     rows = {}
     with Path(results_file).open(encoding="utf-8", newline="") as stream:
         for row in csv.DictReader(stream):
-            rows.setdefault((row["domain"], row["problem"]), {})[row["mode"]] = row
+            # An abstract mode that ran several classes reports the one that performed best.
+            problem = rows.setdefault((row["domain"], row["problem"]), {})
+            if row["mode"] not in problem or _performance(row) > _performance(problem[row["mode"]]):
+                problem[row["mode"]] = row
 
     present = {mode for problem in rows.values() for mode in problem}
     modes = tuple(mode for mode in MODES if mode in present)
@@ -140,6 +143,30 @@ def _finished_problems(results_file):
             continue
         problems.append(problem)
     return modes, problems, len(rows) - len(problems)
+
+
+def best_classes(results_file):
+    """The rank of the class each abstract mode did best with on each problem, as the report picks it."""
+    best = {}
+    with Path(results_file).open(encoding="utf-8", newline="") as stream:
+        for row in csv.DictReader(stream):
+            if not row["mode"].startswith(ABSTRACTION_PREFIX):
+                continue
+            key = (row["domain"], row["problem"], row["mode"])
+            if key not in best or _performance(row) > _performance(best[key]):
+                best[key] = row
+    return {key: int(row.get("class") or 0) for key, row in best.items()}
+
+
+def _performance(row):
+    """Rank the classes one mode ran on a problem: finished, then solved and fastest, or failed and furthest along."""
+    finished = row["status"] not in UNFINISHED_STATUSES
+    if row["status"] == "success" and row.get("verdict") != "unknown":
+        return (finished, True, -_runtime(row))
+    pipeline = list(KILLED_IN_PHASE)
+    completed = row["last_completed_phase"]
+    reached = pipeline.index(completed) if completed in pipeline else len(pipeline)
+    return (finished, False, reached, _runtime(row))
 
 
 def _is_verdict_run(problems):

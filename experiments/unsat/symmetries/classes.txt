@@ -1,0 +1,343 @@
+# Every class each problem can collapse, largest first: problem, rank, type, size, objects.
+# Regenerate with:
+#   python -m experiments.scan --track unsat/symmetries --classes
+bag-barman/prob03.pddl	0	cocktail	2	cocktail1 cocktail2
+bag-barman/prob06.pddl	0	cocktail	2	cocktail1 cocktail3
+bag-barman/prob09.pddl	0	cocktail	2	cocktail3 cocktail5
+bag-barman/prob11.pddl	0	cocktail	3	cocktail1 cocktail2 cocktail3
+bag-barman/prob12.pddl	0	cocktail	2	cocktail1 cocktail3
+bag-barman/prob13.pddl	0	cocktail	2	cocktail1 cocktail5
+bag-barman/prob14.pddl	0	cocktail	2	cocktail1 cocktail5
+bag-barman/prob14.pddl	1	cocktail	2	cocktail3 cocktail6
+bag-barman/prob15.pddl	0	cocktail	2	cocktail1 cocktail2
+bag-barman/prob16.pddl	0	cocktail	2	cocktail2 cocktail4
+bag-barman/prob16.pddl	1	cocktail	2	cocktail5 cocktail6
+bag-barman/prob17.pddl	0	cocktail	2	cocktail1 cocktail2
+bag-barman/prob18.pddl	0	cocktail	2	cocktail4 cocktail7
+bag-barman/prob19.pddl	0	cocktail	2	cocktail2 cocktail5
+bag-barman/prob20.pddl	0	cocktail	3	cocktail1 cocktail2 cocktail4
+bag-barman/prob20.pddl	1	cocktail	2	cocktail6 cocktail7
+bag-gripper/prob02.pddl	0	room	4	roomc roomd roome roomf
+bag-gripper/prob05.pddl	0	room	2	roomc roomd
+bag-gripper/prob06.pddl	0	room	3	roomd roome roomf
+bag-gripper/prob09.pddl	0	room	4	roomc roomd roome roomf
+bag-gripper/prob12.pddl	0	room	2	roomc roomd
+bag-gripper/prob13.pddl	0	room	3	roomd roome roomf
+bag-gripper/prob16.pddl	0	room	4	roomc roomd roome roomf
+bag-gripper/prob19.pddl	0	room	2	roomc roomd
+bag-gripper/prob20.pddl	0	room	3	roomd roome roomf
+bag-gripper/prob22.pddl	0	room	4	roomc roomd roome roomf
+bag-gripper/prob25.pddl	0	room	3	roomd roome roomf
+cave-diving/prob01.pddl	0	diver	2	d0 d1
+cave-diving/prob02.pddl	0	diver	2	d0 d1
+cave-diving/prob03.pddl	0	diver	2	d0 d1
+cave-diving/prob04.pddl	0	diver	2	d0 d1
+cave-diving/prob05.pddl	0	diver	2	d0 d1
+cave-diving/prob06.pddl	0	diver	4	d0 d1 d2 d3
+cave-diving/prob06.pddl	1	location	2	l2 l3
+cave-diving/prob07.pddl	0	diver	4	d0 d1 d2 d3
+cave-diving/prob08.pddl	0	diver	4	d0 d1 d2 d3
+cave-diving/prob08.pddl	1	location	2	l2 l3
+cave-diving/prob09.pddl	0	diver	4	d0 d1 d2 d3
+cave-diving/prob09.pddl	1	location	2	l2 l3
+cave-diving/prob10.pddl	0	diver	4	d0 d1 d2 d3
+cave-diving/prob11.pddl	0	diver	4	d0 d1 d2 d3
+cave-diving/prob12.pddl	0	diver	4	d0 d1 d2 d3
+cave-diving/prob13.pddl	0	diver	4	d0 d1 d2 d3
+cave-diving/prob14.pddl	0	diver	4	d0 d1 d2 d3
+cave-diving/prob15.pddl	0	diver	4	d0 d1 d2 d3
+cave-diving/prob16.pddl	0	diver	12	d0 d1 d10 d11 d2 d3 d4 d5 d6 d7 d8 d9
+cave-diving/prob16.pddl	1	location	2	l5 l6
+cave-diving/prob17.pddl	0	diver	12	d0 d1 d10 d11 d2 d3 d4 d5 d6 d7 d8 d9
+cave-diving/prob17.pddl	1	location	2	l3 l4
+cave-diving/prob18.pddl	0	diver	12	d0 d1 d10 d11 d2 d3 d4 d5 d6 d7 d8 d9
+cave-diving/prob18.pddl	1	location	2	l3 l4
+cave-diving/prob19.pddl	0	diver	12	d0 d1 d10 d11 d2 d3 d4 d5 d6 d7 d8 d9
+cave-diving/prob20.pddl	0	diver	12	d0 d1 d10 d11 d2 d3 d4 d5 d6 d7 d8 d9
+cave-diving/prob20.pddl	1	location	2	l5 l6
+cave-diving/prob21.pddl	0	diver	8	d0 d1 d2 d3 d4 d5 d6 d7
+cave-diving/prob22.pddl	0	diver	8	d0 d1 d2 d3 d4 d5 d6 d7
+cave-diving/prob23.pddl	0	diver	8	d0 d1 d2 d3 d4 d5 d6 d7
+cave-diving/prob24.pddl	0	diver	8	d0 d1 d2 d3 d4 d5 d6 d7
+cave-diving/prob25.pddl	0	diver	8	d0 d1 d2 d3 d4 d5 d6 d7
+document-transfer/prob01.pddl	0	document	4	document1 document2 document3 document4
+document-transfer/prob01.pddl	1	document	4	document10 document11 document12 document8
+document-transfer/prob01.pddl	2	document	4	document19 document20 document21 document23
+document-transfer/prob01.pddl	3	document	3	document13 document7 document9
+document-transfer/prob01.pddl	4	document	3	document15 document17 document18
+document-transfer/prob01.pddl	5	document	3	document24 document25 document26
+document-transfer/prob01.pddl	6	document	3	document27 document28 document30
+document-transfer/prob01.pddl	7	document	2	document14 document16
+document-transfer/prob01.pddl	8	document	2	document29 document31
+document-transfer/prob01.pddl	9	document	2	document5 document6
+document-transfer/prob01.pddl	10	document	2	fuel1 fuel2
+document-transfer/prob02.pddl	0	document	3	document6 document7 document9
+document-transfer/prob02.pddl	1	document	3	fuel1 fuel2 fuel3
+document-transfer/prob02.pddl	2	document	2	document1 document4
+document-transfer/prob02.pddl	3	document	2	document2 document3
+document-transfer/prob02.pddl	4	document	2	document5 document8
+document-transfer/prob03.pddl	0	document	8	document22 document23 document25 document26 document28 document29 document30 document31
+document-transfer/prob03.pddl	1	document	4	document1 document2 document3 document4
+document-transfer/prob03.pddl	2	document	4	document15 document17 document19 document21
+document-transfer/prob03.pddl	3	document	3	document11 document13 document14
+document-transfer/prob03.pddl	4	document	3	document16 document18 document20
+document-transfer/prob03.pddl	5	document	3	document7 document8 document9
+document-transfer/prob03.pddl	6	document	2	document10 document12
+document-transfer/prob03.pddl	7	document	2	document24 document27
+document-transfer/prob03.pddl	8	document	2	fuel1 fuel2
+document-transfer/prob04.pddl	0	document	5	document1 document3 document4 document6 document7
+document-transfer/prob04.pddl	1	document	4	document10 document11 document8 document9
+document-transfer/prob04.pddl	2	document	4	document20 document21 document23 document24
+document-transfer/prob04.pddl	3	document	3	document17 document18 document19
+document-transfer/prob04.pddl	4	document	3	document25 document27 document28
+document-transfer/prob04.pddl	5	document	2	document12 document13
+document-transfer/prob04.pddl	6	document	2	document14 document15
+document-transfer/prob04.pddl	7	document	2	document2 document5
+document-transfer/prob04.pddl	8	document	2	document26 document29
+document-transfer/prob05.pddl	0	document	4	document14 document15 document16 document18
+document-transfer/prob05.pddl	1	document	3	document3 document4 document5
+document-transfer/prob05.pddl	2	document	2	document1 document2
+document-transfer/prob05.pddl	3	document	2	document10 document11
+document-transfer/prob05.pddl	4	document	2	document8 document9
+document-transfer/prob05.pddl	5	document	2	fuel1 fuel2
+document-transfer/prob06.pddl	0	document	3	document1 document2 document3
+document-transfer/prob06.pddl	1	document	2	document4 document5
+document-transfer/prob06.pddl	2	document	2	document7 document8
+document-transfer/prob06.pddl	3	document	2	fuel1 fuel2
+document-transfer/prob07.pddl	0	document	9	document12 document13 document14 document15 document16 document17 document18 document19 document20
+document-transfer/prob07.pddl	1	document	7	document21 document22 document23 document24 document25 document26 document27
+document-transfer/prob07.pddl	2	document	7	document28 document29 document30 document31 document32 document33 document34
+document-transfer/prob07.pddl	3	document	5	document10 document11 document7 document8 document9
+document-transfer/prob07.pddl	4	document	4	document1 document2 document3 document4
+document-transfer/prob07.pddl	5	document	2	fuel1 fuel2
+document-transfer/prob08.pddl	0	document	4	document10 document11 document6 document7
+document-transfer/prob08.pddl	1	document	4	document24 document25 document26 document27
+document-transfer/prob08.pddl	2	document	3	document1 document4 document5
+document-transfer/prob08.pddl	3	document	3	document12 document8 document9
+document-transfer/prob08.pddl	4	document	3	document14 document15 document17
+document-transfer/prob08.pddl	5	document	3	document18 document20 document23
+document-transfer/prob08.pddl	6	document	3	document19 document21 document22
+document-transfer/prob08.pddl	7	document	2	document13 document16
+document-transfer/prob08.pddl	8	document	2	document2 document3
+document-transfer/prob08.pddl	9	document	2	fuel1 fuel2
+document-transfer/prob09.pddl	0	document	4	document11 document12 document13 document14
+document-transfer/prob09.pddl	1	document	4	document23 document24 document25 document26
+document-transfer/prob09.pddl	2	document	3	document17 document18 document19
+document-transfer/prob09.pddl	3	document	3	document20 document21 document22
+document-transfer/prob09.pddl	4	document	3	document3 document4 document5
+document-transfer/prob09.pddl	5	document	2	document10 document9
+document-transfer/prob09.pddl	6	document	2	document15 document16
+document-transfer/prob09.pddl	7	document	2	document7 document8
+document-transfer/prob09.pddl	8	document	2	fuel1 fuel2
+document-transfer/prob10.pddl	0	document	4	document1 document2 document3 document4
+document-transfer/prob10.pddl	1	document	4	document28 document29 document30 document33
+document-transfer/prob10.pddl	2	document	3	document10 document11 document12
+document-transfer/prob10.pddl	3	document	3	document14 document15 document16
+document-transfer/prob10.pddl	4	document	3	document17 document18 document19
+document-transfer/prob10.pddl	5	document	3	document24 document25 document26
+document-transfer/prob10.pddl	6	document	3	document27 document31 document32
+document-transfer/prob10.pddl	7	document	3	fuel1 fuel2 fuel3
+document-transfer/prob10.pddl	8	document	2	document5 document6
+document-transfer/prob10.pddl	9	document	2	document7 document8
+document-transfer/prob11.pddl	0	document	7	document29 document31 document33 document34 document35 document36 document38
+document-transfer/prob11.pddl	1	document	6	document39 document40 document41 document42 document43 document44
+document-transfer/prob11.pddl	2	document	5	document10 document11 document13 document14 document9
+document-transfer/prob11.pddl	3	document	4	document1 document4 document5 document6
+document-transfer/prob11.pddl	4	document	4	document19 document20 document21 document22
+document-transfer/prob11.pddl	5	document	3	document2 document3 document7
+document-transfer/prob11.pddl	6	document	3	document25 document26 document28
+document-transfer/prob11.pddl	7	document	3	document30 document32 document37
+document-transfer/prob11.pddl	8	document	3	document45 document46 document47
+document-transfer/prob11.pddl	9	document	2	document12 document8
+document-transfer/prob11.pddl	10	document	2	document15 document18
+document-transfer/prob11.pddl	11	document	2	document16 document17
+document-transfer/prob11.pddl	12	document	2	document24 document27
+document-transfer/prob12.pddl	0	document	3	document1 document2 document3
+document-transfer/prob12.pddl	1	document	3	document13 document14 document15
+document-transfer/prob12.pddl	2	document	3	document17 document18 document19
+document-transfer/prob12.pddl	3	document	3	document20 document21 document23
+document-transfer/prob12.pddl	4	document	3	document30 document31 document32
+document-transfer/prob12.pddl	5	document	3	document33 document34 document35
+document-transfer/prob12.pddl	6	document	3	document36 document37 document38
+document-transfer/prob12.pddl	7	document	3	document41 document42 document43
+document-transfer/prob12.pddl	8	document	3	document46 document47 document48
+document-transfer/prob12.pddl	9	document	3	document6 document7 document8
+document-transfer/prob12.pddl	10	document	2	document10 document9
+document-transfer/prob12.pddl	11	document	2	document11 document12
+document-transfer/prob12.pddl	12	document	2	document24 document25
+document-transfer/prob12.pddl	13	document	2	document26 document28
+document-transfer/prob12.pddl	14	document	2	document39 document40
+document-transfer/prob12.pddl	15	document	2	document4 document5
+document-transfer/prob12.pddl	16	document	2	document44 document45
+document-transfer/prob12.pddl	17	document	2	fuel1 fuel2
+document-transfer/prob13.pddl	0	document	5	document13 document14 document16 document17 document18
+document-transfer/prob13.pddl	1	document	4	document3 document4 document5 document6
+document-transfer/prob13.pddl	2	document	3	document10 document8 document9
+document-transfer/prob13.pddl	3	document	2	document1 document2
+document-transfer/prob13.pddl	4	document	2	document11 document12
+document-transfer/prob13.pddl	5	document	2	document15 document19
+document-transfer/prob13.pddl	6	document	2	fuel1 fuel2
+document-transfer/prob14.pddl	0	document	6	document11 document14 document15 document17 document18 document19
+document-transfer/prob14.pddl	1	document	4	document1 document2 document5 document6
+document-transfer/prob14.pddl	2	document	3	document10 document8 document9
+document-transfer/prob14.pddl	3	document	3	document12 document13 document16
+document-transfer/prob14.pddl	4	document	3	document20 document21 document23
+document-transfer/prob14.pddl	5	document	2	document3 document4
+document-transfer/prob14.pddl	6	document	2	fuel1 fuel2
+document-transfer/prob15.pddl	0	document	5	document33 document34 document35 document36 document37
+document-transfer/prob15.pddl	1	document	4	document25 document26 document27 document28
+document-transfer/prob15.pddl	2	document	4	document43 document44 document45 document46
+document-transfer/prob15.pddl	3	document	4	document47 document48 document49 document50
+document-transfer/prob15.pddl	4	document	4	document60 document61 document62 document63
+document-transfer/prob15.pddl	5	document	3	document18 document19 document20
+document-transfer/prob15.pddl	6	document	3	document3 document4 document5
+document-transfer/prob15.pddl	7	document	3	document38 document39 document40
+document-transfer/prob15.pddl	8	document	3	document51 document52 document53
+document-transfer/prob15.pddl	9	document	3	document54 document55 document56
+document-transfer/prob15.pddl	10	document	3	document57 document58 document59
+document-transfer/prob15.pddl	11	document	2	document10 document12
+document-transfer/prob15.pddl	12	document	2	document14 document15
+document-transfer/prob15.pddl	13	document	2	document21 document22
+document-transfer/prob15.pddl	14	document	2	document23 document24
+document-transfer/prob15.pddl	15	document	2	document29 document30
+document-transfer/prob15.pddl	16	document	2	document31 document32
+document-transfer/prob15.pddl	17	document	2	document41 document42
+document-transfer/prob15.pddl	18	document	2	document6 document7
+document-transfer/prob15.pddl	19	document	2	document64 document65
+document-transfer/prob15.pddl	20	document	2	document8 document9
+document-transfer/prob15.pddl	21	document	2	fuel1 fuel2
+document-transfer/prob16.pddl	0	document	5	document11 document12 document7 document8 document9
+document-transfer/prob16.pddl	1	document	4	document1 document2 document3 document4
+document-transfer/prob16.pddl	2	document	4	document21 document22 document23 document24
+document-transfer/prob16.pddl	3	document	4	document26 document27 document28 document29
+document-transfer/prob16.pddl	4	document	4	document54 document55 document56 document57
+document-transfer/prob16.pddl	5	document	3	document32 document33 document34
+document-transfer/prob16.pddl	6	document	3	document41 document42 document43
+document-transfer/prob16.pddl	7	document	3	document44 document46 document47
+document-transfer/prob16.pddl	8	document	3	document51 document52 document53
+document-transfer/prob16.pddl	9	document	2	document13 document14
+document-transfer/prob16.pddl	10	document	2	document15 document16
+document-transfer/prob16.pddl	11	document	2	document17 document20
+document-transfer/prob16.pddl	12	document	2	document18 document19
+document-transfer/prob16.pddl	13	document	2	document30 document31
+document-transfer/prob16.pddl	14	document	2	document35 document36
+document-transfer/prob16.pddl	15	document	2	document37 document38
+document-transfer/prob16.pddl	16	document	2	document39 document40
+document-transfer/prob16.pddl	17	document	2	document48 document49
+document-transfer/prob16.pddl	18	document	2	document5 document6
+document-transfer/prob16.pddl	19	document	2	document58 document59
+document-transfer/prob16.pddl	20	document	2	fuel1 fuel2
+document-transfer/prob17.pddl	0	document	5	document25 document27 document32 document33 document34
+document-transfer/prob17.pddl	1	document	4	document11 document12 document13 document14
+document-transfer/prob17.pddl	2	document	4	document21 document22 document23 document24
+document-transfer/prob17.pddl	3	document	4	document35 document36 document37 document38
+document-transfer/prob17.pddl	4	document	4	document42 document43 document44 document45
+document-transfer/prob17.pddl	5	document	3	document1 document2 document3
+document-transfer/prob17.pddl	6	document	3	document15 document16 document17
+document-transfer/prob17.pddl	7	document	3	document28 document29 document30
+document-transfer/prob17.pddl	8	document	3	document39 document40 document41
+document-transfer/prob17.pddl	9	document	3	document46 document47 document48
+document-transfer/prob17.pddl	10	document	3	document49 document50 document51
+document-transfer/prob17.pddl	11	document	3	document6 document7 document8
+document-transfer/prob17.pddl	12	document	2	document10 document9
+document-transfer/prob17.pddl	13	document	2	document18 document19
+document-transfer/prob17.pddl	14	document	2	document4 document5
+document-transfer/prob17.pddl	15	document	2	document52 document53
+document-transfer/prob17.pddl	16	document	2	document54 document55
+document-transfer/prob17.pddl	17	document	2	fuel1 fuel2
+document-transfer/prob18.pddl	0	document	4	document12 document13 document14 document15
+document-transfer/prob18.pddl	1	document	4	document19 document20 document21 document22
+document-transfer/prob18.pddl	2	document	3	document1 document2 document3
+document-transfer/prob18.pddl	3	document	3	document25 document26 document28
+document-transfer/prob18.pddl	4	document	3	document7 document8 document9
+document-transfer/prob18.pddl	5	document	2	document16 document17
+document-transfer/prob18.pddl	6	document	2	document23 document24
+document-transfer/prob18.pddl	7	document	2	document29 document31
+document-transfer/prob18.pddl	8	document	2	document30 document32
+document-transfer/prob18.pddl	9	document	2	document4 document5
+document-transfer/prob18.pddl	10	document	2	fuel1 fuel2
+document-transfer/prob19.pddl	0	document	5	document1 document2 document3 document4 document5
+document-transfer/prob19.pddl	1	document	4	document10 document7 document8 document9
+document-transfer/prob19.pddl	2	document	4	document11 document12 document13 document15
+document-transfer/prob19.pddl	3	document	3	document14 document16 document17
+document-transfer/prob19.pddl	4	document	2	fuel1 fuel2
+document-transfer/prob20.pddl	0	document	6	document41 document42 document43 document44 document45 document46
+document-transfer/prob20.pddl	1	document	5	document1 document2 document3 document4 document5
+document-transfer/prob20.pddl	2	document	5	document13 document14 document15 document16 document17
+document-transfer/prob20.pddl	3	document	4	document10 document11 document12 document9
+document-transfer/prob20.pddl	4	document	4	document24 document25 document26 document27
+document-transfer/prob20.pddl	5	document	4	document31 document32 document33 document34
+document-transfer/prob20.pddl	6	document	3	document18 document20 document21
+document-transfer/prob20.pddl	7	document	3	document28 document29 document30
+document-transfer/prob20.pddl	8	document	3	document36 document37 document38
+document-transfer/prob20.pddl	9	document	3	document49 document50 document51
+document-transfer/prob20.pddl	10	document	2	document22 document23
+document-transfer/prob20.pddl	11	document	2	document47 document48
+document-transfer/prob20.pddl	12	document	2	document6 document7
+document-transfer/prob20.pddl	13	document	2	fuel1 fuel2
+over-nomystery/prob01.pddl	0	package	2	p3 p4
+over-nomystery/prob02.pddl	0	package	2	p6 p7
+over-nomystery/prob03.pddl	0	package	2	p12 p4
+over-nomystery/prob04.pddl	0	package	2	p17 p5
+over-nomystery/prob05.pddl	0	package	2	p12 p13
+over-nomystery/prob06.pddl	0	package	2	p3 p4
+over-nomystery/prob07.pddl	0	package	2	p6 p7
+over-nomystery/prob08.pddl	0	package	2	p12 p4
+over-nomystery/prob09.pddl	0	package	2	p17 p5
+over-nomystery/prob10.pddl	0	package	2	p12 p13
+over-nomystery/prob11.pddl	0	package	2	p3 p4
+over-nomystery/prob12.pddl	0	package	2	p6 p7
+over-nomystery/prob13.pddl	0	package	2	p12 p4
+over-nomystery/prob14.pddl	0	package	2	p17 p5
+over-nomystery/prob15.pddl	0	package	2	p12 p13
+over-nomystery/prob16.pddl	0	package	2	p3 p4
+over-nomystery/prob17.pddl	0	package	2	p6 p7
+over-nomystery/prob18.pddl	0	package	2	p12 p4
+over-nomystery/prob19.pddl	0	package	2	p17 p5
+over-nomystery/prob20.pddl	0	package	2	p12 p13
+over-nomystery/prob22.pddl	0	package	2	p3 p6
+over-nomystery/prob23.pddl	0	package	2	p0 p10
+over-rovers/prob01.pddl	0	objective	2	objective0 objective2
+over-rovers/prob02.pddl	0	objective	2	objective0 objective2
+over-rovers/prob04.pddl	0	camera	2	camera2 camera3
+over-rovers/prob05.pddl	0	camera	3	camera0 camera1 camera3
+over-rovers/prob06.pddl	0	camera	2	camera0 camera1
+over-rovers/prob06.pddl	1	camera	2	camera2 camera4
+over-rovers/prob07.pddl	0	camera	2	camera1 camera2
+over-rovers/prob07.pddl	1	camera	2	camera3 camera4
+over-rovers/prob08.pddl	0	camera	2	camera2 camera5
+over-rovers/prob09.pddl	0	camera	3	camera0 camera2 camera4
+over-rovers/prob10.pddl	0	camera	2	camera1 camera4
+over-rovers/prob10.pddl	1	camera	2	camera2 camera3
+over-rovers/prob11.pddl	0	camera	2	camera1 camera5
+over-rovers/prob11.pddl	1	camera	2	camera3 camera6
+over-rovers/prob12.pddl	0	camera	2	camera0 camera4
+over-rovers/prob12.pddl	1	camera	2	camera1 camera6
+over-rovers/prob12.pddl	2	camera	2	camera2 camera5
+over-rovers/prob13.pddl	0	camera	2	camera2 camera4
+over-rovers/prob13.pddl	1	camera	2	camera3 camera7
+over-rovers/prob13.pddl	2	camera	2	camera5 camera8
+over-rovers/prob14.pddl	0	camera	4	camera0 camera3 camera5 camera7
+over-rovers/prob14.pddl	1	camera	2	camera1 camera6
+over-rovers/prob14.pddl	2	camera	2	camera2 camera8
+over-rovers/prob15.pddl	0	camera	3	camera0 camera2 camera7
+over-rovers/prob15.pddl	1	camera	2	camera1 camera6
+over-rovers/prob16.pddl	0	camera	3	camera3 camera5 camera7
+over-rovers/prob16.pddl	1	camera	2	camera0 camera6
+over-rovers/prob16.pddl	2	camera	2	camera1 camera8
+over-rovers/prob17.pddl	0	camera	3	camera4 camera6 camera7
+over-rovers/prob17.pddl	1	camera	2	camera0 camera2
+over-rovers/prob17.pddl	2	camera	2	camera1 camera5
+over-rovers/prob17.pddl	3	camera	2	camera3 camera9
+over-rovers/prob18.pddl	0	camera	3	camera0 camera10 camera6
+over-rovers/prob18.pddl	1	camera	3	camera1 camera2 camera7
+over-rovers/prob18.pddl	2	camera	2	camera4 camera8
+over-rovers/prob18.pddl	3	camera	2	camera5 camera9
+over-rovers/prob19.pddl	0	camera	3	camera0 camera10 camera6
+over-rovers/prob19.pddl	1	camera	3	camera1 camera2 camera7
+over-rovers/prob19.pddl	2	camera	2	camera4 camera8
+over-rovers/prob19.pddl	3	camera	2	camera5 camera9
+over-rovers/prob20.pddl	0	camera	3	camera0 camera10 camera6
+over-rovers/prob20.pddl	1	camera	3	camera1 camera2 camera7
+over-rovers/prob20.pddl	2	camera	2	camera4 camera8
+over-rovers/prob20.pddl	3	camera	2	camera5 camera9

@@ -13,8 +13,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from experiments.tracks import TRACKS
-from experiments.submit import _find_domain
+from experiments.tracks import TRACKS, find_domain
 from experiments.collect import FIELDS, _preserved_rows, _track_results_file, collect
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.reporting import update_result_progress
@@ -190,7 +189,7 @@ class BenchmarkTests(unittest.TestCase):
             definition_dir.mkdir()
 
             config_file = _write_copperbench_config(
-                [("abs-asp", "example", domain, problem), ("asp", "example", domain, problem)],
+                [("abs-asp", "example", domain, problem, 0), ("asp", "example", domain, problem, None)],
                 definition_dir=definition_dir,
                 timeout=1800,
                 memory_limit=4096,
@@ -207,8 +206,8 @@ class BenchmarkTests(unittest.TestCase):
         self.assertEqual(
             instances,
             [
-                f"abs-asp example {domain.resolve()} {problem.resolve()}",
-                f"asp example {domain.resolve()} {problem.resolve()}",
+                f"abs-asp example {domain.resolve()} {problem.resolve()} 0",
+                f"asp example {domain.resolve()} {problem.resolve()} 0",
             ],
         )
 
@@ -224,15 +223,73 @@ class BenchmarkTests(unittest.TestCase):
 
             runnable = {("example", "p01.pddl")}
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable)), [("abs-asp", "example", domain, problem)]
+                list(_benchmark_tasks(root, ["example"], runnable)), [("abs-asp", "example", domain, problem, 0)]
             )
             self.assertEqual(
                 list(_benchmark_tasks(root, ["example"], runnable, modes=("abs-asp", "asp", "fd"))),
                 [
-                    ("abs-asp", "example", domain, problem),
-                    ("asp", "example", domain, problem),
-                    ("fd", "example", domain, problem),
+                    ("abs-asp", "example", domain, problem, 0),
+                    ("asp", "example", domain, problem, None),
+                    ("fd", "example", domain, problem, None),
                 ],
+            )
+
+    def test_an_abstract_mode_runs_once_per_class_from_the_first_rank_asked_for(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+
+            tasks = _benchmark_tasks(
+                root,
+                ["example"],
+                None,
+                modes=("abs-asp", "asp"),
+                class_counts={("example", "p01.pddl"): 3},
+                from_rank=1,
+            )
+
+            self.assertEqual(
+                [(mode, rank) for mode, _n, _d, _p, rank in tasks], [("abs-asp", 1), ("abs-asp", 2), ("asp", None)]
+            )
+
+    def test_an_abstract_mode_runs_only_its_best_class_where_one_is_known(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+            (benchmark / "p02.pddl").touch()
+            results = root / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                # p01 ran every class and the middle one solved fastest. p02 never ran.
+                for rank, status, seconds in (
+                    ("0", "timed out", "1800"),
+                    ("1", "success", "40"),
+                    ("2", "success", "90"),
+                ):
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": rank}
+                        | {"status": status, "wall_time_seconds": seconds}
+                    )
+
+            tasks = _benchmark_tasks(
+                root,
+                ["example"],
+                None,
+                class_counts={("example", "p01.pddl"): 3, ("example", "p02.pddl"): 2},
+                best=experiments.report.best_classes(results),
+            )
+
+            self.assertEqual(
+                [(problem.name, rank) for _m, _n, _d, problem, rank in tasks],
+                [("p01.pddl", 1), ("p02.pddl", 0), ("p02.pddl", 1)],
             )
 
     def test_only_problems_with_an_abstraction_class_are_submitted(self):
@@ -265,9 +322,9 @@ class BenchmarkTests(unittest.TestCase):
             by_problem = _benchmark_tasks(root, suite, runnable=None, domains=["two"], problems=["p02"])
             by_file_name = _benchmark_tasks(root, suite, runnable=None, problems=["p02.pddl"])
 
-            self.assertEqual({name for _m, name, _d, _p in by_domain}, {"two"})
-            self.assertEqual([(n, p.name) for _m, n, _d, p in by_problem], [("two", "p02.pddl")])
-            self.assertEqual({p.name for _m, _n, _d, p in by_file_name}, {"p02.pddl"})
+            self.assertEqual({name for _m, name, _d, _p, _r in by_domain}, {"two"})
+            self.assertEqual([(n, p.name) for _m, n, _d, p, _r in by_problem], [("two", "p02.pddl")])
+            self.assertEqual({p.name for _m, _n, _d, p, _r in by_file_name}, {"p02.pddl"})
 
     def test_a_misspelled_domain_is_refused_rather_than_submitting_nothing(self):
         with self.assertRaises(SystemExit) as refusal:
@@ -310,9 +367,9 @@ class BenchmarkTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
             self._write_result(first, "asp")
             self._write_result(first, "abs-asp", status="timeout")
-            _write_manifest([("abs-asp", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=first)
+            _write_manifest([("abs-asp", "example", Path("d.pddl"), Path("p01.pddl"), 0)], results_dir=first)
             self._write_result(second, "abs-asp")
-            _write_manifest([("fd", "example", Path("d.pddl"), Path("p01.pddl"))], results_dir=second)
+            _write_manifest([("fd", "example", Path("d.pddl"), Path("p01.pddl"), None)], results_dir=second)
 
             rows = collect(first, second)
 
@@ -523,8 +580,8 @@ class BenchmarkTests(unittest.TestCase):
             with self.subTest(completed=completed), tempfile.TemporaryDirectory() as directory:
                 problem = Path("p01.pddl")
                 tasks = [
-                    ("abs-asp", "example", Path("domain.pddl"), problem),
-                    ("asp", "example", Path("domain.pddl"), problem),
+                    ("abs-asp", "example", Path("domain.pddl"), problem, 0),
+                    ("asp", "example", Path("domain.pddl"), problem, None),
                 ]
                 manifest = _write_manifest(tasks, directory)
                 for mode in completed:
@@ -537,12 +594,12 @@ class BenchmarkTests(unittest.TestCase):
                 self.assertEqual([row["status"] for row in rows], statuses)
 
     def test_a_run_is_collected_into_the_results_of_its_track(self):
-        task = [("asp", "example", Path("domain.pddl"), Path("p01.pddl"))]
+        task = [("asp", "example", Path("domain.pddl"), Path("p01.pddl"), None)]
         with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
             _write_manifest(task, plan, track="sat/symmetries")
-            _write_manifest(task, decide, track="unsat")
+            _write_manifest(task, decide, track="unsat/symmetries")
 
-            self.assertEqual(_track_results_file([decide]), TRACKS["unsat"].results_file)
+            self.assertEqual(_track_results_file([decide]), TRACKS["unsat/symmetries"].results_file)
             with self.assertRaises(SystemExit):
                 _track_results_file([plan, decide])
 
@@ -595,6 +652,16 @@ class CollectedCsvTests(unittest.TestCase):
         self.assertEqual(
             {(row["problem"], row["mode"]) for row in preserved}, {("p01.pddl", "abs-asp"), ("p01.pddl", "fd")}
         )
+
+    def test_a_new_class_leaves_the_row_of_one_collected_before_classes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            csv_file = self._write_csv(directory, [("example", "p01.pddl", "abs-asp", "success")])
+            collected = self._collected([("example", "p01.pddl", "abs-asp", "timed out")])
+            collected[0]["class"] = "1"
+
+            preserved = _preserved_rows(collected, csv_file)
+
+        self.assertEqual([(row["mode"], row["class"]) for row in preserved], [("abs-asp", "0")])
 
     def test_a_first_run_has_nothing_to_keep(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -727,6 +794,46 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(len(problems), 1)
         self.assertEqual(dropped, 1)
 
+    def test_an_abstract_mode_reports_its_best_class(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                # The largest class times out, a smaller one solves, the smallest solves slower.
+                runs = [("asp", "", "success", "5"), ("abs-asp", "0", "timed out", "1800")]
+                runs += [("abs-asp", "1", "success", "40"), ("abs-asp", "2", "success", "90")]
+                for mode, rank, status, seconds in runs:
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {"domain": "example", "problem": "p01.pddl", "mode": mode, "class": rank}
+                        | {"status": status, "wall_time_seconds": seconds}
+                    )
+
+            _modes, problems, _dropped = _finished_problems(results)
+
+        self.assertEqual(problems[0]["abs-asp"]["class"], "1")
+
+    def test_an_abstract_mode_no_class_solves_reports_the_class_that_got_furthest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                # The largest class dies in the abstract search, a smaller one while refining.
+                runs = [("asp", "", "concrete_asp"), ("abs-asp", "0", "concrete_asp")]
+                runs += [("abs-asp", "1", "abstract_solving")]
+                for mode, rank, phase in runs:
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {"domain": "example", "problem": "p01.pddl", "mode": mode, "class": rank}
+                        | {"status": "timed out", "wall_time_seconds": "1800", "last_completed_phase": phase}
+                    )
+
+            _modes, problems, _dropped = _finished_problems(results)
+
+        self.assertEqual(problems[0]["abs-asp"]["class"], "1")
+
 
 class DomainLookupTests(unittest.TestCase):
     def _collection(self, names):
@@ -740,28 +847,28 @@ class DomainLookupTests(unittest.TestCase):
     def test_finds_a_domain_shared_by_every_problem(self):
         directory = self._collection(["domain.pddl", "p01.pddl"])
 
-        self.assertEqual(_find_domain(directory / "p01.pddl").name, "domain.pddl")
+        self.assertEqual(find_domain(directory / "p01.pddl").name, "domain.pddl")
 
     def test_finds_the_domain_numbered_with_the_problem(self):
         directory = self._collection(["dom01.pddl", "prob01.pddl", "dom02.pddl", "prob02.pddl"])
 
-        self.assertEqual(_find_domain(directory / "prob02.pddl").name, "dom02.pddl")
+        self.assertEqual(find_domain(directory / "prob02.pddl").name, "dom02.pddl")
 
     def test_finds_the_domain_of_a_named_problem_variant(self):
         directory = self._collection(["satdom02.pddl", "satprob02.pddl", "dom02.pddl", "prob02.pddl"])
 
-        self.assertEqual(_find_domain(directory / "satprob02.pddl").name, "satdom02.pddl")
+        self.assertEqual(find_domain(directory / "satprob02.pddl").name, "satdom02.pddl")
 
     def test_falls_back_to_the_domain_the_variant_shares_with_its_problem(self):
         directory = self._collection(["dom02.pddl", "prob02.pddl", "satprob02.pddl"])
 
-        self.assertEqual(_find_domain(directory / "satprob02.pddl").name, "dom02.pddl")
+        self.assertEqual(find_domain(directory / "satprob02.pddl").name, "dom02.pddl")
 
     def test_reports_a_problem_with_no_domain(self):
         directory = self._collection(["p01.pddl"])
 
         with self.assertRaises(FileNotFoundError):
-            _find_domain(directory / "p01.pddl")
+            find_domain(directory / "p01.pddl")
 
 
 if __name__ == "__main__":

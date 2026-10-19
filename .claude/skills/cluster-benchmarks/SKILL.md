@@ -70,6 +70,11 @@ unsolvable; satprob and unknownprob are skipped.
 empty directory, because collect reads every result underneath. Nothing is
 deleted, so those siblings accumulate until pruned by hand.
 
+An abstract mode runs only the class it did best with in the track's `results.csv`,
+and every class `classes.txt` lists for a problem it has no result for.
+`--classes all` runs every class. The default is cheap, but biased toward the run it
+read the classes from, so compare against that run only with `--classes all`.
+
 To submit a subset, name it:
 
 ```bash
