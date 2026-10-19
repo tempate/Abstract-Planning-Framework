@@ -286,7 +286,8 @@ def _benchmark_tasks(
 
     Without class counts, or for a problem they do not list, an abstract mode
     collapses the largest class only. With the best class of each abstract mode
-    and problem, it runs that one class instead, and every class where none is known.
+    and problem, it runs that one class instead, unless its rank is below from_rank,
+    and every class where none is known.
     """
     if domains is not None:
         unknown = sorted(set(domains) - set(suite))
@@ -309,8 +310,9 @@ def _benchmark_tasks(
                     continue
                 count = 1 if class_counts is None else class_counts.get((domain_name, problem.name), 1)
                 ranks = range(from_rank, count)
-                if best is not None and (domain_name, problem.name, mode) in best:
-                    ranks = [best[(domain_name, problem.name, mode)]]
+                key = (domain_name, problem.name, mode)
+                if best is not None and key in best:
+                    ranks = [best[key]] if best[key] >= from_rank else []
                 for rank in ranks:
                     yield mode, domain_name, domain, problem, rank
 

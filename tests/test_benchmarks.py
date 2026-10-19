@@ -292,6 +292,26 @@ class BenchmarkTests(unittest.TestCase):
                 [("p01.pddl", 1), ("p02.pddl", 0), ("p02.pddl", 1)],
             )
 
+    def test_a_best_class_below_the_first_rank_asked_for_is_skipped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+            (benchmark / "p02.pddl").touch()
+
+            tasks = _benchmark_tasks(
+                root,
+                ["example"],
+                None,
+                class_counts={("example", "p01.pddl"): 3, ("example", "p02.pddl"): 3},
+                from_rank=1,
+                best={("example", "p01.pddl", "abs-asp"): 0, ("example", "p02.pddl", "abs-asp"): 2},
+            )
+
+            self.assertEqual([(problem.name, rank) for _m, _n, _d, problem, rank in tasks], [("p02.pddl", 2)])
+
     def test_only_problems_with_an_abstraction_class_are_submitted(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
