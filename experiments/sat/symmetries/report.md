@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-19 09:05 — experiments/sat/symmetries/results.csv
+2026-10-19 09:19 — experiments/sat/symmetries/results.csv
 
 557 problems compared over asp, abs-asp, abs-fd, fd
 
@@ -10,8 +10,8 @@
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
 Plans found                     104 (18.7%)  117 (21.0%)  292 (52.4%)  507 (91.0%)
-Timeouts                        440 (79.0%)  428 (76.8%)  169 (30.3%)    35 (6.3%)
-Out of memory                     13 (2.3%)    12 (2.2%)   96 (17.2%)    14 (2.5%)
+Timeouts                        440 (79.0%)  433 (77.7%)  161 (28.9%)    35 (6.3%)
+Out of memory                     13 (2.3%)     7 (1.3%)  104 (18.7%)    14 (2.5%)
 Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     1 (0.2%)
 Total problems                          557          557          557          557
 ```
@@ -37,10 +37,10 @@ Total plan length                     1,407        1,958       21,221       17,3
 ```
 Killed during                          ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-Abstract search                   401 (94%)     17 (10%)
-Guided concrete search              10 (2%)    135 (80%)
-Unguided concrete search            17 (4%)     17 (10%)
-Total                                   428          169
+Abstract search                   401 (93%)       5 (3%)
+Guided concrete search              15 (3%)    155 (96%)
+Unguided concrete search            17 (4%)       1 (1%)
+Total                                   433          161
 ```
 
 ## How the successes were solved
@@ -65,18 +65,6 @@ None                               12 (10%)     37 (13%)
 10 to 19                           24 (21%)     30 (10%)
 20 or more                           2 (2%)       2 (1%)
 Total                                   115          291
-```
-
-## Every class against the largest
-
-```
-Over problems with 2+ classes          ASPᵅ        LAMAᵅ
---------------------------------------------------------
-Problems                                370          370
-Solved by the largest class              58          137
-Solved by some class                     59          159
-Largest class is fastest           27 (46%)     66 (42%)
-Median time, largest / best           1.01x        1.00x
 ```
 
 ## Plans found by domain

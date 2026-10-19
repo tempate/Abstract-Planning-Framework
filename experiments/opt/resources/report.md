@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-15 15:07 — experiments/opt/resources/results.csv
+2026-10-19 09:19 — experiments/opt/resources/results.csv
 
 373 problems compared over asp, abs-asp, abs-fd, fd-lmcut
 
@@ -10,9 +10,9 @@
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
 ----------------------------------------------------------------------------------
 Plans found                     129 (34.6%)  139 (37.3%)  206 (55.2%)  209 (56.0%)
-Timeouts                        244 (65.4%)  224 (60.1%)  156 (41.8%)  162 (43.4%)
+Timeouts                        244 (65.4%)  224 (60.1%)  157 (42.1%)  162 (43.4%)
 Out of memory                      0 (0.0%)    10 (2.7%)    10 (2.7%)     0 (0.0%)
-Others                             0 (0.0%)     0 (0.0%)     1 (0.3%)     2 (0.5%)
+Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     2 (0.5%)
 Total problems                          373          373          373          373
 ```
 
@@ -37,10 +37,10 @@ Total plan length                     1,346        1,431        3,405        2,9
 ```
 Killed during                          ASPᵅ       LMcutᵅ
 --------------------------------------------------------
-Abstract search                   126 (56%)     30 (19%)
-Guided concrete search              15 (7%)     41 (26%)
-Unguided concrete search           83 (37%)     85 (54%)
-Total                                   224          156
+Abstract search                   125 (56%)     30 (19%)
+Guided concrete search              16 (7%)     41 (26%)
+Unguided concrete search           83 (37%)     86 (55%)
+Total                                   224          157
 ```
 
 ## How the successes were solved
@@ -65,18 +65,6 @@ None                                 0 (0%)       0 (0%)
 10 to 19                             6 (5%)     23 (12%)
 20 or more                           0 (0%)      13 (7%)
 Total                                   131          198
-```
-
-## Every class against the largest
-
-```
-Over problems with 2+ classes          ASPᵅ       LMcutᵅ
---------------------------------------------------------
-Problems                                115          115
-Solved by the largest class              53           69
-Solved by some class                     58           79
-Largest class is fastest           30 (52%)     33 (42%)
-Median time, largest / best           1.00x        1.02x
 ```
 
 ## Plans found by domain

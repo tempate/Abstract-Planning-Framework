@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-16 13:42 — experiments/opt/symmetries/results.csv
+2026-10-19 09:19 — experiments/opt/symmetries/results.csv
 
 518 problems compared over asp, abs-asp, abs-fd, fd-lmcut
 
@@ -37,9 +37,9 @@ Total plan length                     1,699        1,804        4,566        4,3
 ```
 Killed during                          ASPᵅ       LMcutᵅ
 --------------------------------------------------------
-Abstract search                   334 (87%)    273 (81%)
-Guided concrete search              32 (8%)     45 (13%)
-Unguided concrete search            17 (4%)      17 (5%)
+Abstract search                   325 (85%)    266 (79%)
+Guided concrete search             41 (11%)     65 (19%)
+Unguided concrete search            17 (4%)       4 (1%)
 Total                                   383          335
 ```
 
@@ -65,18 +65,6 @@ None                               13 (10%)     23 (13%)
 10 to 19                           17 (14%)      15 (8%)
 20 or more                           1 (1%)       1 (1%)
 Total                                   125          182
-```
-
-## Every class against the largest
-
-```
-Over problems with 2+ classes          ASPᵅ       LMcutᵅ
---------------------------------------------------------
-Problems                                322          322
-Solved by the largest class              59           64
-Solved by some class                     60           74
-Largest class is fastest           28 (47%)     28 (38%)
-Median time, largest / best           1.01x        1.02x
 ```
 
 ## Plans found by domain

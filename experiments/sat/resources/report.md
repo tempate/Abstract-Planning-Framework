@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-16 15:56 — experiments/sat/resources/results.csv
+2026-10-19 09:19 — experiments/sat/resources/results.csv
 
 330 problems compared over asp, abs-asp, abs-fd, fd
 
@@ -10,9 +10,9 @@
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
 Plans found                      72 (21.8%)   83 (25.2%)  127 (38.5%)  305 (92.4%)
-Timeouts                        258 (78.2%)  247 (74.8%)  173 (52.4%)    22 (6.7%)
+Timeouts                        258 (78.2%)  247 (74.8%)  174 (52.7%)    22 (6.7%)
 Out of memory                      0 (0.0%)     0 (0.0%)    29 (8.8%)     1 (0.3%)
-Others                             0 (0.0%)     0 (0.0%)     1 (0.3%)     2 (0.6%)
+Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     2 (0.6%)
 Total problems                          330          330          330          330
 ```
 
@@ -37,12 +37,12 @@ Total plan length                       648        1,001        6,346        5,1
 ```
 Killed during                          ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-Abstraction                          5 (2%)       5 (3%)
-Writing the abstract task            1 (0%)       0 (0%)
-Abstract search                   157 (64%)       3 (2%)
-Guided concrete search               5 (2%)     64 (37%)
-Unguided concrete search           79 (32%)    101 (58%)
-Total                                   247          173
+Abstraction                          3 (1%)       3 (2%)
+Writing the abstract task            1 (0%)       1 (1%)
+Abstract search                   158 (64%)       3 (2%)
+Guided concrete search               5 (2%)     65 (37%)
+Unguided concrete search           80 (32%)    102 (59%)
+Total                                   247          174
 ```
 
 ## How the successes were solved
@@ -67,18 +67,6 @@ None                                 0 (0%)       0 (0%)
 10 to 19                            8 (11%)     14 (12%)
 20 or more                           0 (0%)     19 (16%)
 Total                                    76          120
-```
-
-## Every class against the largest
-
-```
-Over problems with 2+ classes          ASPᵅ        LAMAᵅ
---------------------------------------------------------
-Problems                                104          104
-Solved by the largest class              19           25
-Solved by some class                     21           28
-Largest class is fastest            4 (19%)      4 (14%)
-Median time, largest / best           1.34x        1.32x
 ```
 
 ## Plans found by domain
