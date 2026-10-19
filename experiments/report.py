@@ -145,6 +145,19 @@ def _finished_problems(results_file):
     return modes, problems, len(rows) - len(problems)
 
 
+def best_classes(results_file):
+    """The rank of the class each abstract mode did best with on each problem, as the report picks it."""
+    best = {}
+    with Path(results_file).open(encoding="utf-8", newline="") as stream:
+        for row in csv.DictReader(stream):
+            if not row["mode"].startswith(ABSTRACTION_PREFIX):
+                continue
+            key = (row["domain"], row["problem"], row["mode"])
+            if key not in best or _performance(row) > _performance(best[key]):
+                best[key] = row
+    return {key: int(row.get("class") or 0) for key, row in best.items()}
+
+
 def _performance(row):
     """Rank the classes one mode ran on a problem: finished, then solved and fastest, or failed and furthest along."""
     finished = row["status"] not in UNFINISHED_STATUSES

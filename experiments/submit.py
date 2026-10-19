@@ -10,6 +10,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+from experiments.report import best_classes
 from experiments.run import ABSTRACTION_PREFIX, DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR
 from experiments.tracks import DEFAULT_TRACK, TRACKS, find_domain, has_other_status, is_domain_file
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
@@ -42,6 +43,7 @@ def main():
             problems=args.problems,
             class_counts=track.class_counts(),
             from_rank=args.from_rank,
+            best=best_classes(track.results_file) if args.classes == "best" else None,
         )
     )
     _check_worktree_is_built()
@@ -187,6 +189,12 @@ def _argument_parser():
         help="Run abstract modes only on the classes from this rank down, to skip those already collected",
     )
     parser.add_argument(
+        "--classes",
+        choices=("all", "best"),
+        default="best",
+        help="Run abstract modes only on the class each did best with in the track's results, or on every class",
+    )
+    parser.add_argument(
         "--all-problems",
         action="store_true",
         help="Submit every problem of the suite, not only the ones the track lists as runnable",
@@ -264,12 +272,21 @@ def _write_copperbench_config(
 
 
 def _benchmark_tasks(
-    benchmarks_dir, suite, runnable, modes=("abs-asp",), domains=None, problems=None, class_counts=None, from_rank=0
+    benchmarks_dir,
+    suite,
+    runnable,
+    modes=("abs-asp",),
+    domains=None,
+    problems=None,
+    class_counts=None,
+    from_rank=0,
+    best=None,
 ):
     """One task per concrete mode and problem, and per abstract mode, problem and class rank.
 
     Without class counts, or for a problem they do not list, an abstract mode
-    collapses the largest class only.
+    collapses the largest class only. With the best class of each abstract mode
+    and problem, it runs that one class instead, and every class where none is known.
     """
     if domains is not None:
         unknown = sorted(set(domains) - set(suite))
@@ -291,7 +308,10 @@ def _benchmark_tasks(
                     yield mode, domain_name, domain, problem, None
                     continue
                 count = 1 if class_counts is None else class_counts.get((domain_name, problem.name), 1)
-                for rank in range(from_rank, count):
+                ranks = range(from_rank, count)
+                if best is not None and (domain_name, problem.name, mode) in best:
+                    ranks = [best[(domain_name, problem.name, mode)]]
+                for rank in ranks:
                     yield mode, domain_name, domain, problem, rank
 
 

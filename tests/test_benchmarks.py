@@ -255,6 +255,43 @@ class BenchmarkTests(unittest.TestCase):
                 [(mode, rank) for mode, _n, _d, _p, rank in tasks], [("abs-asp", 1), ("abs-asp", 2), ("asp", None)]
             )
 
+    def test_an_abstract_mode_runs_only_its_best_class_where_one_is_known(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+            (benchmark / "p02.pddl").touch()
+            results = root / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                # p01 ran every class and the middle one solved fastest. p02 never ran.
+                for rank, status, seconds in (
+                    ("0", "timed out", "1800"),
+                    ("1", "success", "40"),
+                    ("2", "success", "90"),
+                ):
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": rank}
+                        | {"status": status, "wall_time_seconds": seconds}
+                    )
+
+            tasks = _benchmark_tasks(
+                root,
+                ["example"],
+                None,
+                class_counts={("example", "p01.pddl"): 3, ("example", "p02.pddl"): 2},
+                best=experiments.report.best_classes(results),
+            )
+
+            self.assertEqual(
+                [(problem.name, rank) for _m, _n, _d, problem, rank in tasks],
+                [("p01.pddl", 1), ("p02.pddl", 0), ("p02.pddl", 1)],
+            )
+
     def test_only_problems_with_an_abstraction_class_are_submitted(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
