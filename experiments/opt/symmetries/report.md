@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-19 10:02 — experiments/opt/symmetries/results.csv
+2026-10-20 09:04 — experiments/opt/symmetries/results.csv
 
 518 problems compared over asp, abs-asp, len-asp, abs-fd, len-fd, fd-lmcut
 
@@ -9,8 +9,8 @@
 ```
 Metric                                  ASP         ASPᵅ         ASP⁺       LMcutᵅ       LMcut⁺        LMcut
 ------------------------------------------------------------------------------------------------------------
-Plans found                     128 (24.7%)  127 (24.5%)  121 (23.4%)  183 (35.3%)  124 (23.9%)  193 (37.3%)
-Timeouts                        389 (75.1%)  383 (73.9%)  394 (76.1%)  335 (64.7%)  394 (76.1%)  324 (62.5%)
+Plans found                     128 (24.7%)  127 (24.5%)  121 (23.4%)  183 (35.3%)  125 (24.1%)  193 (37.3%)
+Timeouts                        389 (75.1%)  383 (73.9%)  394 (76.1%)  335 (64.7%)  393 (75.9%)  324 (62.5%)
 Out of memory                      1 (0.2%)     8 (1.5%)     3 (0.6%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
 Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     1 (0.2%)
 Total problems                          518          518          518          518          518          518
@@ -21,15 +21,15 @@ Total problems                          518          518          518          5
 ```
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut         ASP⁺       LMcut⁺
 ------------------------------------------------------------------------------------------------------------
-Plans found by both                     120          115          172          120          120          120
-Faster                          101 (84.2%)   45 (39.1%)   56 (32.6%)  103 (85.8%)   19 (15.8%)   17 (14.2%)
-Found when the other did not              8           12           11           73            1            4
-Median runtime                       8.19 s       7.20 s       7.50 s       2.67 s      10.82 s       7.77 s
-Total runtime                   11,671.15 s   9,063.92 s  19,283.72 s   2,737.94 s  15,229.01 s  12,012.31 s
+Plans found by both                     120          115          172          121          120          121
+Faster                           99 (82.5%)   45 (39.1%)   56 (32.6%)  104 (86.0%)   21 (17.5%)   17 (14.0%)
+Found when the other did not              8           12           11           72            1            4
+Median runtime                       8.19 s       7.20 s       7.50 s       2.66 s      10.61 s       7.62 s
+Total runtime                   11,671.15 s   9,063.92 s  19,283.72 s   2,739.81 s  13,940.74 s  11,856.94 s
 Shorter plan                       0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
-Same plan length               120 (100.0%)   82 (71.3%)  129 (75.0%) 120 (100.0%) 120 (100.0%) 120 (100.0%)
+Same plan length               120 (100.0%)   82 (71.3%)  129 (75.0%) 121 (100.0%) 120 (100.0%) 121 (100.0%)
 Median plan length                       12           13           21           13           12           13
-Total plan length                     1,948        1,804        4,566        2,326        1,948        2,326
+Total plan length                     1,948        1,804        4,566        2,356        1,948        2,356
 ```
 
 ## Where the timeouts died
@@ -83,7 +83,7 @@ elevators-opt08-strips               4         0         1         0         2  
 elevators-opt11-strips               2         0         1         0         2         0         2
 gripper                             20         3         3         3         3         3         7
 hiking-opt14-strips                 20        12        13        13        11        13         9
-logistics00                         19         8         9         8        15         9        15
+logistics00                         19         8         9         8        15        10        15
 logistics98                         31         1         0         0         4         1         4
 miconic                             11         1         2         1        11         1        11
 mprime                              21        20        20        20        16        16        16
@@ -105,5 +105,5 @@ visitall-opt11-strips                1         1         1         1         1  
 woodworking-opt08-strips             5         0         0         0         1         0         1
 woodworking-opt11-strips             4         0         0         0         0         0         1
 zenotravel                          13         4         3         3         7         4         7
-Total                              518       128       127       121       183       124       193
+Total                              518       128       127       121       183       125       193
 ```
