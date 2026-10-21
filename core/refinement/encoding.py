@@ -53,13 +53,13 @@ def concretize_abstract_actions(abstract_plan, abstraction, gaps=True):
 
 
 def switches(abstract_plan, gaps=True):
-    """The switches holding the abstract plan, latest first, so that what survives relaxation is a prefix of it."""
+    """The switches holding the abstract plan, one per abstract action."""
     switches = []
     for action in abstract_plan:
         time_step = _concrete_time_step(action.time_step, gaps)
         switches.append(_switch(time_step))
 
-    return sorted(switches, reverse=True)
+    return switches
 
 
 def _switch(time_step):

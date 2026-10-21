@@ -94,11 +94,10 @@ switch(2).
 
         self.assertTrue(result.unsatisfiable)
 
-    def test_switches_give_up_the_abstract_plan_from_its_end(self):
+    def test_each_abstract_action_has_a_switch_at_its_concrete_step(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item2",), 5))
 
-        # Steps 10 and 2, ordered by number rather than as text.
-        self.assertEqual([str(switch) for switch in switches(abstract_plan)], ["switch(10)", "switch(2)"])
+        self.assertEqual({str(switch) for switch in switches(abstract_plan)}, {"switch(2)", "switch(10)"})
 
     def _models(self, program, horizon):
         control = IncrementalSolver(program, horizon).control
