@@ -9,7 +9,7 @@ class RelaxingSolver(IncrementalSolver):
     """An incremental solver that relaxes the assumptions it cannot satisfy."""
 
     def search(self, symbols=(), on_attempt=None):
-        """Assume every symbol, give them up in the order given, then raise the horizon."""
+        """Assume every symbol, give them all up at once if they fail, then raise the horizon."""
         assumptions = {symbol: True for symbol in symbols}
         dropped = 0
         attempts = 0
@@ -26,8 +26,10 @@ class RelaxingSolver(IncrementalSolver):
                 return SolveResult(plan, self.horizon, attempts, dropped)
 
             if dropped < len(symbols):
-                assumptions[symbols[dropped]] = False
-                dropped += 1
+                # The abstract plan did not refine as a whole, so search the
+                # concrete task from its horizon instead of trying its prefixes.
+                assumptions = {symbol: False for symbol in symbols}
+                dropped = len(symbols)
             else:
                 # Nothing constrains the search any more, so the only way left to
                 # satisfy the program is to give it another time step.
