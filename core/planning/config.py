@@ -19,6 +19,8 @@ class PlanningConfig:
     problem_path: Path
     # The mode without its abs- prefix: what plans the task, or the abstract task.
     planner: str = "asp"
+    # Double the ASP horizon instead of raising it by one.
+    exp_horizon: bool = False
 
     def as_dict(self):
         values = asdict(self)

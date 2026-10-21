@@ -8,11 +8,12 @@ from unittest.mock import Mock, patch
 
 from core.abstraction.factory import Abstraction, build_abstract_problem
 from core.integrations.fast_downward import LAMA, MS
+from core.integrations.paths import EXACT_HORIZON_ENCODING
 from core.integrations.unified_planning import read_problem
 from core.outcomes import UnsolvableTaskError
 from core.abstraction.factory import write_abstract_problem
 from core.metrics import PlanningMetrics
-from core.planning import abstraction, fd
+from core.planning import abstraction, asp, fd
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from scripts.utils.arguments import positive_int
 
@@ -143,6 +144,45 @@ class ArgumentTests(unittest.TestCase):
     def test_positive_integer_rejects_zero(self):
         with self.assertRaises(argparse.ArgumentTypeError):
             positive_int("0")
+
+
+# A counter that three actions advance from 0 to 3, in the facts plasp would emit.
+COUNTER_TASK = """
+#show occurs/2.
+variable(variable(x)).
+contains(variable(x), value(x, 0..3)).
+initialState(variable(x), value(x, 0)).
+goal(variable(x), value(x, 3)).
+action(action(("advance", "s1"))). action(action(("advance", "s2"))). action(action(("advance", "s3"))).
+precondition(action(("advance", "s1")), variable(x), value(x, 0)).
+precondition(action(("advance", "s2")), variable(x), value(x, 1)).
+precondition(action(("advance", "s3")), variable(x), value(x, 2)).
+postcondition(action(("advance", "s1")), effect(unconditional), variable(x), value(x, 1)).
+postcondition(action(("advance", "s2")), effect(unconditional), variable(x), value(x, 2)).
+postcondition(action(("advance", "s3")), effect(unconditional), variable(x), value(x, 3)).
+"""
+
+
+class AspHorizonSearchTests(unittest.TestCase):
+    def test_exponential_search_finds_a_plan_shorter_than_its_horizon_and_closes_the_empty_steps(self):
+        program = Path(EXACT_HORIZON_ENCODING).read_text(encoding="utf-8") + COUNTER_TASK
+
+        def stop_past_the_plan(_event, metrics):
+            # Without empty steps no horizon past 3 holds a plan, and the search would never end.
+            if metrics["counters"].get("abstract_plan_length", 0) > 4:
+                raise AssertionError("the search passed the first horizon holding the plan")
+
+        with patch("core.planning.asp.sas_to_asp", return_value=program):
+            actions, horizon = asp.find_abstract_plan(
+                PlanningConfig("domain.pddl", "problem.pddl", exp_horizon=True),
+                None,
+                "abstract.sas",
+                PlanningMetrics(on_update=stop_past_the_plan),
+            )
+
+        self.assertEqual([action.args for action in actions], [("s1",), ("s2",), ("s3",)])
+        self.assertEqual([action.time_step for action in actions], [1, 2, 3])
+        self.assertEqual(horizon, 3)
 
 
 if __name__ == "__main__":
