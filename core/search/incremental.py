@@ -8,11 +8,13 @@ from core.search.solver import Solver, SolveResult
 class IncrementalSolver(Solver):
     """One Clingo control whose horizon can be raised without regrounding."""
 
-    def __init__(self, asp, init_horizon=0, optimize=False):
+    def __init__(self, asp, init_horizon=0, optimize=False, exp_horizon=False):
         if init_horizon < 0:
             raise ValueError("Horizon must be nonnegative")
 
         super().__init__(asp, optimize)
+        # Skipping horizons only finds the shorter plans when the program lets a step stay empty.
+        self.exp_horizon = exp_horizon
 
         for time_step in range(1, init_horizon + 1):
             self.control.ground([("step", [clingo.Number(time_step)])])
@@ -21,7 +23,7 @@ class IncrementalSolver(Solver):
         self._add_goal()
 
     def search(self, assumptions=(), on_attempt=None):
-        """Raise the horizon until the program becomes satisfiable."""
+        """Raise the horizon, by one or by doubling it, until the program becomes satisfiable."""
         attempts = 0
         while True:
             attempts += 1
@@ -34,13 +36,15 @@ class IncrementalSolver(Solver):
             if plan is not None:
                 return SolveResult(plan, self.horizon, attempts)
 
-            self.extend()
+            self.extend(max(1, 2 * self.horizon) if self.exp_horizon else None)
 
-    def extend(self):
-        """Raise the horizon by one, keeping everything grounded so far."""
+    def extend(self, horizon=None):
+        """Raise the horizon, by one unless given another, keeping everything grounded so far."""
         self._delete_goal()
-        self.horizon += 1
-        self.control.ground([("step", [clingo.Number(self.horizon)])])
+        horizon = self.horizon + 1 if horizon is None else horizon
+        for time_step in range(self.horizon + 1, horizon + 1):
+            self.control.ground([("step", [clingo.Number(time_step)])])
+        self.horizon = horizon
         self._add_goal()
 
     def _add_goal(self):

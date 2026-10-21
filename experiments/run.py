@@ -23,6 +23,7 @@ MANIFEST_NAME = "manifest.json"
 # plan, which ASP then refines.
 MODES = ("asp", "abs-asp", "abs-fd", "fd", "fd-lmcut")
 ABSTRACTION_PREFIX = "abs-"
+ASP_SEARCH_MODES = ("asp", "abs-asp")
 
 
 def main():
@@ -200,6 +201,8 @@ def _planner_command(domain, problem, mode, track=DEFAULT_TRACK, class_rank=0):
     if mode.startswith(ABSTRACTION_PREFIX):
         command.extend(TRACKS[track].abstract_arguments)
         command.extend(["--class-rank", str(class_rank)])
+    if mode in ASP_SEARCH_MODES:
+        command.extend(TRACKS[track].asp_arguments)
     return command
 
 

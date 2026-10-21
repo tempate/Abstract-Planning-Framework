@@ -25,6 +25,8 @@ class Track:
     modes: tuple[str, ...]
     # Passed to the modes through an abstraction only; the others have no class to choose.
     abstract_arguments: tuple[str, ...] = ()
+    # Passed to the modes that search with ASP, concrete or abstract.
+    asp_arguments: tuple[str, ...] = ()
 
     @property
     def results_file(self):
@@ -68,6 +70,7 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-fd", "asp", "fd"),
+        asp_arguments=("--exp-horizon",),
     ),
     # The same suite, restricted to the problems numeric-fast-downward finds a
     # resource for, and planned from that resource's objects.
@@ -78,6 +81,7 @@ TRACKS = {
         driver="scripts.planner",
         modes=("abs-asp", "abs-fd", "asp", "fd"),
         abstract_arguments=("--abstraction-source", "resources"),
+        asp_arguments=("--exp-horizon",),
     ),
     # The optimal suite, refined to the plan that fills the fewest gaps, with
     # abs-fd searching the abstract task optimally like its fd-lmcut baseline.

@@ -76,6 +76,26 @@ reached(t).
         self.assertEqual(solver.horizon, 2)
         self.assertEqual(set(solver.solve()), {"reached(0)", "reached(1)", "reached(2)"})
 
+    def test_exponential_search_skips_to_the_next_power_of_two(self):
+        program = """
+#program base.
+reached(0).
+#show reached/1.
+#program step(t).
+reached(t).
+#program check(t).
+#external query(t).
+:- query(t), t < 3.
+"""
+        horizons = []
+
+        result = IncrementalSolver(program, exp_horizon=True).search(
+            on_attempt=lambda horizon, _calls: horizons.append(horizon)
+        )
+
+        self.assertEqual(horizons, [0, 1, 2, 4])
+        self.assertEqual(result.horizon, 4)
+
 
 if __name__ == "__main__":
     unittest.main()
