@@ -7,6 +7,7 @@ from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import has_plan, pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
+from core.abstraction.relaxation import SPLIT_SEPARATOR
 from core.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
 from core.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
 from core.planning.config import AbstractPlanningConfig
@@ -35,11 +36,11 @@ def _abstract_and_refine(config, find_abstract_plan, base_dir, run_id, metrics):
     concrete_asp = _to_asp(concrete_sas, metrics)
     abstract_plan, abstract_horizon = find_abstract_plan(base_dir, abstract_sas, metrics)
     # The plan speaks the written task's names, and refinement matches them
-    # against the concrete task's.
+    # against the concrete task's, where a split action has its original name.
     abstract_plan = tuple(
         replace(
             action,
-            name=original_names.get(action.name, action.name),
+            name=original_names.get(action.name, action.name).split(SPLIT_SEPARATOR)[0],
             args=tuple(original_names.get(arg, arg) for arg in action.args),
         )
         for action in abstract_plan
