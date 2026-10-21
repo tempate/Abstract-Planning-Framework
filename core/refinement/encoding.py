@@ -59,7 +59,12 @@ def concretize_abstract_actions(abstract_plan, abstraction):
 
 def switches(abstract_plan):
     """The switches holding the abstract plan, one per abstract action."""
-    return [_switch(_concrete_time_step(action.time_step)) for action in abstract_plan]
+    switches = []
+    for action in abstract_plan:
+        time_step = _concrete_time_step(action.time_step)
+        switches.append(_switch(time_step))
+
+    return switches
 
 
 def _switch(time_step):
