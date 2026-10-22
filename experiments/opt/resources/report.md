@@ -1,8 +1,8 @@
 # Benchmark report
 
-2026-10-19 09:19 — experiments/opt/resources/results.csv
+2026-10-22 14:27 — experiments/opt/resources/results.csv
 
-373 problems compared over asp, abs-asp, abs-fd, fd-lmcut
+373 problems compared over asp, abs-asp, abs-lmcut, lmcut
 
 ## Coverage
 

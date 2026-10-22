@@ -6,14 +6,14 @@ Run them from the repository root.
 
 | Script | Purpose |
 | --- | --- |
-| `fd.sh` | Solve `driverlog/p07.pddl` directly with Fast Downward's lama-first |
+| `lama.sh` | Solve `driverlog/p07.pddl` directly with Fast Downward's lama-first |
 | `asp.sh` | Solve it directly with ASP |
-| `abs-fd.sh` | Discover an object abstraction of the same task, plan it with Fast Downward, and refine that plan with ASP |
+| `abs-lama.sh` | Discover an object abstraction of the same task, plan it with Fast Downward, and refine that plan with ASP |
 | `abs-asp.sh` | The same, planning the abstraction with ASP |
 
 ```bash
-./examples/fd.sh
+./examples/lama.sh
 ./examples/asp.sh
-./examples/abs-fd.sh
+./examples/abs-lama.sh
 ./examples/abs-asp.sh
 ```

@@ -3,7 +3,7 @@
 # task, symmetry discovery, and _select_abstraction) on every problem of SUITE,
 # with the 300-second symmetry limit and a 400-second cap on the whole check.
 # Once a run has been collected, regenerate it as for sat/symmetries:
-#   awk -F, '$3=="abs-fd" && $4!="no symmetries" && NR>1 {print $1"/"$2}' results.csv | sort -u
+#   awk -F, '$3=="abs-lmcut" && $4!="no symmetries" && NR>1 {print $1"/"$2}' results.csv | sort -u
 # mystery/prob07 and mystery/prob18 are left out: PDDL Symmetries reports that
 # neither has a relaxed solution.
 # openstacks-strips/p28, p29 and trucks-strips/p29, p30 are left out: the check

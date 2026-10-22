@@ -15,7 +15,7 @@ from core.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
 from experiments.collect import _values
 
 # Each example runs the planner mode it is named after.
-EXAMPLES = ("asp", "fd", "abs-asp", "abs-fd")
+EXAMPLES = ("asp", "lama", "abs-asp", "abs-lama")
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -87,7 +87,7 @@ class ShellExampleTests(unittest.TestCase):
         # The README compares the runs, so they have to solve the same task.
         self.assertEqual(len({_argument_after(command, "--problem") for command in commands.values()}), 1)
         # The abstraction examples demonstrate automatic symmetry selection.
-        for example in ("abs-asp", "abs-fd"):
+        for example in ("abs-asp", "abs-lama"):
             self.assertNotIn("--objects-to-abstract", commands[example])
 
 
@@ -165,8 +165,8 @@ class PlannerExitStatusTests(unittest.TestCase):
 
     def test_both_drivers_pass_the_abstraction_source_on(self):
         drivers = (
-            (planner, "abs-fd", "solve", "print_planning_result"),
-            (unsolvability, "abs-fd", "check_solvability", "print_verdict"),
+            (planner, "abs-lama", "solve", "print_planning_result"),
+            (unsolvability, "abs-ms", "check_solvability", "print_verdict"),
         )
         for driver, mode, pipeline, printer in drivers:
             with self.subTest(driver=driver.__name__):

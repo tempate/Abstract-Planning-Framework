@@ -17,6 +17,8 @@ class PlanningConfig:
 
     domain_path: Path
     problem_path: Path
+    # The mode without its abs- prefix: what plans the task, or the abstract task.
+    planner: str = "asp"
 
     def as_dict(self):
         values = asdict(self)

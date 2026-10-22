@@ -1,8 +1,8 @@
 # Benchmark report
 
-2026-10-19 09:19 — experiments/unsat/symmetries/results.csv
+2026-10-22 14:27 — experiments/unsat/symmetries/results.csv
 
-111 problems compared over abs-fd, fd
+111 problems compared over abs-ms, ms
 
 ## Verdicts
 

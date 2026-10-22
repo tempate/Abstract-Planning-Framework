@@ -111,12 +111,12 @@ class BenchmarkTests(unittest.TestCase):
         """A mode the collector does not know is filed as an abstract result and
         then dropped, silently, because the real abstract result sorts first."""
         with tempfile.TemporaryDirectory() as directory:
-            for mode in ("abs-asp", "asp", "fd"):
+            for mode in ("abs-asp", "asp", "lama"):
                 self._write_result(directory, mode)
 
             rows = collect(directory)
 
-        self.assertEqual({row["mode"] for row in rows}, {"abs-asp", "asp", "fd"})
+        self.assertEqual({row["mode"] for row in rows}, {"abs-asp", "asp", "lama"})
 
     def test_the_run_names_the_partition_every_task_goes_to(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -226,11 +226,11 @@ class BenchmarkTests(unittest.TestCase):
                 list(_benchmark_tasks(root, ["example"], runnable)), [("abs-asp", "example", domain, problem, 0)]
             )
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable, modes=("abs-asp", "asp", "fd"))),
+                list(_benchmark_tasks(root, ["example"], runnable, modes=("abs-asp", "asp", "lama"))),
                 [
                     ("abs-asp", "example", domain, problem, 0),
                     ("asp", "example", domain, problem, None),
-                    ("fd", "example", domain, problem, None),
+                    ("lama", "example", domain, problem, None),
                 ],
             )
 
@@ -369,16 +369,16 @@ class BenchmarkTests(unittest.TestCase):
             self._write_result(first, "abs-asp", status="timeout")
             _write_manifest([("abs-asp", "example", Path("d.pddl"), Path("p01.pddl"), 0)], results_dir=first)
             self._write_result(second, "abs-asp")
-            _write_manifest([("fd", "example", Path("d.pddl"), Path("p01.pddl"), None)], results_dir=second)
+            _write_manifest([("lama", "example", Path("d.pddl"), Path("p01.pddl"), None)], results_dir=second)
 
             rows = collect(first, second)
 
         by_mode = {row["mode"]: row for row in rows}
-        self.assertEqual(set(by_mode), {"abs-asp", "asp", "fd"})
+        self.assertEqual(set(by_mode), {"abs-asp", "asp", "lama"})
         # the later run owns the result both directories hold
         self.assertEqual(by_mode["abs-asp"]["status"], "success")
         # a mode only the second manifest expected is still accounted for
-        self.assertEqual(by_mode["fd"]["status"], "missing")
+        self.assertEqual(by_mode["lama"]["status"], "missing")
 
     def test_separate_mode_runs_are_collected_as_separate_rows(self):
         abstract_output = (
@@ -642,7 +642,7 @@ class CollectedCsvTests(unittest.TestCase):
                 [
                     ("example", "p01.pddl", "abs-asp", "success"),
                     ("example", "p02.pddl", "abs-asp", "timed out"),
-                    ("example", "p01.pddl", "fd", "timed out"),
+                    ("example", "p01.pddl", "lama", "timed out"),
                 ],
             )
             collected = self._collected([("example", "p02.pddl", "abs-asp", "success")])
@@ -650,7 +650,7 @@ class CollectedCsvTests(unittest.TestCase):
             preserved = _preserved_rows(collected, csv_file)
 
         self.assertEqual(
-            {(row["problem"], row["mode"]) for row in preserved}, {("p01.pddl", "abs-asp"), ("p01.pddl", "fd")}
+            {(row["problem"], row["mode"]) for row in preserved}, {("p01.pddl", "abs-asp"), ("p01.pddl", "lama")}
         )
 
     def test_a_new_class_leaves_the_row_of_one_collected_before_classes(self):
@@ -705,7 +705,7 @@ class ReportTests(unittest.TestCase):
             }
         ]
 
-        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], _labels(["abs-asp"], [("abs-asp", "asp")]))
+        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], _labels(["abs-asp"]))
 
         median = next(line for line in lines if line.startswith("Median runtime"))
         self.assertNotIn(" s", median)
@@ -713,7 +713,7 @@ class ReportTests(unittest.TestCase):
     def test_every_problem_is_accounted_for_in_the_coverage_table(self):
         """The rows have to add up, or a reader cannot tell what became of the
         problems that neither solved nor timed out."""
-        modes = ("abs-asp", "asp", "fd")
+        modes = ("abs-asp", "asp", "lama")
         statuses = (
             ("success", "timed out", "success"),
             ("timed out", "success", "no plan found"),
@@ -722,7 +722,7 @@ class ReportTests(unittest.TestCase):
         )
         problems = [dict(zip(modes, ({"status": status} for status in row))) for row in statuses]
 
-        _title, lines = _coverage(problems, modes, _labels(["abs-asp"], [("abs-asp", "asp")]))
+        _title, lines = _coverage(problems, modes, _labels(["abs-asp"]))
 
         counted = [0] * len(modes)
         for label in ("Plans found", "Timeouts", "Out of memory", "Others"):
@@ -738,23 +738,22 @@ class ReportTests(unittest.TestCase):
         success = {"status": "success", "wall_time_seconds": "1.0"}
         timeout = {"status": "timed out", "wall_time_seconds": "1800.0"}
         problems = [
-            {"asp": success, "abs-asp": success, "abs-fd": success, "fd": success},
-            {"asp": success, "abs-asp": success, "abs-fd": success, "fd": timeout},
+            {"asp": success, "abs-asp": success, "abs-lama": success, "lama": success},
+            {"asp": success, "abs-asp": success, "abs-lama": success, "lama": timeout},
         ]
 
-        pairs = [("abs-asp", "asp"), ("abs-fd", "fd")]
-        _title, lines = _head_to_head(problems, pairs, _labels(["abs-asp", "abs-fd"], pairs))
+        pairs = [("abs-asp", "asp"), ("abs-lama", "lama")]
+        _title, lines = _head_to_head(problems, pairs, _labels(["abs-asp", "abs-lama"]))
 
         shared = next(line for line in lines if line.startswith("Plans found by both"))
         self.assertEqual(re.findall(r"\d+", shared), ["2", "2", "1", "1"])
 
-    def test_an_abstraction_falls_back_to_a_configuration_of_its_solver(self):
-        self.assertEqual(_pairs(["abs-fd"], ("abs-fd", "fd-lmcut")), [("abs-fd", "fd-lmcut")])
-        self.assertEqual(_pairs(["abs-fd"], ("abs-fd", "fd", "fd-lmcut")), [("abs-fd", "fd")])
+    def test_an_abstraction_is_compared_with_the_solver_of_its_abstract_task(self):
+        self.assertEqual(_pairs(["abs-lmcut"], ("abs-lmcut", "lama", "lmcut")), [("abs-lmcut", "lmcut")])
 
-    def test_an_abstraction_is_named_after_the_solver_it_is_compared_with(self):
-        labels = _labels(["abs-fd"], [("abs-fd", "fd-lmcut")])
-        self.assertTrue(labels["abs-fd"].startswith(SOLVER_LABELS["fd-lmcut"]))
+    def test_an_abstraction_is_named_after_the_solver_of_its_abstract_task(self):
+        labels = _labels(["abs-lmcut"])
+        self.assertTrue(labels["abs-lmcut"].startswith(SOLVER_LABELS["lmcut"]))
 
     def test_the_head_to_head_compares_plan_lengths_on_shared_solves(self):
         def solved(length):
@@ -766,7 +765,7 @@ class ReportTests(unittest.TestCase):
             {"abs-asp": solved(5), "asp": {"status": "timed out", "wall_time_seconds": "1800.0"}},
         ]
 
-        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], _labels(["abs-asp"], [("abs-asp", "asp")]))
+        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], _labels(["abs-asp"]))
 
         shorter = next(line for line in lines if line.startswith("Shorter plan"))
         total = next(line for line in lines if line.startswith("Total plan length"))
@@ -779,7 +778,7 @@ class ReportTests(unittest.TestCase):
             with results.open("w", encoding="utf-8", newline="") as stream:
                 writer = csv.DictWriter(stream, fieldnames=FIELDS)
                 writer.writeheader()
-                rows = [("p01.pddl", "abs-asp"), ("p01.pddl", "asp"), ("p01.pddl", "fd")]
+                rows = [("p01.pddl", "abs-asp"), ("p01.pddl", "asp"), ("p01.pddl", "lama")]
                 # p02 never ran the baseline, so no mode can be compared on it.
                 rows += [("p02.pddl", "abs-asp"), ("p02.pddl", "asp")]
                 for problem, mode in rows:
@@ -790,7 +789,7 @@ class ReportTests(unittest.TestCase):
 
             modes, problems, dropped = _finished_problems(results)
 
-        self.assertEqual(modes, ("asp", "abs-asp", "fd"))
+        self.assertEqual(modes, ("asp", "abs-asp", "lama"))
         self.assertEqual(len(problems), 1)
         self.assertEqual(dropped, 1)
 

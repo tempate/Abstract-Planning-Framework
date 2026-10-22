@@ -42,17 +42,12 @@ def abstraction_arguments():
         help="Collapse the candidate class at this rank, counting from the largest (0)",
     )
     parser.add_argument("--minimize-gaps", action="store_true", help="Refine to the plan with the fewest filled gaps")
-    parser.add_argument(
-        "--lmcut",
-        action="store_true",
-        help="Search the abstract task with A* and LM-cut instead of lama-first (abs-fd)",
-    )
     return parser
 
 
 def planning_config(args):
     """The configuration the task arguments describe."""
-    return PlanningConfig(args.domain, args.problem)
+    return PlanningConfig(args.domain, args.problem, planner=args.mode)
 
 
 def abstract_planning_config(args):
@@ -60,6 +55,7 @@ def abstract_planning_config(args):
     return AbstractPlanningConfig(
         args.domain,
         args.problem,
+        planner=args.mode.removeprefix("abs-"),
         objects_to_abstract=args.objects_to_abstract,
         abstract_name=args.abstract_name,
         symmetry_time_limit=args.symmetry_time_limit,

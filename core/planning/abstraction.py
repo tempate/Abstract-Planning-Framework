@@ -4,36 +4,39 @@ import os
 from dataclasses import replace
 
 from core.integrations.clingo import parse_plan_actions
-from core.integrations.fast_downward import has_plan, pddl_to_sas
+from core.integrations.fast_downward import MS, has_plan, pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
 from core.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
+from core.planning.backends import BACKENDS
 from core.planning.config import AbstractPlanningConfig
 from core.planning.execution import temp_run_dir
 from core.planning.validation import validated
 from core.refinement.pipeline import RefinementContext, refine
 
 
-def solve(config: AbstractPlanningConfig, find_abstract_plan, on_update=None):
-    """Abstract one concrete task, plan it with ``find_abstract_plan``, and refine that plan with ASP."""
+def solve(config: AbstractPlanningConfig, on_update=None):
+    """Abstract one concrete task, plan it with the config's planner, and refine that plan with ASP."""
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
-            result = _abstract_and_refine(config, find_abstract_plan, base_dir, run_id, metrics)
+            result = _abstract_and_refine(config, base_dir, run_id, metrics)
     # Outside the measured phases, so that checking a plan cannot move a timing.
     result["plan_valid"] = validated(config, result.get("plan"), parse_plan_actions)
     result["metrics"] = metrics.as_dict()
     return result
 
 
-def _abstract_and_refine(config, find_abstract_plan, base_dir, run_id, metrics):
+def _abstract_and_refine(config, base_dir, run_id, metrics):
     abstract_problem = build_abstract_problem(config, metrics)
     report_abstraction(abstract_problem, metrics)
 
     concrete_sas, abstract_sas, original_names = _to_sas(base_dir, abstract_problem.problem, config, metrics)
     concrete_asp = _to_asp(concrete_sas, metrics)
-    abstract_plan, abstract_horizon = find_abstract_plan(base_dir, abstract_sas, metrics)
+    abstract_plan, abstract_horizon = BACKENDS[config.planner].find_abstract_plan(
+        config, base_dir, abstract_sas, metrics
+    )
     # The plan speaks the written task's names, and refinement matches them
     # against the concrete task's.
     abstract_plan = tuple(
@@ -95,7 +98,7 @@ def check_solvability(config: AbstractPlanningConfig, on_update=None):
                     domain_path, problem_path, _ = write_abstract_problem(abstract_problem.problem, base_dir)
 
                 with metrics.measure("abstract_fd_search"):
-                    found = has_plan(base_dir, domain_path, problem_path, "abstract")
+                    found = has_plan(base_dir, domain_path, problem_path, "abstract", MS)
             except UnsolvableTaskError:
                 # Symmetry discovery reads the concrete task, so proving it
                 # unsolvable there is the verdict, not a failure to reach one.

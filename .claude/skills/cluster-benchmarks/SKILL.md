@@ -47,17 +47,17 @@ left the suite keeps its old row until you delete it.
 ## Submitting
 
 ```bash
-python -m experiments.submit --modes abs-asp abs-fd asp fd
+python -m experiments.submit --modes abs-asp abs-lama asp lama
 ```
 
 Submit every mode you want compared: `experiments.report` pairs **all** of them
 and drops any problem missing one, so a mode left out of a run shrinks every
-table. `fd` is plain Fast Downward, the external baseline. Runs go to
+table. `lama` is plain Fast Downward, the external baseline. Runs go to
 `sunnycove` by default, one CPU generation, so timings are comparable across a
 run. Only pass `--partition any` to fill a queue you do not intend to publish
 timings from: it spans two CPU generations and caps each job at one hour.
 
-`--track unsat` runs `abs-fd` and `fd`, and submit refuses any
+`--track unsat` runs `abs-ms` and `ms`, and submit refuses any
 mode a track does not run.
 
 `--track unsat` swaps the suite for unsolve-ipc-2016 and the planner for

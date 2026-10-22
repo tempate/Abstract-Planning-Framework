@@ -62,7 +62,7 @@ def _search(asp, config, run_id, metrics):
     }
 
 
-def find_abstract_plan(_base_dir, abstract_sas, metrics):
+def find_abstract_plan(_config, _base_dir, abstract_sas, metrics):
     """Search for the shortest abstract plan, returning its actions and its horizon."""
     with metrics.measure("abstract_asp"):
         abstract_asp = sas_to_asp(abstract_sas)

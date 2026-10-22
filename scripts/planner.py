@@ -1,10 +1,9 @@
 """Solve one PDDL task concretely or through an automatically generated abstraction."""
 
 import argparse
-from functools import partial
 
-from core.integrations.fast_downward import LMCUT
-from core.planning import abstraction, asp, fd
+from core.planning import abstraction
+from core.planning.backends import BACKENDS
 
 from .utils.arguments import abstract_planning_config, abstraction_arguments, planning_config, task_arguments
 from .utils.entry import run
@@ -22,17 +21,9 @@ def _report(result):
 
 def _compute(args):
     on_update = progress_callback()
-    if args.mode == "asp":
-        return asp.solve(planning_config(args), on_update)
-    if args.mode == "fd":
-        return fd.solve(planning_config(args), on_update)
-    if args.mode == "fd-lmcut":
-        return fd.solve(planning_config(args), on_update, LMCUT)
-    if args.mode == "abs-asp":
-        return abstraction.solve(abstract_planning_config(args), asp.find_abstract_plan, on_update)
-    if args.mode == "abs-fd":
-        find_abstract_plan = partial(fd.find_abstract_plan, search=LMCUT if args.lmcut else None)
-        return abstraction.solve(abstract_planning_config(args), find_abstract_plan, on_update)
+    if args.mode.startswith("abs-"):
+        return abstraction.solve(abstract_planning_config(args), on_update)
+    return BACKENDS[args.mode].solve(planning_config(args), on_update)
 
 
 def print_planning_result(result):
@@ -76,13 +67,13 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "fd",
+        "lama",
         parents=[shared],
         help="Solve the task with Fast Downward's lama-first",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "fd-lmcut",
+        "lmcut",
         parents=[shared],
         help="Solve the task optimally with Fast Downward's A* and LM-cut",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -94,9 +85,15 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "abs-fd",
+        "abs-lama",
         parents=[shared, abstract],
         help="Find an abstract plan with Fast Downward's lama-first, then refine it with ASP",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
+        "abs-lmcut",
+        parents=[shared, abstract],
+        help="Find an optimal abstract plan with Fast Downward's A* and LM-cut, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     return parser
