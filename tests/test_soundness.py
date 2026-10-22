@@ -8,8 +8,10 @@ from pathlib import Path
 from unified_planning.engines.plan_validator import SequentialPlanValidator
 from unified_planning.engines.results import ValidationResultStatus
 from unified_planning.plans import ActionInstance, SequentialPlan
+from unified_planning.shortcuts import SequentialSimulator
 
 from core.abstraction.factory import build_abstract_problem
+from core.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.unified_planning import parse_problem
 from core.planning import abstraction, asp, fd
@@ -70,6 +72,27 @@ def _plan_on(problem, steps, rename=None):
     return SequentialPlan(actions)
 
 
+def _abstract_plan_on(problem, steps, rename):
+    """The plan on the abstraction, each step taking the copy of its action that applies."""
+    actions = []
+    with SequentialSimulator(problem=problem) as simulator:
+        state = simulator.get_initial_state()
+        for name, *args in steps:
+            objects = [problem.object(rename.get(arg, arg)) for arg in args]
+            copies = [action for action in problem.actions if action.name.split(SPLIT_SEPARATOR)[0] == name]
+            applicable = [
+                ActionInstance(action, objects)
+                for action in copies
+                if simulator.is_applicable(state, ActionInstance(action, objects))
+            ]
+            # A step no copy can take is a lost plan, which the validation reports.
+            instance = applicable[0] if applicable else ActionInstance(copies[0], objects)
+            actions.append(instance)
+            if applicable:
+                state = simulator.apply(state, instance)
+    return SequentialPlan(actions)
+
+
 def _is_valid(problem, plan):
     return SequentialPlanValidator().validate(problem, plan).status == ValidationResultStatus.VALID
 
@@ -96,7 +119,7 @@ class SoundnessTests(unittest.TestCase):
                     abstract = build_abstract_problem(self._config(objects))
                 rename = dict.fromkeys(objects, abstract.abstraction.name)
 
-                self.assertTrue(_is_valid(abstract.problem, _plan_on(abstract.problem, PLAN, rename)))
+                self.assertTrue(_is_valid(abstract.problem, _abstract_plan_on(abstract.problem, PLAN, rename)))
 
     @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
     def test_the_refined_plan_solves_the_concrete_task(self):
