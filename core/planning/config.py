@@ -17,6 +17,7 @@ class PlanningConfig:
 
     domain_path: Path
     problem_path: Path
+    exp_horizon: bool = False
 
     def as_dict(self):
         values = asdict(self)

@@ -13,13 +13,11 @@ class IncrementalSolver(Solver):
             raise ValueError("Horizon must be nonnegative")
 
         super().__init__(asp, optimize)
-        # Skipping horizons only finds the shorter plans when the program lets a step stay empty.
+        self.horizon = init_horizon
         self.exp_horizon = exp_horizon
 
         for time_step in range(1, init_horizon + 1):
             self.control.ground([("step", [clingo.Number(time_step)])])
-
-        self.horizon = init_horizon
         self._add_goal()
 
     def search(self, assumptions=(), on_attempt=None):
@@ -36,15 +34,20 @@ class IncrementalSolver(Solver):
             if plan is not None:
                 return SolveResult(plan, self.horizon, attempts)
 
-            self.extend(max(1, 2 * self.horizon) if self.exp_horizon else None)
+            self.extend()
 
-    def extend(self, horizon=None):
-        """Raise the horizon, by one unless given another, keeping everything grounded so far."""
-        self._delete_goal()
-        horizon = self.horizon + 1 if horizon is None else horizon
-        for time_step in range(self.horizon + 1, horizon + 1):
+    def extend(self):
+        """Raise the horizon keeping everything grounded so far."""
+        if self.exp_horizon:
+            next_horizon = max(1, 2 * self.horizon)
+        else:
+            next_horizon = self.horizon + 1
+
+        for time_step in range(self.horizon + 1, next_horizon + 1):
             self.control.ground([("step", [clingo.Number(time_step)])])
-        self.horizon = horizon
+
+        self._delete_goal()
+        self.horizon = next_horizon
         self._add_goal()
 
     def _add_goal(self):

@@ -29,7 +29,7 @@ def _report(result):
 def _compute(args):
     on_update = progress_callback()
     if args.mode == "asp":
-        return asp.solve(planning_config(args), on_update, args.exp_horizon)
+        return asp.solve(planning_config(args), on_update)
     if args.mode == "fd":
         return fd.solve(planning_config(args), on_update)
     if args.mode == "fd-lmcut":
