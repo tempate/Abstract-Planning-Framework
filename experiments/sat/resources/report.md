@@ -1,8 +1,8 @@
 # Benchmark report
 
-2026-10-19 09:19 — experiments/sat/resources/results.csv
+2026-10-22 14:27 — experiments/sat/resources/results.csv
 
-330 problems compared over asp, abs-asp, abs-fd, fd
+330 problems compared over asp, abs-asp, abs-lama, lama
 
 ## Coverage
 

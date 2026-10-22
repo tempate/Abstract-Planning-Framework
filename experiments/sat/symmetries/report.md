@@ -1,8 +1,8 @@
 # Benchmark report
 
-2026-10-19 09:19 — experiments/sat/symmetries/results.csv
+2026-10-22 14:27 — experiments/sat/symmetries/results.csv
 
-557 problems compared over asp, abs-asp, abs-fd, fd
+557 problems compared over asp, abs-asp, abs-lama, lama
 
 ## Coverage
 

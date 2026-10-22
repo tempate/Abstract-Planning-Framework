@@ -1,8 +1,8 @@
 # Benchmark report
 
-2026-10-19 09:19 — experiments/opt/symmetries/results.csv
+2026-10-22 14:27 — experiments/opt/symmetries/results.csv
 
-518 problems compared over asp, abs-asp, abs-fd, fd-lmcut
+518 problems compared over asp, abs-asp, abs-lmcut, lmcut
 
 ## Coverage
 

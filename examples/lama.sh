@@ -23,6 +23,6 @@ if (( $# > 0 )); then
     esac
 fi
 
-"$python_bin" -m scripts.planner fd \
+"$python_bin" -m scripts.planner lama \
     --domain experiments/benchmarks/downward-benchmarks/driverlog/domain.pddl \
     --problem experiments/benchmarks/downward-benchmarks/driverlog/p07.pddl

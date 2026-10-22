@@ -42,11 +42,6 @@ def abstraction_arguments():
         help="Collapse the candidate class at this rank, counting from the largest (0)",
     )
     parser.add_argument("--minimize-gaps", action="store_true", help="Refine to the plan with the fewest filled gaps")
-    parser.add_argument(
-        "--lmcut",
-        action="store_true",
-        help="Search the abstract task with A* and LM-cut instead of lama-first (abs-fd)",
-    )
     return parser
 
 

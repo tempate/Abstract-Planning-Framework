@@ -67,7 +67,7 @@ TRACKS = {
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abs-asp", "abs-fd", "asp", "fd"),
+        modes=("abs-asp", "abs-lama", "asp", "lama"),
     ),
     # The same suite, restricted to the problems numeric-fast-downward finds a
     # resource for, and planned from that resource's objects.
@@ -76,33 +76,33 @@ TRACKS = {
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abs-asp", "abs-fd", "asp", "fd"),
+        modes=("abs-asp", "abs-lama", "asp", "lama"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
     # The optimal suite, refined to the plan that fills the fewest gaps, with
-    # abs-fd searching the abstract task optimally like its fd-lmcut baseline.
+    # abs-lmcut searching the abstract task optimally like its lmcut baseline.
     "opt/symmetries": Track(
         directory=Path(opt.__file__).parent / "symmetries",
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abs-asp", "abs-fd", "asp", "fd-lmcut"),
-        abstract_arguments=("--minimize-gaps", "--lmcut"),
+        modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+        abstract_arguments=("--minimize-gaps",),
     ),
     "opt/resources": Track(
         directory=Path(opt.__file__).parent / "resources",
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
-        modes=("abs-asp", "abs-fd", "asp", "fd-lmcut"),
-        abstract_arguments=("--minimize-gaps", "--lmcut", "--abstraction-source", "resources"),
+        modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+        abstract_arguments=("--minimize-gaps", "--abstraction-source", "resources"),
     ),
     "unsat/symmetries": Track(
         directory=Path(unsat.__file__).parent / "symmetries",
         suite=unsat.SUITE,
         benchmarks_dir=BENCHMARKS / "unsolve-ipc-2016",
         driver="scripts.unsolvability",
-        modes=("abs-fd", "fd"),
+        modes=("abs-ms", "ms"),
     ),
 }
 DEFAULT_TRACK = "sat/symmetries"

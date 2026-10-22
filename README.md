@@ -27,9 +27,9 @@ pre-commit install
 ## Try it
 
 ```bash
-./examples/fd.sh
+./examples/lama.sh
 ./examples/asp.sh
-./examples/abs-fd.sh
+./examples/abs-lama.sh
 ./examples/abs-asp.sh
 ```
 
@@ -42,10 +42,10 @@ All four solve the same task, so the runs are comparable. See
 python -m scripts.planner --help
 ```
 
-- `fd` solves the PDDL task with plain Fast Downward (`--alias lama-first`), as
+- `lama` solves the PDDL task with plain Fast Downward (`--alias lama-first`), as
   an external baseline.
 - `asp` solves it directly with ASP.
-- `abs-fd` collapses a symmetric object class, solves the abstraction
+- `abs-lama` collapses a symmetric object class, solves the abstraction
   with Fast Downward's lama-first, and refines that plan with ASP.
 - `abs-asp` does the same, but solves the abstraction with ASP.
 
@@ -58,8 +58,8 @@ class is an error, not a fallback to concrete search.
 Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
 Slurm task per mode and problem, each capped at 30 minutes and 8192 MiB.
-`--modes fd asp abs-fd abs-asp` submits all four; the default is the track's
-first mode alone. The unsat track runs `abs-fd` and `fd`.
+`--modes lama asp abs-lama abs-asp` submits all four; the default is the track's
+first mode alone. The unsat track runs `abs-ms` and `ms`.
 
 ```bash
 python -m experiments.submit
@@ -76,9 +76,8 @@ python -m experiments.report experiments/sat/symmetries/results.csv
   class.
 - `--track opt` submits `experiments/opt/symmetries/`, the problems of the optimal
   suite with a symmetry class, refined to the plan that fills the fewest gaps, with
-  `asp` and `fd-lmcut` as the baselines. `abs-fd` searches the abstract task with
-  LM-cut there too. `--abstraction-source resources` submits
-  `experiments/opt/resources/` instead, whose list
+  `asp` and `lmcut` as the baselines, and `abs-lmcut` in place of `abs-lama`.
+  `--abstraction-source resources` submits `experiments/opt/resources/` instead, whose list
   `python -m experiments.scan --track opt/resources` writes.
 - `--track unsat` submits `experiments/unsat/symmetries/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of

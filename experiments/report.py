@@ -13,11 +13,10 @@ from experiments.tracks import DEFAULT_TRACK, TRACKS
 DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
 SOLVER_LABELS = {
     "asp": "ASP",
-    "fd": "LAMA",
-    "fd-lmcut": "LMcut",
+    "lama": "LAMA",
+    "lmcut": "LMcut",
+    "ms": "M&S",
 }
-# A verdict run decides solvability with merge-and-shrink, not with LAMA.
-VERDICT_LABELS = SOLVER_LABELS | {"fd": "M&S"}
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
 VERDICTS = ("unsolvable", "unknown")
@@ -52,7 +51,7 @@ def main():
     # A decide run reports no plan, horizon or refinement, so none of the other
     # tables have anything to say about one.
     verdict_run = _is_verdict_run(problems)
-    labels = _labels(abstractions, pairs, VERDICT_LABELS if verdict_run else SOLVER_LABELS)
+    labels = _labels(abstractions)
     if verdict_run:
         sections = [_verdicts(problems, modes, labels)]
         if pairs:
@@ -81,24 +80,20 @@ def main():
 
 
 def _pairs(abstractions, modes):
-    """Pair each abstraction with the solver that plans its abstract task, or, when
-    the run has no plain one, a configuration of it such as fd-lmcut."""
+    """Pair each abstraction with the solver that plans its abstract task, when the run has it."""
     pairs = []
     for abstraction in abstractions:
         solver = abstraction.removeprefix(ABSTRACTION_PREFIX)
-        candidates = [mode for mode in modes if mode == solver or mode.startswith(f"{solver}-")]
-        if candidates:
-            pairs.append((abstraction, solver if solver in candidates else candidates[0]))
+        if solver in modes:
+            pairs.append((abstraction, solver))
     return pairs
 
 
-def _labels(abstractions, pairs, solver_labels=SOLVER_LABELS):
-    """Name each abstraction after the solver it is compared with, marked with an alpha."""
-    labels = dict(solver_labels)
-    solvers = dict(pairs)
+def _labels(abstractions):
+    """Name each abstraction after the solver of its abstract task, marked with an alpha."""
+    labels = dict(SOLVER_LABELS)
     for abstraction in abstractions:
-        solver = solvers.get(abstraction, abstraction.removeprefix(ABSTRACTION_PREFIX))
-        labels[abstraction] = f"{solver_labels[solver]}ᵅ"
+        labels[abstraction] = f"{SOLVER_LABELS[abstraction.removeprefix(ABSTRACTION_PREFIX)]}ᵅ"
     return labels
 
 
