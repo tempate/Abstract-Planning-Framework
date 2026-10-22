@@ -13,11 +13,13 @@ class IncrementalSolver(Solver):
             raise ValueError("Horizon must be nonnegative")
 
         super().__init__(asp, optimize)
-        self.horizon = init_horizon
+        self.init_horizon = init_horizon
         self.exp_horizon = exp_horizon
 
-        for time_step in range(1, init_horizon + 1):
-            self.control.ground([("step", [clingo.Number(time_step)])])
+        self.horizon = init_horizon
+        self.increment = 1
+
+        self._ground_steps(0, init_horizon)
         self._add_goal()
 
     def search(self, assumptions=(), on_attempt=None):
@@ -38,17 +40,20 @@ class IncrementalSolver(Solver):
 
     def extend(self):
         """Raise the horizon keeping everything grounded so far."""
-        if self.exp_horizon:
-            next_horizon = max(1, 2 * self.horizon)
-        else:
-            next_horizon = self.horizon + 1
+        next_horizon = self.horizon + self.increment
 
-        for time_step in range(self.horizon + 1, next_horizon + 1):
-            self.control.ground([("step", [clingo.Number(time_step)])])
+        if self.exp_horizon and self.horizon != self.init_horizon:
+            self.increment *= 2
 
         self._delete_goal()
+        self._ground_steps(self.horizon, next_horizon)
         self.horizon = next_horizon
         self._add_goal()
+
+    def _ground_steps(self, from_horizon, to_horizon):
+        """Ground the steps after one horizon up to another."""
+        for time_step in range(from_horizon + 1, to_horizon + 1):
+            self.control.ground([("step", [clingo.Number(time_step)])])
 
     def _add_goal(self):
         """Ground the goal test for the current horizon and activate it."""

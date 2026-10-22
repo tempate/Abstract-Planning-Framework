@@ -25,7 +25,7 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Use an abstract plan to guide concrete search."""
     horizon = mapped_horizon(abstract_horizon)
 
-    asp = add_gaps(context.concrete_asp, horizon, context.config.minimize_gaps)
+    asp = add_gaps(context.concrete_asp, horizon, context.config.minimize_gaps, context.config.exp_horizon)
     asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction)
 
     plan = _solve_concrete_plan(context, asp, horizon, switches(abstract_plan))
@@ -57,7 +57,7 @@ def _solve_concrete_plan(context, asp, init_horizon, switches):
         context.metrics.set_counters(counters)
 
     with context.metrics.measure("guided_concrete_solving"):
-        solver = RelaxingSolver(asp, init_horizon, context.config.minimize_gaps)
+        solver = RelaxingSolver(asp, init_horizon, context.config.minimize_gaps, context.config.exp_horizon)
         result = solver.search(switches, record_attempt)
 
     record_attempt(result.horizon, result.dropped, result.attempts)

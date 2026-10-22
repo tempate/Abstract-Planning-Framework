@@ -103,7 +103,7 @@ def _argument_parser():
     )
     modes.add_parser(
         "abs-fd",
-        parents=[shared, abstract],
+        parents=[shared, abstract, asp_search],
         help="Find an abstract plan with Fast Downward's lama-first, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )

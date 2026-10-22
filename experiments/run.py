@@ -23,7 +23,7 @@ MANIFEST_NAME = "manifest.json"
 # plan, which ASP then refines.
 MODES = ("asp", "abs-asp", "abs-fd", "fd", "fd-lmcut")
 ABSTRACTION_PREFIX = "abs-"
-ASP_SEARCH_MODES = ("asp", "abs-asp")
+ASP_SEARCH_MODES = ("asp", "abs-asp", "abs-fd")
 
 
 def main():
