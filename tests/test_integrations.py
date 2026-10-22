@@ -151,20 +151,17 @@ class PlaspPostProcessingTests(unittest.TestCase):
             binary = root / "plasp"
             sas = root / "output.sas"
             exact = root / "exact.lp"
-            actions = root / "actions.lp"
             for path in (binary, sas):
                 path.touch()
             exact.write_text("exact.\n", encoding="utf-8")
-            actions.write_text("actions.\n", encoding="utf-8")
 
             with (
                 patch("core.integrations.plasp.PLASP_BIN", str(binary)),
-                patch("core.integrations.plasp.EXACT_HORIZON_ENCODING", str(exact)),
-                patch("core.integrations.plasp.ACTION_PER_TIME_STEP_ENCODING", str(actions)),
+                patch("core.integrations.plasp.SEQUENTIAL_ENCODING", str(exact)),
             ):
                 program = sas_to_asp(str(sas))
 
-            self.assertEqual(program, "exact.\nactions.\ntranslated.\n")
+            self.assertEqual(program, "exact.\ntranslated.\n")
 
 
 if __name__ == "__main__":
