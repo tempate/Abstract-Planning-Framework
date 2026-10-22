@@ -6,7 +6,13 @@ from functools import partial
 from core.integrations.fast_downward import LMCUT
 from core.planning import abstraction, asp, fd
 
-from .utils.arguments import abstract_planning_config, abstraction_arguments, planning_config, task_arguments
+from .utils.arguments import (
+    abstract_planning_config,
+    abstraction_arguments,
+    asp_search_arguments,
+    planning_config,
+    task_arguments,
+)
 from .utils.entry import run
 from .utils.reporting import print_metrics, progress_callback
 
@@ -29,7 +35,8 @@ def _compute(args):
     if args.mode == "fd-lmcut":
         return fd.solve(planning_config(args), on_update, LMCUT)
     if args.mode == "abs-asp":
-        return abstraction.solve(abstract_planning_config(args), asp.find_abstract_plan, on_update)
+        find_abstract_plan = partial(asp.find_abstract_plan, exp_horizon=args.exp_horizon)
+        return abstraction.solve(abstract_planning_config(args), find_abstract_plan, on_update)
     if args.mode == "abs-fd":
         find_abstract_plan = partial(fd.find_abstract_plan, search=LMCUT if args.lmcut else None)
         return abstraction.solve(abstract_planning_config(args), find_abstract_plan, on_update)
@@ -66,12 +73,13 @@ def _time_step(atom):
 def _argument_parser():
     shared = task_arguments()
     abstract = abstraction_arguments()
+    asp_search = asp_search_arguments()
 
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_subparsers(dest="mode", required=True, title="planning modes")
     modes.add_parser(
         "asp",
-        parents=[shared],
+        parents=[shared, asp_search],
         help="Solve the task with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -89,7 +97,7 @@ def _argument_parser():
     )
     modes.add_parser(
         "abs-asp",
-        parents=[shared, abstract],
+        parents=[shared, abstract, asp_search],
         help="Find an abstract plan with ASP, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )

@@ -50,9 +50,21 @@ def abstraction_arguments():
     return parser
 
 
+def asp_search_arguments():
+    """Parent parser for the options of the modes that search with ASP."""
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument(
+        "--exp-horizon",
+        action="store_true",
+        help="Double the horizon instead of raising it by one, finding a plan sooner but not the shortest",
+    )
+    return parser
+
+
 def planning_config(args):
     """The configuration the task arguments describe."""
-    return PlanningConfig(args.domain, args.problem)
+    exp_horizon = getattr(args, "exp_horizon", False)
+    return PlanningConfig(args.domain, args.problem, exp_horizon=exp_horizon)
 
 
 def abstract_planning_config(args):
@@ -60,6 +72,7 @@ def abstract_planning_config(args):
     return AbstractPlanningConfig(
         args.domain,
         args.problem,
+        exp_horizon=getattr(args, "exp_horizon", False),
         objects_to_abstract=args.objects_to_abstract,
         abstract_name=args.abstract_name,
         symmetry_time_limit=args.symmetry_time_limit,

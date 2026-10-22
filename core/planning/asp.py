@@ -1,5 +1,7 @@
 """Plan with ASP: a concrete task directly, or the abstract task for a refinement to follow."""
 
+from dataclasses import replace
+
 from core.integrations.clingo import parse_plan_actions, plan_length
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
@@ -24,7 +26,7 @@ def solve(config: PlanningConfig, on_update=None):
 
 def _translate_and_solve(config, base_dir, run_id, metrics):
     sas_file = _to_sas(base_dir, config, metrics)
-    asp = _to_asp(sas_file, metrics)
+    asp = _to_asp(sas_file, config, metrics)
     return _search(asp, config, run_id, metrics)
 
 
@@ -34,10 +36,10 @@ def _to_sas(base_dir, config, metrics):
         return pddl_to_sas(base_dir, config.domain_path, config.problem_path, "concrete")
 
 
-def _to_asp(sas_file, metrics):
+def _to_asp(sas_file, config, metrics):
     """Translate the SAS file into its ASP program."""
     with metrics.measure("concrete_asp"):
-        return sas_to_asp(sas_file)
+        return sas_to_asp(sas_file, config.exp_horizon)
 
 
 def _search(asp, config, run_id, metrics):
@@ -47,7 +49,7 @@ def _search(asp, config, run_id, metrics):
         metrics.set_counter("concrete_solve_calls", solve_calls)
 
     with metrics.measure("guided_concrete_solving"):
-        solver = IncrementalSolver(asp)
+        solver = IncrementalSolver(asp, exp_horizon=config.exp_horizon)
         solve_result = solver.search(on_attempt=record_attempt)
 
     metrics.set_counter("concrete_solve_calls", solve_result.attempts)
@@ -62,17 +64,22 @@ def _search(asp, config, run_id, metrics):
     }
 
 
-def find_abstract_plan(_base_dir, abstract_sas, metrics):
-    """Search for the shortest abstract plan, returning its actions and its horizon."""
+def find_abstract_plan(_base_dir, abstract_sas, metrics, exp_horizon=False):
+    """Search for an abstract plan, the shortest unless the horizon grows exponentially, returning its actions and its length."""
     with metrics.measure("abstract_asp"):
-        abstract_asp = sas_to_asp(abstract_sas)
+        abstract_asp = sas_to_asp(abstract_sas, exp_horizon)
 
     def record_attempt(horizon, solve_calls):
         metrics.set_counters({"abstract_plan_length": horizon, "abstract_solve_calls": solve_calls})
 
     with metrics.measure("abstract_solving"):
-        solver = IncrementalSolver(abstract_asp)
+        solver = IncrementalSolver(abstract_asp, exp_horizon=exp_horizon)
         solve_result = solver.search(on_attempt=record_attempt)
 
-    metrics.set_counters({"abstract_plan_length": solve_result.horizon, "abstract_solve_calls": solve_result.attempts})
-    return parse_plan_actions(solve_result.plan), solve_result.horizon
+    # An exponential horizon can leave steps empty. Closing them up keeps an abstract action on
+    # every step, which is the layout refinement maps onto the concrete steps.
+    actions = tuple(
+        replace(action, time_step=step) for step, action in enumerate(parse_plan_actions(solve_result.plan), 1)
+    )
+    metrics.set_counters({"abstract_plan_length": len(actions), "abstract_solve_calls": solve_result.attempts})
+    return actions, len(actions)
