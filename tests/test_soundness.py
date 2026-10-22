@@ -12,7 +12,7 @@ from unified_planning.plans import ActionInstance, SequentialPlan
 from core.abstraction.factory import build_abstract_problem
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.unified_planning import parse_problem
-from core.planning import abstraction, asp, fd
+from core.planning import abstraction
 from core.planning.config import AbstractPlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
@@ -84,8 +84,8 @@ class SoundnessTests(unittest.TestCase):
         self.problem.write_text(PROBLEM, encoding="utf-8")
         self.concrete = parse_problem(DOMAIN, PROBLEM)
 
-    def _config(self, objects):
-        return AbstractPlanningConfig(self.domain, self.problem, objects_to_abstract=objects)
+    def _config(self, objects, planner="asp"):
+        return AbstractPlanningConfig(self.domain, self.problem, planner=planner, objects_to_abstract=objects)
 
     def test_every_concrete_plan_is_a_plan_of_the_abstraction(self):
         """What lets an abstraction without a plan prove the task unsolvable."""
@@ -101,10 +101,10 @@ class SoundnessTests(unittest.TestCase):
     @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
     def test_the_refined_plan_solves_the_concrete_task(self):
         for objects in CLASSES:
-            for search in (asp.find_abstract_plan, fd.find_abstract_plan):
-                with self.subTest(objects=objects, search=search.__module__):
+            for planner in ("asp", "lama"):
+                with self.subTest(objects=objects, planner=planner):
                     with redirect_stdout(StringIO()):
-                        result = abstraction.solve(self._config(objects), search)
+                        result = abstraction.solve(self._config(objects, planner))
                     steps = [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
 
                     self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)

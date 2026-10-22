@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 
-from core.integrations.fast_downward import find_plan, find_sas_plan, has_plan, parse_plan_actions
+from core.integrations.fast_downward import LMCUT, find_plan, find_sas_plan, has_plan, parse_plan_actions
 from core.metrics import PlanningMetrics
 from core.outcomes import SOLVABLE, UNSOLVABLE, UnsolvableTaskError
 from core.planning.config import PlanningConfig
@@ -12,13 +12,13 @@ from core.planning.validation import validated
 LABEL = "fd"
 
 
-def solve(config: PlanningConfig, on_update=None, search=None):
-    """Search one PDDL task with LAMA-first, or the search given, reporting it like our own pipelines."""
+def solve(config: PlanningConfig, on_update=None):
+    """Search one PDDL task with the planner's search, reporting it like our own pipelines."""
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir(LABEL) as (base_dir, run_id):
             with metrics.measure("fd_search"):
-                plan = find_plan(base_dir, config.domain_path, config.problem_path, LABEL, search)
+                plan = find_plan(base_dir, config.domain_path, config.problem_path, LABEL, _search(config))
 
             # An already satisfied goal gives an empty plan, which is a solved
             # task rather than a failure, so the length is set on any plan.
@@ -54,10 +54,10 @@ def check_solvability(config: PlanningConfig, on_update=None):
     }
 
 
-def find_abstract_plan(base_dir, abstract_sas, metrics, search=None):
-    """Search the abstract task with LAMA-first, or the search given, returning its actions and its horizon."""
+def find_abstract_plan(config, base_dir, abstract_sas, metrics):
+    """Search the abstract task with the planner's search, returning its actions and its horizon."""
     with metrics.measure("abstract_fd_search"):
-        plan = find_sas_plan(base_dir, abstract_sas, "abstract", search)
+        plan = find_sas_plan(base_dir, abstract_sas, "abstract", _search(config))
     # The abstraction over-approximates, so an abstract task without a plan
     # proves the concrete one has none either.
     if plan is None:
@@ -67,3 +67,8 @@ def find_abstract_plan(base_dir, abstract_sas, metrics, search=None):
     actions = tuple(replace(action, time_step=action.time_step + 1) for action in parse_plan_actions(plan))
     metrics.set_counter("abstract_plan_length", len(actions))
     return actions, len(actions)
+
+
+def _search(config):
+    # No search makes Fast Downward run lama-first.
+    return LMCUT if config.planner == "lmcut" else None

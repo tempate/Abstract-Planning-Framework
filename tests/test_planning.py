@@ -41,7 +41,12 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.fd.find_sas_plan", return_value=None)
     def test_an_abstract_task_without_a_plan_proves_the_concrete_one_unsolvable(self, _find_sas_plan):
         with self.assertRaises(UnsolvableTaskError):
-            fd.find_abstract_plan("run-dir", "abstract.sas", PlanningMetrics())
+            fd.find_abstract_plan(
+                PlanningConfig("domain.pddl", "problem.pddl", planner="lama"),
+                "run-dir",
+                "abstract.sas",
+                PlanningMetrics(),
+            )
 
     @patch("core.planning.fd.find_plan")
     def test_an_unsolvable_task_is_not_a_plan(self, find_plan):

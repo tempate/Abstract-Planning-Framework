@@ -47,7 +47,7 @@ def abstraction_arguments():
 
 def planning_config(args):
     """The configuration the task arguments describe."""
-    return PlanningConfig(args.domain, args.problem)
+    return PlanningConfig(args.domain, args.problem, planner=args.mode)
 
 
 def abstract_planning_config(args):
@@ -55,6 +55,7 @@ def abstract_planning_config(args):
     return AbstractPlanningConfig(
         args.domain,
         args.problem,
+        planner=args.mode.removeprefix("abs-"),
         objects_to_abstract=args.objects_to_abstract,
         abstract_name=args.abstract_name,
         symmetry_time_limit=args.symmetry_time_limit,
