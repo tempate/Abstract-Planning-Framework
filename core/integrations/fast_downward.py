@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+from dataclasses import dataclass
 
 from core.integrations.paths import FAST_DOWNWARD_SCRIPT
 from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
@@ -23,20 +24,33 @@ _OUT_OF_MEMORY = (20, 22, 24, 247)
 # of the real one. The verdict only reaches us through what it printed.
 _UNSOLVABLE_MARKER = "Generating unsolvable task"
 
-# Merge-and-shrink with bisimulation detects dead ends, as the Unsolvability
-# IPC 2016 entries did, so both sides are proved by a state-of-the-art search.
-SEARCH = (
-    "astar(merge_and_shrink("
-    "shrink_strategy=shrink_bisimulation(greedy=false),"
-    "merge_strategy=merge_sccs(order_of_sccs=topological,"
-    "merge_selector=score_based_filtering(scoring_functions=[goal_relevance(),dfp(),total_order()])),"
-    "label_reduction=exact(before_shrinking=true,before_merging=false),"
-    "max_states=50000,threshold_before_merge=1))"
-)
-LAMA_FIRST = "lama-first"
+
+@dataclass(frozen=True)
+class Search:
+    """A Fast Downward search, as the options the driver reads before the task and after it."""
+
+    driver: tuple[str, ...] = ()
+    options: tuple[str, ...] = ()
+
+
+# An alias is a driver option, so it goes before the task.
+LAMA = Search(driver=("--alias", "lama-first"))
 # Optimal, so it gives the shortest plan to compare plan lengths against. Unit
 # costs make it minimize length like ASP and the abstraction, which drops costs.
-LMCUT = "astar(eval_modify_costs(lmcut(),cost_type=one),cost_type=one)"
+LMCUT = Search(options=("--search", "astar(eval_modify_costs(lmcut(),cost_type=one),cost_type=one)"))
+# Merge-and-shrink with bisimulation detects dead ends, as the Unsolvability
+# IPC 2016 entries did, so both sides are proved by a state-of-the-art search.
+MS = Search(
+    options=(
+        "--search",
+        "astar(merge_and_shrink("
+        "shrink_strategy=shrink_bisimulation(greedy=false),"
+        "merge_strategy=merge_sccs(order_of_sccs=topological,"
+        "merge_selector=score_based_filtering(scoring_functions=[goal_relevance(),dfp(),total_order()])),"
+        "label_reduction=exact(before_shrinking=true,before_merging=false),"
+        "max_states=50000,threshold_before_merge=1))",
+    )
+)
 
 
 def pddl_to_sas(base_dir, domain_path, problem_path, label):
@@ -64,29 +78,35 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
     return sas_path
 
 
-def has_plan(base_dir, domain_path, problem_path, label):
+def has_plan(base_dir, domain_path, problem_path, label, search):
     """Translate and search one PDDL task, reporting only whether it has a plan."""
-    completed_process, _ = _search(base_dir, domain_path, problem_path, label, search=("--search", SEARCH))
+    completed_process, _ = _search(base_dir, domain_path, problem_path, label, search)
     return _found_plan(completed_process, label)
 
 
-def find_plan(base_dir, domain_path, problem_path, label, search=None):
-    """Search one PDDL task with LAMA-first, or the search given, returning its plan or None."""
-    options = {"search": ("--search", search)} if search else {"driver": ("--alias", LAMA_FIRST)}
-    completed_process, plan_path = _search(base_dir, domain_path, problem_path, label, **options)
+def find_plan(base_dir, domain_path, problem_path, label, search):
+    """Search one PDDL task, returning its plan or None."""
+    completed_process, plan_path = _search(base_dir, domain_path, problem_path, label, search)
     return _read_plan(plan_path) if _found_plan(completed_process, label) else None
 
 
-def find_sas_plan(base_dir, sas_path, label, search=None):
-    """Search an already translated task with LAMA-first, or the search given, returning its plan or None."""
+def find_sas_plan(base_dir, sas_path, label, search):
+    """Search an already translated task, returning its plan or None."""
     plan_path = os.path.join(base_dir, f"{label}.plan")
-    command = [sys.executable, FAST_DOWNWARD_SCRIPT, "--plan-file", plan_path]
-    command += [sas_path, "--search", search] if search else ["--alias", LAMA_FIRST, sas_path]
+    command = [
+        sys.executable,
+        FAST_DOWNWARD_SCRIPT,
+        "--plan-file",
+        plan_path,
+        *search.driver,
+        sas_path,
+        *search.options,
+    ]
     completed_process = subprocess.run(command, capture_output=True, text=True)
     return _read_plan(plan_path) if _found_plan(completed_process, label) else None
 
 
-def _search(base_dir, domain_path, problem_path, label, driver=(), search=()):
+def _search(base_dir, domain_path, problem_path, label, search):
     """Translate and search one task, returning the process and its plan file.
 
     The driver reads its own options before the task and passes on whatever
@@ -105,10 +125,10 @@ def _search(base_dir, domain_path, problem_path, label, driver=(), search=()):
         sas_path,
         "--plan-file",
         plan_path,
-        *driver,
+        *search.driver,
         os.fspath(domain_path),
         os.fspath(problem_path),
-        *search,
+        *search.options,
     ]
     return subprocess.run(command, capture_output=True, text=True), plan_path
 

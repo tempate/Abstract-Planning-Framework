@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from core.abstraction.factory import Abstraction, build_abstract_problem
+from core.integrations.fast_downward import LAMA, MS
 from core.integrations.unified_planning import read_problem
 from core.outcomes import UnsolvableTaskError
 from core.abstraction.factory import write_abstract_problem
@@ -31,7 +32,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
         find_plan.return_value = ["(walk a b)", "(drive b c)"]
         config = PlanningConfig("domain.pddl", "problem.pddl")
 
-        result = fd.FastDownward().solve(config)
+        result = fd.FastDownward(LAMA).solve(config)
 
         self.assertTrue(result["success"])
         self.assertEqual(result["configuration"], config.as_dict())
@@ -41,7 +42,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.fd.find_sas_plan", return_value=None)
     def test_an_abstract_task_without_a_plan_proves_the_concrete_one_unsolvable(self, _find_sas_plan):
         with self.assertRaises(UnsolvableTaskError):
-            fd.FastDownward().find_abstract_plan(
+            fd.FastDownward(LAMA).find_abstract_plan(
                 PlanningConfig("domain.pddl", "problem.pddl"),
                 "run-dir",
                 "abstract.sas",
@@ -52,7 +53,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
     def test_an_unsolvable_task_is_not_a_plan(self, find_plan):
         find_plan.return_value = None
 
-        result = fd.FastDownward().solve(PlanningConfig("domain.pddl", "problem.pddl"))
+        result = fd.FastDownward(LAMA).solve(PlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
@@ -81,7 +82,7 @@ class DecisionTests(unittest.TestCase):
             with self.subTest(found=found):
                 has_plan.return_value = found
 
-                result = fd.check_solvability(PlanningConfig("domain.pddl", "problem.pddl"))
+                result = fd.FastDownward(MS).check_solvability(PlanningConfig("domain.pddl", "problem.pddl"))
 
                 self.assertEqual(result["verdict"], verdict)
 

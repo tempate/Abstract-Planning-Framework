@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.integrations.clingo import parse_plan_actions
-from core.integrations.fast_downward import find_plan, has_plan, pddl_to_sas
+from core.integrations.fast_downward import LAMA, MS, find_plan, has_plan, pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
 from core.plan import PlanAction
@@ -83,9 +83,9 @@ class FastDownwardHelperTests(unittest.TestCase):
         # tasks of a cluster run share.
         run.return_value = subprocess.CompletedProcess(args=[], returncode=10, stdout="", stderr="")
 
-        for search in (has_plan, find_plan):
+        for search, configuration in ((has_plan, MS), (find_plan, LAMA)):
             with self.subTest(search=search.__name__), tempfile.TemporaryDirectory() as directory:
-                search(directory, "domain.pddl", "problem.pddl", "label")
+                search(directory, "domain.pddl", "problem.pddl", "label", configuration)
 
                 command = run.call_args.args[0]
                 written = [command[i + 1] for i, part in enumerate(command) if part in ("--sas-file", "--plan-file")]
@@ -104,7 +104,7 @@ class FastDownwardHelperTests(unittest.TestCase):
         run.side_effect = write_plan
 
         with tempfile.TemporaryDirectory() as directory:
-            plan = find_plan(directory, "domain.pddl", "problem.pddl", "lama")
+            plan = find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
 
         # The trailing cost comment is not an action.
         self.assertEqual(plan, ["(walk a b)", "(drive b c)"])
@@ -119,7 +119,7 @@ class FastDownwardHelperTests(unittest.TestCase):
         run.side_effect = write_plan
 
         with tempfile.TemporaryDirectory() as directory:
-            self.assertEqual(find_plan(directory, "domain.pddl", "problem.pddl", "lama"), [])
+            self.assertEqual(find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA), [])
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_running_out_of_memory_is_told_apart_from_other_failures(self, run):
@@ -129,7 +129,7 @@ class FastDownwardHelperTests(unittest.TestCase):
                 run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr="")
                 with tempfile.TemporaryDirectory() as directory:
                     with self.assertRaises(OutOfMemoryError):
-                        has_plan(directory, "domain.pddl", "problem.pddl", "abstract")
+                        has_plan(directory, "domain.pddl", "problem.pddl", "abstract", MS)
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_both_unsolvable_exit_codes_mean_no_plan(self, run):
@@ -138,8 +138,8 @@ class FastDownwardHelperTests(unittest.TestCase):
                 run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr="")
 
                 with tempfile.TemporaryDirectory() as directory:
-                    self.assertFalse(has_plan(directory, "domain.pddl", "problem.pddl", "concrete"))
-                    self.assertIsNone(find_plan(directory, "domain.pddl", "problem.pddl", "lama"))
+                    self.assertFalse(has_plan(directory, "domain.pddl", "problem.pddl", "concrete", MS))
+                    self.assertIsNone(find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA))
 
 
 class PlaspPostProcessingTests(unittest.TestCase):
