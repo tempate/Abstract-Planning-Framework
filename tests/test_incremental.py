@@ -96,6 +96,26 @@ reached(t).
         self.assertEqual(horizons, [0, 1, 2, 4])
         self.assertEqual(result.horizon, 4)
 
+    def test_exponential_search_doubles_the_distance_above_its_initial_horizon(self):
+        program = """
+#program base.
+reached(0).
+#show reached/1.
+#program step(t).
+reached(t).
+#program check(t).
+#external query(t).
+:- query(t), t < 6.
+"""
+        horizons = []
+
+        result = IncrementalSolver(program, init_horizon=3, exp_horizon=True).search(
+            on_attempt=lambda horizon, _calls: horizons.append(horizon)
+        )
+
+        self.assertEqual(horizons, [3, 4, 5, 7])
+        self.assertEqual(result.horizon, 7)
+
 
 if __name__ == "__main__":
     unittest.main()

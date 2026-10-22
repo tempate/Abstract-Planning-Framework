@@ -13,6 +13,7 @@ class IncrementalSolver(Solver):
             raise ValueError("Horizon must be nonnegative")
 
         super().__init__(asp, optimize)
+        self.init_horizon = init_horizon
         self.horizon = init_horizon
         self.exp_horizon = exp_horizon
 
@@ -38,8 +39,9 @@ class IncrementalSolver(Solver):
 
     def extend(self):
         """Raise the horizon keeping everything grounded so far."""
+        # Doubling the distance above the initial horizon starts small even when that horizon is large.
         if self.exp_horizon:
-            next_horizon = max(1, 2 * self.horizon)
+            next_horizon = self.init_horizon + max(1, 2 * (self.horizon - self.init_horizon))
         else:
             next_horizon = self.horizon + 1
 
