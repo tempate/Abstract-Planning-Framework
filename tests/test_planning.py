@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 import tempfile
 import unittest
 from contextlib import contextmanager
@@ -8,7 +9,6 @@ from unittest.mock import Mock, patch
 
 from core.abstraction.factory import Abstraction, build_abstract_problem
 from core.integrations.fast_downward import LAMA, MS
-from core.integrations.paths import EXACT_HORIZON_ENCODING
 from core.integrations.unified_planning import read_problem
 from core.outcomes import UnsolvableTaskError
 from core.abstraction.factory import write_abstract_problem
@@ -165,14 +165,17 @@ postcondition(action(("advance", "s3")), effect(unconditional), variable(x), val
 
 class AspHorizonSearchTests(unittest.TestCase):
     def test_exponential_search_finds_a_plan_shorter_than_its_horizon_and_closes_the_empty_steps(self):
-        program = Path(EXACT_HORIZON_ENCODING).read_text(encoding="utf-8") + COUNTER_TASK
+        plasp = subprocess.CompletedProcess([], 0, stdout=COUNTER_TASK, stderr="")
 
         def stop_past_the_plan(_event, metrics):
             # Without empty steps no horizon past 3 holds a plan, and the search would never end.
             if metrics["counters"].get("abstract_plan_length", 0) > 4:
                 raise AssertionError("the search passed the first horizon holding the plan")
 
-        with patch("core.planning.asp.sas_to_asp", return_value=program):
+        with (
+            patch("core.integrations.plasp.os.path.exists", return_value=True),
+            patch("core.integrations.plasp.subprocess.run", return_value=plasp),
+        ):
             actions, horizon = asp.find_abstract_plan(
                 PlanningConfig("domain.pddl", "problem.pddl", exp_horizon=True),
                 None,

@@ -63,7 +63,8 @@ def asp_search_arguments():
 
 def planning_config(args):
     """The configuration the task arguments describe."""
-    return PlanningConfig(args.domain, args.problem, planner=args.mode, exp_horizon=_exp_horizon(args))
+    exp_horizon = getattr(args, "exp_horizon", False)
+    return PlanningConfig(args.domain, args.problem, planner=args.mode, exp_horizon=exp_horizon)
 
 
 def abstract_planning_config(args):
@@ -72,7 +73,7 @@ def abstract_planning_config(args):
         args.domain,
         args.problem,
         planner=args.mode.removeprefix("abs-"),
-        exp_horizon=_exp_horizon(args),
+        exp_horizon=getattr(args, "exp_horizon", False),
         objects_to_abstract=args.objects_to_abstract,
         abstract_name=args.abstract_name,
         symmetry_time_limit=args.symmetry_time_limit,
@@ -80,8 +81,3 @@ def abstract_planning_config(args):
         gaps=args.gaps,
         class_rank=args.class_rank,
     )
-
-
-def _exp_horizon(args):
-    # Only the modes that search with ASP take the option.
-    return getattr(args, "exp_horizon", False)
