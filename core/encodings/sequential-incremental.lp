@@ -86,3 +86,6 @@ holds(variable(V), Value, t) :-
 
 % Keep subsequently appended translator facts and mapping rules static.
 #program base.
+
+% Show only the plan's actions.
+#show occurs/2.
