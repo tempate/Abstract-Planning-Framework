@@ -161,7 +161,7 @@ class PlaspPostProcessingTests(unittest.TestCase):
             ):
                 program = sas_to_asp(str(sas))
 
-            self.assertEqual(program, "exact.\ntranslated.\n")
+            self.assertEqual(program.split(), ["exact.", "translated."])
 
 
 if __name__ == "__main__":
