@@ -31,7 +31,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
         find_plan.return_value = ["(walk a b)", "(drive b c)"]
         config = PlanningConfig("domain.pddl", "problem.pddl")
 
-        result = fd.solve(config)
+        result = fd.FastDownward().solve(config)
 
         self.assertTrue(result["success"])
         self.assertEqual(result["configuration"], config.as_dict())
@@ -41,8 +41,8 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
     @patch("core.planning.fd.find_sas_plan", return_value=None)
     def test_an_abstract_task_without_a_plan_proves_the_concrete_one_unsolvable(self, _find_sas_plan):
         with self.assertRaises(UnsolvableTaskError):
-            fd.find_abstract_plan(
-                PlanningConfig("domain.pddl", "problem.pddl", planner="lama"),
+            fd.FastDownward().find_abstract_plan(
+                PlanningConfig("domain.pddl", "problem.pddl"),
                 "run-dir",
                 "abstract.sas",
                 PlanningMetrics(),
@@ -52,7 +52,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
     def test_an_unsolvable_task_is_not_a_plan(self, find_plan):
         find_plan.return_value = None
 
-        result = fd.solve(PlanningConfig("domain.pddl", "problem.pddl"))
+        result = fd.FastDownward().solve(PlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
