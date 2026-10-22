@@ -51,6 +51,21 @@ action(action(("unrelated","x"))).
         self.assertTrue(models)
         self.assertTrue(all('occurs(action(("inspect","item1")),1)' in model for model in models))
 
+    def test_an_exponential_horizon_lets_the_steps_above_the_abstract_plan_stay_empty(self):
+        abstract_plan = (PlanAction("inspect", ("item1",), 1),)
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
+        mapping = concretize_abstract_actions(abstract_plan, abstraction)
+        program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1), exp_horizon=True) + """
+action(action(("inspect","item1"))).
+switch(2).
+""" + mapping
+
+        models = self._models(program, horizon=5)
+        above = {f'occurs(action(("inspect","item1")),{step})' for step in (4, 5)}
+
+        self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
+        self.assertTrue(any(not model & above for model in models))
+
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
         abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))

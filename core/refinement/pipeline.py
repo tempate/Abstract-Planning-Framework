@@ -26,7 +26,7 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     gaps = not context.config.optimize
     if gaps:
         horizon = mapped_horizon(abstract_horizon)
-        asp = add_gaps(context.concrete_asp, horizon)
+        asp = add_gaps(context.concrete_asp, horizon, context.config.exp_horizon)
     else:
         # Every step holds an action, so a plan is as long as the horizon it is found at.
         horizon = abstract_horizon
@@ -63,7 +63,7 @@ def _solve_concrete_plan(context, asp, init_horizon, switches):
         context.metrics.set_counters(counters)
 
     with context.metrics.measure("guided_concrete_solving"):
-        solver = RelaxingSolver(asp, init_horizon)
+        solver = RelaxingSolver(asp, init_horizon, optimize=not context.config.exp_horizon)
         result = solver.search(switches, record_attempt)
 
     record_attempt(result.horizon, result.dropped, result.attempts)
