@@ -41,7 +41,12 @@ def abstraction_arguments():
         default=0,
         help="Collapse the candidate class at this rank, counting from the largest (0)",
     )
-    parser.add_argument("--minimize-gaps", action="store_true", help="Refine to the plan with the fewest filled gaps")
+    parser.add_argument(
+        "--optimize",
+        dest="gaps",
+        action="store_false",
+        help="Refine without gaps, so the abstract plan's actions keep their time steps",
+    )
     return parser
 
 
@@ -60,6 +65,6 @@ def abstract_planning_config(args):
         abstract_name=args.abstract_name,
         symmetry_time_limit=args.symmetry_time_limit,
         abstraction_source=args.abstraction_source,
-        minimize_gaps=args.minimize_gaps,
+        gaps=args.gaps,
         class_rank=args.class_rank,
     )
