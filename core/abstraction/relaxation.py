@@ -1,25 +1,34 @@
 """Find what the collapse would falsify, so that it can be relaxed instead."""
 
 
-def find_relaxable_deletes(problem, abstraction):
+def action_inequalities(problem):
+    """Each action's inequalities, by action name, before any is relaxed or compiled away."""
+    return {action.name: _inequalities(action) for action in problem.actions}
+
+
+def find_relaxable_deletes(problem, abstraction, inequalities):
     """Find the deletes that could remove a fact other collapsed objects still hold.
 
-    Returns them as (action name, effect) pairs.
+    A grounding has to satisfy the action's original inequalities too, which the
+    translation to positive normal form has rewritten by now, so they come from
+    action_inequalities. Returns the deletes as (action name, effect) pairs.
     """
     collapsed = _collapsed_objects(problem, abstraction)
     collapsed_type = _collapsed_type(problem, abstraction)
-    static_fluents = problem.get_static_fluents()
-    true_facts = [fluent for fluent, value in problem.explicit_initial_values.items() if value.is_true()]
+    static_facts = _static_facts(problem)
 
     relaxable = []
     for action in problem.actions:
+        action_inequalities = inequalities.get(action.name, ())
         for effect in action.effects:
-            if _deletes_a_collapsed_fact(action, effect, collapsed, collapsed_type, static_fluents, true_facts):
+            if _deletes_a_collapsed_fact(
+                problem, action, effect, collapsed, collapsed_type, static_facts, action_inequalities
+            ):
                 relaxable.append((action.name, effect))
     return tuple(relaxable)
 
 
-def _deletes_a_collapsed_fact(action, effect, collapsed, collapsed_type, static_fluents, true_facts):
+def _deletes_a_collapsed_fact(problem, action, effect, collapsed, collapsed_type, static_facts, inequalities):
     is_delete = (
         effect.is_assignment()
         and effect.value.is_false()
@@ -34,24 +43,126 @@ def _deletes_a_collapsed_fact(action, effect, collapsed, collapsed_type, static_
             # The delete names a collapsed object outright, so it always applies.
             return True
 
-    # A single argument that can bind a collapsed object is enough to make the
-    # delete remove a fact the other collapsed objects may still support.
+    # A single argument that some grounding binds to a collapsed object is enough
+    # to make the delete remove a fact the other collapsed objects may still support.
     for argument in effect.fluent.args:
         if not _is_variable_of(argument, collapsed_type):
             continue
-        if _can_bind(action, argument, collapsed, static_fluents, true_facts):
+        if not argument.is_parameter_exp():
+            # A variable of a quantified effect, which no precondition binds.
+            return True
+        restricted = {argument.parameter(): collapsed}
+        if _grounding_exists(problem, action, static_facts, inequalities, restricted):
             return True
     return False
 
 
-def _can_bind(action, variable, collapsed, static_fluents, true_facts):
-    """Whether the action's static preconditions still let the variable take a collapsed object."""
-    candidates = set(collapsed)
-    for atom in _conjuncts(action.preconditions):
-        is_static_on_variable = atom.is_fluent_exp() and atom.fluent() in static_fluents and variable in atom.args
-        if is_static_on_variable:
-            candidates &= _objects_satisfying(atom, variable, true_facts)
-    return bool(candidates)
+def _grounding_exists(problem, action, static_facts, inequalities, restricted):
+    """Whether a grounding meets the static preconditions and the inequalities, with restricted parameters in their sets."""
+    atoms = [
+        atom for atom in _conjuncts(action.preconditions) if atom.is_fluent_exp() and atom.fluent() in static_facts
+    ]
+    if not all(_holds(atom, {}, static_facts) for atom in atoms if not _parameters(atom.args)):
+        return False
+    if any(left == right for left, right in inequalities if not _parameters((left, right))):
+        return False
+
+    # Only the parameters something constrains need a value. Every other one
+    # can take any object of its type.
+    constrained = set(restricted)
+    for atom in atoms:
+        constrained |= _parameters(atom.args)
+    for pair in inequalities:
+        constrained |= _parameters(pair)
+
+    domains = {}
+    for parameter in constrained:
+        objects = set(problem.objects(parameter.type))
+        domains[parameter] = objects & restricted[parameter] if parameter in restricted else objects
+
+    def extend(binding):
+        unbound = [parameter for parameter in domains if parameter not in binding]
+        if not unbound:
+            return True
+
+        # Bind the parameter with the fewest values left first, so that a dead
+        # end shows up before the search branches on it.
+        options = {
+            parameter: _options(parameter, binding, domains, atoms, inequalities, static_facts) for parameter in unbound
+        }
+        parameter = min(unbound, key=lambda unbound_parameter: len(options[unbound_parameter]))
+        return any(extend({**binding, parameter: value}) for value in options[parameter])
+
+    return extend({})
+
+
+def _options(parameter, binding, domains, atoms, inequalities, static_facts):
+    """The values the parameter can take next to the binding without breaking a static precondition or an inequality."""
+    options = set(domains[parameter])
+    for atom in atoms:
+        if parameter in _parameters(atom.args):
+            options &= _values_in_facts(atom, parameter, binding, static_facts[atom.fluent()])
+
+    for left, right in inequalities:
+        for side, other in ((left, right), (right, left)):
+            other_value = _value(other, binding)
+            if side.is_parameter_exp() and side.parameter() == parameter and other_value is not None:
+                options.discard(other_value)
+    return options
+
+
+def _values_in_facts(atom, parameter, binding, facts):
+    """The objects that, bound to the parameter, make the atom one of the facts."""
+    values = set()
+    for fact in facts:
+        value = None
+        matches = True
+        for expected, actual in zip(atom.args, fact.args):
+            if expected.is_parameter_exp() and expected.parameter() == parameter:
+                matches = value is None or value == actual.object()
+                value = actual.object()
+            elif expected.is_object_exp() or (expected.is_parameter_exp() and expected.parameter() in binding):
+                matches = _value(expected, binding) == actual.object()
+            if not matches:
+                break
+        if matches:
+            values.add(value)
+    return values
+
+
+def _holds(atom, binding, static_facts):
+    values = tuple(_value(argument, binding) for argument in atom.args)
+    return any(tuple(argument.object() for argument in fact.args) == values for fact in static_facts[atom.fluent()])
+
+
+def _value(expression, binding):
+    """The object the expression stands for under the binding, or None while it is unbound."""
+    if expression.is_object_exp():
+        return expression.object()
+    if expression.is_parameter_exp():
+        return binding.get(expression.parameter())
+    return None
+
+
+def _parameters(expressions):
+    return {expression.parameter() for expression in expressions if expression.is_parameter_exp()}
+
+
+def _static_facts(problem):
+    """The true facts of every static fluent, by fluent."""
+    static_facts = {fluent: [] for fluent in problem.get_static_fluents()}
+    for fact, value in problem.explicit_initial_values.items():
+        if value.is_true() and fact.is_fluent_exp() and fact.fluent() in static_facts:
+            static_facts[fact.fluent()].append(fact)
+    return static_facts
+
+
+def _inequalities(action):
+    return [
+        tuple(condition.arg(0).args)
+        for condition in _conjuncts(action.preconditions)
+        if condition.is_not() and condition.arg(0).is_equals()
+    ]
 
 
 def _conjuncts(conditions):
@@ -64,54 +175,33 @@ def _conjuncts(conditions):
             yield condition
 
 
-def _objects_satisfying(atom, variable, true_facts):
-    """The objects that, bound to the variable, make the atom one of the true facts."""
-    objects = set()
-    for fact in true_facts:
-        bound = _binding(atom, fact, variable)
-        if bound is not None:
-            objects.add(bound)
-    return objects
-
-
-def _binding(atom, fact, variable):
-    """The object the fact binds the variable to, or None if the fact does not match the atom."""
-    if not fact.is_fluent_exp() or fact.fluent() != atom.fluent():
-        return None
-
-    bound = None
-    for expected, actual in zip(atom.args, fact.args):
-        if expected == variable:
-            if bound is not None and bound != actual.object():
-                return None
-            bound = actual.object()
-        elif expected.is_parameter_exp() or expected.is_variable_exp():
-            # Another variable, which this check leaves free.
-            continue
-        elif expected != actual:
-            return None
-    return bound
-
-
 def relax_inequalities(problem, abstraction):
     """Drop the inequalities the collapse would make false.
 
     Collapsing two objects into one symbol makes (not (= ?x ?y)) false wherever
-    both sides can bind a collapsed object, which loses every ground action the
-    concrete task reaches through them. Dropping the condition keeps those
-    actions, in the same sense that relaxing a delete keeps a fact the concrete
-    task removes. Returns the relaxed problem and the (action name, inequality)
-    pairs it dropped.
+    some grounding binds both sides to collapsed objects, which loses every
+    ground action the concrete task reaches through them. Dropping the condition
+    keeps those actions, in the same sense that relaxing a delete keeps a fact
+    the concrete task removes. Returns the relaxed problem and the (action name,
+    inequality) pairs it dropped.
     """
     collapsed = _collapsed_objects(problem, abstraction)
     collapsed_type = _collapsed_type(problem, abstraction)
+    static_facts = _static_facts(problem)
     relaxed_problem = problem.clone()
 
     relaxed = []
     for action in relaxed_problem.actions:
+        inequalities = _inequalities(action)
+
+        def collapses_both_sides(inequality):
+            return _collapses_both_sides(
+                relaxed_problem, action, inequality, collapsed, collapsed_type, static_facts, inequalities
+            )
+
         kept = []
         for precondition in action.preconditions:
-            condition = _without_inequalities(action, precondition, collapsed, collapsed_type, relaxed)
+            condition = _without_inequalities(action, precondition, collapses_both_sides, relaxed)
             if condition is not None:
                 kept.append(condition)
         action.clear_preconditions()
@@ -121,14 +211,28 @@ def relax_inequalities(problem, abstraction):
     return relaxed_problem, tuple(relaxed)
 
 
-def _without_inequalities(action, condition, collapsed, collapsed_type, relaxed):
+def _collapses_both_sides(problem, action, inequality, collapsed, collapsed_type, static_facts, inequalities):
+    """Whether some grounding binds both sides of the inequality to collapsed objects."""
+    restricted = {}
+    for side in inequality.args:
+        if side.is_object_exp():
+            if side.object() not in collapsed:
+                return False
+        elif not _is_variable_of(side, collapsed_type):
+            return False
+        elif side.is_parameter_exp():
+            restricted[side.parameter()] = collapsed
+    return _grounding_exists(problem, action, static_facts, inequalities, restricted)
+
+
+def _without_inequalities(action, condition, collapses_both_sides, relaxed):
     """Drop the relaxable inequalities from a condition, or None if nothing is left.
 
     The reader hands over a whole conjunction as one precondition, so the
     inequality usually sits inside an and rather than beside it.
     """
     if condition.is_not() and condition.arg(0).is_equals():
-        if all(_can_be_collapsed(side, collapsed, collapsed_type) for side in condition.arg(0).args):
+        if collapses_both_sides(condition.arg(0)):
             relaxed.append((action.name, condition))
             return None
     if not condition.is_and():
@@ -136,7 +240,7 @@ def _without_inequalities(action, condition, collapsed, collapsed_type, relaxed)
 
     kept = []
     for argument in condition.args:
-        kept_argument = _without_inequalities(action, argument, collapsed, collapsed_type, relaxed)
+        kept_argument = _without_inequalities(action, argument, collapses_both_sides, relaxed)
         if kept_argument is not None:
             kept.append(kept_argument)
     if not kept:
@@ -144,12 +248,6 @@ def _without_inequalities(action, condition, collapsed, collapsed_type, relaxed)
     if len(kept) == 1:
         return kept[0]
     return condition.environment.expression_manager.And(kept)
-
-
-def _can_be_collapsed(expression, collapsed, collapsed_type):
-    if expression.is_object_exp():
-        return expression.object() in collapsed
-    return _is_variable_of(expression, collapsed_type)
 
 
 def _is_variable_of(expression, collapsed_type):

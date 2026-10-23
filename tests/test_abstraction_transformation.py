@@ -205,6 +205,33 @@ class InequalityRelaxationTests(unittest.TestCase):
 
         self.assertEqual(result.relaxed_inequalities, ())
 
+    def test_keeps_an_inequality_whose_static_preconditions_rule_out_collapsed_objects(self):
+        domain = """
+(define (domain crew)
+  (:requirements :strips :typing :equality)
+  (:types mover)
+  (:predicates
+    (partners ?a - mover ?b - mover)
+    (moved ?a - mover))
+  (:action carry
+    :parameters (?a - mover ?b - mover)
+    :precondition (and (partners ?a ?b) (not (= ?a ?b)))
+    :effect (moved ?a)))
+"""
+        problem_text = """
+(define (problem crew-task)
+  (:domain crew)
+  (:objects m1 m2 r - mover)
+  (:init (partners m1 r))
+  (:goal (moved m1)))
+"""
+        source = parse_problem(domain, problem_text)
+
+        result = _build_from_problem(source, ["m1", "m2"])
+
+        # m1 only partners r, so no grounding binds both sides to collapsed movers.
+        self.assertEqual(result.relaxed_inequalities, ())
+
 
 class PositiveNormalFormTests(unittest.TestCase):
     def test_abstracts_a_negated_precondition_in_positive_normal_form(self):
@@ -514,6 +541,37 @@ class AbstractionTransformationTests(unittest.TestCase):
         # bind one, but the named `hub` still makes the delete apply.
         unlink = result.problem.action("unlink")
         self.assertFalse(any(effect.value.is_false() for effect in unlink.effects))
+
+    def test_keeps_a_delete_whose_static_preconditions_rule_out_collapsed_objects_together(self):
+        domain = """
+(define (domain crew)
+  (:requirements :strips :typing)
+  (:types mover room)
+  (:predicates
+    (assigned ?x - mover ?y - room)
+    (lit ?y - room)
+    (idle ?x - mover)
+    (done ?x - mover))
+  (:action work
+    :parameters (?x - mover ?y - room)
+    :precondition (and (assigned ?x ?y) (lit ?y) (idle ?x))
+    :effect (and (done ?x) (not (idle ?x)))))
+"""
+        problem_text = """
+(define (problem crew-task)
+  (:domain crew)
+  (:objects m1 m2 r - mover room1 room2 - room)
+  (:init (assigned m1 room1) (assigned r room2) (lit room2) (idle m1) (idle m2) (idle r))
+  (:goal (done r)))
+"""
+        source = parse_problem(domain, problem_text)
+
+        result = _build_from_problem(source, ["m1", "m2"], "pooled-mover")
+
+        # Each precondition alone lets ?x be m1, but only room2 is lit and only r
+        # works there, so no grounding of work touches a collapsed mover.
+        work = result.problem.action("work")
+        self.assertTrue(any(effect.value.is_false() for effect in work.effects))
 
 
 class PositiveNormalFormSkipTests(unittest.TestCase):
