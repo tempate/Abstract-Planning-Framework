@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-22 10:04 — experiments/sat/symmetries/results.csv
+2026-10-23 10:02 — experiments/sat/symmetries/results.csv
 
 557 problems compared over asp, abs-asp, abs-fd, fd
 
@@ -9,8 +9,8 @@
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
-Plans found                     131 (23.5%)  142 (25.5%)  292 (52.4%)  507 (91.0%)
-Timeouts                        405 (72.7%)  403 (72.4%)  161 (28.9%)    35 (6.3%)
+Plans found                     131 (23.5%)  144 (25.9%)  292 (52.4%)  507 (91.0%)
+Timeouts                        405 (72.7%)  401 (72.0%)  161 (28.9%)    35 (6.3%)
 Out of memory                     21 (3.8%)    12 (2.2%)  104 (18.7%)    14 (2.5%)
 Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     1 (0.2%)
 Total problems                          557          557          557          557
@@ -21,15 +21,15 @@ Total problems                          557          557          557          5
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
-Plans found by both                     124          124          287          287
-Faster                           88 (71.0%)   36 (29.0%)    20 (7.0%)  267 (93.0%)
-Found when the other did not              7           18            5          220
-Median runtime                       6.65 s       7.84 s      12.08 s       3.46 s
-Total runtime                   11,759.81 s  11,678.75 s  18,869.85 s   2,221.52 s
-Shorter plan                     89 (71.8%)   14 (11.3%)   46 (16.0%)  186 (64.8%)
-Same plan length                 21 (16.9%)   21 (16.9%)   55 (19.2%)   55 (19.2%)
-Median plan length                       16           26           51           42
-Total plan length                     2,610        3,677       21,221       17,396
+Plans found by both                     125          125          287          287
+Faster                           88 (70.4%)   37 (29.6%)    19 (6.6%)  268 (93.4%)
+Found when the other did not              6           19            5          220
+Median runtime                       6.72 s       7.95 s      12.08 s       3.46 s
+Total runtime                   11,797.49 s  12,006.98 s  18,870.05 s   2,221.52 s
+Shorter plan                     90 (72.0%)   13 (10.4%)   46 (16.0%)  186 (64.8%)
+Same plan length                 22 (17.6%)   22 (17.6%)   55 (19.2%)   55 (19.2%)
+Median plan length                       16           27           51           42
+Total plan length                     2,641        3,718       21,221       17,396
 ```
 
 ## Where the timeouts died
@@ -37,10 +37,10 @@ Total plan length                     2,610        3,677       21,221       17,3
 ```
 Killed during                          ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-Abstract search                   356 (88%)       5 (3%)
-Guided concrete search              30 (7%)    155 (96%)
-Unguided concrete search            17 (4%)       1 (1%)
-Total                                   403          161
+Abstract search                   356 (89%)       5 (3%)
+Guided concrete search              30 (7%)    154 (96%)
+Unguided concrete search            15 (4%)       2 (1%)
+Total                                   401          161
 ```
 
 ## How the successes were solved
@@ -48,10 +48,10 @@ Total                                   403          161
 ```
 Solved by                              ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-Refined directly                   96 (68%)    235 (80%)
-Refined, some actions off          45 (32%)     56 (19%)
-Solved above the abstract plan       1 (1%)       1 (0%)
-Total                                   142          292
+Refined directly                   96 (67%)    235 (80%)
+Refined, some actions off          45 (31%)     56 (19%)
+Solved above the abstract plan       3 (2%)       1 (0%)
+Total                                   144          292
 ```
 
 ## Deletes relaxed by the refined plans
@@ -81,7 +81,7 @@ depot                                9         2         4         5         8
 driverlog                           13         7         8        13        13
 elevators-sat08-strips              15         0         1         5        15
 elevators-sat11-strips              14         0         0         0        14
-gripper                             20         4         3         3        20
+gripper                             20         4         5         3        20
 hiking-sat14-strips                 20         2         8        15        20
 logistics00                         19        10         9        19        19
 logistics98                         31         4         6        23        31
@@ -104,5 +104,5 @@ transport-sat11-strips               2         0         0         0         2
 woodworking-sat08-strips             8         0         0         6         8
 woodworking-sat11-strips            11         0         0         9        11
 zenotravel                          13         4         4        12        13
-Total                              557       131       142       292       507
+Total                              557       131       144       292       507
 ```
