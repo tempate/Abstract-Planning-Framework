@@ -1,115 +1,49 @@
 ---
 name: cluster-benchmarks
-description: Submit benchmark runs to the SLURM cluster and pull the results back. Use when asked to run benchmarks on the cluster, submit a suite, pull or collect a run's results, fill in problems a run missed, or summarize how a run went.
+description: Submit benchmark runs to the SLURM cluster, watch them, and pull the results back into a PR. Use when asked to run benchmarks on the cluster, submit a suite or a subset of it, check how the cluster is going, pull or collect a run's results, fill in problems a run missed, or report on a run.
 ---
 
 # Cluster benchmark runs
 
-Benchmarks run on `copperhead` over plain non-interactive ssh, and every command
-there needs the conda env first:
+Benchmarks run on `copperhead`, reached over plain non-interactive ssh through the
+`vivaldi` jump host. Every command there needs the conda env first:
 
 ```bash
 source ~/miniconda3/etc/profile.d/conda.sh && conda activate apf
 ```
 
-Checkouts are worktrees of the bare repo `~/apf/.bare`, one per branch at
-`~/apf/<branch>`. In each of them `lib/downward`, `lib/pddl-symmetries`,
-`experiments/benchmarks/downward-benchmarks` and `lib/plasp/bin` are symlinks into
-`~/apf/.shared`, which holds the only built copy. A branch that vendors
-`lib/numeric-fast-downward` gets that linked too. Nothing is built per worktree,
-so a branch that moved a submodule pointer would silently run the shared
-version — we build one copy because no branch here moves one.
+A run belongs to a PR. The PR is a draft from the moment its run is submitted until
+its results are pushed, and ready from then on (see **Closing the loop**).
 
-## Pulling a finished run
+## Checkouts
 
-`experiments.fetch` does the checking itself: it refuses while `squeue` still
-holds the run's jobs, rsyncs the run into a fresh temporary directory, and
-collects it only when this checkout holds the code the manifest says submitted
-it (commits that only touch `results.csv` or `report.md` since do not count).
-It prints the producing commit and the directory either way, so a pull states
-its own provenance:
-
-```bash
-python -m experiments.fetch
-```
-
-`--remote-dir` defaults to `~/apf/<branch>/runs/` for the branch this checkout
-is on, which is where `new-worktree.sh` puts it. Pass it explicitly for a run
-that lives anywhere else. The CSV defaults to the one of the track the manifest
-names.
-
-## Merging a gap-filling run
-
-A partial run collects straight into `results.csv`: a row is replaced only where
-the run holds that (domain, problem, mode), so the rest stays. A problem that
-left the suite keeps its old row until you delete it.
-
-## Submitting
-
-```bash
-python -m experiments.submit --modes abs-asp abs-lama asp lama
-```
-
-Submit every mode you want compared: `experiments.report` pairs **all** of them
-and drops any problem missing one, so a mode left out of a run shrinks every
-table. `lama` is plain Fast Downward, the external baseline. Runs go to
-`sunnycove` by default, one CPU generation, so timings are comparable across a
-run. Only pass `--partition any` to fill a queue you do not intend to publish
-timings from: it spans two CPU generations and caps each job at one hour.
-
-`--track unsat` runs `abs-ms` and `ms`, and submit refuses any
-mode a track does not run.
-
-`--track unsat` swaps the suite for unsolve-ipc-2016 and the planner for
-`scripts.unsolvability`, which reports a verdict instead of a plan. The CSV
-carries it in the `verdict` column. Only the probNN problems run, the ones known
-unsolvable; satprob and unknownprob are skipped.
-
-`main()` calls `_set_aside_results_dir()`, which renames the previous `runs/` to
-`runs-<timestamp>/` and prints where it went. The new run still starts on an
-empty directory, because collect reads every result underneath. Nothing is
-deleted, so those siblings accumulate until pruned by hand.
-
-An abstract mode runs only the class it did best with in the track's `results.csv`,
-and every class `classes.txt` lists for a problem it has no result for.
-`--classes all` runs every class. The default is cheap, but biased toward the run it
-read the classes from, so compare against that run only with `--classes all`.
-
-To submit a subset, name it:
-
-```bash
-python -m experiments.submit --domains driverlog gripper --problems p07 p08
-```
-
-`--problems` matches within every domain submitted, by file name or stem. A
-domain not in the track's suite is refused rather than quietly submitting
-nothing. The manifest records exactly what was submitted, so the run stays
-reproducible from a SHA plus its flags.
-
-`--dry-run` prints the job count, the CopperBench config and the first
-instances, and returns before touching `runs/` or the queue. Check a submit-side
-change with it rather than against a real run.
-
-## Running two branches at once
-
-One run per worktree, never two from one checkout. Submitting renames `runs/`
-aside rather than deleting it, so the first run's results survive — but that
-path is `PROJECT_ROOT`-relative, and the jobs still writing into it follow the
-directory to its new name while the manifest they are collected against is the
-new run's.
+Every run has its own checkout, a worktree of the bare repo `~/apf/.bare` at
+`~/apf/<branch>`. Its `lib/downward`, `lib/pddl-symmetries`, `lib/plasp/bin`,
+`experiments/benchmarks/downward-benchmarks` and, where vendored,
+`lib/numeric-fast-downward` are symlinks into `~/apf/.shared`, the only built copy.
+Nothing is built per checkout, so a branch that moved a submodule pointer would
+silently run the shared version. No branch here moves one.
 
 ```bash
 ssh -o BatchMode=yes copperhead '~/apf/new-worktree.sh <branch>'
 ```
 
-That fetches, adds `~/apf/<branch>`, replaces each empty submodule directory
-with a link into `~/apf/.shared`, and asserts every artifact is reachable before
-it prints `ready:`. Two seconds, no build.
+The script fetches, adds the worktree, links the shared tools, and checks every
+artifact before it prints `ready:`. It takes two seconds.
 
-Plain `git worktree add` leaves `experiments/benchmarks/downward-benchmarks`,
-`lib/downward` and `lib/pddl-symmetries` empty. Submitting now refuses and names
-what is missing, rather than queueing jobs that all die the same way. None of
-these are checked in:
+One run per checkout. Submitting renames `runs/` aside, and jobs still writing into
+it follow it to its new name while the new manifest no longer matches them. A
+branch that runs on several tracks therefore needs one checkout per track. Give
+each extra one a branch name of its own at the same commit:
+
+```bash
+ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare fetch -q origin \
+  && git -C ~/apf/.bare branch <branch>-<track> origin/<branch> \
+  && ~/apf/new-worktree.sh <branch>-<track>'
+```
+
+Plain `git worktree add` leaves the linked directories empty. Submitting refuses
+and names what is missing, rather than queueing jobs that all die the same way:
 
 | missing | how it fails |
 |---|---|
@@ -118,38 +52,193 @@ these are checked in:
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
 | `lib/numeric-fast-downward/builds/release64` | `numeric-fast-downward binary not found`, on every resources-track job |
 
-Left unchecked, the tell for all of these is a queue that drains far faster than 30
-minutes a job. Smoke-test anyway when the branch touches the pipeline itself,
-which the preflight cannot judge:
+Smoke-test a branch that changes the pipeline, which the checks above cannot
+judge. Run each mode it touches on a problem it solves fast and expect a valid plan:
 
 ```bash
-./examples/abs-asp.sh   # driverlog p07: collapses three packages, plan length 15
+python -m scripts.planner abs-asp \
+  --domain experiments/benchmarks/downward-benchmarks/gripper/domain.pddl \
+  --problem experiments/benchmarks/downward-benchmarks/gripper/prob01.pddl
 ```
 
-Pick a problem the branch solves quickly. A refinement branch can time out on a
-hard one for its own reasons, which says nothing about the worktree.
-
-`experiments.fetch` guards on the run's own jobs — CopperBench names every array
-task after the run — so a finished run can be pulled while another is still
-queued. `--remote-dir` follows the branch each checkout is on.
-
-Removing a worktree afterwards needs `--force`, since the symlinks read as
-local modifications:
+Removing a checkout needs `--force`, since the symlinks read as local changes:
 
 ```bash
 ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare worktree remove --force ~/apf/<branch>'
 ```
 
+Setting up checkouts, smoke-testing and submitting can take minutes. Chain them in
+one background command.
+
+## Submitting
+
+```bash
+python -m experiments.submit --track sat --abstraction-source symmetries --modes abs-asp abs-lama asp lama
+```
+
+| track | modes | baseline |
+|---|---|---|
+| `sat` | `asp`, `abs-asp`, `lama`, `abs-lama` | `lama`, Fast Downward's lama-first |
+| `opt` | `asp`, `abs-asp`, `lmcut`, `abs-lmcut` | `lmcut`, A* with LM-cut |
+| `unsat` | `ms`, `abs-ms` | `ms`, A* with merge-and-shrink |
+
+`--abstraction-source resources` collapses resources instead of symmetric objects.
+`--track unsat` runs `scripts.unsolvability` over the probNN problems of
+unsolve-ipc-2016 and records a `verdict` instead of a plan. Submit refuses a mode
+its track does not run.
+
+`experiments.report` compares only problems every mode in the CSV finished, so a
+mode left out of a run shrinks every table. Leave a mode out only when its results
+from an earlier run still hold, such as the baselines under a refinement change.
+
+Runs go to `sunnycove`, one CPU generation, so timings compare across runs. Pass
+`--partition any` only to fill a queue whose timings you will not publish. It spans
+two CPU generations and caps each job at one hour.
+
+An abstract mode runs, by default, the class it did best with in the track's
+`results.csv`, plus every class `classes.txt` lists for a problem without a result.
+`--classes all` runs every class.
+
+To submit a subset, name it:
+
+```bash
+python -m experiments.submit --domains driverlog gripper --problems p07 p08
+```
+
+`--problems` matches by file name in every domain submitted, so the run is the cross
+product of the two lists. A subset that picks different problems per domain runs
+more than asked whenever names repeat across domains, as `p01` does. Keep the
+intended (domain, problem) pairs and report on those alone. `--dry-run` prints the
+job count without touching `runs/` or the queue, so compare it with the pairs first.
+
+When the run is for an open PR, make the PR a draft in the same step:
+
+```bash
+gh pr ready <n> --undo
+```
+
+Then start a background watch (see **Watching a run**).
+
+## The queue
+
+Pending jobs start by priority. Fairshare and job size are equal across your own
+jobs, so among them the one that has waited longest starts first. Two things bend
+that order. Backfill starts a later job early when it fits a gap. A requeued task
+restarts its age and falls behind. To put one run ahead of your others, lower the
+others, which only touches your own jobs:
+
+```bash
+scontrol update job=<array job id> nice=300
+```
+
+`sacct` shows some tasks as FAILED with exit code `4:0`. Those are CopperBench
+refusing to start a finished task twice, and their stdout says
+`Solver already finished before`. Their results are intact.
+
+## Watching a run
+
+Every run in the queue gets a background watch without being asked, including runs
+submitted in an earlier session. One watch per PR, polling every ten minutes. Open a
+fresh ssh for each poll, and treat a failed ssh as no answer, never as an empty
+queue:
+
+```bash
+while true; do
+  queue=$(ssh -o BatchMode=yes -o ConnectTimeout=20 copperhead 'squeue -u dquilez -h -o "%j"') \
+    || { sleep 60; continue; }
+  grep -qE '<run-name>|<other-run-name>' <<<"$queue" || break
+  sleep 600
+done
+```
+
+Start the loop as a background command, never in the foreground. A run takes hours,
+and a foreground loop blocks the session for all of them, while a background one
+reports back when the run drains.
+
+The run's name is the `run-<timestamp>` directory submit wrote. For progress, count
+states per run:
+
+```bash
+ssh copperhead 'sacct -u dquilez -S <date> -X -n -P --name=<run-name> -o State | sort | uniq -c'
+```
+
+`python -m experiments.status` reports the run's queued and running jobs and what
+its results say so far. It opens its own ssh, so run it locally from a checkout of
+the branch, never on copperhead.
+
+## Pulling a finished run
+
+```bash
+python -m experiments.fetch --remote-dir '~/apf/<checkout>/runs/'
+```
+
+`fetch` refuses while the run still has jobs queued, rsyncs it into a fresh
+temporary directory, and collects it into the CSV of the track the manifest names.
+It prints the producing commit and the directory, which holds the run's
+`manifest.json`. The rsync can take minutes, so pull in the background too.
+`--remote-dir` defaults to the checkout named after the current branch.
+
+`fetch` collects only into a checkout whose code matches the commit that produced
+the run. Commits that touch only `results.csv` or `report.md` do not count. When the
+branch has moved on with code changes that cannot change behavior, collect in a
+detached checkout of the producing commit and copy the CSVs to the branch tip.
+
+Collect replaces a row only where the run holds its (domain, problem, mode, class),
+so the rest stays. A best-class run therefore lands next to the other classes an
+earlier every-class run left, and `experiments.report` takes the best class across
+both runs. For the PR's numbers, keep only the abstract rows the run's manifest
+lists, and compare against the base on the same problems and classes. A problem
+that left the suite keeps its old row until you delete it.
+
+## Before reporting on a run
+
+```bash
+awk -F, '$5=="running"' experiments/<track>/<source>/results.csv | wc -l
+```
+
+A `running` row is a job killed without a terminal status, not live work. Report the
+run as partial rather than averaging over them. `interrupted` is runsolver's memory
+limit and `out of memory` is Fast Downward's own. Both are results. Check `status`
+for `error` and `killed (signal 9)` too, since one domain can contribute nothing
+while the totals look healthy. In a CSV collected before #101, a crash reads
+`no plan found` and a memory kill `running`.
+
+## Mode names before #135
+
+Delete this section once no open branch predates #135. Branches that left `main` before #135 still call the modes `fd`, `abs-fd`,
+`fd-lmcut` and so on. Their CSVs need the new names after a rebase onto `main`,
+or the report ignores those rows. The mode is column 3, and the files are CRLF,
+which `awk` keeps:
+
+```bash
+awk -F, -v OFS=, 'NR>1 && $3=="fd"{$3="lama"} NR>1 && $3=="abs-fd"{$3="abs-lama"} {print}' results.csv > tmp && mv tmp results.csv
+```
+
+| track | old | new |
+|---|---|---|
+| sat | `fd`, `abs-fd` | `lama`, `abs-lama` |
+| opt | `fd-lmcut`, `abs-fd` | `lmcut`, `abs-lmcut` |
+| unsat | `fd`, `abs-fd` | `ms`, `abs-ms` |
+
+## Closing the loop
+
+When a watch reports a run done, do all of this without being asked:
+
+1. Pull every run of the PR into its branch.
+2. Regenerate each touched track's report with `python -m experiments.report <results.csv>`.
+3. Commit the CSVs and reports as `Update results`.
+4. Push, and mark the PR ready with `gh pr ready <n>` in the same step.
+5. Rewrite the description around the run's numbers and figures, following **Experiment PRs** in the `pull-requests` skill, and drop numbers from earlier runs.
+
 ## Rebuilding numeric-fast-downward
 
 `~/apf/.shared/numeric-fast-downward` is the vendored source at `fac7ce0` with
-`lib/numeric-fast-downward.patch` applied. The patch is what makes it buildable
-here at all: the cluster has no CPLEX, and unpatched the LP layer demands it.
+`lib/numeric-fast-downward.patch` applied. The patch makes it build without CPLEX,
+which the cluster lacks.
 
-COIN lives in its own prefix, `~/apf/.shared/coin`, and **not** in the `apf` env —
-installing into `apf` would disturb whatever jobs are running. `FindOSI.cmake`
-reads `DOWNWARD_COIN_ROOT`, and `build.py` has a bare `python` shebang that does
-not resolve here:
+COIN lives in its own prefix, `~/apf/.shared/coin`, not in the `apf` env, where
+installing would disturb running jobs. `FindOSI.cmake` reads `DOWNWARD_COIN_ROOT`,
+and `build.py` has a bare `python` shebang that does not resolve here:
 
 ```bash
 conda create -y -p ~/apf/.shared/coin -c conda-forge coin-or-osi coin-or-clp coin-or-utils
@@ -157,46 +246,6 @@ export DOWNWARD_COIN_ROOT=~/apf/.shared/coin
 cd ~/apf/.shared/numeric-fast-downward && python3 ./build.py release64 -j4
 ```
 
-`ldd` on the built binary must resolve the COIN libraries through RPATH, or the
-jobs need `LD_LIBRARY_PATH` too. Detection exits through the no-solution path and
-aborts even on success, so `Found <n>/<m> resource variables` on stdout is the
-only thing that says it worked.
-
-## Watching a run
-
-```bash
-python -m experiments.status
-```
-
-Reports the run's own queued jobs, how many results are written against how many
-the manifest expects, and what each result says so far. It reads the cluster in
-place and pulls nothing, so it is the right thing to put on a background watch:
-the queue count alone means opposite things depending on whether the worktree is
-built.
-
-Results still saying `running` with no job left running are flagged. Those jobs
-were killed before they could write an outcome. runsolver's memory limit is not
-one of them: the worker catches its SIGINT and writes `interrupted`.
-
-## Before reporting on a run
-
-```bash
-awk -F, '$4=="running"' experiments/sat/symmetries/results.csv | wc -l
-```
-
-`running` rows are jobs killed without a terminal status, not live work. Report a
-run as partial rather than averaging over them. `interrupted` is runsolver's
-memory limit and `out of memory` is Fast Downward's own; both cluster at one
-`last_completed_phase`. Check `status` for `error` and `killed (signal 9)` too —
-a domain can contribute nothing while the totals still look healthy. In a CSV
-collected before #101, a crash reads `no plan found` and a memory kill `running`.
-
-## Closing the loop
-
-When results land, do all five without being asked:
-
-1. collect into `experiments/sat/symmetries/results.csv`
-2. `python -m experiments.report` to regenerate `experiments/sat/symmetries/report.md`
-3. commit both with the message `Update results`
-4. push
-5. rewrite the description of the branch's PR around the run's numbers, following **Writing the PR** in the `pull-requests` skill, and drop any numbers or run IDs from earlier runs
+`ldd` on the binary must resolve the COIN libraries through RPATH, or the jobs need
+`LD_LIBRARY_PATH` too. Detection exits through the no-solution path even on success,
+so `Found <n>/<m> resource variables` on stdout is the only sign it worked.

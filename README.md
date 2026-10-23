@@ -65,6 +65,7 @@ first mode alone. The unsat track runs `abs-ms` and `ms`.
 python -m experiments.submit
 python -m experiments.collect
 python -m experiments.report experiments/sat/symmetries/results.csv
+python -m experiments.figure sat --base origin/main --out before-after.png
 ```
 
 - `experiments/sat/suite.py` holds the domains, but a problem is submitted

@@ -1,66 +1,145 @@
 ---
 name: pull-requests
-description: Merge a pull request in this repo, stack PRs with gh stack, and clean up afterwards. Use when asked to merge a PR, stack a branch on another, wait for CI before merging, rebase a branch whose base has merged, or tidy up branches after a merge.
+description: Open, describe, stack, merge and clean up pull requests in this repo. Use when asked to open or update a PR, write or rewrite its description or results, add its before/after figures, stack a branch on another, wait for CI and merge, rebase a branch whose base has merged, or tidy up branches after a merge.
 ---
 
 # Pull requests
 
-The repo **squash-merges**. A branch's commits never reach `main`: `main` gets
-one new commit with a different SHA and a `(#N)` suffix. Everything below
-follows from that.
+The repo **squash-merges**. A branch's commits never reach `main`. `main` gets one
+new commit with a different SHA and a `(#N)` suffix, and everything below follows
+from that.
+
+## Opening a PR
+
+The title names the change in a few plain words, as an imperative, such as "Relax
+groundings instead of schemas". It describes what the code now does, not how.
+
+An experiment PR, one whose results come from the cluster, opens as a draft and
+stays one until its results are pushed:
+
+```bash
+gh pr create --draft --base <base> --title "<title>" --body-file <draft>
+```
+
+A PR without a cluster run, such as a refactor or a rename, opens ready. Watch CI in
+the background, never in the foreground:
+
+```bash
+gh pr checks <n> --watch --interval 30
+```
+
+## Writing the description
+
+Say what changed and what it did, then stop. A reviewer reads the diff and the
+commit log, so leave out commit walkthroughs, implementation notes and anything
+the code already says. Prefer a table of numbers over sentences about them, and
+never add a paragraph interpreting the numbers.
+
+- No H1, since the title is the heading.
+- Write the prose without passive voice, colons or semicolons.
+- Name the modes ASP, ASPᵅ, LAMA, LAMAᵅ, LMcut, LMcutᵅ, M&S and M&Sᵅ, as the paper does.
+- Keep the `🤖 Generated with [Claude Code](https://claude.com/claude-code)` footer.
+- Draft the body in the scratchpad and apply it with `gh pr edit <n> --body-file <draft>`. Never commit it to the repo.
+- Daniel edits descriptions too, so fetch the live body with `gh pr view <n> --json body -q .body` before every edit and change only your part.
+
+## Experiment PRs
+
+Until the run is collected, the description is one short paragraph on what the PR
+changes, then `## Results` with the word `Pending` and what was submitted.
+
+Once the results are pushed and the PR is ready, the `## Results` section holds, in
+this order:
+
+1. The before/after figures, one per track kind, base on the left and branch on the right.
+2. A table of plans found, base → PR, with one row per mode and one column per track.
+3. Three to six short bullets. Gains and losses with the domains behind them, runtime and plan length on the problems both versions solve, and anything a reader would otherwise misread.
+
+"Before" is the PR's base, which is `main` or, for a stacked PR, the PR below it. Compare the
+same problems and classes on both sides. For a best-class run, keep only the
+abstract rows the run's manifest lists, as the `cluster-benchmarks` skill explains,
+and say when the base used a different class. For a run over a subset of problems,
+report on the problems the subset was meant to cover, not on whatever extra the
+submission swept in.
+
+`experiments.figure` draws the paper's sat, opt or unsat figure, problems solved or
+proved over time and runtime per problem with every mode, for the base and the
+branch side by side:
+
+```bash
+python -m experiments.figure opt --base origin/main --branch HEAD \
+  --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json \
+  --out 130-opt-before-after.png
+```
+
+`--manifests` limits the branch's abstract modes to the classes its runs submitted.
+For a stacked PR, pass `--base <the base branch> --base-label '#<n>'` and the base's
+own manifests as `--base-manifests`. The script needs the paper checked out next to
+the repository, or `--paper`, plus `pdflatex`, `pdfcrop` and `pdftoppm`. After
+changing it, check that the base half reproduces the coordinates in the paper's
+`main.tex` from the `main` commit the paper's figure came from.
+
+Daniel uploads the images by dragging them into the description, so leave an HTML
+comment where each one goes:
+
+```markdown
+<!-- 130-sat-before-after.png: before (main) left, after right -->
+```
 
 ## Merging
 
 ```bash
 gh pr list --state open --json number,headRefName,baseRefName   # anything stacked on it?
-gh pr checks <n> --watch                                        # or: gh run watch <id> --exit-status
-gh pr merge <n> --squash --delete-branch                        # --delete-branch only if nothing is
+gh pr checks <n> --watch --interval 30                          # in the background
+gh pr merge <n> --squash --delete-branch                        # only if nothing is stacked on it
 ```
 
-`--delete-branch` is safe only when no open PR uses this branch as its base. If
-one does, the PR is part of a stack: merge it with `gh stack merge` below
-instead — deleting a base by hand cannot be undone.
+`--delete-branch` is safe only when no open PR uses the branch as its base. If one
+does, merge with `gh stack merge` below, since deleting a base cannot be undone.
+It also deletes the local branch and switches to `main`.
 
-**`--auto` does not wait.** No required status checks are configured on this
-repo, so GitHub finds the merge conditions already met and merges at once, while
-the run is still in progress. Watch the run yourself, then merge.
+**`--auto` does not wait.** The repo has no required checks, so GitHub merges at
+once while CI is still running. Watch the run, then merge.
 
-`MERGEABLE / UNSTABLE` from `gh pr view <n> --json mergeable,mergeStateStatus`
-means the branch merges cleanly but a check ## Stacked branches
+`MERGEABLE / UNSTABLE` from `gh pr view <n> --json mergeable,mergeStateStatus` means
+the branch merges cleanly but a check is failing or still running. Find out which
+before merging.
 
-Stacks use GitHub's native stacked pull requests (public preview) through the
-`gh stack` extension, installed with `gh extension install github/gh-stack`.
-Each PR targets the branch below it, and GitHub shows the stack on every PR.
+## Stacked branches
+
+Stacks use GitHub's native stacked pull requests through the `gh stack` extension
+(`gh extension install github/gh-stack`). Each PR targets the branch below it.
 
 ```bash
-gh stack link <bottom-pr> <next-pr> ...     # turn open PRs into a stack, bottom first
-gh stack checkout <pr>                      # track that stack locally
-gh stack add <branch>                       # start a new branch on top of the current one
+gh stack link <bottom-pr> <next-pr> ...     # bottom first
+gh stack add <branch>                       # a new branch on top of the current one
 gh stack submit                             # push every branch, open or update its PR
 gh stack view                               # the stack, with each PR's state
+gh stack rebase && gh stack push            # carry a rewritten branch up the stack
 ```
 
-Merge from the bottom up, and watch CI on every PR you merge first:
+`gh stack link` refuses to drop a PR from an existing stack, merged ones included,
+so list every PR the stack already holds. When a merged PR's branch is gone, it
+also tries to retarget the next PR onto it and prints a harmless
+`HTTP 422 ... PullRequest.base is invalid`. Check the bases afterwards with
+`gh pr view <n> --json baseRefName`.
+
+Merge from the bottom up, after CI passes on the PR being merged:
 
 ```bash
 gh stack merge <pr> --squash                # merges every PR up to and including <pr>
 gh stack sync                               # fetch, rebase what is left, prune merged branches
 ```
 
-The PRs above the merged one stay open, retarget to the stack's base and get
-rebased by GitHub. The first stacked merge here is still to come, so check
-`gh stack view` and the remaining PRs' bases after it.
+After a stacked merge GitHub retargets the next PR to the stack's base. Sometimes
+it also rebases that PR onto the squash commit and sometimes it leaves it
+conflicting. Fetch before rebasing anything. If `origin/<branch>` already holds the
+same tree as a local rebase would, take it with `git reset --hard origin/<branch>`
+rather than force-pushing over it. Otherwise rebase the branch's own commits onto
+`main` with `git rebase --onto origin/main <old base> <branch>`, and push with
+`--force-with-lease=<branch>:<sha you read>`.
 
-Rewriting a branch in the middle of a stack leaves the ones above on its old
-commits. `gh stack rebase` carries the change up the stack; then `gh stack push`.
-
-A child PR whose base branch was deleted is CLOSED and unrecoverable: `gh pr
-reopen` fails with `Could not open the pull request`, and `gh pr edit --base`
-with `Cannot change the base branch of a closed pull request`. Never delete a
-stacked branch by hand.
-
-en by itself,
-because it does not here.
+A child PR whose base branch was deleted is CLOSED for good. `gh pr reopen` and
+`gh pr edit --base` both fail. Never delete a stacked branch by hand.
 
 ## After a merge
 
@@ -69,18 +148,11 @@ Do this without being asked:
 ```bash
 git checkout main && git pull
 git rev-list --left-right --count origin/<branch>...<branch>   # ahead 0, or -D drops commits
-git branch -D <branch>                                         # -d refuses: squash-merge hides the merge
-git branch -vv                                                 # stale ones accumulate, check the rest
+git branch -D <branch>                                         # if gh did not delete it, -d refuses
+git branch -vv                                                 # stale branches pile up
 ```
 
 Leave branches whose PR is still open. `gh pr list --head <branch> --state all`
-is the authority on whether a branch has merged; `git branch --merged main` is
-not. A branch a worktree has checked out cannot be deleted — `git worktree list`
-says which, and the stale scratch worktrees under `/tmp` hold several.
-
-## Writing the PR
-
-Say what changed and what it did, and stop. If the PR ran an experiment, the
-numbers are the description — a table, not paragraphs. No commit-by-commit
-walkthrough; the commit log is already there. Keep the body current: numbers
-that changed after the last push are worse than no numbers.
+says whether a branch merged, and `git branch --merged main` cannot. A branch a
+worktree has checked out cannot be deleted. `git worktree list` shows which, and
+`git worktree prune` clears the entries whose directories are gone.
