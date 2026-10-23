@@ -10,8 +10,8 @@ def mapped_horizon(abstract_horizon):
     return _concrete_time_step(abstract_horizon) + 1
 
 
-def add_gaps(asp, horizon, minimize=False):
-    """Let the odd time steps up to the horizon stay empty, preferring empty ones if minimizing."""
+def add_gaps(asp, horizon):
+    """Let the odd time steps up to the horizon stay empty."""
     # Remove the rule forcing actions into every time step,
     # since gaps may not run an action.
     asp = asp.replace("1 {occurs(Action, t) : action(Action)} 1.", "")
@@ -20,20 +20,18 @@ def add_gaps(asp, horizon, minimize=False):
         "#program step(t).",
         "1 {occurs(Action, t) : action(Action)} 1 :- not gap(t).",
         "0 {occurs(Action, t) : action(Action)} 1 :- gap(t).",
+        "#program base.",
     ]
-    if minimize:
-        gap_rules.append(":~ gap(t), occurs(Action, t). [1@1, t]")
-    gap_rules.append("#program base.")
     gap_rules += [f"gap({t})." for t in range(1, horizon + 1, 2)]
     return asp + "\n" + "\n".join(gap_rules) + "\n"
 
 
-def concretize_abstract_actions(abstract_plan, abstraction):
+def concretize_abstract_actions(abstract_plan, abstraction, gaps=True):
     """Map an abstract plan to compatible grounded concrete actions."""
     rules = [f"concrete_object({_quote(name)})." for name in abstraction.objects]
 
     for action in abstract_plan:
-        time_step = _concrete_time_step(action.time_step)
+        time_step = _concrete_time_step(action.time_step, gaps)
 
         # A switch per step, so the search can give up the abstract plan one action at a time.
         switch = _switch(time_step)
@@ -46,11 +44,11 @@ def concretize_abstract_actions(abstract_plan, abstraction):
     return "\n".join(rules)
 
 
-def switches(abstract_plan):
+def switches(abstract_plan, gaps=True):
     """The switches holding the abstract plan, latest first, so that what survives relaxation is a prefix of it."""
     switches = []
     for action in abstract_plan:
-        time_step = _concrete_time_step(action.time_step)
+        time_step = _concrete_time_step(action.time_step, gaps)
         switches.append(_switch(time_step))
 
     return sorted(switches, reverse=True)
@@ -60,9 +58,9 @@ def _switch(time_step):
     return clingo.Function("switch", [clingo.Number(time_step)])
 
 
-def _concrete_time_step(abstract_time_step):
-    """Place an abstract action after the gap that precedes it."""
-    return 2 * abstract_time_step
+def _concrete_time_step(abstract_time_step, gaps=True):
+    """Place an abstract action after the gap that precedes it, if there are gaps."""
+    return 2 * abstract_time_step if gaps else abstract_time_step
 
 
 def _action_pattern(action, abstraction):

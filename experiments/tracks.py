@@ -79,7 +79,7 @@ TRACKS = {
         modes=("abs-asp", "abs-lama", "asp", "lama"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
-    # The optimal suite, refined to the plan that fills the fewest gaps, with
+    # The optimal suite, refined without gaps so that every plan is optimal, with
     # abs-lmcut searching the abstract task optimally like its lmcut baseline.
     "opt/symmetries": Track(
         directory=Path(opt.__file__).parent / "symmetries",
@@ -87,7 +87,7 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        abstract_arguments=("--minimize-gaps",),
+        abstract_arguments=("--no-gaps",),
     ),
     "opt/resources": Track(
         directory=Path(opt.__file__).parent / "resources",
@@ -95,7 +95,7 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        abstract_arguments=("--minimize-gaps", "--abstraction-source", "resources"),
+        abstract_arguments=("--no-gaps", "--abstraction-source", "resources"),
     ),
     "unsat/symmetries": Track(
         directory=Path(unsat.__file__).parent / "symmetries",
