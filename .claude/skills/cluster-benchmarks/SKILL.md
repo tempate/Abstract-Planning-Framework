@@ -153,6 +153,10 @@ while true; do
 done
 ```
 
+Start the loop as a background command, never in the foreground. A run takes hours,
+and a foreground loop blocks the session for all of them, while a background one
+reports back when the run drains.
+
 The run's name is the `run-<timestamp>` directory submit wrote. For progress, count
 states per run:
 
@@ -173,7 +177,7 @@ python -m experiments.fetch --remote-dir '~/apf/<checkout>/runs/'
 `fetch` refuses while the run still has jobs queued, rsyncs it into a fresh
 temporary directory, and collects it into the CSV of the track the manifest names.
 It prints the producing commit and the directory, which holds the run's
-`manifest.json`. `--remote-dir` defaults to the checkout named after the current
+`manifest.json`. The rsync can take minutes, so pull in the background too. `--remote-dir` defaults to the checkout named after the current
 branch.
 
 `fetch` collects only into a checkout whose code matches the commit that produced
