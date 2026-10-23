@@ -42,7 +42,7 @@ def abstraction_arguments():
         help="Collapse the candidate class at this rank, counting from the largest (0)",
     )
     parser.add_argument(
-        "--no-gaps",
+        "--optimize",
         dest="gaps",
         action="store_false",
         help="Refine without gaps, so the abstract plan's actions keep their time steps",

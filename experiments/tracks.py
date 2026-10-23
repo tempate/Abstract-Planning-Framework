@@ -87,7 +87,7 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        abstract_arguments=("--no-gaps",),
+        abstract_arguments=("--optimize",),
     ),
     "opt/resources": Track(
         directory=Path(opt.__file__).parent / "resources",
@@ -95,7 +95,7 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        abstract_arguments=("--no-gaps", "--abstraction-source", "resources"),
+        abstract_arguments=("--optimize", "--abstraction-source", "resources"),
     ),
     "unsat/symmetries": Track(
         directory=Path(unsat.__file__).parent / "symmetries",
