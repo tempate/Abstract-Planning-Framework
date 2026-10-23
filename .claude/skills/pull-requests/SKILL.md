@@ -61,8 +61,9 @@ and say when the base used a different class. For a run over a subset of problem
 report on the problems the subset was meant to cover, not on whatever extra the
 submission swept in.
 
-`experiments.figure` draws the paper's sat or opt figure, problems solved over time
-and runtime per problem with every mode, for the base and the branch side by side:
+`experiments.figure` draws the paper's sat, opt or unsat figure, problems solved or
+proved over time and runtime per problem with every mode, for the base and the
+branch side by side:
 
 ```bash
 python -m experiments.figure opt --base origin/main --branch HEAD \

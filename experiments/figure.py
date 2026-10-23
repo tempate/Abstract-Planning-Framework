@@ -1,4 +1,4 @@
-"""Draw the paper's sat or opt figure for a PR, its base on the left and the branch on the right, as a PNG."""
+"""Draw the paper's figure for one track kind, a PR's base on the left and its branch on the right, as a PNG."""
 
 import argparse
 import csv
@@ -13,11 +13,18 @@ from experiments.report import _finished_problems
 from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 
 SOURCES = {"symmetries": "Symmetric objects", "resources": "Resource levels"}
+# The unsolvability track collapses symmetric objects only.
+KIND_SOURCES = {"sat": tuple(SOURCES), "opt": tuple(SOURCES), "unsat": ("symmetries",)}
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
+TIME_LIMIT = 1800
 BASELINES = {"sat": ("lama", r"\LAMA", r"\LAMAa"), "opt": ("lmcut", r"\LMcut", r"\LMcuta")}
 # Branches from before #135 still call Fast Downward's modes by their old names.
-OLD_NAMES = {"sat": {"fd": "lama", "abs-fd": "abs-lama"}, "opt": {"fd-lmcut": "lmcut", "abs-fd": "abs-lmcut"}}
+OLD_NAMES = {
+    "sat": {"fd": "lama", "abs-fd": "abs-lama"},
+    "opt": {"fd-lmcut": "lmcut", "abs-fd": "abs-lmcut"},
+    "unsat": {"fd": "ms", "abs-fd": "abs-ms"},
+}
 DEFAULT_PAPER = PROJECT_ROOT.parent / "paper" / "planpilot_abstractions" / "icaps27" / "main.tex"
 
 
@@ -25,9 +32,10 @@ def main():
     args = _argument_parser().parse_args()
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
+    panel = _unsat_panel if args.kind == "unsat" else _panel
     panels = [
-        _panel(f"Before ({args.base_label})", args.kind, _tracks(args.base, args.kind, base_manifests)),
-        _panel("After", args.kind, _tracks(args.branch, args.kind, manifests)),
+        panel(f"Before ({args.base_label})", args.kind, _tracks(args.base, args.kind, base_manifests)),
+        panel("After", args.kind, _tracks(args.branch, args.kind, manifests)),
     ]
     _render(args.paper, panels, Path(args.out))
     print(f"Wrote {args.out}")
@@ -68,7 +76,7 @@ def extra_actions_class(problem, abstraction, baseline):
 def _tracks(revision, kind, manifests):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
     tracks = {}
-    for source in SOURCES:
+    for source in KIND_SOURCES[kind]:
         text = subprocess.check_output(
             ["git", "-C", PROJECT_ROOT, "show", f"{revision}:experiments/{kind}/{source}/results.csv"], text=True
         )
@@ -137,9 +145,33 @@ def _panel(title, kind, tracks):
     )
 
 
+def _unsat_panel(title, _kind, tracks):
+    problems = tracks["symmetries"]
+    cactus = (
+        "\\begin{tikzpicture}\n\\begin{semilogxaxis}[cactusplot, ylabel={Problems proved}, legend columns=1, "
+        "legend style={at={(0.03,0.97)}, anchor=north west}]\n"
+        + rf"\addplot[abst, solid, thick, const plot, mark=none] coordinates {{{_cactus(problems, 'abs-ms')}}};"
+        + "\n\\addlegendentry{\\MSa}\n"
+        + rf"\addplot[conc, solid, thick, const plot, mark=none] coordinates {{{_cactus(problems, 'ms')}}};"
+        + "\n\\addlegendentry{\\MS}\n\\end{semilogxaxis}\n\\end{tikzpicture}"
+    )
+    scatter = rf"\borderplot{{\MS}}{{\MSa}}{{{_scatter(problems, 'ms', 'abs-ms', 'unsat', None)}}}"
+    return (
+        "\\begin{minipage}[t]{\\columnwidth}\n\\centering\n"
+        + f"{{\\large\\bfseries\\strut {title}}}\\par\\vspace{{1em}}\n"
+        + cactus
+        + "\\hfill"
+        + scatter
+        + "\n\n\\makebox[0.48\\columnwidth]{\\small (a) Problems proved}\\hfill"
+        + "\\makebox[0.48\\columnwidth]{\\small (b) Runtime per problem}\n\\end{minipage}"
+    )
+
+
 def _cactus(problems, mode):
     times = sorted(float(p[mode]["wall_time_seconds"]) for p in problems if _solved(p[mode]))
-    return " ".join(["(1,0)"] + [f"({time:.2f},{count})" for count, time in enumerate(times, 1)])
+    # The curve runs on to the time limit, so a mode that stops solving early shows as flat.
+    points = [f"({time:.2f},{count})" for count, time in enumerate(times, 1)]
+    return " ".join(["(1,0)", *points, f"({TIME_LIMIT},{len(times)})"])
 
 
 def _scatter(problems, solver, abstraction, kind, baseline):
@@ -156,7 +188,8 @@ def _scatter(problems, solver, abstraction, kind, baseline):
 
 
 def _solved(row):
-    return row["status"] == "success"
+    # An abstraction that finds a plan leaves an unsolvability verdict unknown, which proves nothing.
+    return row["status"] == "success" and row.get("verdict") != "unknown"
 
 
 def _time(row):
@@ -192,7 +225,7 @@ def _render(paper, panels, out):
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=sorted(BASELINES), help="Which of the paper's figures to draw")
+    parser.add_argument("kind", choices=sorted(KIND_SOURCES), help="Which of the paper's figures to draw")
     parser.add_argument("--base", default="origin/main", help="Revision whose results.csv files go on the left")
     parser.add_argument("--base-label", default="main", help="Name of the base in the left panel's title")
     parser.add_argument("--branch", default="HEAD", help="Revision whose results.csv files go on the right")
