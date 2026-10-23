@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-19 09:19 — experiments/unsat/symmetries/results.csv
+2026-10-23 14:03 — experiments/unsat/symmetries/results.csv
 
 111 problems compared over abs-fd, fd
 
@@ -10,9 +10,9 @@
 Verdict                                M&Sᵅ          M&S
 --------------------------------------------------------
 Unsolvable                       23 (20.7%)   47 (42.3%)
-Unknown                          18 (16.2%)     0 (0.0%)
-Timeouts                         37 (33.3%)   13 (11.7%)
-Out of memory                    33 (29.7%)   51 (45.9%)
+Unknown                          19 (17.1%)     0 (0.0%)
+Timeouts                         35 (31.5%)   13 (11.7%)
+Out of memory                    34 (30.6%)   51 (45.9%)
 Others                             0 (0.0%)     0 (0.0%)
 Total problems                          111          111
 ```
@@ -25,8 +25,8 @@ Metric                                 M&Sᵅ          M&S
 Proved unsolvable by both                21           21
 Faster                           13 (61.9%)    8 (38.1%)
 Proved when the other did not             2           26
-Median runtime                       6.91 s       5.47 s
-Total runtime                      608.88 s   2,585.27 s
+Median runtime                      11.47 s       5.47 s
+Total runtime                    1,515.52 s   2,585.27 s
 ```
 
 ## Where the timeouts died
@@ -34,8 +34,8 @@ Total runtime                      608.88 s   2,585.27 s
 ```
 Killed during                          M&Sᵅ
 -------------------------------------------
-Abstract search                   37 (100%)
-Total                                    37
+Abstract search                   35 (100%)
+Total                                    35
 ```
 
 ## Proved unsolvable by domain
