@@ -33,8 +33,10 @@ def main():
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
     panel = _unsat_panel if args.kind == "unsat" else _panel
+    # A label like #134 would otherwise read as a macro parameter in LaTeX.
+    base_label = args.base_label.replace("#", r"\#")
     panels = [
-        panel(f"Before ({args.base_label})", args.kind, _tracks(args.base, args.kind, base_manifests)),
+        panel(f"Before ({base_label})", args.kind, _tracks(args.base, args.kind, base_manifests)),
         panel("After", args.kind, _tracks(args.branch, args.kind, manifests)),
     ]
     _render(args.paper, panels, Path(args.out))
