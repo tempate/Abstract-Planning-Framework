@@ -11,6 +11,9 @@ from that.
 
 ## Opening a PR
 
+The title names the change in a few plain words, as an imperative, such as "Relax
+groundings instead of schemas". It describes what the code now does, not how.
+
 An experiment PR, one whose results come from the cluster, opens as a draft and
 stays one until its results are pushed:
 
@@ -47,10 +50,9 @@ changes, then `## Results` with the word `Pending` and what was submitted.
 Once the results are pushed and the PR is ready, the `## Results` section holds, in
 this order:
 
-1. The before/after figures, one per track kind. Each mirrors the paper's figure for that track, problems solved over time and runtime per problem, with every mode the run compares. Before (main) on the left, After on the right, at equal height. On the optimal tracks the scatter points take their colour from the extra actions over the optimum, as in the paper.
+1. The before/after figures, one per track kind, base on the left and branch on the right.
 2. A table of plans found, base → PR, with one row per mode and one column per track.
 3. Three to six short bullets. Gains and losses with the domains behind them, runtime and plan length on the problems both versions solve, and anything a reader would otherwise misread.
-4. One `**Verification:**` line saying what ran, at which commit, and that nothing was killed.
 
 "Before" is the PR's base, which is `main` or, for a stacked PR, the PR below it. Compare the
 same problems and classes on both sides. For a best-class run, keep only the
@@ -59,11 +61,24 @@ and say when the base used a different class. For a run over a subset of problem
 report on the problems the subset was meant to cover, not on whatever extra the
 submission swept in.
 
-Check a figure's definitions before trusting it, by drawing the "before" half from
-the paper's own CSV and comparing it with the coordinates in `main.tex`. Render it
-as a standalone PDF from the paper's preamble, crop it, convert it to PNG, and name
-it `<n>-<track kind>-before-after.png`. Daniel uploads the image by dragging it into
-the description, so leave an HTML comment where each one goes:
+`experiments.figure` draws the paper's sat or opt figure, problems solved over time
+and runtime per problem with every mode, for the base and the branch side by side:
+
+```bash
+python -m experiments.figure opt --base origin/main --branch HEAD \
+  --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json \
+  --out 130-opt-before-after.png
+```
+
+`--manifests` limits the branch's abstract modes to the classes its runs submitted.
+For a stacked PR, pass `--base <the base branch> --base-label '#<n>'` and the base's
+own manifests as `--base-manifests`. The script needs the paper checked out next to
+the repository, or `--paper`, plus `pdflatex`, `pdfcrop` and `pdftoppm`. After
+changing it, check that the base half reproduces the coordinates in the paper's
+`main.tex` from the `main` commit the paper's figure came from.
+
+Daniel uploads the images by dragging them into the description, so leave an HTML
+comment where each one goes:
 
 ```markdown
 <!-- 130-sat-before-after.png: before (main) left, after right -->
@@ -132,7 +147,7 @@ Do this without being asked:
 ```bash
 git checkout main && git pull
 git rev-list --left-right --count origin/<branch>...<branch>   # ahead 0, or -D drops commits
-git branch -D <branch>                                         # -d refuses, the squash hides the merge
+git branch -D <branch>                                         # if gh did not delete it, -d refuses
 git branch -vv                                                 # stale branches pile up
 ```
 

@@ -38,8 +38,8 @@ each extra one a branch name of its own at the same commit:
 
 ```bash
 ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare fetch -q origin \
-  && git -C ~/apf/.bare branch <branch>-resources origin/<branch> \
-  && ~/apf/new-worktree.sh <branch>-resources'
+  && git -C ~/apf/.bare branch <branch>-<track> origin/<branch> \
+  && ~/apf/new-worktree.sh <branch>-<track>'
 ```
 
 Plain `git worktree add` leaves the linked directories empty. Submitting refuses
@@ -131,8 +131,6 @@ others, which only touches your own jobs:
 scontrol update job=<array job id> nice=300
 ```
 
-`scontrol top` is not enabled here.
-
 `sacct` shows some tasks as FAILED with exit code `4:0`. Those are CopperBench
 refusing to start a finished task twice, and their stdout says
 `Solver already finished before`. Their results are intact.
@@ -177,8 +175,8 @@ python -m experiments.fetch --remote-dir '~/apf/<checkout>/runs/'
 `fetch` refuses while the run still has jobs queued, rsyncs it into a fresh
 temporary directory, and collects it into the CSV of the track the manifest names.
 It prints the producing commit and the directory, which holds the run's
-`manifest.json`. The rsync can take minutes, so pull in the background too. `--remote-dir` defaults to the checkout named after the current
-branch.
+`manifest.json`. The rsync can take minutes, so pull in the background too.
+`--remote-dir` defaults to the checkout named after the current branch.
 
 `fetch` collects only into a checkout whose code matches the commit that produced
 the run. Commits that touch only `results.csv` or `report.md` do not count. When the
@@ -207,7 +205,7 @@ while the totals look healthy. In a CSV collected before #101, a crash reads
 
 ## Mode names before #135
 
-Branches that left `main` before #135 still call the modes `fd`, `abs-fd`,
+Delete this section once no open branch predates #135. Branches that left `main` before #135 still call the modes `fd`, `abs-fd`,
 `fd-lmcut` and so on. Their CSVs need the new names after a rebase onto `main`,
 or the report ignores those rows. The mode is column 3, and the files are CRLF,
 which `awk` keeps:
@@ -230,7 +228,7 @@ When a watch reports a run done, do all of this without being asked:
 2. Regenerate each touched track's report with `python -m experiments.report <results.csv>`.
 3. Commit the CSVs and reports as `Update results`.
 4. Push, and mark the PR ready with `gh pr ready <n>` in the same step.
-5. Rewrite the description around the run's numbers, following **Experiment PRs** in the `pull-requests` skill, and drop numbers from earlier runs.
+5. Rewrite the description around the run's numbers and figures, following **Experiment PRs** in the `pull-requests` skill, and drop numbers from earlier runs.
 
 ## Rebuilding numeric-fast-downward
 
