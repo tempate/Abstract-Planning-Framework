@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-22 14:27 — experiments/sat/symmetries/results.csv
+2026-10-27 09:04 — experiments/sat/symmetries/results.csv
 
 557 problems compared over asp, abs-asp, abs-lama, lama
 
@@ -9,9 +9,9 @@
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
-Plans found                     104 (18.7%)  117 (21.0%)  292 (52.4%)  507 (91.0%)
-Timeouts                        440 (79.0%)  433 (77.7%)  161 (28.9%)    35 (6.3%)
-Out of memory                     13 (2.3%)     7 (1.3%)  104 (18.7%)    14 (2.5%)
+Plans found                     104 (18.7%)  117 (21.0%)  297 (53.3%)  507 (91.0%)
+Timeouts                        440 (79.0%)  433 (77.7%)  157 (28.2%)    35 (6.3%)
+Out of memory                     13 (2.3%)     7 (1.3%)  103 (18.5%)    14 (2.5%)
 Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     1 (0.2%)
 Total problems                          557          557          557          557
 ```
@@ -21,15 +21,15 @@ Total problems                          557          557          557          5
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
-Plans found by both                      99           99          287          287
-Faster                           48 (48.5%)   51 (51.5%)    20 (7.0%)  267 (93.0%)
-Found when the other did not              5           18            5          220
-Median runtime                       9.85 s       6.31 s      12.08 s       3.46 s
-Total runtime                    7,315.23 s   5,017.64 s  18,869.85 s   2,221.52 s
-Shorter plan                     76 (76.8%)     0 (0.0%)   46 (16.0%)  186 (64.8%)
-Same plan length                 23 (23.2%)   23 (23.2%)   55 (19.2%)   55 (19.2%)
-Median plan length                       11           17           51           42
-Total plan length                     1,407        1,958       21,221       17,396
+Plans found by both                      99           99          292          292
+Faster                           51 (51.5%)   48 (48.5%)    19 (6.5%)  273 (93.5%)
+Found when the other did not              5           18            5          215
+Median runtime                       9.85 s       6.31 s      12.37 s       3.51 s
+Total runtime                    7,315.23 s   4,948.61 s  20,340.84 s   2,261.64 s
+Shorter plan                     76 (76.8%)     0 (0.0%)   48 (16.4%)  190 (65.1%)
+Same plan length                 23 (23.2%)   23 (23.2%)   54 (18.5%)   54 (18.5%)
+Median plan length                       11           17         52.5           42
+Total plan length                     1,407        1,963       21,606       17,803
 ```
 
 ## Where the timeouts died
@@ -38,9 +38,9 @@ Total plan length                     1,407        1,958       21,221       17,3
 Killed during                          ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 Abstract search                   401 (93%)       5 (3%)
-Guided concrete search              15 (3%)    155 (96%)
+Guided concrete search              15 (3%)    151 (96%)
 Unguided concrete search            17 (4%)       1 (1%)
-Total                                   433          161
+Total                                   433          157
 ```
 
 ## How the successes were solved
@@ -48,10 +48,10 @@ Total                                   433          161
 ```
 Solved by                              ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-Refined directly                   83 (71%)    235 (80%)
-Refined, some actions off          32 (27%)     56 (19%)
+Refined directly                   84 (72%)    242 (81%)
+Refined, some actions off          31 (26%)     54 (18%)
 Solved above the abstract plan       2 (2%)       1 (0%)
-Total                                   117          292
+Total                                   117          297
 ```
 
 ## Deletes relaxed by the refined plans
@@ -59,12 +59,12 @@ Total                                   117          292
 ```
 Deletes relaxed                        ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-None                               12 (10%)     37 (13%)
-1 to 4                             71 (62%)    206 (71%)
-5 to 9                               6 (5%)      16 (5%)
-10 to 19                           24 (21%)     30 (10%)
+None                               12 (10%)     37 (12%)
+1 to 4                             73 (63%)    216 (73%)
+5 to 9                             23 (20%)      27 (9%)
+10 to 19                             5 (4%)      14 (5%)
 20 or more                           2 (2%)       2 (1%)
-Total                                   115          291
+Total                                   115          296
 ```
 
 ## Plans found by domain
@@ -93,7 +93,7 @@ openstacks-sat08-strips             29         2         2        23        29
 openstacks-sat11-strips             15         0         0         4        15
 openstacks-sat14-strips             12         0         0         0        12
 pipesworld-notankage                34         9        15        17        27
-pipesworld-tankage                  47         8        11        15        40
+pipesworld-tankage                  47         8        11        20        40
 quantum-layout-sat23-strips          7         4         2         2         7
 satellite                           34         5         5        20        34
 sokoban-sat08-strips                 7         1         1         6         6
@@ -104,5 +104,5 @@ transport-sat11-strips               2         0         0         0         2
 woodworking-sat08-strips             8         0         0         6         8
 woodworking-sat11-strips            11         0         0         9        11
 zenotravel                          13         4         3        12        13
-Total                              557       104       117       292       507
+Total                              557       104       117       297       507
 ```

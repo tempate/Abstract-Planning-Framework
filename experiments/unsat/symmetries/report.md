@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-22 14:27 — experiments/unsat/symmetries/results.csv
+2026-10-27 09:04 — experiments/unsat/symmetries/results.csv
 
 111 problems compared over abs-ms, ms
 
@@ -11,8 +11,8 @@ Verdict                                M&Sᵅ          M&S
 --------------------------------------------------------
 Unsolvable                       23 (20.7%)   47 (42.3%)
 Unknown                          18 (16.2%)     0 (0.0%)
-Timeouts                         37 (33.3%)   13 (11.7%)
-Out of memory                    33 (29.7%)   51 (45.9%)
+Timeouts                         33 (29.7%)   13 (11.7%)
+Out of memory                    37 (33.3%)   51 (45.9%)
 Others                             0 (0.0%)     0 (0.0%)
 Total problems                          111          111
 ```
@@ -34,8 +34,8 @@ Total runtime                      608.88 s   2,585.27 s
 ```
 Killed during                          M&Sᵅ
 -------------------------------------------
-Abstract search                   37 (100%)
-Total                                    37
+Abstract search                   33 (100%)
+Total                                    33
 ```
 
 ## Proved unsolvable by domain

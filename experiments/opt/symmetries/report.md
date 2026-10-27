@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-22 14:27 — experiments/opt/symmetries/results.csv
+2026-10-27 09:04 — experiments/opt/symmetries/results.csv
 
 518 problems compared over asp, abs-asp, abs-lmcut, lmcut
 
@@ -22,14 +22,14 @@ Total problems                          518          518          518          5
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
 ----------------------------------------------------------------------------------
 Plans found by both                     115          115          172          172
-Faster                           70 (60.9%)   45 (39.1%)   56 (32.6%)  116 (67.4%)
+Faster                           72 (62.6%)   43 (37.4%)   57 (33.1%)  115 (66.9%)
 Found when the other did not             13           12           11           21
 Median runtime                       7.11 s       7.20 s       7.50 s       3.67 s
-Total runtime                   10,436.37 s   9,063.92 s  19,283.72 s  14,480.17 s
+Total runtime                   10,436.37 s   8,982.52 s  17,397.26 s  14,480.17 s
 Shorter plan                     33 (28.7%)     0 (0.0%)     0 (0.0%)   43 (25.0%)
 Same plan length                 82 (71.3%)   82 (71.3%)  129 (75.0%)  129 (75.0%)
 Median plan length                       11           13           21           19
-Total plan length                     1,699        1,804        4,566        4,350
+Total plan length                     1,699        1,812        4,565        4,350
 ```
 
 ## Where the timeouts died
@@ -60,9 +60,9 @@ Total                                   127          183
 Deletes relaxed                        ASPᵅ       LMcutᵅ
 --------------------------------------------------------
 None                               13 (10%)     23 (13%)
-1 to 4                             88 (70%)    134 (74%)
-5 to 9                               6 (5%)       9 (5%)
-10 to 19                           17 (14%)      15 (8%)
+1 to 4                             90 (72%)    140 (77%)
+5 to 9                             17 (14%)      13 (7%)
+10 to 19                             4 (3%)       5 (3%)
 20 or more                           1 (1%)       1 (1%)
 Total                                   125          182
 ```
