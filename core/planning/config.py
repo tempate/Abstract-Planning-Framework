@@ -35,7 +35,7 @@ class AbstractPlanningConfig(PlanningConfig):
     abstract_name: str | None = None
     symmetry_time_limit: int = 300
     abstraction_source: str = SYMMETRIES
-    minimize_gaps: bool = False
+    gaps: bool = True
     class_rank: int = 0
 
     def __post_init__(self):
