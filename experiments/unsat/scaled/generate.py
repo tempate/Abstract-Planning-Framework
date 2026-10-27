@@ -11,6 +11,9 @@ import re
 import shutil
 from pathlib import Path
 
+from experiments.tracks import TRACKS, find_domain
+from experiments.unsat.scaled.suite import SIZES
+
 ATOM = re.compile(r"\([^()]*\)")
 
 
@@ -35,19 +38,24 @@ def scale(problem, obj, copies):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--domain", required=True, type=Path, help="The base problem's domain PDDL")
     parser.add_argument("--problem", required=True, type=Path, help="The base problem PDDL")
     parser.add_argument("--object", required=True, help="The object of the symmetric class to copy")
     parser.add_argument("--class-size", type=int, required=True, help="Size of the class in the base problem")
-    parser.add_argument("--sizes", type=int, nargs="+", required=True, help="Class sizes to generate")
-    parser.add_argument("--out", required=True, type=Path, help="Directory with one size-N directory per class size")
+    parser.add_argument("--sizes", type=int, nargs="+", default=SIZES, help="Class sizes to generate")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=TRACKS["scaled/symmetries"].benchmarks_dir,
+        help="Directory with one size-N directory per class size",
+    )
     args = parser.parse_args()
 
+    domain = find_domain(args.problem)
     base = args.problem.read_text()
     for size in args.sizes:
         directory = args.out / f"size-{size}"
         directory.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(args.domain, directory / "domain.pddl")
+        shutil.copyfile(domain, directory / "domain.pddl")
         path = directory / args.problem.name
         path.write_text(scale(base, args.object, size - args.class_size))
         print(path)

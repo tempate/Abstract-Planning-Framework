@@ -26,10 +26,7 @@ A plan for the grown problem without the copy's actions is a plan for the origin
 ```bash
 # Regenerate one base problem at every size (the copied package comes from experiments/unsat/symmetries/classes.txt)
 python -m experiments.unsat.scaled.generate \
-  --domain experiments/benchmarks/unsolve-ipc-2016/over-nomystery/domain.pddl \
-  --problem experiments/benchmarks/unsolve-ipc-2016/over-nomystery/prob01.pddl \
-  --object p3 --class-size 2 --sizes 2 3 5 10 20 50 100 200 500 1000 \
-  --out experiments/benchmarks/scaled-over-nomystery
+  --problem experiments/benchmarks/unsolve-ipc-2016/over-nomystery/prob01.pddl --object p3 --class-size 2
 
 # Submit both modes
 python -m experiments.submit --track scaled --abstraction-source symmetries --modes abs-ms ms
