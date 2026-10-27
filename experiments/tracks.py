@@ -7,8 +7,8 @@ from pathlib import Path
 
 from experiments.opt import suite as opt
 from experiments.sat import suite as sat
-from experiments.scaled import suite as scaled
 from experiments.unsat import suite as unsat
+from experiments.unsat.scaled import suite as scaled
 
 # The benchmark collections. A track says which of their problems it runs; it
 # does not own the PDDL, so that two tracks over one collection cannot drift
@@ -107,7 +107,7 @@ TRACKS = {
     ),
     # Unsolvable problems whose symmetric class grows, to see how each mode scales with it.
     "scaled/symmetries": Track(
-        directory=Path(scaled.__file__).parent / "symmetries",
+        directory=Path(unsat.__file__).parent / "scaled",
         suite=scaled.SUITE,
         benchmarks_dir=BENCHMARKS / "scaled-over-nomystery",
         driver="scripts.unsolvability",
