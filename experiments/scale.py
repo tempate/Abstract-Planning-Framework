@@ -40,14 +40,15 @@ def main():
     parser.add_argument("--object", required=True, help="The object of the symmetric class to copy")
     parser.add_argument("--class-size", type=int, required=True, help="Size of the class in the base problem")
     parser.add_argument("--sizes", type=int, nargs="+", required=True, help="Class sizes to generate")
-    parser.add_argument("--out", required=True, type=Path, help="Directory for the domain and the grown problems")
+    parser.add_argument("--out", required=True, type=Path, help="Directory with one size-N directory per class size")
     args = parser.parse_args()
 
-    args.out.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(args.domain, args.out / "domain.pddl")
     base = args.problem.read_text()
     for size in args.sizes:
-        path = args.out / f"class{size:04d}.pddl"
+        directory = args.out / f"size-{size}"
+        directory.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(args.domain, directory / "domain.pddl")
+        path = directory / args.problem.name
         path.write_text(scale(base, args.object, size - args.class_size))
         print(path)
 

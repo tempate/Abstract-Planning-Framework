@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-27 12:00 — experiments/scaled/symmetries/results.csv
+2026-10-27 12:53 — experiments/scaled/symmetries/results.csv
 
 80 problems compared over abs-ms, ms
 
@@ -42,13 +42,15 @@ Total                                     0
 ```
 Domain                        Problems      M&Sᵅ       M&S
 ----------------------------------------------------------
-over-nomystery-prob01               10        10         9
-over-nomystery-prob02               10        10         9
-over-nomystery-prob06               10        10         2
-over-nomystery-prob07               10        10         8
-over-nomystery-prob11               10        10         1
-over-nomystery-prob12               10        10         1
-over-nomystery-prob16               10        10         1
-over-nomystery-prob17               10        10         1
+size-10                              8         8         3
+size-100                             8         8         3
+size-1000                            8         8         0
+size-2                               8         8         8
+size-20                              8         8         3
+size-200                             8         8         3
+size-3                               8         8         4
+size-5                               8         8         3
+size-50                              8         8         3
+size-500                             8         8         2
 Total                               80        80        32
 ```
