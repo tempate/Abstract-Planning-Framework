@@ -78,8 +78,9 @@ def find_abstract_plan(config, _base_dir, abstract_sas, metrics):
 
     # An exponential horizon can leave steps empty. Closing them up keeps an abstract action on
     # every step, which is the layout refinement maps onto the concrete steps.
-    actions = tuple(
-        replace(action, time_step=step) for step, action in enumerate(parse_plan_actions(solve_result.plan), 1)
-    )
+    actions = []
+    for step, action in enumerate(parse_plan_actions(solve_result.plan), 1):
+        actions.append(replace(action, time_step=step))
+
     metrics.set_counters({"abstract_plan_length": len(actions), "abstract_solve_calls": solve_result.attempts})
-    return actions, len(actions)
+    return tuple(actions), len(actions)
