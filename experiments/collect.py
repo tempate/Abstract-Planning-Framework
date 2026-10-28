@@ -172,23 +172,31 @@ def _key(row):
 
 
 def _preserved_rows(collected, csv_file):
-    """Read the CSV rows this run did not re-run, so a run replaces only its own."""
+    """Read the CSV rows this run did not re-run, dropping the other classes of a problem it re-ran."""
     csv_file = Path(csv_file)
     if not csv_file.is_file():
         return []
 
+    with csv_file.open(encoding="utf-8", newline="") as stream:
+        rows = list(csv.DictReader(stream))
+
     rerun = {_key(row) for row in collected}
+    # A run that re-ran a class the CSV holds ran newer code on that problem, so
+    # the classes it skipped measure code that no longer exists. A run that only
+    # adds classes, as --from-rank does, leaves the earlier ones alone, and so
+    # does a job that never reported.
+    finished = {_key(row) for row in collected if row["status"] != "missing"}
+    replaced = {key[:3] for key in finished & {_key(row) for row in rows}}
 
     preserved = []
-    with csv_file.open(encoding="utf-8", newline="") as stream:
-        for row in csv.DictReader(stream):
-            if _key(row) in rerun:
-                continue
-            kept = {}
-            for field in FIELDS:
-                kept[field] = row.get(field, "")
-            kept["class"] = _key(row)[3]
-            preserved.append(kept)
+    for row in rows:
+        if _key(row) in rerun or _key(row)[:3] in replaced:
+            continue
+        kept = {}
+        for field in FIELDS:
+            kept[field] = row.get(field, "")
+        kept["class"] = _key(row)[3]
+        preserved.append(kept)
     return preserved
 
 
