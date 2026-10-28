@@ -183,18 +183,14 @@ the run. Commits that touch only `results.csv` or `report.md` do not count. When
 branch has moved on with code changes that cannot change behavior, collect in a
 detached checkout of the producing commit and copy the CSVs to the branch tip.
 
-Collect replaces a row only where the run holds its (domain, problem, mode, class),
-so the rest stays. A best-class run therefore lands next to the other classes an
-earlier every-class run left, and `experiments.report` takes the best class across
-both runs. For the PR's numbers, keep only the abstract rows the run's manifest
-lists, and compare against the base on the same problems and classes. A problem
-that left the suite keeps its old row until you delete it.
-
-That merge is only right when the PR leaves the classes it did not rerun alone. When
-it changes what every class does, as #139 changed refinement, the old rows measure
-code that no longer exists, and both the report and the next run's best-class choice
-read them. Then delete the abstract rows the run's manifest does not list before
-committing the results, or run every class.
+Collect replaces a row where the run holds its (domain, problem, mode, class). When
+the run re-ran a class the CSV already holds, it also drops the other classes of that
+problem and mode, since they measure older code. A run that only adds classes, as
+`--from-rank` does, and a job that never reported leave the earlier rows alone, and
+problems the run did not touch keep theirs. For the PR's numbers, keep only the
+abstract rows the run's manifest lists, and compare against the base on the same
+problems and classes. A problem that left the suite keeps its old row until you
+delete it.
 
 ## Before reporting on a run
 
