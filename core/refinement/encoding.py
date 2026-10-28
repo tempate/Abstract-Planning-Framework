@@ -10,20 +10,14 @@ def mapped_horizon(abstract_horizon):
     return _concrete_time_step(abstract_horizon) + 1
 
 
-def add_gaps(asp, horizon):
-    """Let the odd time steps up to the horizon stay empty."""
-    # Remove the rule forcing actions into every time step,
-    # since gaps may not run an action.
-    asp = asp.replace("1 {occurs(Action, t) : action(Action)} 1.", "")
-
-    gap_rules = [
-        "#program step(t).",
-        "1 {occurs(Action, t) : action(Action)} 1 :- not gap(t).",
-        "0 {occurs(Action, t) : action(Action)} 1 :- gap(t).",
-        "#program base.",
-    ]
-    gap_rules += [f"gap({t})." for t in range(1, horizon + 1, 2)]
-    return asp + "\n" + "\n".join(gap_rules) + "\n"
+def optional_steps(asp):
+    """Let every step stay empty unless its switch holds an abstract action there."""
+    # Gaps hold no switch, so they stay optional. A step whose switch is off
+    # stays optional too, or a plan shorter than a satisficing abstract plan is
+    # never found.
+    every_step_filled = "1 {occurs(Action, t) : action(Action)} 1."
+    at_most_one_action = "0 {occurs(Action, t) : action(Action)} 1."
+    return asp.replace(every_step_filled, at_most_one_action)
 
 
 def concretize_abstract_actions(abstract_plan, abstraction, gaps=True):

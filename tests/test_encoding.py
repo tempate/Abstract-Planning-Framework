@@ -2,28 +2,36 @@ import unittest
 from types import SimpleNamespace
 
 from core.plan import PlanAction
-from core.refinement.encoding import add_gaps, concretize_abstract_actions, mapped_horizon, switches
+from core.refinement.encoding import concretize_abstract_actions, mapped_horizon, optional_steps, switches
 from core.search.incremental import IncrementalSolver
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
 
 
 class EncodingTests(unittest.TestCase):
-    def test_every_abstract_action_is_surrounded_by_a_gap(self):
-        mapping = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(2))
+    def test_a_switched_off_step_may_stay_empty(self):
+        # The only action can occur once, so the abstract plan's second step
+        # refines only once its switch is off and it holds nothing.
+        abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item1",), 2))
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
+        mapping = concretize_abstract_actions(abstract_plan, abstraction)
+        program = optional_steps(OCCURRENCE_ENCODING) + """
+action(action(("inspect","item1"))).
+#program step(t).
+:- occurs(Action, t), occurs(Action, T), T < t.
+#program base.
+""" + mapping
+        solver = IncrementalSolver(program, init_horizon=mapped_horizon(2))
+        first, second = sorted(switches(abstract_plan))
 
-        # The actions take the even steps 2 and 4, the gaps the odd ones around them.
-        self.assertIn("gap(1).", mapping)
-        self.assertIn("gap(3).", mapping)
-        self.assertIn("gap(5).", mapping)
-        self.assertNotIn("gap(2).", mapping)
-        self.assertNotIn("gap(4).", mapping)
+        self.assertIsNone(solver.solve([(first, True), (second, True)]))
+        self.assertIsNotNone(solver.solve([(first, True), (second, False)]))
 
     def test_a_gap_holds_any_concrete_action_or_none(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1)) + """
+        program = optional_steps(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
 switch(2).
