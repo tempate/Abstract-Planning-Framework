@@ -39,7 +39,7 @@ def _to_sas(base_dir, config, metrics):
 def _to_asp(sas_file, config, metrics):
     """Translate the SAS file into its ASP program."""
     with metrics.measure("concrete_asp"):
-        return sas_to_asp(sas_file, exp_horizon=not config.optimize)
+        return sas_to_asp(sas_file, config.optimize)
 
 
 def _search(asp, config, run_id, metrics):
@@ -65,9 +65,9 @@ def _search(asp, config, run_id, metrics):
 
 
 def find_abstract_plan(config, _base_dir, abstract_sas, metrics):
-    """Search for an abstract plan, the shortest unless the horizon grows exponentially, returning its actions and its length."""
+    """Search for an abstract plan."""
     with metrics.measure("abstract_asp"):
-        abstract_asp = sas_to_asp(abstract_sas, exp_horizon=not config.optimize)
+        abstract_asp = sas_to_asp(abstract_sas, config.optimize)
 
     def record_attempt(horizon, solve_calls):
         metrics.set_counters({"abstract_plan_length": horizon, "abstract_solve_calls": solve_calls})

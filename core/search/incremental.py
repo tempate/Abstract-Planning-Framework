@@ -21,7 +21,7 @@ class IncrementalSolver(Solver):
         self._add_goal()
 
     def search(self, assumptions=(), on_attempt=None):
-        """Raise the horizon, by one or by doubling it, until the program becomes satisfiable."""
+        """Raise the horizon until the program becomes satisfiable."""
         attempts = 0
         while True:
             attempts += 1

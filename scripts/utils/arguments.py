@@ -50,7 +50,7 @@ def optimize_arguments():
     parser.add_argument(
         "--optimize",
         action="store_true",
-        help="Find a shortest plan, without the doubling horizons and gaps that find one sooner",
+        help="Find a shortest plan",
     )
     return parser
 
