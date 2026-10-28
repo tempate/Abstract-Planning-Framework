@@ -19,6 +19,8 @@ class PlanningConfig:
     problem_path: Path
     # The mode without its abs- prefix: what plans the task, or the abstract task.
     planner: str = "asp"
+    # Find a shortest plan, without the doubling horizons and gaps that find one sooner.
+    optimize: bool = False
 
     def as_dict(self):
         values = asdict(self)
@@ -35,7 +37,6 @@ class AbstractPlanningConfig(PlanningConfig):
     abstract_name: str | None = None
     symmetry_time_limit: int = 300
     abstraction_source: str = SYMMETRIES
-    gaps: bool = True
     class_rank: int = 0
 
     def __post_init__(self):

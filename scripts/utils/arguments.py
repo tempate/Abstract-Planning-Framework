@@ -41,18 +41,24 @@ def abstraction_arguments():
         default=0,
         help="Collapse the candidate class at this rank, counting from the largest (0)",
     )
+    return parser
+
+
+def optimize_arguments():
+    """Parent parser for the modes that can find a shortest plan."""
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
         "--optimize",
-        dest="gaps",
-        action="store_false",
-        help="Refine without gaps, so the abstract plan's actions keep their time steps",
+        action="store_true",
+        help="Find a shortest plan",
     )
     return parser
 
 
 def planning_config(args):
     """The configuration the task arguments describe."""
-    return PlanningConfig(args.domain, args.problem, planner=args.mode)
+    optimize = getattr(args, "optimize", False)
+    return PlanningConfig(args.domain, args.problem, planner=args.mode, optimize=optimize)
 
 
 def abstract_planning_config(args):
@@ -61,10 +67,10 @@ def abstract_planning_config(args):
         args.domain,
         args.problem,
         planner=args.mode.removeprefix("abs-"),
+        optimize=getattr(args, "optimize", False),
         objects_to_abstract=args.objects_to_abstract,
         abstract_name=args.abstract_name,
         symmetry_time_limit=args.symmetry_time_limit,
         abstraction_source=args.abstraction_source,
-        gaps=args.gaps,
         class_rank=args.class_rank,
     )
