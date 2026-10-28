@@ -41,30 +41,24 @@ def abstraction_arguments():
         default=0,
         help="Collapse the candidate class at this rank, counting from the largest (0)",
     )
-    parser.add_argument(
-        "--optimize",
-        dest="gaps",
-        action="store_false",
-        help="Refine without gaps, so the abstract plan's actions keep their time steps",
-    )
     return parser
 
 
-def asp_search_arguments():
-    """Parent parser for the options of the modes that search with ASP."""
+def optimize_arguments():
+    """Parent parser for the modes that can find a shortest plan."""
     parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument(
-        "--exp-horizon",
+        "--optimize",
         action="store_true",
-        help="Double the horizon instead of raising it by one, finding a plan sooner but not the shortest",
+        help="Find a shortest plan, without the doubling horizons and gaps that find one sooner",
     )
     return parser
 
 
 def planning_config(args):
     """The configuration the task arguments describe."""
-    exp_horizon = getattr(args, "exp_horizon", False)
-    return PlanningConfig(args.domain, args.problem, planner=args.mode, exp_horizon=exp_horizon)
+    optimize = getattr(args, "optimize", False)
+    return PlanningConfig(args.domain, args.problem, planner=args.mode, optimize=optimize)
 
 
 def abstract_planning_config(args):
@@ -73,11 +67,10 @@ def abstract_planning_config(args):
         args.domain,
         args.problem,
         planner=args.mode.removeprefix("abs-"),
-        exp_horizon=getattr(args, "exp_horizon", False),
+        optimize=getattr(args, "optimize", False),
         objects_to_abstract=args.objects_to_abstract,
         abstract_name=args.abstract_name,
         symmetry_time_limit=args.symmetry_time_limit,
         abstraction_source=args.abstraction_source,
-        gaps=args.gaps,
         class_rank=args.class_rank,
     )

@@ -26,8 +26,8 @@ class Track:
     modes: tuple[str, ...]
     # Passed to the modes through an abstraction only; the others have no class to choose.
     abstract_arguments: tuple[str, ...] = ()
-    # Passed to the modes that search with ASP, concrete or abstract.
-    asp_arguments: tuple[str, ...] = ()
+    # Passed to the modes that can find a shortest plan.
+    optimizing_arguments: tuple[str, ...] = ()
 
     @property
     def results_file(self):
@@ -71,7 +71,6 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
-        asp_arguments=("--exp-horizon",),
     ),
     # The same suite, restricted to the problems numeric-fast-downward finds a
     # resource for, and planned from that resource's objects.
@@ -82,7 +81,6 @@ TRACKS = {
         driver="scripts.planner",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
         abstract_arguments=("--abstraction-source", "resources"),
-        asp_arguments=("--exp-horizon",),
     ),
     # The optimal suite, refined without gaps so that every plan is optimal, with
     # abs-lmcut searching the abstract task optimally like its lmcut baseline.
@@ -92,7 +90,7 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        abstract_arguments=("--optimize",),
+        optimizing_arguments=("--optimize",),
     ),
     "opt/resources": Track(
         directory=Path(opt.__file__).parent / "resources",
@@ -100,7 +98,8 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        abstract_arguments=("--optimize", "--abstraction-source", "resources"),
+        abstract_arguments=("--abstraction-source", "resources"),
+        optimizing_arguments=("--optimize",),
     ),
     "unsat/symmetries": Track(
         directory=Path(unsat.__file__).parent / "symmetries",

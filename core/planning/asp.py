@@ -39,7 +39,7 @@ def _to_sas(base_dir, config, metrics):
 def _to_asp(sas_file, config, metrics):
     """Translate the SAS file into its ASP program."""
     with metrics.measure("concrete_asp"):
-        return sas_to_asp(sas_file, config.exp_horizon)
+        return sas_to_asp(sas_file, exp_horizon=not config.optimize)
 
 
 def _search(asp, config, run_id, metrics):
@@ -49,7 +49,7 @@ def _search(asp, config, run_id, metrics):
         metrics.set_counter("concrete_solve_calls", solve_calls)
 
     with metrics.measure("guided_concrete_solving"):
-        solver = IncrementalSolver(asp, exp_horizon=config.exp_horizon)
+        solver = IncrementalSolver(asp, exp_horizon=not config.optimize)
         solve_result = solver.search(on_attempt=record_attempt)
 
     metrics.set_counter("concrete_solve_calls", solve_result.attempts)
@@ -67,13 +67,13 @@ def _search(asp, config, run_id, metrics):
 def find_abstract_plan(config, _base_dir, abstract_sas, metrics):
     """Search for an abstract plan, the shortest unless the horizon grows exponentially, returning its actions and its length."""
     with metrics.measure("abstract_asp"):
-        abstract_asp = sas_to_asp(abstract_sas, config.exp_horizon)
+        abstract_asp = sas_to_asp(abstract_sas, exp_horizon=not config.optimize)
 
     def record_attempt(horizon, solve_calls):
         metrics.set_counters({"abstract_plan_length": horizon, "abstract_solve_calls": solve_calls})
 
     with metrics.measure("abstract_solving"):
-        solver = IncrementalSolver(abstract_asp, exp_horizon=config.exp_horizon)
+        solver = IncrementalSolver(abstract_asp, exp_horizon=not config.optimize)
         solve_result = solver.search(on_attempt=record_attempt)
 
     # An exponential horizon can leave steps empty. Closing them up keeps an abstract action on

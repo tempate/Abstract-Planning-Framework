@@ -177,7 +177,7 @@ class AspHorizonSearchTests(unittest.TestCase):
             patch("core.integrations.plasp.subprocess.run", return_value=plasp),
         ):
             actions, horizon = asp.find_abstract_plan(
-                PlanningConfig("domain.pddl", "problem.pddl", exp_horizon=True),
+                PlanningConfig("domain.pddl", "problem.pddl"),
                 None,
                 "abstract.sas",
                 PlanningMetrics(on_update=stop_past_the_plan),

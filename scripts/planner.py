@@ -8,7 +8,7 @@ from core.planning.backends import BACKENDS
 from .utils.arguments import (
     abstract_planning_config,
     abstraction_arguments,
-    asp_search_arguments,
+    optimize_arguments,
     planning_config,
     task_arguments,
 )
@@ -63,13 +63,13 @@ def _time_step(atom):
 def _argument_parser():
     shared = task_arguments()
     abstract = abstraction_arguments()
-    asp_search = asp_search_arguments()
+    optimize = optimize_arguments()
 
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_subparsers(dest="mode", required=True, title="planning modes")
     modes.add_parser(
         "asp",
-        parents=[shared, asp_search],
+        parents=[shared, optimize],
         help="Solve the task with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
@@ -87,10 +87,11 @@ def _argument_parser():
     )
     modes.add_parser(
         "abs-asp",
-        parents=[shared, abstract, asp_search],
+        parents=[shared, abstract, optimize],
         help="Find an abstract plan with ASP, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    # lama-first's abstract plan need not be shortest, so refining it without gaps could miss every plan.
     modes.add_parser(
         "abs-lama",
         parents=[shared, abstract],
@@ -99,7 +100,7 @@ def _argument_parser():
     )
     modes.add_parser(
         "abs-lmcut",
-        parents=[shared, abstract],
+        parents=[shared, abstract, optimize],
         help="Find an optimal abstract plan with Fast Downward's A* and LM-cut, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )

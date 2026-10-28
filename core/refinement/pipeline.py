@@ -23,7 +23,7 @@ class RefinementContext:
 
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Use an abstract plan to guide concrete search."""
-    gaps = context.config.gaps
+    gaps = not context.config.optimize
     if gaps:
         horizon = mapped_horizon(abstract_horizon)
         asp = add_gaps(context.concrete_asp, horizon)
