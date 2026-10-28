@@ -13,7 +13,8 @@ def mapped_horizon(abstract_horizon):
 def optional_steps(asp):
     """Let every step stay empty unless its switch holds an abstract action there."""
     # Gaps hold no switch, so they stay optional. A step whose switch is off
-    # must stay optional too, or no plan shorter than the horizon is ever found.
+    # stays optional too, or a plan shorter than a satisficing abstract plan is
+    # never found.
     every_step_filled = "1 {occurs(Action, t) : action(Action)} 1."
     at_most_one_action = "0 {occurs(Action, t) : action(Action)} 1."
     return asp.replace(every_step_filled, at_most_one_action)

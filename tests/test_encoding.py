@@ -14,15 +14,15 @@ class EncodingTests(unittest.TestCase):
         # refines only once its switch is off and it holds nothing.
         abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item1",), 2))
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = concretize_abstract_actions(abstract_plan, abstraction, gaps=False)
+        mapping = concretize_abstract_actions(abstract_plan, abstraction)
         program = optional_steps(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 #program step(t).
 :- occurs(Action, t), occurs(Action, T), T < t.
 #program base.
 """ + mapping
-        solver = IncrementalSolver(program, init_horizon=2)
-        first, second = sorted(switches(abstract_plan, gaps=False))
+        solver = IncrementalSolver(program, init_horizon=mapped_horizon(2))
+        first, second = sorted(switches(abstract_plan))
 
         self.assertIsNone(solver.solve([(first, True), (second, True)]))
         self.assertIsNotNone(solver.solve([(first, True), (second, False)]))
