@@ -190,6 +190,12 @@ both runs. For the PR's numbers, keep only the abstract rows the run's manifest
 lists, and compare against the base on the same problems and classes. A problem
 that left the suite keeps its old row until you delete it.
 
+That merge is only right when the PR leaves the classes it did not rerun alone. When
+it changes what every class does, as #139 changed refinement, the old rows measure
+code that no longer exists, and both the report and the next run's best-class choice
+read them. Then delete the abstract rows the run's manifest does not list before
+committing the results, or run every class.
+
 ## Before reporting on a run
 
 ```bash
