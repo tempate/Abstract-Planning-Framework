@@ -8,11 +8,11 @@ from core.search.solver import Solver, SolveResult
 class IncrementalSolver(Solver):
     """One Clingo control whose horizon can be raised without regrounding."""
 
-    def __init__(self, asp, init_horizon=0, optimize=False, exp_horizon=False):
+    def __init__(self, asp, init_horizon=0, exp_horizon=False):
         if init_horizon < 0:
             raise ValueError("Horizon must be nonnegative")
 
-        super().__init__(asp, optimize)
+        super().__init__(asp)
         self.horizon = init_horizon
         self.exp_horizon = exp_horizon
 
