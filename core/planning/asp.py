@@ -49,7 +49,7 @@ def _search(asp, config, run_id, metrics):
         metrics.set_counter("concrete_solve_calls", solve_calls)
 
     with metrics.measure("guided_concrete_solving"):
-        solver = IncrementalSolver(asp, exp_horizon=not config.optimize)
+        solver = IncrementalSolver(asp, optimize=config.optimize)
         solve_result = solver.search(on_attempt=record_attempt)
 
     metrics.set_counter("concrete_solve_calls", solve_result.attempts)
@@ -73,7 +73,7 @@ def find_abstract_plan(config, _base_dir, abstract_sas, metrics):
         metrics.set_counters({"abstract_plan_length": horizon, "abstract_solve_calls": solve_calls})
 
     with metrics.measure("abstract_solving"):
-        solver = IncrementalSolver(abstract_asp, exp_horizon=not config.optimize)
+        solver = IncrementalSolver(abstract_asp, optimize=config.optimize)
         solve_result = solver.search(on_attempt=record_attempt)
 
     # An exponential horizon can leave steps empty. Closing them up keeps an abstract action on

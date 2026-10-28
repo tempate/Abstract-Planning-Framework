@@ -89,7 +89,7 @@ reached(t).
 """
         horizons = []
 
-        result = IncrementalSolver(program, exp_horizon=True).search(
+        result = IncrementalSolver(program, optimize=False).search(
             on_attempt=lambda horizon, _calls: horizons.append(horizon)
         )
 
