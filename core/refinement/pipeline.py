@@ -63,7 +63,7 @@ def _solve_concrete_plan(context, asp, init_horizon, switches):
         context.metrics.set_counters(counters)
 
     with context.metrics.measure("guided_concrete_solving"):
-        solver = RelaxingSolver(asp, init_horizon)
+        solver = RelaxingSolver(asp, init_horizon, optimize=context.config.optimize)
         result = solver.search(switches, record_attempt)
 
     record_attempt(result.horizon, result.dropped, result.attempts)

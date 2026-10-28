@@ -4,6 +4,8 @@ import json
 
 import clingo
 
+from core.encodings.rules import AT_MOST_ONE_ACTION, EXACTLY_ONE_ACTION
+
 
 def mapped_horizon(abstract_horizon):
     """Return the concrete horizon holding every abstract action and its gaps."""
@@ -14,16 +16,22 @@ def add_gaps(asp, horizon):
     """Let the odd time steps up to the horizon stay empty."""
     # Remove the rule forcing actions into every time step,
     # since gaps may not run an action.
-    asp = asp.replace("1 {occurs(Action, t) : action(Action)} 1.", "")
+    asp = asp.replace(f"{EXACTLY_ONE_ACTION}.", "")
 
-    gap_rules = [
+    rules = [
         "#program step(t).",
-        "1 {occurs(Action, t) : action(Action)} 1 :- not gap(t).",
-        "0 {occurs(Action, t) : action(Action)} 1 :- gap(t).",
-        "#program base.",
+        f"{AT_MOST_ONE_ACTION} :- gap(t).",
     ]
-    gap_rules += [f"gap({t})." for t in range(1, horizon + 1, 2)]
-    return asp + "\n" + "\n".join(gap_rules) + "\n"
+
+    # The horizon doubles above the abstract plan, which only finds the shorter plans when those steps can stay empty.
+    rules.append(f"{EXACTLY_ONE_ACTION} :- not gap(t), t <= {horizon}.")
+    rules.append(f"{AT_MOST_ONE_ACTION} :- t > {horizon}.")
+
+    rules.append("#program base.")
+    for t in range(1, horizon + 1, 2):
+        rules.append(f"gap({t}).")
+
+    return asp + "\n" + "\n".join(rules) + "\n"
 
 
 def concretize_abstract_actions(abstract_plan, abstraction, gaps=True):
