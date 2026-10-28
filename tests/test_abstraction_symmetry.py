@@ -159,19 +159,16 @@ class SymmetrySelectionTests(unittest.TestCase):
     def test_rejects_tasks_without_a_resource_as_having_no_resources(self):
         with (
             patch("core.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.abstraction.factory.detect_resources", return_value=ResourceDetection((), frozenset())),
+            patch("core.abstraction.factory.detect_resources", return_value=ResourceDetection(())),
         ):
             with self.assertRaises(NoResourcesError):
                 build_abstract_problem(
                     AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source="resources")
                 )
 
-    def test_a_resource_also_collapses_the_objects_of_its_type_the_grounding_dropped(self):
-        # vehicle-d is a value the grounding never reaches, and vehicle-c one it does but the resource never takes.
-        detection = ResourceDetection(
-            (ResourceVariable("var0", ("vehicle-a", "vehicle-b")),),
-            frozenset({"vehicle-a", "vehicle-b", "vehicle-c", "tool-a"}),
-        )
+    def test_a_resource_collapses_only_the_objects_the_detector_names(self):
+        # vehicle-c and vehicle-d share the resource's type, but the resource never takes them.
+        detection = ResourceDetection((ResourceVariable("var0", ("vehicle-a", "vehicle-b")),))
         with (
             patch("core.abstraction.factory.read_problem", return_value=self.problem),
             patch("core.abstraction.factory.detect_resources", return_value=detection),
@@ -180,7 +177,7 @@ class SymmetrySelectionTests(unittest.TestCase):
                 AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source="resources")
             )
 
-        self.assertEqual(set(result.abstraction.objects), {"vehicle-a", "vehicle-b", "vehicle-d"})
+        self.assertEqual(set(result.abstraction.objects), {"vehicle-a", "vehicle-b"})
 
     def test_accepts_domain_constants_reported_by_pddl_symmetries(self):
         domain = """
