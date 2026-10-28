@@ -55,7 +55,7 @@ action(action(("unrelated","x"))).
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1), exp_horizon=True) + """
+        program = add_gaps(OCCURRENCE_ENCODING, mapped_horizon(1)) + """
 action(action(("inspect","item1"))).
 switch(2).
 """ + mapping

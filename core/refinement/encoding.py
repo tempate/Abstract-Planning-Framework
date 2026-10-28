@@ -12,7 +12,7 @@ def mapped_horizon(abstract_horizon):
     return _concrete_time_step(abstract_horizon) + 1
 
 
-def add_gaps(asp, horizon, exp_horizon=False):
+def add_gaps(asp, horizon):
     """Let the odd time steps up to the horizon stay empty."""
     # Remove the rule forcing actions into every time step,
     # since gaps may not run an action.
@@ -23,11 +23,9 @@ def add_gaps(asp, horizon, exp_horizon=False):
         f"{AT_MOST_ONE_ACTION} :- gap(t).",
     ]
 
-    if exp_horizon:
-        rules.append(f"{EXACTLY_ONE_ACTION} :- not gap(t), t <= {horizon}.")
-        rules.append(f"{AT_MOST_ONE_ACTION} :- t > {horizon}.")
-    else:
-        rules.append(f"{EXACTLY_ONE_ACTION} :- not gap(t).")
+    # The horizon doubles above the abstract plan, which only finds the shorter plans when those steps can stay empty.
+    rules.append(f"{EXACTLY_ONE_ACTION} :- not gap(t), t <= {horizon}.")
+    rules.append(f"{AT_MOST_ONE_ACTION} :- t > {horizon}.")
 
     rules.append("#program base.")
     for t in range(1, horizon + 1, 2):
