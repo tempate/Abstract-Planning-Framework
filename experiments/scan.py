@@ -60,7 +60,7 @@ domain, problem, source = sys.argv[1:4]
 config = AbstractPlanningConfig(domain, problem, abstraction_source=source)
 task = without_action_costs(read_problem(domain, problem))
 validate_supported_problem(task)
-classes = _candidate_classes(config, task, PlanningMetrics())
+classes = _candidate_classes(config, PlanningMetrics())
 ranked = []
 while True:
     try:
