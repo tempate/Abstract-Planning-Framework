@@ -7,7 +7,7 @@ from unified_planning.model import Fluent, InstantaneousAction
 
 # A split action keeps the name it came from, so the refinement can still find
 # it in the concrete task, and carries the separator to mark what it is.
-SPLIT_SEPARATOR = "--split-"
+SPLIT_SEPARATOR = "--abs-"
 
 
 def split_actions(problem, abstraction):

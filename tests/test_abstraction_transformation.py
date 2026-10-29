@@ -484,7 +484,7 @@ class AbstractionTransformationTests(unittest.TestCase):
         # shift for the collapsed object keeps it at the dock too.
         deletes = lambda name: any(effect.value.is_false() for effect in result.problem.action(name).effects)
         self.assertTrue(deletes("shift"))
-        self.assertFalse(deletes("shift--split-1"))
+        self.assertFalse(deletes("shift--abs-1"))
 
     def test_relaxes_a_delete_that_names_a_collapsed_object_directly(self):
         domain = """
