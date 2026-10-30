@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-30 11:27 — experiments/unsat/scaled/results.csv
+2026-10-30 11:49 — experiments/unsat/scaled/results.csv
 
 80 problems compared over abs-ms, ms
 
@@ -42,15 +42,15 @@ Total                                     0
 ```
 Domain                        Problems      M&Sᵅ       M&S
 ----------------------------------------------------------
-over-nomystery-size-10               8         8         3
-over-nomystery-size-100              8         8         3
-over-nomystery-size-1000             8         8         0
-over-nomystery-size-2                8         8         8
-over-nomystery-size-20               8         8         3
-over-nomystery-size-200              8         8         3
-over-nomystery-size-3                8         8         4
-over-nomystery-size-5                8         8         3
-over-nomystery-size-50               8         8         3
-over-nomystery-size-500              8         8         2
+over-nomystery/size-10               8         8         3
+over-nomystery/size-100              8         8         3
+over-nomystery/size-1000             8         8         0
+over-nomystery/size-2                8         8         8
+over-nomystery/size-20               8         8         3
+over-nomystery/size-200              8         8         3
+over-nomystery/size-3                8         8         4
+over-nomystery/size-5                8         8         3
+over-nomystery/size-50               8         8         3
+over-nomystery/size-500              8         8         2
 Total                               80        80        32
 ```

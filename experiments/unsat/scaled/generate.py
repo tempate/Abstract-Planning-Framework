@@ -97,7 +97,7 @@ def main():
         "--out",
         type=Path,
         default=TRACKS["scaled/symmetries"].benchmarks_dir,
-        help="Directory with one <domain>-size-N directory per domain and class size",
+        help="Directory with one <domain>/size-N directory per domain and class size",
     )
     args = parser.parse_args()
 
@@ -107,7 +107,7 @@ def main():
     # The base problem sits at its own class size, and the larger sizes grow from it.
     sizes = [args.class_size] + [size for size in args.sizes if size > args.class_size]
     for size in sizes:
-        directory = args.out / f"{args.problem.parent.name}-size-{size}"
+        directory = args.out / args.problem.parent.name / f"size-{size}"
         directory.mkdir(parents=True, exist_ok=True)
         copies = size - args.class_size
         (directory / domain.name).write_text(scale_domain(base_domain, args.object, copies))

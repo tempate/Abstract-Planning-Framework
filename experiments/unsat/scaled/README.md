@@ -4,7 +4,7 @@ Unsolvable problems whose symmetric class grows up to 1000 objects, to see how M
 
 ## Example
 
-In over-nomystery `prob01`, packages `p3` and `p4` both start at `l1` and must reach `l0`, so they form a symmetric class of size 2. `over-nomystery-size-3/prob01.pddl` adds one copy of `p3` with the same start and goal:
+In over-nomystery `prob01`, packages `p3` and `p4` both start at `l1` and must reach `l0`, so they form a symmetric class of size 2. `over-nomystery/size-3/prob01.pddl` adds one copy of `p3` with the same start and goal:
 
 ```diff
 -p0 p1 p2 p3 p4 p5 p6 p7 - package
@@ -21,7 +21,7 @@ Collapsing the grown class gives the same abstract task as collapsing the origin
 
 ## Layout
 
-`experiments/benchmarks/scaled/<domain>-size-N/` holds the base problems of `<domain>` with a class of N objects, each beside its domain file. Each base problem starts at its own class size, between 2 and 12, and grows to the sizes in `suite.py` above it.
+`experiments/benchmarks/scaled/<domain>/size-N/` holds the base problems of `<domain>` with a class of N objects, each beside its domain file. Each base problem starts at its own class size, between 2 and 12, and grows to the sizes in `suite.py` above it.
 
 ## Commands
 
