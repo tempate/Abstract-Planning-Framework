@@ -30,6 +30,7 @@ from experiments.submit import (
     MANIFEST_NAME,
     _benchmark_tasks,
     _check_worktree_is_built,
+    _not_submitted,
     _set_aside_results_dir,
     _write_copperbench_config,
     _write_manifest,
@@ -254,6 +255,22 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual(
                 [(mode, rank) for mode, _n, _d, _p, rank in tasks], [("abs-asp", 1), ("abs-asp", 2), ("asp", None)]
             )
+
+    def test_a_run_leaves_out_what_an_earlier_run_submitted(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+            manifest = root / MANIFEST_NAME
+            earlier = [{"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": 1}]
+            manifest.write_text(json.dumps({"expected_results": earlier}))
+
+            tasks = _benchmark_tasks(root, ["example"], None, class_counts={("example", "p01.pddl"): 3})
+            ranks = [rank for _mode, _domain, _domain_file, _problem, rank in _not_submitted(tasks, [manifest])]
+
+        self.assertEqual(ranks, [0, 2])
 
     def test_an_abstract_mode_runs_only_its_best_class_where_one_is_known(self):
         with tempfile.TemporaryDirectory() as directory:
