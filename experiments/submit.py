@@ -46,6 +46,8 @@ def main():
             best=best_classes(track.results_file) if args.classes == "best" else None,
         )
     )
+    if args.skip_manifests:
+        tasks = _not_submitted(tasks, args.skip_manifests)
     _check_worktree_is_built()
     if not tasks:
         raise SystemExit(
@@ -70,6 +72,15 @@ def main():
             return
         print(f"Submitting {len(tasks)} cluster jobs (one per mode, benchmark problem and class)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
+
+
+def _not_submitted(tasks, manifests):
+    """The tasks no earlier run's manifest lists, so that a second run adds to the first."""
+    submitted = set()
+    for manifest in manifests:
+        for entry in json.loads(Path(manifest).read_text(encoding="utf-8"))["expected_results"]:
+            submitted.add((entry["mode"], entry["domain"], entry["problem"], entry["class"]))
+    return [task for task in tasks if (task[0], task[1], task[3].name, task[4]) not in submitted]
 
 
 def _track_name(args, parser):
@@ -187,6 +198,12 @@ def _argument_parser():
         type=int,
         default=0,
         help="Run abstract modes only on the classes from this rank down, to skip those already collected",
+    )
+    parser.add_argument(
+        "--skip-manifests",
+        nargs="+",
+        type=Path,
+        help="Leave out every mode, problem and class these earlier runs' manifests list",
     )
     parser.add_argument(
         "--classes",
