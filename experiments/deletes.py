@@ -167,7 +167,7 @@ def _append(path, rows):
 
 
 def figure(args):
-    """Two plots per measure: coverage over every run, and over domains weighted equally."""
+    """One plot per measure, with every domain weighing as much as any other."""
     lifted = {"label": "Relaxed deletes", "bins": [str(k) for k in range(14)] + ["14+"]}
     grounded = {"label": r"Grounded deletes relaxed (\%)", "bins": [str(10 * k + 5) for k in range(10)]}
     for measure, out in ((lifted, args.out_lifted), (grounded, args.out_grounded)):
@@ -187,12 +187,12 @@ def figure(args):
             share = shares.get((track_name, row["domain"], row["problem"], row["class"] or "0"))
             return None if share is None else min(int(share // 10), 9)
 
-        panels = [_panel(measure, bin_of, by_domain) for by_domain in (False, True)]
-        _render(args.paper, panels, Path(out))
+        # The renderer sets two panels side by side, and this figure has one.
+        _render(args.paper, [_panel(measure, bin_of), ""], Path(out))
         print(f"Wrote {out}")
 
 
-def _panel(measure, bin_of, by_domain):
+def _panel(measure, bin_of):
     """The share solved, averaged over the modes, against the left axis, and the mean search and
     refinement shares of every run's time, over every mode, against the right axis."""
     solved_by_mode = collections.defaultdict(list)
@@ -213,14 +213,14 @@ def _panel(measure, bin_of, by_domain):
                 for phase, share in _phase_shares(row, solved).items():
                     if share is not None:
                         times[phase][key].append(share)
-        for b, value in _shares(runs, by_domain).items():
+        for b, value in _per_bin(runs, lambda counts: 100 * counts[0] / counts[1]).items():
             solved_by_mode[b].append(value)
 
     def coordinates(values):
         return " ".join(f"({measure['bins'][b]},{value:.2f})" for b, value in sorted(values.items()))
 
     solved = {b: statistics.mean(values) for b, values in solved_by_mode.items()}
-    search, refinement = (_typical_times(times[phase], by_domain) for phase in ("search", "refinement"))
+    search, refinement = (_per_bin(times[phase], statistics.mean) for phase in ("search", "refinement"))
 
     if measure["bins"][0] == "0":
         x_axis = (
@@ -229,7 +229,6 @@ def _panel(measure, bin_of, by_domain):
         )
     else:
         x_axis = "xmin=0, xmax=100, xtick={0,10,...,100}"
-    title = "Domains weighted equally" if by_domain else "Every run counted"
     common = (
         "width=3in, height=2.2in, " + x_axis + ", axis line style={black!50}, tick style={black!50},"
         " tick label style={font=\\footnotesize}, label style={font=\\footnotesize}"
@@ -237,7 +236,7 @@ def _panel(measure, bin_of, by_domain):
     search_style, refinement_style = "abst, thick, mark=none", "conc, thick, dashed, mark=none"
     return (
         "\\begin{tikzpicture}\n"
-        f"\\begin{{axis}}[{common}, axis y line*=left, title={{\\small {title}}}, xlabel={{{measure['label']}}},"
+        f"\\begin{{axis}}[{common}, axis y line*=left, xlabel={{{measure['label']}}},"
         " ylabel={Problems solved (\\%)}, ymin=0, ymax=100, ymajorgrids, grid style={black!10}]\n"
         rf"\addplot[black, very thick, mark=none] coordinates {{{coordinates(solved)}}};"
         "\n\\end{axis}\n"
@@ -281,27 +280,13 @@ def _phase_shares(row, solved):
     return {phase: None if value is None else 100 * value / total for phase, value in seconds.items()}
 
 
-def _typical_times(times, by_domain):
-    """Per bin, the mean share over its runs, or the mean of its domains' means when domains weigh equally."""
+def _per_bin(cells, value):
+    """Per bin, the mean over its domains of what `value` makes of each domain's cell, given 3 or more domains."""
     values = {}
-    for b in sorted({key[0] for key in times}):
-        cells = [cell for key, cell in times.items() if key[0] == b and cell]
-        if by_domain and len(cells) >= 3:
-            values[b] = statistics.mean(statistics.mean(cell) for cell in cells)
-        elif not by_domain and sum(len(cell) for cell in cells) >= 10:
-            values[b] = statistics.mean(share for cell in cells for share in cell)
-    return values
-
-
-def _shares(runs, by_domain):
-    """Per bin, the share of runs solved, with each domain weighing as much as any other when asked."""
-    values = {}
-    for b in sorted({key[0] for key in runs}):
-        cells = [counts for key, counts in runs.items() if key[0] == b]
-        if by_domain and len(cells) >= 3:
-            values[b] = statistics.mean(100 * solved / total for solved, total in cells)
-        elif not by_domain and sum(total for _solved, total in cells) >= 10:
-            values[b] = 100 * sum(solved for solved, _total in cells) / sum(total for _solved, total in cells)
+    for b in sorted({key[0] for key in cells}):
+        domains = [value(cell) for key, cell in cells.items() if key[0] == b and cell]
+        if len(domains) >= 3:
+            values[b] = statistics.mean(domains)
     return values
 
 
