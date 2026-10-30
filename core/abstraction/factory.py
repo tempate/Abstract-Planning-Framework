@@ -7,7 +7,7 @@ from pathlib import Path
 from unified_planning.model import Problem
 
 from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
-from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities
+from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities, split_actions
 from core.integrations.numeric_fast_downward import detect_resources
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import (
@@ -64,6 +64,9 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
         # The class has to be chosen before the inequalities can be relaxed,
         # and they have to be relaxed before the translation, which rewrites
         # every one of them into a disjunction over pairs of objects.
+        # Split before relaxing anything, so that both relaxations see which
+        # groundings of an action can take a collapsed object.
+        problem = split_actions(problem, abstraction)
         problem, relaxed_inequalities = relax_inequalities(problem, abstraction)
 
     # Relaxing a delete is only an over-approximation while every condition is
