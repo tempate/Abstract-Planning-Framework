@@ -1,4 +1,4 @@
-"""Draw the scaled track's time against class size, every problem of every domain in one plot, for the paper and as a PNG."""
+"""Draw the scaled track's median time against class size, over every problem, for the paper and as a PNG."""
 
 import argparse
 import collections
@@ -31,9 +31,6 @@ def figure(results_file):
         rf"\node[font=\scriptsize, text=black!50, anchor=south east] at (axis cs:1150,{TIME_LIMIT}) {{time limit}};",
     ]
     for mode, color, mark, label in MODES:
-        for sizes in times[mode].values():
-            points = " ".join(f"({size},{seconds:.2f})" for size, seconds in sorted(sizes.items()))
-            lines.append(rf"\addplot[{color}, opacity=0.3, thin, no marks, forget plot] coordinates {{{points}}};")
         # Problems start at their own class size, so some sizes hold only a few of them,
         # and the median skips the sizes that hold fewer than half.
         by_size = collections.defaultdict(list)

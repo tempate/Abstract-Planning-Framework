@@ -33,6 +33,6 @@ python -m experiments.unsat.scaled.generate \
 # Submit both modes
 python -m experiments.submit --track scaled --abstraction-source symmetries --modes abs-ms ms
 
-# Draw time against class size for every problem, and write the plot as TikZ for the paper
+# Draw the median time against class size, and write the plot as TikZ for the paper
 python -m experiments.unsat.scaled.figure --out scaled.png --tex scaled.tex
 ```
