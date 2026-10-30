@@ -769,9 +769,9 @@ class ReportTests(unittest.TestCase):
 
         _title, lines = _by_domain(problems, ("ms",), True, _labels([]))
 
-        rows = [line.split()[0] for line in lines[2:-1]]
+        rows = [(line.split()[0], line.split()[2]) for line in lines[2:-1]]
         self.assertEqual(
-            rows, ["cave-diving/size-3", "cave-diving/size-100", "over-rovers/size-2", "over-rovers/size-10"]
+            rows, [("cave-diving", "3"), ("cave-diving", "100"), ("over-rovers", "2"), ("over-rovers", "10")]
         )
 
     def test_each_abstraction_is_compared_against_its_solver_alone(self):

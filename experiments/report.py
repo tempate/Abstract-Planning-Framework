@@ -397,14 +397,19 @@ def _by_domain(problems, modes, verdict_run, labels):
         for mode in modes:
             counts[mode] += succeeded(problem[mode])
 
-    header = _compact("Domain", ["Problems", *(labels[mode] for mode in modes)])
+    # The scaled track names its domains <domain>/size-N, and the size gets a column of its own.
+    sized = any("/" in domain for domain in domains)
+    header = _compact("Domain (problems)", [*(["Size"] if sized else []), *(labels[mode] for mode in modes)])
     lines = [header, "-" * len(header)]
     # Numbers sort by value, so that over-nomystery/size-10 follows over-nomystery/size-2.
     for domain in sorted(domains, key=_numbers_by_value):
         counts = domains[domain]
-        lines.append(_compact(domain, [counts["problems"], *(counts[mode] for mode in modes)]))
-    totals = [sum(counts[key] for counts in domains.values()) for key in ("problems", *modes)]
-    lines.append(_compact("Total", totals))
+        name, _, size = domain.rpartition("/") if "/" in domain else (domain, "", "")
+        sizes = [size.removeprefix("size-")] if sized else []
+        lines.append(_compact(f"{name} ({counts['problems']})", [*sizes, *(counts[mode] for mode in modes)]))
+    problems = sum(counts["problems"] for counts in domains.values())
+    totals = [sum(counts[mode] for counts in domains.values()) for mode in modes]
+    lines.append(_compact(f"Total ({problems})", [*([""] if sized else []), *totals]))
     return title, lines
 
 
