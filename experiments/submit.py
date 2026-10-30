@@ -78,9 +78,16 @@ def _not_submitted(tasks, manifests):
     """The tasks no earlier run's manifest lists, so that a second run adds to the first."""
     submitted = set()
     for manifest in manifests:
-        for entry in json.loads(Path(manifest).read_text(encoding="utf-8"))["expected_results"]:
-            submitted.add((entry["mode"], entry["domain"], entry["problem"], entry["class"]))
-    return [task for task in tasks if (task[0], task[1], task[3].name, task[4]) not in submitted]
+        entries = json.loads(Path(manifest).read_text(encoding="utf-8"))["expected_results"]
+        for entry in entries:
+            submitted.add((entry["domain"], entry["problem"], entry["mode"], entry["class"]))
+
+    kept = []
+    for task in tasks:
+        mode, domain_name, _domain, problem, rank = task
+        if (domain_name, problem.name, mode, rank) not in submitted:
+            kept.append(task)
+    return kept
 
 
 def _track_name(args, parser):
