@@ -46,14 +46,14 @@ def main():
         "--out",
         type=Path,
         default=TRACKS["scaled/symmetries"].benchmarks_dir,
-        help="Directory with one size-N directory per class size",
+        help="Directory with one <domain>-size-N directory per domain and class size",
     )
     args = parser.parse_args()
 
     domain = find_domain(args.problem)
     base = args.problem.read_text()
     for size in args.sizes:
-        directory = args.out / f"size-{size}"
+        directory = args.out / f"{args.problem.parent.name}-size-{size}"
         directory.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(domain, directory / "domain.pddl")
         path = directory / args.problem.name

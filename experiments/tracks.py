@@ -112,7 +112,7 @@ TRACKS = {
     "scaled/symmetries": Track(
         directory=Path(unsat.__file__).parent / "scaled",
         suite=scaled.SUITE,
-        benchmarks_dir=BENCHMARKS / "scaled-over-nomystery",
+        benchmarks_dir=BENCHMARKS / "scaled",
         driver="scripts.unsolvability",
         modes=("abs-ms", "ms"),
     ),
