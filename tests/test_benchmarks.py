@@ -25,7 +25,7 @@ from experiments.run import (
 )
 import experiments.report
 import experiments.submit
-from experiments.report import SOLVER_LABELS, _coverage, _finished_problems, _head_to_head, _labels, _pairs
+from experiments.report import SOLVER_LABELS, _by_domain, _coverage, _finished_problems, _head_to_head, _labels, _pairs
 from experiments.submit import (
     MANIFEST_NAME,
     _benchmark_tasks,
@@ -762,6 +762,19 @@ class ReportTests(unittest.TestCase):
                 counted[index] += int(count)
 
         self.assertEqual(counted, [len(problems)] * len(modes))
+
+    def test_the_domains_are_alphabetical_and_their_sizes_increase(self):
+        names = ["over-rovers/size-10", "cave-diving/size-100", "over-rovers/size-2", "cave-diving/size-3"]
+        problems = [
+            {"ms": {"domain": name, "problem": "prob01.pddl", "status": "success", "verdict": "unsolvable"}}
+            for name in names
+        ]
+
+        _title, lines = _by_domain(problems, ("ms",), True, _labels([]))
+
+        sizes = [line.split()[-2] for line in lines[2:-1]]
+        self.assertEqual(sizes, ["3", "100", "2", "10"])
+        self.assertEqual([line.split()[0] for line in lines[2:-1] if "(" in line], ["cave-diving", "over-rovers"])
 
     def test_each_abstraction_is_compared_against_its_solver_alone(self):
         """Intersecting every mode would drop the problems one solver missed out

@@ -48,7 +48,7 @@ class Track:
         counts = Counter()
         for line in self.classes_file.read_text(encoding="utf-8").splitlines():
             if line.strip() and not line.startswith("#"):
-                domain, _, problem = line.split("\t")[0].partition("/")
+                domain, _, problem = line.split("\t")[0].rpartition("/")
                 counts[(domain, problem)] += 1
         return counts
 
@@ -58,7 +58,7 @@ class Track:
         for line in self.runnable_file.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if line and not line.startswith("#"):
-                domain, _, problem = line.partition("/")
+                domain, _, problem = line.rpartition("/")
                 problems.add((domain, problem))
         return frozenset(problems)
 
@@ -112,7 +112,7 @@ TRACKS = {
     "scaled/symmetries": Track(
         directory=Path(unsat.__file__).parent / "scaled",
         suite=scaled.SUITE,
-        benchmarks_dir=BENCHMARKS / "scaled-over-nomystery",
+        benchmarks_dir=BENCHMARKS / "scaled",
         driver="scripts.unsolvability",
         modes=("abs-ms", "ms"),
     ),

@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+import re
 import statistics
 import sys
 from datetime import datetime
@@ -389,21 +390,39 @@ def _by_domain(problems, modes, verdict_run, labels):
         title, succeeded = "Plans found by domain", lambda row: row["status"] == "success"
 
     domains = {}
+    # A scaled domain counts each base problem once across its sizes.
+    names = {}
     for problem in problems:
-        domain = next(iter(problem.values()))["domain"]
+        row = next(iter(problem.values()))
+        domain = row["domain"]
         counts = domains.setdefault(domain, {"problems": 0} | {mode: 0 for mode in modes})
         counts["problems"] += 1
+        names.setdefault(domain.rpartition("/")[0] or domain, set()).add(row["problem"])
         for mode in modes:
             counts[mode] += succeeded(problem[mode])
 
-    header = _compact("Domain", ["Problems", *(labels[mode] for mode in modes)])
+    # The scaled track names its domains <domain>/size-N, and the size gets a column of its own.
+    sized = any("/" in domain for domain in domains)
+    header = _compact("Domain (problems)", [*(["Size"] if sized else []), *(labels[mode] for mode in modes)])
     lines = [header, "-" * len(header)]
-    for domain in sorted(domains):
+    # Numbers sort by value, so that over-nomystery/size-10 follows over-nomystery/size-2.
+    previous = None
+    for domain in sorted(domains, key=_numbers_by_value):
         counts = domains[domain]
-        lines.append(_compact(domain, [counts["problems"], *(counts[mode] for mode in modes)]))
-    totals = [sum(counts[key] for counts in domains.values()) for key in ("problems", *modes)]
-    lines.append(_compact("Total", totals))
+        name, _, size = domain.rpartition("/") if "/" in domain else (domain, "", "")
+        sizes = [size.removeprefix("size-")] if sized else []
+        # Only the first size of a domain names it.
+        label = f"{name} ({len(names[name])})" if name != previous else ""
+        previous = name
+        lines.append(_compact(label, [*sizes, *(counts[mode] for mode in modes)]))
+    problems = sum(counts["problems"] for counts in domains.values())
+    totals = [sum(counts[mode] for counts in domains.values()) for mode in modes]
+    lines.append(_compact(f"Total ({problems})", [*([""] if sized else []), *totals]))
     return title, lines
+
+
+def _numbers_by_value(name):
+    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", name)]
 
 
 def _relaxed_delete_bucket(relaxed_deletes):
