@@ -390,10 +390,14 @@ def _by_domain(problems, modes, verdict_run, labels):
         title, succeeded = "Plans found by domain", lambda row: row["status"] == "success"
 
     domains = {}
+    # A scaled domain counts each base problem once across its sizes.
+    names = {}
     for problem in problems:
-        domain = next(iter(problem.values()))["domain"]
+        row = next(iter(problem.values()))
+        domain = row["domain"]
         counts = domains.setdefault(domain, {"problems": 0} | {mode: 0 for mode in modes})
         counts["problems"] += 1
+        names.setdefault(domain.rpartition("/")[0] or domain, set()).add(row["problem"])
         for mode in modes:
             counts[mode] += succeeded(problem[mode])
 
@@ -402,11 +406,15 @@ def _by_domain(problems, modes, verdict_run, labels):
     header = _compact("Domain (problems)", [*(["Size"] if sized else []), *(labels[mode] for mode in modes)])
     lines = [header, "-" * len(header)]
     # Numbers sort by value, so that over-nomystery/size-10 follows over-nomystery/size-2.
+    previous = None
     for domain in sorted(domains, key=_numbers_by_value):
         counts = domains[domain]
         name, _, size = domain.rpartition("/") if "/" in domain else (domain, "", "")
         sizes = [size.removeprefix("size-")] if sized else []
-        lines.append(_compact(f"{name} ({counts['problems']})", [*sizes, *(counts[mode] for mode in modes)]))
+        # Only the first size of a domain names it.
+        label = f"{name} ({len(names[name])})" if name != previous else ""
+        previous = name
+        lines.append(_compact(label, [*sizes, *(counts[mode] for mode in modes)]))
     problems = sum(counts["problems"] for counts in domains.values())
     totals = [sum(counts[mode] for counts in domains.values()) for mode in modes]
     lines.append(_compact(f"Total ({problems})", [*([""] if sized else []), *totals]))

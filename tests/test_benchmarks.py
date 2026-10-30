@@ -765,14 +765,16 @@ class ReportTests(unittest.TestCase):
 
     def test_the_domains_are_alphabetical_and_their_sizes_increase(self):
         names = ["over-rovers/size-10", "cave-diving/size-100", "over-rovers/size-2", "cave-diving/size-3"]
-        problems = [{"ms": {"domain": name, "status": "success", "verdict": "unsolvable"}} for name in names]
+        problems = [
+            {"ms": {"domain": name, "problem": "prob01.pddl", "status": "success", "verdict": "unsolvable"}}
+            for name in names
+        ]
 
         _title, lines = _by_domain(problems, ("ms",), True, _labels([]))
 
-        rows = [(line.split()[0], line.split()[2]) for line in lines[2:-1]]
-        self.assertEqual(
-            rows, [("cave-diving", "3"), ("cave-diving", "100"), ("over-rovers", "2"), ("over-rovers", "10")]
-        )
+        sizes = [line.split()[-2] for line in lines[2:-1]]
+        self.assertEqual(sizes, ["3", "100", "2", "10"])
+        self.assertEqual([line.split()[0] for line in lines[2:-1] if "(" in line], ["cave-diving", "over-rovers"])
 
     def test_each_abstraction_is_compared_against_its_solver_alone(self):
         """Intersecting every mode would drop the problems one solver missed out
