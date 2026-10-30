@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+import re
 import statistics
 import sys
 from datetime import datetime
@@ -398,12 +399,17 @@ def _by_domain(problems, modes, verdict_run, labels):
 
     header = _compact("Domain", ["Problems", *(labels[mode] for mode in modes)])
     lines = [header, "-" * len(header)]
-    for domain in sorted(domains):
+    # Numbers sort by value, so that over-nomystery/size-10 follows over-nomystery/size-2.
+    for domain in sorted(domains, key=_numbers_by_value):
         counts = domains[domain]
         lines.append(_compact(domain, [counts["problems"], *(counts[mode] for mode in modes)]))
     totals = [sum(counts[key] for counts in domains.values()) for key in ("problems", *modes)]
     lines.append(_compact("Total", totals))
     return title, lines
+
+
+def _numbers_by_value(name):
+    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", name)]
 
 
 def _relaxed_delete_bucket(relaxed_deletes):
