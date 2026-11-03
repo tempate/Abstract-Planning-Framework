@@ -719,6 +719,26 @@ class CollectedCsvTests(unittest.TestCase):
 
 
 class ReportTests(unittest.TestCase):
+    def test_the_report_names_the_class_each_abstract_mode_did_best_with(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.csv"
+            with results.open("w", encoding="utf-8", newline="") as stream:
+                writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                writer.writeheader()
+                for mode, rank, seconds in (("asp", "", "5"), ("abs-asp", "0", "90"), ("abs-asp", "1", "40")):
+                    writer.writerow(
+                        {field: "" for field in FIELDS}
+                        | {"domain": "example", "problem": "p01.pddl", "mode": mode, "class": rank}
+                        | {"status": "success", "wall_time_seconds": seconds, "decrements": "0", "increments": "0"}
+                    )
+
+            with patch("sys.argv", ["report", str(results)]), contextlib.redirect_stdout(io.StringIO()):
+                experiments.report.main()
+
+            with (Path(directory) / "best_classes.csv").open(encoding="utf-8", newline="") as stream:
+                rows = list(csv.DictReader(stream))
+        self.assertEqual(rows, [{"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": "1"}])
+
     def test_running_the_report_writes_it_beside_the_results(self):
         with tempfile.TemporaryDirectory() as directory:
             results = Path(directory) / "results.csv"

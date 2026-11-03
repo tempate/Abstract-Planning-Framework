@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import experiments.fetch
@@ -58,6 +59,26 @@ class FetchTests(unittest.TestCase):
 
         self.assertTrue(_checkout_holds(head))
         self.assertFalse(_checkout_holds("0" * 40))
+
+    def test_a_commit_that_only_refreshes_results_still_holds_the_code(self):
+        with tempfile.TemporaryDirectory() as directory:
+            git = lambda *args: subprocess.run(
+                ["git", "-C", directory, *args], check=True, capture_output=True, text=True
+            )
+            git("init", "-q")
+            git("config", "user.email", "test@example.com")
+            git("config", "user.name", "Test")
+            (Path(directory) / "planner.py").write_text("code\n")
+            git("add", "-A")
+            git("commit", "-q", "-m", "Code")
+            run_commit = git("rev-parse", "HEAD").stdout.strip()
+            for name in ("results.csv", "report.md", "best_classes.csv"):
+                (Path(directory) / name).write_text("rows\n")
+            git("add", "-A")
+            git("commit", "-q", "-m", "Update results")
+
+            with contextlib.chdir(directory):
+                self.assertTrue(_checkout_holds(run_commit))
 
     def test_each_pull_gets_a_directory_of_its_own(self):
         pulls = [self._run(["--remote-dir", "/apf/branch/runs/"])[0] for _ in range(2)]

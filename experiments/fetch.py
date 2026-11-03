@@ -54,6 +54,10 @@ def _argument_parser():
     return parser
 
 
+# What report and collect rewrite beside a track's results, none of which changes the code a run measures.
+RESULT_FILES = ("results.csv", "report.md", "best_classes.csv")
+
+
 def _manifest_commit(results_dir):
     """The commit the run was submitted from, as its manifest records it."""
     manifest = Path(results_dir) / MANIFEST_NAME
@@ -66,7 +70,7 @@ def _checkout_holds(commit):
     if completed.returncode != 0:
         # A commit this clone does not have.
         return False
-    return all(Path(name).name in ("results.csv", "report.md") for name in completed.stdout.splitlines())
+    return all(Path(name).name in RESULT_FILES for name in completed.stdout.splitlines())
 
 
 def _pull(host, remote_dir, into, dry_run):

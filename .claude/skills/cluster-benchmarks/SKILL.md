@@ -179,7 +179,7 @@ It prints the producing commit and the directory, which holds the run's
 `--remote-dir` defaults to the checkout named after the current branch.
 
 `fetch` collects only into a checkout whose code matches the commit that produced
-the run. Commits that touch only `results.csv` or `report.md` do not count. When the
+the run. Commits that touch only `results.csv`, `report.md` or `best_classes.csv` do not count. When the
 branch has moved on with code changes that cannot change behavior, collect in a
 detached checkout of the producing commit and copy the CSVs to the branch tip.
 

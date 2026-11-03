@@ -90,6 +90,8 @@ python -m experiments.figure sat --base origin/main --out before-after.png
   baseline or a gap-filling run can be collected on its own.
   `report` rewrites the `report.md` beside the CSV, comparing only the
   problems every mode finished and saying how many it dropped.
+  It also rewrites `best_classes.csv`, the class each abstract mode did best
+  with on each problem.
 
 ## Tests
 
