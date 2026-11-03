@@ -9,6 +9,10 @@ records what each rank collapses rather than telling the run.
 
 Every problem is scanned in a child process, which a time and memory limit can
 stop, and logged as it finishes, so a stopped scan resumes where it left off.
+
+With --submit, the scan runs on the cluster instead, as one Slurm task per
+problem of the suite, each ranking that problem's classes. --collect then writes
+both problems.txt and classes.txt from what the tasks found.
 """
 
 import argparse
@@ -19,12 +23,16 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from experiments.run import RESULTS_DIR
 from experiments.tracks import TRACKS, find_domain, has_other_status, is_domain_file
 
 WORKERS = 1
 # Detection gets 300 seconds; reading and ranking the classes needs the rest.
 TIMEOUT = 600
 MEMORY_LIMIT = 8 * 1024**3
+# A submitted task holds the child under MEMORY_LIMIT and the Python that waits on it.
+TASK_MEMORY = "9G"
+TASK_MINUTES = 20
 PROBLEMS_HEADER = """# Problems with a class to collapse.
 # Regenerate with:
 #   python -m experiments.scan --track {track}
@@ -76,6 +84,16 @@ def main():
     args = _argument_parser().parse_args()
     track = TRACKS[args.track]
     source = args.track.split("/")[1]
+    if args.submit:
+        _submit(args.track, track)
+        return
+    if args.task is not None:
+        _scan_task(args.track, track, args.task, source, args.timeout)
+        return
+    if args.collect:
+        _collect(args.track, track)
+        return
+
     if args.classes:
         tasks = sorted(track.runnable())
         output, script, write = track.classes_file, RANK, _write_classes
@@ -97,6 +115,56 @@ def main():
             write(output, scanned, args.track)
 
     print(f"Wrote what {len(scanned)} scanned problems have to {output}")
+
+
+def _submit(track_name, track):
+    """Submit one Slurm task per problem of the suite, each ranking the problem's classes."""
+    tasks = sorted(_suite_problems(track.benchmarks_dir, track.suite))
+    directory = _task_dir(track_name)
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "tasks.txt").write_text("".join(f"{_name(task)}\n" for task in tasks), encoding="utf-8")
+    task_command = f"{sys.executable} -m experiments.scan --track {track_name} --task $SLURM_ARRAY_TASK_ID"
+    command = [
+        "sbatch",
+        f"--array=0-{len(tasks) - 1}",
+        "--partition=any",
+        "--cpus-per-task=1",
+        f"--mem={TASK_MEMORY}",
+        f"--time={TASK_MINUTES}",
+        f"--job-name=scan-{track_name.replace('/', '-')}",
+        f"--output={directory}/%a.out",
+        f"--wrap={task_command}",
+    ]
+    subprocess.run(command, cwd=RESULTS_DIR.parent, check=True)
+    print(f"Submitted {len(tasks)} problems; collect with python -m experiments.scan --track {track_name} --collect")
+
+
+def _scan_task(track_name, track, index, source, timeout):
+    directory = _task_dir(track_name)
+    name = (directory / "tasks.txt").read_text(encoding="utf-8").splitlines()[index]
+    domain_name, _, problem = name.rpartition("/")
+    name, outcome = _scan(track.benchmarks_dir, domain_name, problem, RANK, source, timeout)
+    (directory / f"{index}.tsv").write_text(f"{name}\t{outcome}\n", encoding="utf-8")
+
+
+def _collect(track_name, track):
+    """Write problems.txt and classes.txt from the outcomes of the submitted tasks."""
+    scanned = {}
+    for result in sorted(_task_dir(track_name).glob("*.tsv")):
+        name, _, outcome = result.read_text(encoding="utf-8").strip().partition("\t")
+        scanned[name] = outcome
+
+    # A ranking that found no class lists none, which problems.txt leaves out.
+    found = {name: "none" if outcome == "[]" else outcome for name, outcome in scanned.items()}
+    _write_problems(track.runnable_file, found, track_name)
+    _write_classes(track.classes_file, scanned, track_name)
+    log = "".join(f"{name}\t{outcome}\n" for name, outcome in sorted(scanned.items()))
+    track.classes_file.with_suffix(".log").write_text(log, encoding="utf-8")
+    print(f"Wrote what {len(scanned)} scanned problems have to {track.runnable_file} and {track.classes_file}")
+
+
+def _task_dir(track_name):
+    return RESULTS_DIR / "scan" / track_name.replace("/", "-")
 
 
 def _suite_problems(benchmarks_dir, suite):
@@ -174,6 +242,13 @@ def _argument_parser():
         "--classes",
         action="store_true",
         help="Rank every class of the problems in problems.txt into classes.txt, instead of finding those problems",
+    )
+    parser.add_argument(
+        "--submit", action="store_true", help="Scan on the cluster, one Slurm task per problem of the suite"
+    )
+    parser.add_argument("--task", type=int, help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--collect", action="store_true", help="Write problems.txt and classes.txt from the submitted tasks"
     )
     parser.add_argument("--timeout", type=int, default=TIMEOUT, help="Limit per problem in seconds")
     parser.add_argument("--workers", type=int, default=WORKERS, help="Problems to scan at a time")
