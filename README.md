@@ -87,6 +87,8 @@ python -m experiments.figure sat --base origin/main --out before-after.png
 - `--track sat-htg` submits `experiments/htg/sat/` over the hard-to-ground
   benchmarks of [htg-domains](https://github.com/abcorrea/htg-domains), a
   submodule, with the sat track's modes and the full grounding.
+- `--track opt-htg` submits `experiments/htg/opt/` over the same benchmarks,
+  with `labyrinth/OPT` in place of `labyrinth/SAT`, and the opt track's modes.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
 - `collect` rewrites the `results.csv` of the track the run's manifest names,
