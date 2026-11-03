@@ -2,9 +2,9 @@
 
 from dataclasses import dataclass, replace
 
-from core.integrations.fast_downward import Search, find_plan, find_sas_plan, has_plan, parse_plan_actions
+from core.integrations.fast_downward import Search, find_plan, find_sas_plan, parse_plan_actions
 from core.metrics import PlanningMetrics
-from core.outcomes import SOLVABLE, UNSOLVABLE, UnsolvableTaskError
+from core.outcomes import UnsolvableTaskError
 from core.planning.config import PlanningConfig
 from core.planning.execution import temp_run_dir
 from core.planning.validation import validated
@@ -56,18 +56,3 @@ class FastDownward:
         actions = tuple(replace(action, time_step=action.time_step + 1) for action in parse_plan_actions(plan))
         metrics.set_counter("abstract_plan_length", len(actions))
         return actions, len(actions)
-
-    def check_solvability(self, config: PlanningConfig, on_update=None):
-        """Search the concrete task, which settles it either way."""
-        metrics = PlanningMetrics(on_update=on_update)
-        with metrics.measure("total"):
-            with temp_run_dir("concrete") as (base_dir, run_id):
-                with metrics.measure("fd_search"):
-                    found = has_plan(base_dir, config.domain_path, config.problem_path, "concrete", self.search)
-
-        return {
-            "configuration": config.as_dict(),
-            "verdict": SOLVABLE if found else UNSOLVABLE,
-            "run_id": run_id,
-            "metrics": metrics.as_dict(),
-        }

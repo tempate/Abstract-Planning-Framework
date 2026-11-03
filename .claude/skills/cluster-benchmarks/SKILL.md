@@ -18,7 +18,7 @@ its results are pushed, and ready from then on (see **Closing the loop**).
 ## Checkouts
 
 Every run has its own checkout, a worktree of the bare repo `~/apf/.bare` at
-`~/apf/<branch>`. Its `lib/downward`, `lib/pddl-symmetries`, `lib/plasp/bin`,
+`~/apf/<branch>`. Its `lib/downward`, `lib/pddl-symmetries`, `lib/plasp/bin`, `lib/ms-unsat/src`,
 `experiments/benchmarks/downward-benchmarks` and, where vendored,
 `lib/numeric-fast-downward` are symlinks into `~/apf/.shared`, the only built copy.
 Nothing is built per checkout, so a branch that moved a submodule pointer would
@@ -50,6 +50,7 @@ and names what is missing, rather than queueing jobs that all die the same way:
 | `pybind11_blissmodule.so` | every abstract job dies in symmetry discovery |
 | `lib/downward/builds/release` | exit code 36, `Could not find build 'release'` |
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
+| `lib/ms-unsat/src/search/downward-release` | every unsat-track job fails before its search |
 | `lib/numeric-fast-downward/builds/release64` | `numeric-fast-downward binary not found`, on every resources-track job |
 
 Smoke-test a branch that changes the pipeline, which the checks above cannot
@@ -138,16 +139,16 @@ refusing to start a finished task twice, and their stdout says
 ## Watching a run
 
 Every run in the queue gets a background watch without being asked, including runs
-submitted in an earlier session. One watch per PR, polling every ten minutes. Open a
-fresh ssh for each poll, and treat a failed ssh as no answer, never as an empty
-queue:
+submitted in an earlier session. One watch per PR, polling every hour while the run likely
+has three hours or more left, and every 15 minutes after that. Open a fresh ssh for each poll,
+and treat a failed ssh as no answer, never as an empty queue:
 
 ```bash
 while true; do
   queue=$(ssh -o BatchMode=yes -o ConnectTimeout=20 copperhead 'squeue -u dquilez -h -o "%j"') \
     || { sleep 60; continue; }
   grep -qE '<run-name>|<other-run-name>' <<<"$queue" || break
-  sleep 600
+  sleep 900   # 3600 while three hours or more are likely left
 done
 ```
 

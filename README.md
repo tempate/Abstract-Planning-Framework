@@ -13,9 +13,9 @@ python -m pip install -e ".[dev]"
 python -m scripts.setup
 ```
 
-`scripts.setup` initializes the submodules and builds the three things pip does
-not install: the pybliss extension, the Fast Downward release build, and the
-pinned plasp binary. Skipping it fails at planning time rather than at setup
+`scripts.setup` initializes the submodules and builds the four things pip does
+not install: the pybliss extension, the Fast Downward release build, the
+pinned plasp binary, and MS-unsat from the Unsolvability IPC 2016. Skipping it fails at planning time rather than at setup
 time.
 
 For automatic formatting on commit:
@@ -82,7 +82,8 @@ python -m experiments.figure sat --base origin/main --out before-after.png
   `python -m experiments.scan --track opt/resources` writes.
 - `--track unsat` submits `experiments/unsat/symmetries/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
-  a plan. Only the probNN problems run, the ones known to be unsolvable.
+  a plan. Both modes search with MS-unsat, Torralba and Hoffmann's
+  merge-and-shrink entry to that competition. Only the probNN problems run, the ones known to be unsolvable.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
 - `collect` rewrites the `results.csv` of the track the run's manifest names,

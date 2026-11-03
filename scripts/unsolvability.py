@@ -1,4 +1,4 @@
-"""Decide one PDDL task with Fast Downward, directly or through its abstraction.
+"""Decide one PDDL task with MS-unsat, directly or through its abstraction.
 
 The abstraction over-approximates, so the two modes answer different questions.
 ``ms`` settles the task: solvable or unsolvable. ``abs-ms`` searches the

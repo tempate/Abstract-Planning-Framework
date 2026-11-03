@@ -4,7 +4,8 @@ import os
 from dataclasses import replace
 
 from core.integrations.clingo import parse_plan_actions
-from core.integrations.fast_downward import MS, has_plan, pddl_to_sas
+from core.integrations.fast_downward import pddl_to_sas
+from core.integrations.ms_unsat import has_plan
 from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.abstraction.relaxation import SPLIT_SEPARATOR
@@ -99,7 +100,7 @@ def check_solvability(config: AbstractPlanningConfig, on_update=None):
                     domain_path, problem_path, _ = write_abstract_problem(abstract_problem.problem, base_dir)
 
                 with metrics.measure("abstract_fd_search"):
-                    found = has_plan(base_dir, domain_path, problem_path, "abstract", MS)
+                    found = has_plan(base_dir, domain_path, problem_path, "abstract")
             except UnsolvableTaskError:
                 # Symmetry discovery reads the concrete task, so proving it
                 # unsolvable there is the verdict, not a failure to reach one.
