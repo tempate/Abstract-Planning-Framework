@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-03 10:45 — experiments/sat/symmetries/results.csv
+2026-11-03 10:45 — experiments/ipc/sat/symmetries/results.csv
 
 557 problems compared over asp, abs-asp, abs-lama, lama
 

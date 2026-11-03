@@ -12,7 +12,7 @@ import re
 from pathlib import Path
 
 from experiments.tracks import TRACKS, find_domain
-from experiments.unsat.scaled.suite import SIZES
+from experiments.ipc.unsat.scaled.suite import SIZES
 
 ATOM = re.compile(r"\([^()]*\)")
 

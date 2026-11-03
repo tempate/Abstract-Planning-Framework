@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-03 13:39 — experiments/unsat/scaled/results.csv
+2026-11-03 13:39 — experiments/ipc/unsat/scaled/results.csv
 
 210 problems compared over abs-ms, ms
 

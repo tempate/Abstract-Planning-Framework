@@ -5,11 +5,11 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from experiments.opt import suite as opt
-from experiments.sat import suite as sat
-from experiments.sat.htg import suite as htg
-from experiments.unsat import suite as unsat
-from experiments.unsat.scaled import suite as scaled
+from experiments.htg.sat import suite as htg
+from experiments.ipc.opt import suite as opt
+from experiments.ipc.sat import suite as sat
+from experiments.ipc.unsat import suite as unsat
+from experiments.ipc.unsat.scaled import suite as scaled
 
 # The benchmark collections. A track says which of their problems it runs; it
 # does not own the PDDL, so that two tracks over one collection cannot drift

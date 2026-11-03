@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-03 11:07 — experiments/opt/resources/results.csv
+2026-11-03 11:07 — experiments/ipc/opt/resources/results.csv
 
 373 problems compared over asp, abs-asp, abs-lmcut, lmcut
 

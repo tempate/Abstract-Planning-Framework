@@ -79,9 +79,7 @@ def _tracks(revision, kind, manifests):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
     tracks = {}
     for source in KIND_SOURCES[kind]:
-        text = subprocess.check_output(
-            ["git", "-C", PROJECT_ROOT, "show", f"{revision}:experiments/{kind}/{source}/results.csv"], text=True
-        )
+        text = _results_at(revision, kind, source)
         rows = select(list(csv.DictReader(io.StringIO(text))), kind, source, manifests)
         with tempfile.NamedTemporaryFile("w", suffix=".csv", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=rows[0].keys())
@@ -90,6 +88,17 @@ def _tracks(revision, kind, manifests):
             stream.flush()
             tracks[source] = _finished_problems(stream.name)[1]
     return tracks
+
+
+def _results_at(revision, kind, source):
+    # Revisions from before experiments/ipc/ keep the IPC tracks one level higher.
+    for directory in (f"experiments/ipc/{kind}/{source}", f"experiments/{kind}/{source}"):
+        shown = subprocess.run(
+            ["git", "-C", PROJECT_ROOT, "show", f"{revision}:{directory}/results.csv"], capture_output=True, text=True
+        )
+        if shown.returncode == 0:
+            return shown.stdout
+    raise SystemExit(f"No {kind}/{source} results.csv at {revision}")
 
 
 def _panel(title, kind, tracks):

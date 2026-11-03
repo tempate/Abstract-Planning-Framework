@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-03 10:45 — experiments/sat/resources/results.csv
+2026-11-03 10:45 — experiments/ipc/sat/resources/results.csv
 
 330 problems compared over asp, abs-asp, abs-lama, lama
 
