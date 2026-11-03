@@ -32,7 +32,10 @@ TIMEOUT = 600
 MEMORY_LIMIT = 8 * 1024**3
 # A submitted task holds the child under MEMORY_LIMIT and the Python that waits on it.
 TASK_MEMORY = "9G"
-TASK_MINUTES = 20
+# A little past TIMEOUT, so that the scan records a timeout before Slurm kills the task.
+TASK_MINUTES = 12
+# Each takes an equal share of a submitted scan, as one array apiece.
+PARTITIONS = ("sunnycove", "broadwell")
 PROBLEMS_HEADER = """# Problems with a class to collapse.
 # Regenerate with:
 #   python -m experiments.scan --track {track}
@@ -130,18 +133,23 @@ def _submit(track_name, track, domains):
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "tasks.txt").write_text("".join(f"{_name(task)}\n" for task in tasks), encoding="utf-8")
     task_command = f"{sys.executable} -m experiments.scan --track {track_name} --task $SLURM_ARRAY_TASK_ID"
-    command = [
-        "sbatch",
-        f"--array=0-{len(tasks) - 1}",
-        "--partition=any",
-        "--cpus-per-task=1",
-        f"--mem={TASK_MEMORY}",
-        f"--time={TASK_MINUTES}",
-        f"--job-name=scan-{track_name.replace('/', '-')}",
-        f"--output={directory}/%a.out",
-        f"--wrap={task_command}",
-    ]
-    subprocess.run(command, cwd=RESULTS_DIR.parent, check=True)
+    share = -(-len(tasks) // len(PARTITIONS))
+    for number, partition in enumerate(PARTITIONS):
+        first, last = number * share, min(len(tasks), (number + 1) * share) - 1
+        if first > last:
+            continue
+        command = [
+            "sbatch",
+            f"--array={first}-{last}",
+            f"--partition={partition}",
+            "--cpus-per-task=1",
+            f"--mem={TASK_MEMORY}",
+            f"--time={TASK_MINUTES}",
+            f"--job-name=scan-{track_name.replace('/', '-')}",
+            f"--output={directory}/%a.out",
+            f"--wrap={task_command}",
+        ]
+        subprocess.run(command, cwd=RESULTS_DIR.parent, check=True)
     print(f"Submitted {len(tasks)} problems; collect with python -m experiments.scan --track {track_name} --collect")
 
 
