@@ -78,6 +78,10 @@ def main():
     _write_report(sections, args.results, reports_file, summary)
     print(f"\n{summary}")
     print(f"Wrote this report to {_relative(reports_file)}")
+    if abstractions:
+        best_file = Path(args.results).parent / "best_classes.csv"
+        _write_best_classes(args.results, best_file)
+        print(f"Wrote the best class of each problem to {_relative(best_file)}")
 
 
 def _pairs(abstractions, modes):
@@ -152,6 +156,15 @@ def best_classes(results_file):
             if key not in best or _performance(row) > _performance(best[key]):
                 best[key] = row
     return {key: int(row.get("class") or 0) for key, row in best.items()}
+
+
+def _write_best_classes(results_file, best_file):
+    """One row per problem and abstract mode, naming the class rank that did best."""
+    with Path(best_file).open("w", encoding="utf-8", newline="") as stream:
+        writer = csv.writer(stream, lineterminator="\r\n")
+        writer.writerow(("domain", "problem", "mode", "class"))
+        for (domain, problem, mode), rank in sorted(best_classes(results_file).items()):
+            writer.writerow((domain, problem, mode, rank))
 
 
 def _performance(row):
