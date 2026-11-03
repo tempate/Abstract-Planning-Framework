@@ -139,8 +139,8 @@ refusing to start a finished task twice, and their stdout says
 ## Watching a run
 
 Every run in the queue gets a background watch without being asked, including runs
-submitted in an earlier session. One watch per PR, polling every 15 minutes, or every hour
-when the run will likely take ten hours or more. Open a fresh ssh for each poll,
+submitted in an earlier session. One watch per PR, polling every hour while the run likely
+has three hours or more left, and every 15 minutes after that. Open a fresh ssh for each poll,
 and treat a failed ssh as no answer, never as an empty queue:
 
 ```bash
@@ -148,7 +148,7 @@ while true; do
   queue=$(ssh -o BatchMode=yes -o ConnectTimeout=20 copperhead 'squeue -u dquilez -h -o "%j"') \
     || { sleep 60; continue; }
   grep -qE '<run-name>|<other-run-name>' <<<"$queue" || break
-  sleep 900   # 3600 for a run of ten hours or more
+  sleep 900   # 3600 while three hours or more are likely left
 done
 ```
 
