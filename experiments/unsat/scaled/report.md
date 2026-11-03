@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-10-30 15:47 — experiments/unsat/scaled/results.csv
+2026-11-03 10:45 — experiments/unsat/scaled/results.csv
 
 210 problems compared over abs-ms, ms
 
@@ -23,10 +23,10 @@ Total problems                          210          210
 Metric                                 M&Sᵅ          M&S
 --------------------------------------------------------
 Proved unsolvable by both                93           93
-Faster                           43 (46.2%)   50 (53.8%)
+Faster                           35 (37.6%)   58 (62.4%)
 Proved when the other did not           117            0
-Median runtime                       9.75 s       5.00 s
-Total runtime                    9,131.48 s  17,925.07 s
+Median runtime                      13.33 s       5.00 s
+Total runtime                   14,200.30 s  17,925.07 s
 ```
 
 ## Where the timeouts died

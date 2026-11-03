@@ -456,6 +456,36 @@ class AbstractionTransformationTests(unittest.TestCase):
         shift = result.problem.action("shift")
         self.assertFalse(any(effect.value.is_false() for effect in shift.effects))
 
+    def test_relaxes_a_delete_only_for_the_groundings_that_take_a_collapsed_object(self):
+        domain = """
+(define (domain transit)
+  (:requirements :strips :typing)
+  (:types item place)
+  (:predicates
+    (at ?x - item ?p - place)
+    (linked ?a - place ?b - place))
+  (:action shift
+    :parameters (?x - item ?from - place ?to - place)
+    :precondition (and (at ?x ?from) (linked ?from ?to))
+    :effect (and (at ?x ?to) (not (at ?x ?from)))))
+"""
+        problem_text = """
+(define (problem transit-task)
+  (:domain transit)
+  (:objects item-a item-b item-c - item dock stage - place)
+  (:init (at item-a dock) (at item-b dock) (at item-c dock) (linked dock stage))
+  (:goal (and (at item-a stage) (at item-b stage) (at item-c stage))))
+"""
+        source = parse_problem(domain, problem_text)
+
+        result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
+
+        # item-c still leaves the dock when it moves, and only the copy of
+        # shift for the collapsed object keeps it at the dock too.
+        deletes = lambda name: any(effect.value.is_false() for effect in result.problem.action(name).effects)
+        self.assertTrue(deletes("shift"))
+        self.assertFalse(deletes("shift--abs-1"))
+
     def test_relaxes_a_delete_that_names_a_collapsed_object_directly(self):
         domain = """
 (define (domain depot)

@@ -1,5 +1,115 @@
 """Find what the collapse would falsify, so that it can be relaxed instead."""
 
+import itertools
+from collections import OrderedDict
+
+from unified_planning.model import Fluent, InstantaneousAction
+
+# A split action keeps the name it came from, so the refinement can still find
+# it in the concrete task, and carries the separator to mark what it is.
+SPLIT_SEPARATOR = "--abs-"
+
+
+def split_actions(problem, abstraction):
+    """Split each action on whether its collapsible parameters take a collapsed object.
+
+    Relaxing a delete or an inequality on the schema relaxes it in every
+    grounding, including the ones that name no collapsed object. Each copy of an
+    action fixes, through static markers, which of its parameters take a
+    collapsed object, so the relaxation that follows reaches only the groundings
+    that need it.
+    """
+    collapsed = _collapsed_objects(problem, abstraction)
+    collapsed_type = _collapsed_type(problem, abstraction)
+    static_fluents = problem.get_static_fluents()
+    true_facts = [fluent for fluent, value in problem.explicit_initial_values.items() if value.is_true()]
+
+    split_problem = problem.clone()
+    collapsed_marker, kept_marker = _add_markers(split_problem, abstraction, collapsed)
+    split_problem.clear_actions()
+    for action in problem.actions:
+        if SPLIT_SEPARATOR in action.name:
+            raise ValueError(f"Action name already holds the split separator: {action.name}")
+        parameters = _split_parameters(problem, action, collapsed, collapsed_type, static_fluents, true_facts)
+        if not parameters:
+            split_problem.add_action(action)
+            continue
+        for index, takes_collapsed in enumerate(itertools.product((False, True), repeat=len(parameters))):
+            name = f"{action.name}{SPLIT_SEPARATOR}{index}" if any(takes_collapsed) else action.name
+            markers = [
+                (collapsed_marker if is_collapsed else kept_marker)(parameter)
+                for parameter, is_collapsed in zip(parameters, takes_collapsed)
+            ]
+            split_problem.add_action(_with_preconditions(action, name, markers))
+    return split_problem
+
+
+def _add_markers(problem, abstraction, collapsed):
+    """Static facts telling the collapsed objects apart from every other object of their type tree."""
+    root = _collapsed_type(problem, abstraction)
+    while root.father is not None:
+        root = root.father
+
+    boolean = problem.environment.type_manager.BoolType()
+    collapsed_marker = Fluent(f"{abstraction.name}-collapsed", boolean, environment=problem.environment, x=root)
+    kept_marker = Fluent(f"{abstraction.name}-kept", boolean, environment=problem.environment, x=root)
+    problem.add_fluent(collapsed_marker, default_initial_value=False)
+    problem.add_fluent(kept_marker, default_initial_value=False)
+    for item in problem.all_objects:
+        if item.type != root and not item.type.is_subtype(root):
+            continue
+        marker = collapsed_marker if item in collapsed else kept_marker
+        problem.set_initial_value(marker(item), True)
+    return collapsed_marker, kept_marker
+
+
+def _split_parameters(problem, action, collapsed, collapsed_type, static_fluents, true_facts):
+    """The parameters that reach an effect or an inequality and can take both a collapsed object and another one."""
+    candidates = []
+    for effect in action.effects:
+        candidates.extend(effect.fluent.args)
+    for atom in _conjuncts(action.preconditions):
+        if atom.is_not() and atom.arg(0).is_equals():
+            candidates.extend(atom.arg(0).args)
+
+    parameters = []
+    for candidate in candidates:
+        if not candidate.is_parameter_exp() or candidate in parameters:
+            continue
+        if not _is_variable_of(candidate, collapsed_type):
+            continue
+        # A parameter that only ever takes collapsed objects, as when the class
+        # is a whole type, relaxes in every grounding, so a split gains nothing.
+        others = {
+            item
+            for item in problem.all_objects
+            if item not in collapsed and (item.type == candidate.type or item.type.is_subtype(candidate.type))
+        }
+        if _can_bind(action, candidate, collapsed, static_fluents, true_facts) and _can_bind(
+            action, candidate, others, static_fluents, true_facts
+        ):
+            parameters.append(candidate)
+    return parameters
+
+
+def _with_preconditions(action, name, conditions):
+    parameters = OrderedDict((parameter.name, parameter.type) for parameter in action.parameters)
+    copy = InstantaneousAction(name, parameters, action.environment)
+    for precondition in action.preconditions:
+        copy.add_precondition(precondition)
+    for condition in conditions:
+        copy.add_precondition(condition)
+    for effect in action.effects:
+        if effect.is_assignment():
+            copy.add_effect(effect.fluent, effect.value, effect.condition, effect.forall)
+        elif effect.is_increase():
+            copy.add_increase_effect(effect.fluent, effect.value, effect.condition, effect.forall)
+        elif effect.is_decrease():
+            copy.add_decrease_effect(effect.fluent, effect.value, effect.condition, effect.forall)
+        else:
+            raise ValueError(f"Unsupported effect in action {action.name}: {effect}")
+    return copy
+
 
 def find_relaxable_deletes(problem, abstraction):
     """Find the deletes that could remove a fact other collapsed objects still hold.
@@ -105,13 +215,21 @@ def relax_inequalities(problem, abstraction):
     """
     collapsed = _collapsed_objects(problem, abstraction)
     collapsed_type = _collapsed_type(problem, abstraction)
+    static_fluents = problem.get_static_fluents()
+    true_facts = [fluent for fluent, value in problem.explicit_initial_values.items() if value.is_true()]
+
+    def can_be_collapsed(action, side):
+        if side.is_object_exp():
+            return side.object() in collapsed
+        return _is_variable_of(side, collapsed_type) and _can_bind(action, side, collapsed, static_fluents, true_facts)
+
     relaxed_problem = problem.clone()
 
     relaxed = []
     for action in relaxed_problem.actions:
         kept = []
         for precondition in action.preconditions:
-            condition = _without_inequalities(action, precondition, collapsed, collapsed_type, relaxed)
+            condition = _without_inequalities(action, precondition, can_be_collapsed, relaxed)
             if condition is not None:
                 kept.append(condition)
         action.clear_preconditions()
@@ -121,14 +239,14 @@ def relax_inequalities(problem, abstraction):
     return relaxed_problem, tuple(relaxed)
 
 
-def _without_inequalities(action, condition, collapsed, collapsed_type, relaxed):
+def _without_inequalities(action, condition, can_be_collapsed, relaxed):
     """Drop the relaxable inequalities from a condition, or None if nothing is left.
 
     The reader hands over a whole conjunction as one precondition, so the
     inequality usually sits inside an and rather than beside it.
     """
     if condition.is_not() and condition.arg(0).is_equals():
-        if all(_can_be_collapsed(side, collapsed, collapsed_type) for side in condition.arg(0).args):
+        if all(can_be_collapsed(action, side) for side in condition.arg(0).args):
             relaxed.append((action.name, condition))
             return None
     if not condition.is_and():
@@ -136,7 +254,7 @@ def _without_inequalities(action, condition, collapsed, collapsed_type, relaxed)
 
     kept = []
     for argument in condition.args:
-        kept_argument = _without_inequalities(action, argument, collapsed, collapsed_type, relaxed)
+        kept_argument = _without_inequalities(action, argument, can_be_collapsed, relaxed)
         if kept_argument is not None:
             kept.append(kept_argument)
     if not kept:
@@ -144,12 +262,6 @@ def _without_inequalities(action, condition, collapsed, collapsed_type, relaxed)
     if len(kept) == 1:
         return kept[0]
     return condition.environment.expression_manager.And(kept)
-
-
-def _can_be_collapsed(expression, collapsed, collapsed_type):
-    if expression.is_object_exp():
-        return expression.object() in collapsed
-    return _is_variable_of(expression, collapsed_type)
 
 
 def _is_variable_of(expression, collapsed_type):
