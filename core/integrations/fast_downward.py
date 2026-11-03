@@ -66,8 +66,28 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
 
 
 def find_plan(base_dir, domain_path, problem_path, label, search):
-    """Search one PDDL task, returning its plan or None."""
-    completed_process, plan_path = _search(base_dir, domain_path, problem_path, label, search)
+    """Translate and search one PDDL task, returning its plan or None."""
+    os.makedirs(base_dir, exist_ok=True)
+    plan_path = os.path.join(base_dir, f"{label}.plan")
+    # Both paths have to be named. Left to itself the driver writes and reads
+    # output.sas in the working directory, which every task of a cluster run
+    # shares, so concurrent tasks truncate and delete each other's file.
+    sas_path = os.path.join(base_dir, f"{label}.sas")
+    # The driver reads its own options before the task and passes on whatever
+    # follows it, so an alias and a search configuration go on opposite sides.
+    command = [
+        sys.executable,
+        FAST_DOWNWARD_SCRIPT,
+        "--sas-file",
+        sas_path,
+        "--plan-file",
+        plan_path,
+        *search.driver,
+        os.fspath(domain_path),
+        os.fspath(problem_path),
+        *search.options,
+    ]
+    completed_process = subprocess.run(command, capture_output=True, text=True)
     return _read_plan(plan_path) if _found_plan(completed_process, label) else None
 
 
@@ -85,33 +105,6 @@ def find_sas_plan(base_dir, sas_path, label, search):
     ]
     completed_process = subprocess.run(command, capture_output=True, text=True)
     return _read_plan(plan_path) if _found_plan(completed_process, label) else None
-
-
-def _search(base_dir, domain_path, problem_path, label, search):
-    """Translate and search one task, returning the process and its plan file.
-
-    The driver reads its own options before the task and passes on whatever
-    follows it, so an alias and a search configuration go on opposite sides.
-    """
-    os.makedirs(base_dir, exist_ok=True)
-    plan_path = os.path.join(base_dir, f"{label}.plan")
-    # Both paths have to be named. Left to itself the driver writes and reads
-    # output.sas in the working directory, which every task of a cluster run
-    # shares, so concurrent tasks truncate and delete each other's file.
-    sas_path = os.path.join(base_dir, f"{label}.sas")
-    command = [
-        sys.executable,
-        FAST_DOWNWARD_SCRIPT,
-        "--sas-file",
-        sas_path,
-        "--plan-file",
-        plan_path,
-        *search.driver,
-        os.fspath(domain_path),
-        os.fspath(problem_path),
-        *search.options,
-    ]
-    return subprocess.run(command, capture_output=True, text=True), plan_path
 
 
 def parse_plan_actions(plan):
