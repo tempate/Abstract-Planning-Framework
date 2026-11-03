@@ -7,6 +7,7 @@ from pathlib import Path
 
 from experiments.opt import suite as opt
 from experiments.sat import suite as sat
+from experiments.sat.htg import suite as htg
 from experiments.unsat import suite as unsat
 from experiments.unsat.scaled import suite as scaled
 
@@ -81,6 +82,14 @@ TRACKS = {
         driver="scripts.planner",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
         abstract_arguments=("--abstraction-source", "resources"),
+    ),
+    # The hard-to-ground benchmarks, refined with the full grounding like sat/symmetries.
+    "sat-htg/symmetries": Track(
+        directory=Path(htg.__file__).parent,
+        suite=htg.SUITE,
+        benchmarks_dir=BENCHMARKS / "htg-domains",
+        driver="scripts.planner",
+        modes=("abs-asp", "abs-lama", "asp", "lama"),
     ),
     # The optimal suite, refined without gaps so that every plan is optimal, with
     # abs-lmcut searching the abstract task optimally like its lmcut baseline.

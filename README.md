@@ -84,6 +84,9 @@ python -m experiments.figure sat --base origin/main --out before-after.png
   through `scripts.unsolvability`, which reports a solvability verdict instead of
   a plan. Both modes search with MS-unsat, Torralba and Hoffmann's
   merge-and-shrink entry to that competition. Only the probNN problems run, the ones known to be unsolvable.
+- `--track sat-htg` submits `experiments/sat/htg/` over the hard-to-ground
+  benchmarks of [htg-domains](https://github.com/abcorrea/htg-domains), a
+  submodule, with the sat track's modes and the full grounding.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
 - `collect` rewrites the `results.csv` of the track the run's manifest names,
