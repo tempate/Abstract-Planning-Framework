@@ -14,14 +14,7 @@ from core.plan import PlanAction
 _SUCCESS = 0
 _TRANSLATE_UNSOLVABLE = 10
 _SEARCH_UNSOLVABLE = 11
-# The translator and the search report running out of memory themselves. The
-# driver reports a component killed by a signal as 256 minus the signal, so 247
-# is a SIGKILL, which on these tasks is the kernel reclaiming the memory the
-# search asked for.
 _OUT_OF_MEMORY = (20, 22, 24, 247)
-# Reaching an unsolvable task through --translate alone is not a failure to the
-# driver, which exits 0 after the translator has written a dummy task in place
-# of the real one. The verdict only reaches us through what it printed.
 _UNSOLVABLE_MARKER = "Generating unsolvable task"
 
 
@@ -33,10 +26,9 @@ class Search:
     options: tuple[str, ...] = ()
 
 
-# An alias is a driver option, so it goes before the task.
+# Satisficing
 LAMA = Search(driver=("--alias", "lama-first"))
-# Optimal, so it gives the shortest plan to compare plan lengths against. Unit
-# costs make it minimize length like ASP and the abstraction, which drops costs.
+# Optimal
 LMCUT = Search(options=("--search", "astar(eval_modify_costs(lmcut(),cost_type=one),cost_type=one)"))
 
 
@@ -69,12 +61,7 @@ def find_plan(base_dir, domain_path, problem_path, label, search):
     """Translate and search one PDDL task, returning its plan or None."""
     os.makedirs(base_dir, exist_ok=True)
     plan_path = os.path.join(base_dir, f"{label}.plan")
-    # Both paths have to be named. Left to itself the driver writes and reads
-    # output.sas in the working directory, which every task of a cluster run
-    # shares, so concurrent tasks truncate and delete each other's file.
     sas_path = os.path.join(base_dir, f"{label}.sas")
-    # The driver reads its own options before the task and passes on whatever
-    # follows it, so an alias and a search configuration go on opposite sides.
     command = [
         sys.executable,
         FAST_DOWNWARD_SCRIPT,
@@ -87,8 +74,7 @@ def find_plan(base_dir, domain_path, problem_path, label, search):
         os.fspath(problem_path),
         *search.options,
     ]
-    completed_process = subprocess.run(command, capture_output=True, text=True)
-    return _read_plan(plan_path) if _found_plan(completed_process, label) else None
+    return _find_plan(command, label, plan_path)
 
 
 def find_sas_plan(base_dir, sas_path, label, search):
@@ -103,8 +89,7 @@ def find_sas_plan(base_dir, sas_path, label, search):
         sas_path,
         *search.options,
     ]
-    completed_process = subprocess.run(command, capture_output=True, text=True)
-    return _read_plan(plan_path) if _found_plan(completed_process, label) else None
+    return _find_plan(command, label, plan_path)
 
 
 def parse_plan_actions(plan):
@@ -112,31 +97,42 @@ def parse_plan_actions(plan):
     actions = []
     for time_step, line in enumerate(plan):
         name, *args = line.strip().strip("()").split()
-        actions.append(PlanAction(name=name, args=tuple(args), time_step=time_step))
+        action = PlanAction(name=name, args=tuple(args), time_step=time_step)
+        actions.append(action)
     return tuple(actions)
+
+
+def _find_plan(command, label, plan_path):
+    out = subprocess.run(command, capture_output=True, text=True)
+
+    if out.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
+        return None
+    elif out.returncode != _SUCCESS:
+        _raise_failure(out, label)
+
+    return _read_plan(plan_path)
 
 
 def _read_plan(plan_path):
     """Read the actions of a plan file, which ends in a comment naming its cost."""
     with open(plan_path, encoding="utf-8") as plan_file:
-        return [line.strip() for line in plan_file if line.strip() and not line.startswith(";")]
+        plan = []
+        for line in plan_file:
+            line = line.strip()
+            if line and not line.startswith(";"):
+                plan.append(line)
+        return plan
 
 
-def _found_plan(completed_process, label):
-    """Tell a search that found a plan from one that proved there is none, raising on anything else."""
-    if completed_process.returncode == _SUCCESS:
-        return True
-    if completed_process.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
-        return False
-    _raise_failure(completed_process, label)
-
-
-def _raise_failure(completed_process, label):
+def _raise_failure(out, label):
     """Report what Fast Downward said, as memory when that is what ran out."""
-    diagnostics = "\n".join(
-        output.strip() for output in (completed_process.stdout, completed_process.stderr) if output.strip()
-    )
-    message = f"Fast Downward ({label}) failed with exit code {completed_process.returncode}:\n{diagnostics}"
-    if completed_process.returncode in _OUT_OF_MEMORY:
+    message = f"Fast Downward ({label}) failed with exit code {out.returncode}"
+    if out.stdout.strip():
+        message += "\n" + out.stdout.strip()
+    if out.stderr.strip():
+        message += "\n" + out.stderr.strip()
+
+    if out.returncode in _OUT_OF_MEMORY:
         raise OutOfMemoryError(message)
-    raise IntegrationError(message)
+    else:
+        raise IntegrationError(message)
