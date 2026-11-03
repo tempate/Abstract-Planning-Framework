@@ -147,6 +147,9 @@ def _submit(track_name, track, domains):
 
 def _scan_task(track_name, track, index, source, timeout):
     directory = _task_dir(track_name)
+    # Slurm requeues tasks, sometimes after they finished, and the outcome stands.
+    if (directory / f"{index}.tsv").is_file():
+        return
     name = (directory / "tasks.txt").read_text(encoding="utf-8").splitlines()[index]
     domain_name, _, problem = name.rpartition("/")
     name, outcome = _scan(track.benchmarks_dir, domain_name, problem, RANK, source, timeout)
