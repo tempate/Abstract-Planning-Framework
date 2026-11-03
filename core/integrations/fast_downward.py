@@ -38,19 +38,6 @@ LAMA = Search(driver=("--alias", "lama-first"))
 # Optimal, so it gives the shortest plan to compare plan lengths against. Unit
 # costs make it minimize length like ASP and the abstraction, which drops costs.
 LMCUT = Search(options=("--search", "astar(eval_modify_costs(lmcut(),cost_type=one),cost_type=one)"))
-# Merge-and-shrink with bisimulation detects dead ends, as the Unsolvability
-# IPC 2016 entries did, so both sides are proved by a state-of-the-art search.
-MS = Search(
-    options=(
-        "--search",
-        "astar(merge_and_shrink("
-        "shrink_strategy=shrink_bisimulation(greedy=false),"
-        "merge_strategy=merge_sccs(order_of_sccs=topological,"
-        "merge_selector=score_based_filtering(scoring_functions=[goal_relevance(),dfp(),total_order()])),"
-        "label_reduction=exact(before_shrinking=true,before_merging=false),"
-        "max_states=50000,threshold_before_merge=1))",
-    )
-)
 
 
 def pddl_to_sas(base_dir, domain_path, problem_path, label):
@@ -76,12 +63,6 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
         _raise_failure(completed_process, label)
 
     return sas_path
-
-
-def has_plan(base_dir, domain_path, problem_path, label, search):
-    """Translate and search one PDDL task, reporting only whether it has a plan."""
-    completed_process, _ = _search(base_dir, domain_path, problem_path, label, search)
-    return _found_plan(completed_process, label)
 
 
 def find_plan(base_dir, domain_path, problem_path, label, search):

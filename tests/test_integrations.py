@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import tempfile
@@ -6,10 +7,14 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.integrations.clingo import parse_plan_actions
-from core.integrations.fast_downward import LAMA, MS, find_plan, has_plan, pddl_to_sas
+from core.integrations.fast_downward import LAMA, find_plan, pddl_to_sas
+from core.integrations.ms_unsat import has_plan
+from core.integrations.paths import MS_UNSAT_SEARCH
 from core.integrations.plasp import sas_to_asp
 from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
 from core.plan import PlanAction
+
+RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
 
 
 class ClingoPlanParsingTests(unittest.TestCase):
@@ -83,16 +88,15 @@ class FastDownwardHelperTests(unittest.TestCase):
         # tasks of a cluster run share.
         run.return_value = subprocess.CompletedProcess(args=[], returncode=10, stdout="", stderr="")
 
-        for search, configuration in ((has_plan, MS), (find_plan, LAMA)):
-            with self.subTest(search=search.__name__), tempfile.TemporaryDirectory() as directory:
-                search(directory, "domain.pddl", "problem.pddl", "label", configuration)
+        with tempfile.TemporaryDirectory() as directory:
+            find_plan(directory, "domain.pddl", "problem.pddl", "label", LAMA)
 
-                command = run.call_args.args[0]
-                written = [command[i + 1] for i, part in enumerate(command) if part in ("--sas-file", "--plan-file")]
+            command = run.call_args.args[0]
+            written = [command[i + 1] for i, part in enumerate(command) if part in ("--sas-file", "--plan-file")]
 
-                self.assertEqual(len(written), 2)
-                for path in written:
-                    self.assertTrue(path.startswith(directory), f"{path} escapes the run directory")
+            self.assertEqual(len(written), 2)
+            for path in written:
+                self.assertTrue(path.startswith(directory), f"{path} escapes the run directory")
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_the_baseline_reads_the_actions_of_the_plan_it_wrote(self, run):
@@ -129,7 +133,7 @@ class FastDownwardHelperTests(unittest.TestCase):
                 run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr="")
                 with tempfile.TemporaryDirectory() as directory:
                     with self.assertRaises(OutOfMemoryError):
-                        has_plan(directory, "domain.pddl", "problem.pddl", "abstract", MS)
+                        find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_both_unsolvable_exit_codes_mean_no_plan(self, run):
@@ -138,8 +142,62 @@ class FastDownwardHelperTests(unittest.TestCase):
                 run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr="")
 
                 with tempfile.TemporaryDirectory() as directory:
-                    self.assertFalse(has_plan(directory, "domain.pddl", "problem.pddl", "concrete", MS))
                     self.assertIsNone(find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA))
+
+
+class MsUnsatTests(unittest.TestCase):
+    @patch("core.integrations.ms_unsat.subprocess.run")
+    def test_the_search_exit_code_carries_the_verdict(self, run):
+        # The translator and the preprocessor succeed, so the search decides.
+        for returncode, found in ((0, True), (4, False)):
+            with self.subTest(returncode=returncode), tempfile.TemporaryDirectory() as directory:
+                Path(directory, "output.sas").touch()
+                Path(directory, "output").touch()
+                run.reset_mock()
+                run.side_effect = [_completed(0), _completed(0), _completed(returncode)]
+
+                self.assertIs(has_plan(directory, "domain.pddl", "problem.pddl", "concrete"), found)
+                for call in run.call_args_list:
+                    self.assertEqual(call.kwargs["cwd"], directory)
+
+    @patch("core.integrations.ms_unsat.subprocess.run")
+    def test_running_out_of_memory_is_told_apart_from_other_failures(self, run):
+        # The translator's traceback, the search's own exit code, and a SIGKILL.
+        translator_out_of_memory = [_completed(1, stderr="Traceback\nMemoryError")]
+        for steps, error in (
+            (translator_out_of_memory, OutOfMemoryError),
+            ([_completed(0), _completed(0), _completed(6)], OutOfMemoryError),
+            ([_completed(0), _completed(0), _completed(-9)], OutOfMemoryError),
+            ([_completed(1, stderr="Traceback\nKeyError")], IntegrationError),
+        ):
+            with self.subTest(steps=steps), tempfile.TemporaryDirectory() as directory:
+                Path(directory, "output.sas").touch()
+                Path(directory, "output").touch()
+                run.side_effect = steps
+
+                with self.assertRaises(error):
+                    has_plan(directory, "domain.pddl", "problem.pddl", "concrete")
+
+    @unittest.skipUnless(
+        RUN_INTEGRATION and Path(MS_UNSAT_SEARCH).exists(), "set RUN_PLANNER_INTEGRATION=1 with MS-unsat installed"
+    )
+    def test_ms_unsat_decides_real_tasks(self):
+        unsolvable = (
+            Path(__file__).resolve().parents[1] / "experiments" / "benchmarks" / "unsolve-ipc-2016" / "bag-gripper"
+        )
+        solvable = (
+            Path(__file__).resolve().parents[1] / "experiments" / "benchmarks" / "downward-benchmarks" / "gripper"
+        )
+        for domain, problem, found in (
+            (unsolvable / "domain.pddl", unsolvable / "prob01.pddl", False),
+            (solvable / "domain.pddl", solvable / "prob01.pddl", True),
+        ):
+            with self.subTest(problem=str(problem)), tempfile.TemporaryDirectory() as directory:
+                self.assertIs(has_plan(directory, domain, problem, "concrete"), found)
+
+
+def _completed(returncode, stderr=""):
+    return subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr=stderr)
 
 
 class PlaspPostProcessingTests(unittest.TestCase):

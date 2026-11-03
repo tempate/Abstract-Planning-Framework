@@ -8,12 +8,12 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from core.abstraction.factory import Abstraction, build_abstract_problem
-from core.integrations.fast_downward import LAMA, MS
+from core.integrations.fast_downward import LAMA
 from core.integrations.unified_planning import read_problem
 from core.outcomes import UnsolvableTaskError
 from core.abstraction.factory import write_abstract_problem
 from core.metrics import PlanningMetrics
-from core.planning import abstraction, asp, fd
+from core.planning import abstraction, asp, fd, ms
 from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from scripts.utils.arguments import positive_int
 
@@ -77,13 +77,13 @@ def _stubbed_decision(found):
 
 
 class DecisionTests(unittest.TestCase):
-    @patch("core.planning.fd.has_plan")
+    @patch("core.planning.ms.has_plan")
     def test_searching_the_task_itself_settles_it(self, has_plan):
         for found, verdict in ((True, "solvable"), (False, "unsolvable")):
             with self.subTest(found=found):
                 has_plan.return_value = found
 
-                result = fd.FastDownward(MS).check_solvability(PlanningConfig("domain.pddl", "problem.pddl"))
+                result = ms.check_solvability(PlanningConfig("domain.pddl", "problem.pddl"))
 
                 self.assertEqual(result["verdict"], verdict)
 
