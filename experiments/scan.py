@@ -85,7 +85,7 @@ def main():
     track = TRACKS[args.track]
     source = args.track.split("/")[1]
     if args.submit:
-        _submit(args.track, track)
+        _submit(args.track, track, args.domains)
         return
     if args.task is not None:
         _scan_task(args.track, track, args.task, source, args.timeout)
@@ -117,9 +117,15 @@ def main():
     print(f"Wrote what {len(scanned)} scanned problems have to {output}")
 
 
-def _submit(track_name, track):
+def _submit(track_name, track, domains):
     """Submit one Slurm task per problem of the suite, each ranking the problem's classes."""
-    tasks = sorted(_suite_problems(track.benchmarks_dir, track.suite))
+    suite = track.suite
+    if domains:
+        unknown = sorted(set(domains) - set(suite))
+        if unknown:
+            raise SystemExit(f"Not in this track's suite: {', '.join(unknown)}")
+        suite = [domain_name for domain_name in suite if domain_name in domains]
+    tasks = sorted(_suite_problems(track.benchmarks_dir, suite))
     directory = _task_dir(track_name)
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "tasks.txt").write_text("".join(f"{_name(task)}\n" for task in tasks), encoding="utf-8")
@@ -149,10 +155,16 @@ def _scan_task(track_name, track, index, source, timeout):
 
 def _collect(track_name, track):
     """Write problems.txt and classes.txt from the outcomes of the submitted tasks."""
-    scanned = {}
-    for result in sorted(_task_dir(track_name).glob("*.tsv")):
-        name, _, outcome = result.read_text(encoding="utf-8").strip().partition("\t")
-        scanned[name] = outcome
+    scanned = _task_outcomes(track_name)
+    # A problem another track scanned over the same benchmarks has the same classes,
+    # so a track whose suite overlaps another's submits only the problems it adds.
+    suite = {_name(task) for task in _suite_problems(track.benchmarks_dir, track.suite)}
+    source = track_name.split("/")[1]
+    for other_name, other in TRACKS.items():
+        if other.benchmarks_dir == track.benchmarks_dir and other_name.split("/")[1] == source:
+            for name, outcome in _task_outcomes(other_name).items():
+                if name in suite:
+                    scanned.setdefault(name, outcome)
 
     # A ranking that found no class lists none, which problems.txt leaves out.
     found = {name: "none" if outcome == "[]" else outcome for name, outcome in scanned.items()}
@@ -161,6 +173,14 @@ def _collect(track_name, track):
     log = "".join(f"{name}\t{outcome}\n" for name, outcome in sorted(scanned.items()))
     track.classes_file.with_suffix(".log").write_text(log, encoding="utf-8")
     print(f"Wrote what {len(scanned)} scanned problems have to {track.runnable_file} and {track.classes_file}")
+
+
+def _task_outcomes(track_name):
+    outcomes = {}
+    for result in sorted(_task_dir(track_name).glob("*.tsv")):
+        name, _, outcome = result.read_text(encoding="utf-8").strip().partition("\t")
+        outcomes[name] = outcome
+    return outcomes
 
 
 def _task_dir(track_name):
@@ -246,6 +266,7 @@ def _argument_parser():
     parser.add_argument(
         "--submit", action="store_true", help="Scan on the cluster, one Slurm task per problem of the suite"
     )
+    parser.add_argument("--domains", nargs="+", help="Submit only these domains of the track's suite")
     parser.add_argument("--task", type=int, help=argparse.SUPPRESS)
     parser.add_argument(
         "--collect", action="store_true", help="Write problems.txt and classes.txt from the submitted tasks"
