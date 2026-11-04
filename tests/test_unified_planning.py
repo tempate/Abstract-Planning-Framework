@@ -128,6 +128,28 @@ class UnifiedPlanningCodecTests(unittest.TestCase):
         (written,) = [name for name, original in serialized.original_names.items() if original == "up"]
         self.assertIn(f"(:action {written}", serialized.domain)
 
+    def test_writes_a_task_with_an_action_that_can_never_apply(self):
+        domain = """
+(define (domain switches)
+  (:requirements :strips :equality)
+  (:predicates (on ?x))
+  (:action flip
+    :parameters (?x)
+    :precondition (not (= ?x ?x))
+    :effect (on ?x))
+  (:action press
+    :parameters (?x)
+    :precondition (not (on ?x))
+    :effect (on ?x)))
+"""
+        problem = "(define (problem p) (:domain switches) (:objects a) (:init) (:goal (on a)))"
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            serialized = write_problem(parse_problem(domain, problem))
+
+        self.assertIn("(:action press", serialized.domain)
+        self.assertNotIn("(:action flip", serialized.domain)
+
     def test_round_trips_a_task_with_action_costs(self):
         source = parse_problem(ROUND_TRIP_DOMAIN, ROUND_TRIP_PROBLEM)
 
