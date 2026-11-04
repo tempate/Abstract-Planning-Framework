@@ -1,9 +1,12 @@
 """Realize an abstract plan as a concrete plan."""
 
+import os
 from dataclasses import dataclass
 
 from core.abstraction.factory import Abstraction
 from core.integrations.clingo import plan_length
+from core.integrations.fast_downward import pddl_to_sas
+from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 from core.refinement.encoding import add_gaps, concretize_abstract_actions, mapped_horizon, switches
@@ -18,19 +21,20 @@ class RefinementContext:
     abstraction: Abstraction
     run_id: str
     metrics: PlanningMetrics
-    concrete_asp: str
+    base_dir: str
 
 
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
-    """Use an abstract plan to guide concrete search."""
+    """Ground the concrete task, then use an abstract plan to guide its search."""
+    concrete_asp = _concrete_asp(context)
     gaps = not context.config.optimize
     if gaps:
         horizon = mapped_horizon(abstract_horizon)
-        asp = add_gaps(context.concrete_asp, horizon)
+        asp = add_gaps(concrete_asp, horizon)
     else:
         # Every step holds an action, so a plan is as long as the horizon it is found at.
         horizon = abstract_horizon
-        asp = context.concrete_asp
+        asp = concrete_asp
 
     asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps)
 
@@ -44,6 +48,17 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
         "success": plan is not None,
         "run_id": context.run_id,
     }
+
+
+def _concrete_asp(context):
+    """Ground the concrete task and translate it into the ASP program the refinement searches."""
+    config = context.config
+    with context.metrics.measure("concrete_fd"):
+        concrete_dir = os.path.join(context.base_dir, "concrete")
+        concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
+
+    with context.metrics.measure("concrete_asp"):
+        return sas_to_asp(concrete_sas)
 
 
 def _solve_concrete_plan(context, asp, init_horizon, switches):
