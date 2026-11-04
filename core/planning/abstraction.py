@@ -1,13 +1,11 @@
 """Prepare and dispatch abstraction-based planning workflows."""
 
 import os
-from dataclasses import replace
 
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.ms_unsat import has_plan
 from core.metrics import PlanningMetrics
-from core.abstraction.relaxation import SPLIT_SEPARATOR
 from core.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
 from core.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
 from core.planning.backends import BACKENDS
@@ -24,10 +22,10 @@ def solve(config: AbstractPlanningConfig, on_update=None):
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
             # Create the abstraction
-            problem, abstract_sas, original_names = _abstract(config, base_dir, metrics)
+            problem, abstract_sas, renamings = _abstract(config, base_dir, metrics)
 
             # Find a plan for the abstraction
-            plan, horizon = _find_plan(config, base_dir, abstract_sas, original_names, metrics)
+            plan, horizon = BACKENDS[config.planner].find_abstract_plan(config, base_dir, abstract_sas, metrics)
 
             # Refine the plan
             context = RefinementContext(
@@ -36,6 +34,7 @@ def solve(config: AbstractPlanningConfig, on_update=None):
                 run_id=run_id,
                 metrics=metrics,
                 base_dir=base_dir,
+                renamings=renamings,
             )
             result = refine(context, plan, horizon)
 
@@ -50,29 +49,13 @@ def _abstract(config, base_dir, metrics):
     report_abstraction(abstract_problem, metrics)
 
     with metrics.measure("abstract_pddl_writing"):
-        domain_path, problem_path, original_names = write_abstract_problem(abstract_problem.problem, base_dir)
+        domain_path, problem_path, renamings = write_abstract_problem(abstract_problem.problem, base_dir)
 
     with metrics.measure("abstract_fd"):
         abstract_dir = os.path.join(base_dir, "abstract")
         abstract_sas = pddl_to_sas(abstract_dir, domain_path, problem_path, "abstract")
 
-    return abstract_problem, abstract_sas, original_names
-
-
-def _find_plan(config, base_dir, abstract_sas, original_names, metrics):
-    plan, horizon = BACKENDS[config.planner].find_abstract_plan(config, base_dir, abstract_sas, metrics)
-
-    # The plan speaks the written task's names, and refinement matches them
-    # against the concrete task's, where a split action has its original name.
-    plan = tuple(
-        replace(
-            action,
-            name=original_names.get(action.name, action.name).split(SPLIT_SEPARATOR)[0],
-            args=tuple(original_names.get(arg, arg) for arg in action.args),
-        )
-        for action in plan
-    )
-    return plan, horizon
+    return abstract_problem, abstract_sas, renamings
 
 
 def check_solvability(config: AbstractPlanningConfig, on_update=None):
