@@ -14,11 +14,18 @@ from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 
 SOURCES = {"symmetries": "Symmetric objects", "resources": "Resource levels"}
 # The unsolvability track collapses symmetric objects only.
-KIND_SOURCES = {"sat": tuple(SOURCES), "opt": tuple(SOURCES), "unsat": ("symmetries",)}
+KIND_SOURCES = {
+    "sat": tuple(SOURCES),
+    "opt": tuple(SOURCES),
+    "unsat": ("symmetries",),
+    "sat-htg": ("symmetries",),
+    "opt-htg": ("symmetries",),
+}
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
 TIME_LIMIT = 1800
 BASELINES = {"sat": ("lama", r"\LAMA", r"\LAMAa"), "opt": ("lmcut", r"\LMcut", r"\LMcuta")}
+BASELINES |= {f"{kind}-htg": baseline for kind, baseline in BASELINES.items()}
 # Branches from before #135 still call Fast Downward's modes by their old names.
 OLD_NAMES = {
     "sat": {"fd": "lama", "abs-fd": "abs-lama"},
@@ -35,17 +42,21 @@ def main():
     panel = _unsat_panel if args.kind == "unsat" else _panel
     # A label like #134 would otherwise read as a macro parameter in LaTeX.
     base_label = args.base_label.replace("#", r"\#")
-    panels = [
-        panel(f"Before ({base_label})", args.kind, _tracks(args.base, args.kind, base_manifests)),
-        panel("After", args.kind, _tracks(args.branch, args.kind, manifests)),
-    ]
+    if args.no_base:
+        panels = [panel("", args.kind, _tracks(args.branch, args.kind, manifests))]
+    else:
+        panels = [
+            panel(f"Before ({base_label})", args.kind, _tracks(args.base, args.kind, base_manifests)),
+            panel("After", args.kind, _tracks(args.branch, args.kind, manifests)),
+        ]
     _render(args.paper, panels, Path(args.out))
     print(f"Wrote {args.out}")
 
 
 def select(rows, kind, source, manifests):
     """Rename old modes, and keep only the abstract rows this track's manifests submitted, for the modes they submitted."""
-    renames = OLD_NAMES[kind]
+    # The HTG tracks came after #135, so they never used the old names.
+    renames = OLD_NAMES.get(kind, {})
     submitted = set()
     for manifest in manifests:
         # A manifest speaks for its own track only, which may have run other classes.
@@ -68,7 +79,9 @@ def select(rows, kind, source, manifests):
 
 def extra_actions_class(problem, abstraction, baseline):
     """The colour class of an abstract plan's extra actions over an optimal plan, 4 when there is none to compare."""
-    optimum = next((int(problem[m]["plan_length"]) for m in ("asp", baseline) if _solved(problem[m])), None)
+    optimum = next(
+        (int(problem[m]["plan_length"]) for m in ("asp", baseline) if m in problem and _solved(problem[m])), None
+    )
     if optimum is None or not _solved(problem[abstraction]):
         return 4
     extra = int(problem[abstraction]["plan_length"]) - optimum
@@ -91,8 +104,12 @@ def _tracks(revision, kind, manifests):
 
 
 def _results_at(revision, kind, source):
-    # Revisions from before experiments/ipc/ keep the IPC tracks one level higher.
-    for directory in (f"experiments/ipc/{kind}/{source}", f"experiments/{kind}/{source}"):
+    if kind.endswith("-htg"):
+        directories = (f"experiments/htg/{kind.removesuffix('-htg')}",)
+    else:
+        # Revisions from before experiments/ipc/ keep the IPC tracks one level higher.
+        directories = (f"experiments/ipc/{kind}/{source}", f"experiments/{kind}/{source}")
+    for directory in directories:
         shown = subprocess.run(
             ["git", "-C", PROJECT_ROOT, "show", f"{revision}:{directory}/results.csv"], capture_output=True, text=True
         )
@@ -103,7 +120,7 @@ def _results_at(revision, kind, source):
 
 def _panel(title, kind, tracks):
     baseline, label, abstract_label = BASELINES[kind]
-    plot = r"\borderlengthplot" if kind == "opt" else r"\borderplot"
+    plot = r"\borderlengthplot" if kind.startswith("opt") else r"\borderplot"
     curves = (
         ("asp", "conc, solid", r"\ASP"),
         ("abs-asp", "abst, solid", r"\ASPa"),
@@ -111,34 +128,42 @@ def _panel(title, kind, tracks):
         (baseline, "conc, dashed", label),
     )
 
+    # The HTG tracks run no ASP modes.
+    present = {mode for problems in tracks.values() for problem in problems for mode in problem}
+    # A lone plot centres the legend over itself rather than between two plots.
+    legend = "" if len(tracks) > 1 else ", legend style={at={(0.5,1.22)}}"
     cactus_plots = []
     for source, problems in tracks.items():
         lines = []
         for mode, style, name in curves:
+            if mode not in present:
+                continue
             lines.append(rf"\addplot[{style}, thick, const plot, mark=none] coordinates {{{_cactus(problems, mode)}}};")
-            # One legend serves both plots, so only the last carries it.
-            if source == "resources":
+            # One legend serves every plot, so only the last carries it.
+            if source == list(tracks)[-1]:
                 lines.append(rf"\addlegendentry{{{name}}}")
         cactus_plots.append(
             "\\begin{tikzpicture}\n\\begin{semilogxaxis}[cactusplot, title={\\small "
             + SOURCES[source]
-            + "}]\n"
+            + "}"
+            + legend
+            + "]\n"
             + "\n".join(lines)
             + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
         )
 
     scatter_rows = []
+    pairs = [("asp", "abs-asp", r"\ASP", r"\ASPa"), (baseline, f"abs-{baseline}", label, abstract_label)]
     for source, problems in tracks.items():
-        asp = _scatter(problems, "asp", "abs-asp", kind, baseline)
-        fd = _scatter(problems, baseline, f"abs-{baseline}", kind, baseline)
-        scatter_rows.append(
-            rf"{{\small {SOURCES[source]}}}\\[2pt]"
-            + "\n"
-            + rf"{plot}{{\ASP}}{{\ASPa}}{{{asp}}}\hfill{plot}{{{label}}}{{{abstract_label}}}{{{fd}}}"
-        )
+        scatters = [
+            rf"{plot}{{{name}}}{{{abstract_name}}}{{{_scatter(problems, solver, abstraction, kind, baseline)}}}"
+            for solver, abstraction, name, abstract_name in pairs
+            if solver in present
+        ]
+        scatter_rows.append(rf"{{\small {SOURCES[source]}}}\\[2pt]" + "\n" + r"\hfill".join(scatters))
 
     key = ""
-    if kind == "opt":
+    if kind.startswith("opt"):
         key = (
             r"{\footnotesize Extra actions over the optimum\\ \outcomekey{ext0} 0\quad \outcomekey{ext1} 1--2\quad "
             r"\outcomekey{ext2} 3--5\quad \outcomekey{ext3} 6 or more\quad \outcomekey{black!40} no plan to compare}"
@@ -192,7 +217,7 @@ def _scatter(problems, solver, abstraction, kind, baseline):
         if x is None and y is None:
             continue
         point = f"({x or UNSOLVED:.2f},{y or UNSOLVED:.2f})"
-        if kind == "opt":
+        if kind.startswith("opt"):
             point += f" [{extra_actions_class(problem, abstraction, baseline)}]"
         points.append(point)
     return " ".join(points)
@@ -208,14 +233,12 @@ def _time(row):
 
 
 def _render(paper, panels, out):
-    """Typeset both panels with the paper's preamble, then crop the page to a PNG."""
+    """Typeset the panels side by side with the paper's preamble, then crop the page to a PNG."""
     preamble = Path(paper).read_text().split(r"\title{")[0]
     document = (
         preamble
         + "\\pagestyle{empty}\n\\begin{document}\n\\noindent\\mbox{"
-        + panels[0]
-        + r"\hspace{2em}"
-        + panels[1]
+        + r"\hspace{2em}".join(panels)
         + "}\n\\end{document}\n"
     )
     with tempfile.TemporaryDirectory() as directory:
@@ -239,6 +262,7 @@ def _argument_parser():
     parser.add_argument("kind", choices=sorted(KIND_SOURCES), help="Which of the paper's figures to draw")
     parser.add_argument("--base", default="origin/main", help="Revision whose results.csv files go on the left")
     parser.add_argument("--base-label", default="main", help="Name of the base in the left panel's title")
+    parser.add_argument("--no-base", action="store_true", help="Draw the branch alone, for a track the base lacks")
     parser.add_argument("--branch", default="HEAD", help="Revision whose results.csv files go on the right")
     parser.add_argument(
         "--manifests",

@@ -72,6 +72,8 @@ python -m experiments.figure opt --base origin/main --branch HEAD \
 ```
 
 `--manifests` limits the branch's abstract modes to the classes its runs submitted.
+`sat-htg` and `opt-htg` draw the hard-to-ground tracks, which have no ASP modes. Pass
+`--no-base` for a track the base does not hold yet, to draw the branch alone.
 For a stacked PR, pass `--base <the base branch> --base-label '#<n>'` and the base's
 own manifests as `--base-manifests`. The script needs the paper checked out next to
 the repository, or `--paper`, plus `pdflatex`, `pdfcrop` and `pdftoppm`. After
