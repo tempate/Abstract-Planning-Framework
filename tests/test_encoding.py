@@ -96,6 +96,22 @@ switch(1).
         self.assertTrue(all('occurs(action(("inspect","item1")),1)' in model for model in models))
         self.assertTrue(any('occurs(action(("unrelated","x")),2)' in model for model in models))
 
+    def test_a_held_step_holds_its_abstract_action_and_a_step_without_a_switch_any_action(self):
+        abstract_plan = (PlanAction("inspect", ("item1",), 1),)
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
+        mapping = concretize_abstract_actions(abstract_plan, abstraction, gaps=False, held=True)
+        program = choose_freely_while_switched_off(OCCURRENCE_ENCODING) + """
+action(action(("inspect","item1"))).
+action(action(("unrelated","x"))).
+""" + mapping
+
+        models = self._models(program, horizon=2)
+
+        self.assertTrue(models)
+        self.assertTrue(all('occurs(action(("inspect","item1")),1)' in model for model in models))
+        self.assertTrue(all('occurs(action(("unrelated","x")),1)' not in model for model in models))
+        self.assertTrue(any('occurs(action(("unrelated","x")),2)' in model for model in models))
+
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
         abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))

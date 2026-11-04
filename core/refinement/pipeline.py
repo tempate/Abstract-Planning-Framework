@@ -16,6 +16,7 @@ from core.refinement.encoding import (
     make_steps_optional,
     switches,
 )
+from core.search.incremental import IncrementalSolver
 from core.search.relaxing import RelaxingSolver
 
 
@@ -45,9 +46,10 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
 
     gaps = not context.config.optimize
     asp = choose_freely_while_switched_off(asp)
+    held_asp = asp + "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps, held=True)
     asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps)
 
-    plan = _solve_concrete_plan(context, asp, horizon, switches(abstract_plan, gaps))
+    plan = _solve_concrete_plan(context, held_asp, asp, horizon, switches(abstract_plan, gaps))
     if plan is not None:
         context.metrics.set_counter("plan_length", plan_length(plan))
 
@@ -82,8 +84,8 @@ def _concrete_asp(context):
         return sas_to_asp(concrete_sas)
 
 
-def _solve_concrete_plan(context, asp, init_horizon, switches):
-    """Refine the abstract plan, then search above its horizon if it does not refine."""
+def _solve_concrete_plan(context, held_asp, asp, init_horizon, switches):
+    """Refine the abstract plan as it is, then give it up step by step and search above its horizon."""
     # Publish the counters before searching so an interrupted run still has them.
     counters = {
         "increments": 0,
@@ -92,13 +94,22 @@ def _solve_concrete_plan(context, asp, init_horizon, switches):
     }
     context.metrics.set_counters(counters)
 
-    def record_attempt(horizon, dropped, solve_calls):
+    def record_attempt(horizon, dropped, search_calls):
         counters["increments"] = horizon - init_horizon
         counters["decrements"] = dropped
-        counters["concrete_solve_calls"] = solve_calls
+        # The solve with every switch held comes before the search's own calls.
+        counters["concrete_solve_calls"] = search_calls + 1
         context.metrics.set_counters(counters)
 
     with context.metrics.measure("guided_concrete_solving"):
+        # Most abstract plans refine with every switch on, and holding the switches as facts
+        # grounds each held step's matching actions alone, far less than the search below grounds.
+        record_attempt(init_horizon, 0, 0)
+        plan = IncrementalSolver(held_asp, init_horizon, optimize=context.config.optimize).solve()
+        if plan is not None:
+            return plan
+
+        # The held program is gone by now, so the search below only holds its own grounding.
         solver = RelaxingSolver(asp, init_horizon, optimize=context.config.optimize)
         result = solver.search(switches, record_attempt)
 

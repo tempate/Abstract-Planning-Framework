@@ -21,8 +21,8 @@ def choose_freely_while_switched_off(asp):
     return asp.replace(f"{AT_MOST_ONE_ACTION}.", f"{AT_MOST_ONE_ACTION} :- not switch(t).")
 
 
-def concretize_abstract_actions(abstract_plan, abstraction, gaps=True):
-    """Map an abstract plan to compatible grounded concrete actions."""
+def concretize_abstract_actions(abstract_plan, abstraction, gaps=True, held=False):
+    """Map an abstract plan to compatible grounded concrete actions, every switch a fact if held."""
     rules = [f"concrete_object({_quote(name)})." for name in abstraction.objects]
 
     for action in abstract_plan:
@@ -30,7 +30,7 @@ def concretize_abstract_actions(abstract_plan, abstraction, gaps=True):
 
         # A switch per step, so the search can give up the abstract plan one action at a time.
         switch = _switch(time_step)
-        rules.append(f"0 {{ {switch} }} 1.")
+        rules.append(f"{switch}." if held else f"0 {{ {switch} }} 1.")
 
         # While the switch is on, some grounding of the abstract action occurs at its step.
         action_str, conds_str = _action_pattern(action, abstraction)
