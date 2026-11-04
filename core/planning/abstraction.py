@@ -6,7 +6,6 @@ from dataclasses import replace
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.ms_unsat import has_plan
-from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.abstraction.relaxation import SPLIT_SEPARATOR
 from core.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
@@ -21,65 +20,59 @@ from core.refinement.pipeline import RefinementContext, refine
 def solve(config: AbstractPlanningConfig, on_update=None):
     """Abstract one concrete task, plan it with the config's planner, and refine that plan with ASP."""
     metrics = PlanningMetrics(on_update=on_update)
+
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
-            result = _abstract_and_refine(config, base_dir, run_id, metrics)
+            # Create the abstraction
+            problem, abstract_sas, original_names = _abstract(config, base_dir, metrics)
+
+            # Find a plan for the abstraction
+            plan, horizon = _find_plan(config, base_dir, abstract_sas, original_names, metrics)
+
+            # Refine the plan
+            context = RefinementContext(
+                config=config,
+                abstraction=problem.abstraction,
+                run_id=run_id,
+                metrics=metrics,
+                base_dir=base_dir,
+            )
+            result = refine(context, plan, horizon)
+
     # Outside the measured phases, so that checking a plan cannot move a timing.
     result["plan_valid"] = validated(config, result.get("plan"), parse_plan_actions)
     result["metrics"] = metrics.as_dict()
     return result
 
 
-def _abstract_and_refine(config, base_dir, run_id, metrics):
+def _abstract(config, base_dir, metrics):
     abstract_problem = build_abstract_problem(config, metrics)
     report_abstraction(abstract_problem, metrics)
 
-    concrete_sas, abstract_sas, original_names = _to_sas(base_dir, abstract_problem.problem, config, metrics)
-    concrete_asp = _to_asp(concrete_sas, metrics)
-    abstract_plan, abstract_horizon = BACKENDS[config.planner].find_abstract_plan(
-        config, base_dir, abstract_sas, metrics
-    )
-    # The plan speaks the written task's names, and refinement matches them
-    # against the concrete task's, where a split action has its original name.
-    abstract_plan = tuple(
-        replace(
-            action,
-            name=original_names.get(action.name, action.name).split(SPLIT_SEPARATOR)[0],
-            args=tuple(original_names.get(arg, arg) for arg in action.args),
-        )
-        for action in abstract_plan
-    )
-
-    context = RefinementContext(
-        config=config,
-        abstraction=abstract_problem.abstraction,
-        run_id=run_id,
-        metrics=metrics,
-        concrete_asp=concrete_asp,
-    )
-    return refine(context, abstract_plan, abstract_horizon)
-
-
-def _to_sas(base_dir, problem, config, metrics):
-    """Translate the concrete and abstract tasks, returning their SAS files and the writer's renamings."""
-    with metrics.measure("concrete_fd"):
-        concrete_dir = os.path.join(base_dir, "concrete")
-        concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
-
     with metrics.measure("abstract_pddl_writing"):
-        domain_path, problem_path, original_names = write_abstract_problem(problem, base_dir)
+        domain_path, problem_path, original_names = write_abstract_problem(abstract_problem.problem, base_dir)
 
     with metrics.measure("abstract_fd"):
         abstract_dir = os.path.join(base_dir, "abstract")
         abstract_sas = pddl_to_sas(abstract_dir, domain_path, problem_path, "abstract")
 
-    return concrete_sas, abstract_sas, original_names
+    return abstract_problem, abstract_sas, original_names
 
 
-def _to_asp(concrete_sas, metrics):
-    """Translate the concrete SAS file into the ASP program the refinement searches."""
-    with metrics.measure("concrete_asp"):
-        return sas_to_asp(concrete_sas)
+def _find_plan(config, base_dir, abstract_sas, original_names, metrics):
+    plan, horizon = BACKENDS[config.planner].find_abstract_plan(config, base_dir, abstract_sas, metrics)
+
+    # The plan speaks the written task's names, and refinement matches them
+    # against the concrete task's, where a split action has its original name.
+    plan = tuple(
+        replace(
+            action,
+            name=original_names.get(action.name, action.name).split(SPLIT_SEPARATOR)[0],
+            args=tuple(original_names.get(arg, arg) for arg in action.args),
+        )
+        for action in plan
+    )
+    return plan, horizon
 
 
 def check_solvability(config: AbstractPlanningConfig, on_update=None):

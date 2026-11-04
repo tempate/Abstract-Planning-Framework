@@ -955,8 +955,8 @@ class ReportTests(unittest.TestCase):
                 writer = csv.DictWriter(stream, fieldnames=FIELDS)
                 writer.writeheader()
                 # The largest class dies in the abstract search, a smaller one while refining.
-                runs = [("asp", "", "concrete_asp"), ("abs-asp", "0", "concrete_asp")]
-                runs += [("abs-asp", "1", "abstract_solving")]
+                runs = [("asp", "", "concrete_asp"), ("abs-asp", "0", "abstract_asp")]
+                runs += [("abs-asp", "1", "concrete_asp")]
                 for mode, rank, phase in runs:
                     writer.writerow(
                         {field: "" for field in FIELDS}
