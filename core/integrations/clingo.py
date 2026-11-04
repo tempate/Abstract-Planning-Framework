@@ -18,7 +18,7 @@ def parse_plan_actions(atoms):
 
 
 def plan_length(atoms):
-    """Count the actions in a plan, which gaps leave below the horizon."""
+    """Count the actions in a plan, which empty steps leave below the horizon."""
     return len(parse_plan_actions(atoms))
 
 

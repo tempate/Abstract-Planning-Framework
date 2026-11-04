@@ -19,7 +19,7 @@ class PlanningConfig:
     problem_path: Path
     # The mode without its abs- prefix: what plans the task, or the abstract task.
     planner: str = "asp"
-    # Find a shortest plan, without the doubling horizons and gaps that find one sooner.
+    # Find a shortest plan, without the doubling horizons that find one sooner.
     optimize: bool = False
 
     def as_dict(self):

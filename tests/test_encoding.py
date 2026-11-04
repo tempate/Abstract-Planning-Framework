@@ -2,10 +2,12 @@ import unittest
 from types import SimpleNamespace
 
 from core.plan import PlanAction
-from core.refinement.encoding import concretize_abstract_actions, make_steps_optional, switches
+from core.refinement.encoding import concretize_abstract_actions, switches
 from core.search.incremental import IncrementalSolver
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
+# Satisficing mode's encoding, where a step may stay empty.
+OPTIONAL_STEP_ENCODING = "#program step(t).\n{occurs(Action, t) : action(Action)} 1.\n#program base.\n"
 
 
 class EncodingTests(unittest.TestCase):
@@ -15,39 +17,22 @@ class EncodingTests(unittest.TestCase):
         abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item1",), 2))
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = make_steps_optional(OCCURRENCE_ENCODING) + """
+        program = OPTIONAL_STEP_ENCODING + """
 action(action(("inspect","item1"))).
 #program step(t).
 :- occurs(Action, t), occurs(Action, T), T < t.
 #program base.
 """ + mapping
-        solver = IncrementalSolver(program, init_horizon=2 * 2 + 1)
+        solver = IncrementalSolver(program, init_horizon=2)
         first, second = sorted(switches(abstract_plan))
 
         self.assertIsNone(solver.solve([(first, True), (second, True)]))
         self.assertIsNotNone(solver.solve([(first, True), (second, False)]))
 
-    def test_a_gap_holds_any_concrete_action_or_none(self):
+    def test_an_abstract_action_keeps_its_time_step(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = make_steps_optional(OCCURRENCE_ENCODING) + """
-action(action(("inspect","item1"))).
-action(action(("unrelated","x"))).
-switch(2).
-""" + mapping
-
-        models = self._models(program, horizon=3)
-        in_first_gap = {'occurs(action(("inspect","item1")),1)', 'occurs(action(("unrelated","x")),1)'}
-
-        self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
-        self.assertTrue(any('occurs(action(("unrelated","x")),1)' in model for model in models))
-        self.assertTrue(any(not model & in_first_gap for model in models))
-
-    def test_without_gaps_an_abstract_action_keeps_its_time_step(self):
-        abstract_plan = (PlanAction("inspect", ("item1",), 1),)
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = concretize_abstract_actions(abstract_plan, abstraction, gaps=False)
         program = OCCURRENCE_ENCODING + """
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
@@ -55,24 +40,9 @@ action(action(("unrelated","x"))).
 
         models = self._models(program + "switch(1).", horizon=1)
 
-        self.assertEqual([str(switch) for switch in switches(abstract_plan, gaps=False)], ["switch(1)"])
+        self.assertEqual([str(switch) for switch in switches(abstract_plan)], ["switch(1)"])
         self.assertTrue(models)
         self.assertTrue(all('occurs(action(("inspect","item1")),1)' in model for model in models))
-
-    def test_an_exponential_horizon_lets_the_steps_above_the_abstract_plan_stay_empty(self):
-        abstract_plan = (PlanAction("inspect", ("item1",), 1),)
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = make_steps_optional(OCCURRENCE_ENCODING) + """
-action(action(("inspect","item1"))).
-switch(2).
-""" + mapping
-
-        models = self._models(program, horizon=5)
-        above = {f'occurs(action(("inspect","item1")),{step})' for step in (4, 5)}
-
-        self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
-        self.assertTrue(any(not model & above for model in models))
 
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
@@ -80,14 +50,14 @@ switch(2).
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
         program = """
 action(action(("link","a","b"))).
-switch(2).
+switch(1).
 """ + mapping
 
-        models = self._models(program, horizon=2)
+        models = self._models(program, horizon=1)
 
         self.assertTrue(models)
-        self.assertTrue(all('occurs(action(("link","a","b")),2)' in model for model in models))
-        self.assertTrue(all('occurs(action(("link","a","a")),2)' not in model for model in models))
+        self.assertTrue(all('occurs(action(("link","a","b")),1)' in model for model in models))
+        self.assertTrue(all('occurs(action(("link","a","a")),1)' not in model for model in models))
 
     def test_mapping_rejects_plan_actions_that_are_not_concrete_actions(self):
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
@@ -95,15 +65,15 @@ switch(2).
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
         program = """
 action(action(("move","item1"))).
-switch(2).
+switch(1).
 """ + mapping
 
-        result = IncrementalSolver(program, init_horizon=2).control.solve()
+        result = IncrementalSolver(program, init_horizon=1).control.solve()
 
         self.assertTrue(result.unsatisfiable)
 
     def test_switches_give_up_the_abstract_plan_from_its_end(self):
-        abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item2",), 5))
+        abstract_plan = (PlanAction("inspect", ("item1",), 2), PlanAction("inspect", ("item2",), 10))
 
         # Steps 10 and 2, ordered by number rather than as text.
         self.assertEqual([str(switch) for switch in switches(abstract_plan)], ["switch(10)", "switch(2)"])

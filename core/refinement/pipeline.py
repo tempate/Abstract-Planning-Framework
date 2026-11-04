@@ -10,7 +10,7 @@ from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
-from core.refinement.encoding import concretize_abstract_actions, make_steps_optional, switches
+from core.refinement.encoding import concretize_abstract_actions, switches
 from core.search.relaxing import RelaxingSolver
 
 
@@ -30,18 +30,9 @@ class RefinementContext:
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Ground the concrete task, then use an abstract plan to guide its search."""
     abstract_plan = _with_original_names(abstract_plan, context.renamings)
-    concrete_asp = _concrete_asp(context)
-    if context.config.optimize:
-        horizon = abstract_horizon
-        asp = concrete_asp
-    else:
-        horizon = 2 * abstract_horizon + 1
-        asp = make_steps_optional(concrete_asp)
+    asp = _concrete_asp(context) + "\n" + concretize_abstract_actions(abstract_plan, context.abstraction)
 
-    gaps = not context.config.optimize
-    asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps)
-
-    plan = _solve_concrete_plan(context, asp, horizon, switches(abstract_plan, gaps))
+    plan = _solve_concrete_plan(context, asp, abstract_horizon, switches(abstract_plan))
     if plan is not None:
         context.metrics.set_counter("plan_length", plan_length(plan))
 
@@ -73,7 +64,7 @@ def _concrete_asp(context):
         concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
 
     with context.metrics.measure("concrete_asp"):
-        return sas_to_asp(concrete_sas)
+        return sas_to_asp(concrete_sas, config.optimize)
 
 
 def _solve_concrete_plan(context, asp, init_horizon, switches):

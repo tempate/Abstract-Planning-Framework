@@ -92,7 +92,7 @@ TRACKS = {
         driver="scripts.planner",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
     ),
-    # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
+    # The hard-to-ground benchmarks, refined to a shortest plan like opt/symmetries.
     "opt-htg/symmetries": Track(
         directory=Path(htg_opt.__file__).parent,
         suite=htg_opt.SUITE,
@@ -101,7 +101,7 @@ TRACKS = {
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
         optimizing_arguments=("--optimize",),
     ),
-    # The optimal suite, refined without gaps so that every plan is optimal, with
+    # The optimal suite, refined to a shortest plan, with
     # abs-lmcut searching the abstract task optimally like its lmcut baseline.
     "opt/symmetries": Track(
         directory=Path(opt.__file__).parent / "symmetries",

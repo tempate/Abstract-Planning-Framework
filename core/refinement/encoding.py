@@ -1,23 +1,16 @@
-"""The gaps and the abstract plan that refinement adds to the concrete ASP program."""
+"""The abstract plan that refinement adds to the concrete ASP program."""
 
 import json
 
 import clingo
 
-from core.encodings.rules import AT_MOST_ONE_ACTION, EXACTLY_ONE_ACTION
 
-
-def make_steps_optional(asp):
-    """Let every step stay empty unless its switch holds an abstract action there."""
-    return asp.replace(f"{EXACTLY_ONE_ACTION}.", f"{AT_MOST_ONE_ACTION}.")
-
-
-def concretize_abstract_actions(abstract_plan, abstraction, gaps=True):
+def concretize_abstract_actions(abstract_plan, abstraction):
     """Map an abstract plan to compatible grounded concrete actions."""
     rules = [f"concrete_object({_quote(name)})." for name in abstraction.objects]
 
     for action in abstract_plan:
-        time_step = _concrete_time_step(action.time_step, gaps)
+        time_step = action.time_step
 
         # A switch per step, so the search can give up the abstract plan one action at a time.
         switch = _switch(time_step)
@@ -30,26 +23,17 @@ def concretize_abstract_actions(abstract_plan, abstraction, gaps=True):
     return "\n".join(rules)
 
 
-def switches(abstract_plan, gaps=True):
+def switches(abstract_plan):
     """The switches holding the abstract plan, latest first, so that what survives relaxation is a prefix of it."""
     switches = []
     for action in abstract_plan:
-        time_step = _concrete_time_step(action.time_step, gaps)
-        switches.append(_switch(time_step))
+        switches.append(_switch(action.time_step))
 
     return sorted(switches, reverse=True)
 
 
 def _switch(time_step):
     return clingo.Function("switch", [clingo.Number(time_step)])
-
-
-def _concrete_time_step(abstract_time_step, gaps=True):
-    """Place an abstract action after the gap that precedes it, if there are gaps."""
-    if gaps:
-        return 2 * abstract_time_step
-    else:
-        return abstract_time_step
 
 
 def _action_pattern(action, abstraction):

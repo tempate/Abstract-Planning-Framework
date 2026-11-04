@@ -1,9 +1,11 @@
 import os
+import signal
 import tempfile
 import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from unified_planning.engines.plan_validator import SequentialPlanValidator
 from unified_planning.engines.results import ValidationResultStatus
@@ -14,7 +16,9 @@ from core.abstraction.factory import build_abstract_problem
 from core.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.unified_planning import parse_problem
+from core.plan import PlanAction
 from core.planning import abstraction
+from core.planning.backends import BACKENDS
 from core.planning.config import AbstractPlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
@@ -131,6 +135,62 @@ class SoundnessTests(unittest.TestCase):
                     steps = [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
 
                     self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
+
+
+# Each light switches on once, so once l1 is on no action applies: a plan cannot
+# be padded to a longer horizon, only end early.
+LIGHTS_DOMAIN = """
+(define (domain lights)
+  (:requirements :strips :typing)
+  (:types light)
+  (:predicates (on ?l - light) (off ?l - light))
+  (:action switch-on
+    :parameters (?l - light)
+    :precondition (off ?l)
+    :effect (and (on ?l) (not (off ?l)))))
+"""
+LIGHTS_PROBLEM = """
+(define (problem one-left)
+  (:domain lights)
+  (:objects l1 l2 - light)
+  (:init (off l1) (on l2))
+  (:goal (on l1)))
+"""
+
+
+class RefinementTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.domain = Path(directory.name, "domain.pddl")
+        self.problem = Path(directory.name, "problem.pddl")
+        self.domain.write_text(LIGHTS_DOMAIN, encoding="utf-8")
+        self.problem.write_text(LIGHTS_PROBLEM, encoding="utf-8")
+
+    @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
+    def test_a_satisficing_refinement_leaves_a_step_it_cannot_fill_empty(self):
+        config = AbstractPlanningConfig(self.domain, self.problem, planner="lama", objects_to_abstract=("l1", "l2"))
+        with redirect_stdout(StringIO()):
+            light = build_abstract_problem(config).abstraction.name
+        # The second step asks for a light that no longer is off, so the refined plan has one action.
+        abstract_plan = (PlanAction("switch-on", (light,), 1), PlanAction("switch-on", (light,), 2))
+
+        def interrupt(_signal, _frame):
+            raise TimeoutError("refinement did not find the one-action plan")
+
+        # A refinement that must fill every step raises the horizon forever.
+        previous = signal.signal(signal.SIGALRM, interrupt)
+        self.addCleanup(signal.signal, signal.SIGALRM, previous)
+        signal.alarm(60)
+        self.addCleanup(signal.alarm, 0)
+        with (
+            patch.object(type(BACKENDS["lama"]), "find_abstract_plan", return_value=(abstract_plan, 2)),
+            redirect_stdout(StringIO()),
+        ):
+            result = abstraction.solve(config)
+
+        steps = [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
+        self.assertEqual(steps, [("switch-on", "l1")])
 
 
 if __name__ == "__main__":

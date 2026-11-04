@@ -91,7 +91,6 @@ def _argument_parser():
         help="Find an abstract plan with ASP, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    # lama-first's abstract plan need not be shortest, so refining it without gaps could miss every plan.
     modes.add_parser(
         "abs-lama",
         parents=[shared, abstract],

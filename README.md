@@ -76,7 +76,7 @@ python -m experiments.figure sat --base origin/main --out before-after.png
   problems its `problems.txt` lists, and collapses a resource instead of a symmetry
   class.
 - `--track opt` submits `experiments/ipc/opt/symmetries/`, the problems of the optimal
-  suite with a symmetry class, refined to the plan that fills the fewest gaps, with
+  suite with a symmetry class, refined to a shortest plan, with
   `asp` and `lmcut` as the baselines, and `abs-lmcut` in place of `abs-lama`.
   `--abstraction-source resources` submits `experiments/ipc/opt/resources/` instead, whose list
   `python -m experiments.scan --track opt/resources` writes.
