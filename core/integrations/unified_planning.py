@@ -5,6 +5,7 @@ from pathlib import Path
 
 from unified_planning.engines import CompilationKind, ValidationResultStatus
 from unified_planning.environment import get_environment
+from unified_planning.exceptions import UPException
 from unified_planning.io import PDDLReader, PDDLWriter
 from unified_planning.model import Problem
 from unified_planning.model.metrics import MinimizeActionCosts, MinimizeExpressionOnFinalState
@@ -57,7 +58,12 @@ def write_problem(problem: Problem):
 
     original_names = {}
     for item in (*problem.actions, *problem.all_objects):
-        written = writer.get_pddl_name(item)
+        try:
+            written = writer.get_pddl_name(item)
+        except UPException:
+            # The writer drops an action whose precondition is false, so it has no written name.
+            # No plan can use that action, so it needs no entry here.
+            continue
         if written != item.name:
             original_names[written] = item.name
     return PddlText(domain, problem_text, original_names)
