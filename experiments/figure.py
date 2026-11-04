@@ -14,6 +14,7 @@ from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 
 SOURCES = {"symmetries": "Symmetric objects", "resources": "Resource levels"}
 # The unsolvability track collapses symmetric objects only.
+# The hard-to-ground tracks collapse symmetric objects only, and the htg figure draws both of them.
 KIND_SOURCES = {
     "sat": tuple(SOURCES),
     "opt": tuple(SOURCES),
@@ -21,11 +22,11 @@ KIND_SOURCES = {
     "sat-htg": ("symmetries",),
     "opt-htg": ("symmetries",),
 }
+FIGURES = ("sat", "opt", "unsat", "htg")
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
 TIME_LIMIT = 1800
 BASELINES = {"sat": ("lama", r"\LAMA", r"\LAMAa"), "opt": ("lmcut", r"\LMcut", r"\LMcuta")}
-BASELINES |= {f"{kind}-htg": baseline for kind, baseline in BASELINES.items()}
 # Branches from before #135 still call Fast Downward's modes by their old names.
 OLD_NAMES = {
     "sat": {"fd": "lama", "abs-fd": "abs-lama"},
@@ -39,7 +40,7 @@ def main():
     args = _argument_parser().parse_args()
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
-    panel = _unsat_panel if args.kind == "unsat" else _panel
+    panel = {"unsat": _unsat_panel, "htg": _htg_panel}.get(args.kind, _panel)
     # A label like #134 would otherwise read as a macro parameter in LaTeX.
     base_label = args.base_label.replace("#", r"\#")
     if args.no_base:
@@ -79,9 +80,7 @@ def select(rows, kind, source, manifests):
 
 def extra_actions_class(problem, abstraction, baseline):
     """The colour class of an abstract plan's extra actions over an optimal plan, 4 when there is none to compare."""
-    optimum = next(
-        (int(problem[m]["plan_length"]) for m in ("asp", baseline) if m in problem and _solved(problem[m])), None
-    )
+    optimum = next((int(problem[m]["plan_length"]) for m in ("asp", baseline) if _solved(problem[m])), None)
     if optimum is None or not _solved(problem[abstraction]):
         return 4
     extra = int(problem[abstraction]["plan_length"]) - optimum
@@ -90,6 +89,8 @@ def extra_actions_class(problem, abstraction, baseline):
 
 def _tracks(revision, kind, manifests):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
+    if kind == "htg":
+        return {track: _tracks(revision, f"{track}-htg", manifests)["symmetries"] for track in ("sat", "opt")}
     tracks = {}
     for source in KIND_SOURCES[kind]:
         text = _results_at(revision, kind, source)
@@ -120,7 +121,7 @@ def _results_at(revision, kind, source):
 
 def _panel(title, kind, tracks):
     baseline, label, abstract_label = BASELINES[kind]
-    plot = r"\borderlengthplot" if kind.startswith("opt") else r"\borderplot"
+    plot = r"\borderlengthplot" if kind == "opt" else r"\borderplot"
     curves = (
         ("asp", "conc, solid", r"\ASP"),
         ("abs-asp", "abst, solid", r"\ASPa"),
@@ -128,42 +129,34 @@ def _panel(title, kind, tracks):
         (baseline, "conc, dashed", label),
     )
 
-    # The HTG tracks run no ASP modes.
-    present = {mode for problems in tracks.values() for problem in problems for mode in problem}
-    # A lone plot centres the legend over itself rather than between two plots.
-    legend = "" if len(tracks) > 1 else ", legend style={at={(0.5,1.22)}}"
     cactus_plots = []
     for source, problems in tracks.items():
         lines = []
         for mode, style, name in curves:
-            if mode not in present:
-                continue
             lines.append(rf"\addplot[{style}, thick, const plot, mark=none] coordinates {{{_cactus(problems, mode)}}};")
-            # One legend serves every plot, so only the last carries it.
-            if source == list(tracks)[-1]:
+            # One legend serves both plots, so only the last carries it.
+            if source == "resources":
                 lines.append(rf"\addlegendentry{{{name}}}")
         cactus_plots.append(
             "\\begin{tikzpicture}\n\\begin{semilogxaxis}[cactusplot, title={\\small "
             + SOURCES[source]
-            + "}"
-            + legend
-            + "]\n"
+            + "}]\n"
             + "\n".join(lines)
             + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
         )
 
     scatter_rows = []
-    pairs = [("asp", "abs-asp", r"\ASP", r"\ASPa"), (baseline, f"abs-{baseline}", label, abstract_label)]
     for source, problems in tracks.items():
-        scatters = [
-            rf"{plot}{{{name}}}{{{abstract_name}}}{{{_scatter(problems, solver, abstraction, kind, baseline)}}}"
-            for solver, abstraction, name, abstract_name in pairs
-            if solver in present
-        ]
-        scatter_rows.append(rf"{{\small {SOURCES[source]}}}\\[2pt]" + "\n" + r"\hfill".join(scatters))
+        asp = _scatter(problems, "asp", "abs-asp", kind, baseline)
+        fd = _scatter(problems, baseline, f"abs-{baseline}", kind, baseline)
+        scatter_rows.append(
+            rf"{{\small {SOURCES[source]}}}\\[2pt]"
+            + "\n"
+            + rf"{plot}{{\ASP}}{{\ASPa}}{{{asp}}}\hfill{plot}{{{label}}}{{{abstract_label}}}{{{fd}}}"
+        )
 
     key = ""
-    if kind.startswith("opt"):
+    if kind == "opt":
         key = (
             r"{\footnotesize Extra actions over the optimum\\ \outcomekey{ext0} 0\quad \outcomekey{ext1} 1--2\quad "
             r"\outcomekey{ext2} 3--5\quad \outcomekey{ext3} 6 or more\quad \outcomekey{black!40} no plan to compare}"
@@ -203,6 +196,33 @@ def _unsat_panel(title, _kind, tracks):
     )
 
 
+def _htg_panel(title, _kind, tracks):
+    cactus_plots, scatters = [], []
+    for track, name in (("sat", "Satisficing"), ("opt", "Optimal")):
+        baseline, label, abstract_label = BASELINES[track]
+        problems = tracks[track]
+        cactus_plots.append(
+            "\\begin{tikzpicture}\n\\begin{semilogxaxis}[cactusplot, title={\\small "
+            + name
+            + "}, legend columns=1, legend style={at={(0.03,0.97)}, anchor=north west}]\n"
+            + rf"\addplot[abst, solid, thick, const plot, mark=none] coordinates {{{_cactus(problems, 'abs-' + baseline)}}};"
+            + f"\n\\addlegendentry{{{abstract_label}}}\n"
+            + rf"\addplot[conc, solid, thick, const plot, mark=none] coordinates {{{_cactus(problems, baseline)}}};"
+            + f"\n\\addlegendentry{{{label}}}\n\\end{{semilogxaxis}}\n\\end{{tikzpicture}}"
+        )
+        # Without ASP there is no optimum to colour the opt points by, so both plots go uncoloured.
+        scatter = _scatter(problems, baseline, f"abs-{baseline}", "htg", baseline)
+        scatters.append(rf"\borderplot{{{label}}}{{{abstract_label}}}{{{scatter}}}")
+    return (
+        "\\begin{minipage}[t]{\\columnwidth}\n\\centering\n"
+        + f"{{\\large\\bfseries\\strut {title}}}\\par\\vspace{{1em}}\n"
+        + "\\hfill".join(cactus_plots)
+        + "\n\n{\\small (a) Problems solved over time}\n\n\\bigskip\n"
+        + "\\hfill".join(scatters)
+        + "\n\n{\\small (b) Runtime per problem}\n\\end{minipage}"
+    )
+
+
 def _cactus(problems, mode):
     times = sorted(float(p[mode]["wall_time_seconds"]) for p in problems if _solved(p[mode]))
     # The curve runs on to the time limit, so a mode that stops solving early shows as flat.
@@ -217,7 +237,7 @@ def _scatter(problems, solver, abstraction, kind, baseline):
         if x is None and y is None:
             continue
         point = f"({x or UNSOLVED:.2f},{y or UNSOLVED:.2f})"
-        if kind.startswith("opt"):
+        if kind == "opt":
             point += f" [{extra_actions_class(problem, abstraction, baseline)}]"
         points.append(point)
     return " ".join(points)
@@ -259,7 +279,7 @@ def _render(paper, panels, out):
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=sorted(KIND_SOURCES), help="Which of the paper's figures to draw")
+    parser.add_argument("kind", choices=FIGURES, help="Which of the paper's figures to draw")
     parser.add_argument("--base", default="origin/main", help="Revision whose results.csv files go on the left")
     parser.add_argument("--base-label", default="main", help="Name of the base in the left panel's title")
     parser.add_argument("--no-base", action="store_true", help="Draw the branch alone, for a track the base lacks")
