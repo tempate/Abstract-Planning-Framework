@@ -7,16 +7,8 @@ import clingo
 from core.encodings.rules import AT_MOST_ONE_ACTION, EXACTLY_ONE_ACTION
 
 
-def mapped_horizon(abstract_horizon):
-    """Return the concrete horizon holding every abstract action and its gaps."""
-    return _concrete_time_step(abstract_horizon) + 1
-
-
-def optional_steps(asp):
+def make_steps_optional(asp):
     """Let every step stay empty unless its switch holds an abstract action there."""
-    # Gaps hold no switch, so they stay optional. A step whose switch is off
-    # stays optional too, or a plan shorter than a satisficing abstract plan is
-    # never found.
     return asp.replace(f"{EXACTLY_ONE_ACTION}.", f"{AT_MOST_ONE_ACTION}.")
 
 
@@ -54,7 +46,10 @@ def _switch(time_step):
 
 def _concrete_time_step(abstract_time_step, gaps=True):
     """Place an abstract action after the gap that precedes it, if there are gaps."""
-    return 2 * abstract_time_step if gaps else abstract_time_step
+    if gaps:
+        return 2 * abstract_time_step
+    else:
+        return abstract_time_step
 
 
 def _action_pattern(action, abstraction):

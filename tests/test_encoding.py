@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 from core.plan import PlanAction
-from core.refinement.encoding import concretize_abstract_actions, mapped_horizon, optional_steps, switches
+from core.refinement.encoding import concretize_abstract_actions, make_steps_optional, switches
 from core.search.incremental import IncrementalSolver
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
@@ -15,13 +15,13 @@ class EncodingTests(unittest.TestCase):
         abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item1",), 2))
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = optional_steps(OCCURRENCE_ENCODING) + """
+        program = make_steps_optional(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 #program step(t).
 :- occurs(Action, t), occurs(Action, T), T < t.
 #program base.
 """ + mapping
-        solver = IncrementalSolver(program, init_horizon=mapped_horizon(2))
+        solver = IncrementalSolver(program, init_horizon=2 * 2 + 1)
         first, second = sorted(switches(abstract_plan))
 
         self.assertIsNone(solver.solve([(first, True), (second, True)]))
@@ -31,7 +31,7 @@ action(action(("inspect","item1"))).
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = optional_steps(OCCURRENCE_ENCODING) + """
+        program = make_steps_optional(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
 switch(2).
@@ -63,7 +63,7 @@ action(action(("unrelated","x"))).
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
         mapping = concretize_abstract_actions(abstract_plan, abstraction)
-        program = optional_steps(OCCURRENCE_ENCODING) + """
+        program = make_steps_optional(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 switch(2).
 """ + mapping

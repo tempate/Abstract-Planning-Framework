@@ -6,7 +6,7 @@ from core.abstraction.factory import Abstraction
 from core.integrations.clingo import plan_length
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
-from core.refinement.encoding import concretize_abstract_actions, mapped_horizon, optional_steps, switches
+from core.refinement.encoding import concretize_abstract_actions, make_steps_optional, switches
 from core.search.relaxing import RelaxingSolver
 
 
@@ -23,16 +23,14 @@ class RefinementContext:
 
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Use an abstract plan to guide concrete search."""
-    gaps = not context.config.optimize
-    if gaps:
-        horizon = mapped_horizon(abstract_horizon)
-        asp = optional_steps(context.concrete_asp)
-    else:
-        # The abstract plan is optimal, so no plan is shorter than it, and the first
-        # horizon with a plan has one holding an action at every step.
+    if context.config.optimize:
         horizon = abstract_horizon
         asp = context.concrete_asp
+    else:
+        horizon = 2 * abstract_horizon + 1
+        asp = make_steps_optional(context.concrete_asp)
 
+    gaps = not context.config.optimize
     asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps)
 
     plan = _solve_concrete_plan(context, asp, horizon, switches(abstract_plan, gaps))
