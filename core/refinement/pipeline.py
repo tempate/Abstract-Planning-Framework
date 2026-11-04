@@ -1,9 +1,10 @@
 """Realize an abstract plan as a concrete plan."""
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from core.abstraction.factory import Abstraction
+from core.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.clingo import plan_length
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
@@ -22,10 +23,13 @@ class RefinementContext:
     run_id: str
     metrics: PlanningMetrics
     base_dir: str
+    # Written name to original, for what the writer renamed in the abstract task.
+    renamings: dict[str, str]
 
 
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Ground the concrete task, then use an abstract plan to guide its search."""
+    abstract_plan = _with_original_names(abstract_plan, context.renamings)
     concrete_asp = _concrete_asp(context)
     if context.config.optimize:
         horizon = abstract_horizon
@@ -47,6 +51,18 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
         "success": plan is not None,
         "run_id": context.run_id,
     }
+
+
+def _with_original_names(abstract_plan, renamings):
+    """The abstract plan in the names of the concrete task, which refinement matches it against."""
+    renamed = []
+    for action in abstract_plan:
+        # A split action carries its original name before the separator.
+        name = renamings.get(action.name, action.name).split(SPLIT_SEPARATOR)[0]
+        args = tuple(renamings.get(arg, arg) for arg in action.args)
+        renamed.append(replace(action, name=name, args=args))
+
+    return tuple(renamed)
 
 
 def _concrete_asp(context):
