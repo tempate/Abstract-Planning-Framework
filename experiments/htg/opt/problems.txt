@@ -249,8 +249,9 @@ logistics-large-simple/goal-4/p-a1-c1-s1000-p10-t1-g4.pddl
 logistics-large-simple/goal-4/p-a1-c1-s1250-p10-t1-g4.pddl
 logistics-large-simple/goal-4/p-a1-c1-s1500-p10-t1-g4.pddl
 logistics-large-simple/goal-4/p-a1-c1-s1750-p10-t1-g4.pddl
-organic-synthesis-MIT/p3.pddl
-organic-synthesis-MIT/p4.pddl
+# Unified Planning's negative-conditions remover refuses an inequality over a type without objects, so the abstraction cannot be built.
+# organic-synthesis-MIT/p3.pddl
+# organic-synthesis-MIT/p4.pddl
 organic-synthesis-alkene/p10.pddl
 organic-synthesis-alkene/p11.pddl
 organic-synthesis-alkene/p12.pddl
@@ -268,7 +269,8 @@ organic-synthesis-alkene/p6.pddl
 organic-synthesis-alkene/p7.pddl
 organic-synthesis-alkene/p8.pddl
 organic-synthesis-alkene/p9.pddl
-organic-synthesis-original/prob04.pddl
+# Unified Planning's negative-conditions remover refuses an inequality over a type without objects, so the abstraction cannot be built.
+# organic-synthesis-original/prob04.pddl
 pipesworld-tankage-nosplit/p03-net1-b8-g3-t80.pddl
 pipesworld-tankage-nosplit/p04-net1-b8-g5-t80.pddl
 pipesworld-tankage-nosplit/p05-net1-b10-g4-t50.pddl

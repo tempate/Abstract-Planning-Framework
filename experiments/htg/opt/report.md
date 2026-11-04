@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-04 09:14 — experiments/htg/opt/results.csv
+2026-11-04 13:54 — experiments/htg/opt/results.csv
 
-291 problems compared over abs-lmcut, lmcut
+288 problems compared over abs-lmcut, lmcut
 
 ## Coverage
 
 ```
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
-Plans found                      41 (14.1%)   56 (19.2%)
-Timeouts                        133 (45.7%)  193 (66.3%)
-Out of memory                   105 (36.1%)   41 (14.1%)
-Others                            12 (4.1%)     1 (0.3%)
-Total problems                          291          291
+Plans found                      41 (14.2%)   53 (18.4%)
+Timeouts                        132 (45.8%)  193 (67.0%)
+Out of memory                   105 (36.5%)   41 (14.2%)
+Others                            10 (3.5%)     1 (0.3%)
+Total problems                          288          288
 ```
 
 ## Head to head, over the problems both solved
@@ -23,7 +23,7 @@ Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
 Plans found by both                      23           23
 Faster                           12 (52.2%)   11 (47.8%)
-Found when the other did not             18           33
+Found when the other did not             18           30
 Median runtime                      15.78 s      15.87 s
 Total runtime                    1,572.07 s   5,410.53 s
 Shorter plan                       0 (0.0%)     0 (0.0%)
@@ -37,11 +37,10 @@ Total plan length                       235          235
 ```
 Killed during                        LMcutᵅ
 -------------------------------------------
-Translating the task                 1 (1%)
 Abstract search                    81 (61%)
 Guided concrete search             36 (27%)
 Unguided concrete search           15 (11%)
-Total                                   133
+Total                                   132
 ```
 
 ## How the successes were solved
@@ -97,12 +96,10 @@ logistics-large-simple (16)     goal-1         0         4
                                 goal-2         0         3
                                 goal-3         0         2
                                 goal-4         0         1
-organic-synthesis-MIT (2)                      0         2
 organic-synthesis-alkene (17)                   0        15
-organic-synthesis-original (1)                   0         1
 pipesworld-tankage-nosplit (17)                   6         6
 rovers-large-simple (6)         goal-4         1         2
                                 goal-6         0         0
                                 goal-8         0         0
-Total (291)                                   41        56
+Total (288)                                   41        53
 ```

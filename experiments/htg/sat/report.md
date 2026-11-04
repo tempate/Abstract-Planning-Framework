@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-04 09:14 — experiments/htg/sat/results.csv
+2026-11-04 13:54 — experiments/htg/sat/results.csv
 
-291 problems compared over abs-lama, lama
+288 problems compared over abs-lama, lama
 
 ## Coverage
 
 ```
 Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
-Plans found                      88 (30.2%)  212 (72.9%)
-Timeouts                          27 (9.3%)   38 (13.1%)
-Out of memory                   163 (56.0%)   41 (14.1%)
-Others                            13 (4.5%)     0 (0.0%)
-Total problems                          291          291
+Plans found                      88 (30.6%)  209 (72.6%)
+Timeouts                          27 (9.4%)   38 (13.2%)
+Out of memory                   163 (56.6%)   41 (14.2%)
+Others                            10 (3.5%)     0 (0.0%)
+Total problems                          288          288
 ```
 
 ## Head to head, over the problems both solved
@@ -23,7 +23,7 @@ Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
 Plans found by both                      88           88
 Faster                             1 (1.1%)   87 (98.9%)
-Found when the other did not              0          124
+Found when the other did not              0          121
 Median runtime                      14.17 s       4.28 s
 Total runtime                    4,518.45 s     778.55 s
 Shorter plan                     12 (13.6%)   62 (70.5%)
@@ -95,12 +95,10 @@ logistics-large-simple (16)     goal-1         0         4
                                 goal-2         0         4
                                 goal-3         0         4
                                 goal-4         0         4
-organic-synthesis-MIT (2)                      0         2
 organic-synthesis-alkene (17)                   0        15
-organic-synthesis-original (1)                   0         1
 pipesworld-tankage-nosplit (17)                   8        15
 rovers-large-simple (6)         goal-4         1         3
                                 goal-6         1         2
                                 goal-8         0         1
-Total (291)                                   88       212
+Total (288)                                   88       209
 ```
