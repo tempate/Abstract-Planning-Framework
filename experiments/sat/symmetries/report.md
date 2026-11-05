@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-03 10:45 — experiments/sat/symmetries/results.csv
+2026-11-05 10:50 — experiments/sat/symmetries/results.csv
 
 557 problems compared over asp, abs-asp, abs-lama, lama
 
@@ -9,9 +9,9 @@
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
-Plans found                     131 (23.5%)  146 (26.2%)  333 (59.8%)  507 (91.0%)
-Timeouts                        405 (72.7%)  396 (71.1%)  122 (21.9%)    35 (6.3%)
-Out of memory                     21 (3.8%)    15 (2.7%)  101 (18.1%)    14 (2.5%)
+Plans found                     131 (23.5%)  144 (25.9%)  332 (59.6%)  507 (91.0%)
+Timeouts                        405 (72.7%)  397 (71.3%)  123 (22.1%)    35 (6.3%)
+Out of memory                     21 (3.8%)    16 (2.9%)  101 (18.1%)    14 (2.5%)
 Others                             0 (0.0%)     0 (0.0%)     1 (0.2%)     1 (0.2%)
 Total problems                          557          557          557          557
 ```
@@ -21,15 +21,15 @@ Total problems                          557          557          557          5
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
-Plans found by both                     125          125          330          330
-Faster                           96 (76.8%)   29 (23.2%)    14 (4.2%)  316 (95.8%)
-Found when the other did not              6           21            3          177
-Median runtime                       6.72 s      12.80 s      16.29 s       3.65 s
-Total runtime                   10,607.39 s  14,754.34 s  21,277.29 s   3,624.78 s
-Shorter plan                     91 (72.8%)    12 (9.6%)   51 (15.5%)  215 (65.2%)
-Same plan length                 22 (17.6%)   22 (17.6%)   64 (19.4%)   64 (19.4%)
-Median plan length                       16           28         54.5           44
-Total plan length                     2,621        3,675       24,508       20,647
+Plans found by both                     125          125          329          329
+Faster                          101 (80.8%)   24 (19.2%)     4 (1.2%)  325 (98.8%)
+Found when the other did not              6           19            3          178
+Median runtime                       6.72 s      15.21 s      18.51 s       3.65 s
+Total runtime                   10,607.39 s  15,598.87 s  21,776.34 s   3,595.67 s
+Shorter plan                     91 (72.8%)    12 (9.6%)   52 (15.8%)  213 (64.7%)
+Same plan length                 22 (17.6%)   22 (17.6%)   64 (19.5%)   64 (19.5%)
+Median plan length                       16           28           54           44
+Total plan length                     2,621        3,659       24,255       20,523
 ```
 
 ## Where the timeouts died
@@ -38,9 +38,9 @@ Total plan length                     2,621        3,675       24,508       20,6
 Killed during                          ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 Abstract search                   358 (90%)     13 (11%)
-Guided concrete search              23 (6%)    104 (85%)
+Guided concrete search              24 (6%)    105 (85%)
 Unguided concrete search            15 (4%)       5 (4%)
-Total                                   396          122
+Total                                   397          123
 ```
 
 ## How the successes were solved
@@ -48,10 +48,10 @@ Total                                   396          122
 ```
 Solved by                              ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-Refined directly                  118 (81%)    312 (94%)
-Refined, some actions off          27 (18%)      15 (5%)
+Refined directly                  118 (82%)    311 (94%)
+Refined, some actions off          25 (17%)      15 (5%)
 Solved above the abstract plan       1 (1%)       6 (2%)
-Total                                   146          333
+Total                                   144          332
 ```
 
 ## Deletes relaxed by the refined plans
@@ -60,11 +60,11 @@ Total                                   146          333
 Deletes relaxed                        ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 None                               15 (10%)     37 (11%)
-1 to 4                             74 (51%)    184 (56%)
-5 to 9                             25 (17%)     33 (10%)
+1 to 4                             73 (51%)    183 (56%)
+5 to 9                             24 (17%)     33 (10%)
 10 to 19                            10 (7%)     41 (13%)
-20 or more                         21 (14%)     32 (10%)
-Total                                   145          327
+20 or more                         21 (15%)     32 (10%)
+Total                                   143          326
 ```
 
 ## Plans found by domain
@@ -76,11 +76,11 @@ agricola-sat18-strips (20)           0         0         0        12
 airport (19)                        14        14        19        19
 barman-sat11-strips (20)             0         0         0        20
 barman-sat14-strips (20)             0         0         0        20
-childsnack-sat14-strips (20)         0         2         8         6
+childsnack-sat14-strips (20)         0         0         8         6
 depot (9)                            2         3         6         8
 driverlog (13)                       7         8        13        13
 elevators-sat08-strips (15)          0         0         8        15
-elevators-sat11-strips (14)          0         0         1        14
+elevators-sat11-strips (14)          0         0         0        14
 gripper (20)                         4         5         5        20
 hiking-sat14-strips (20)             2         7        15        20
 logistics00 (19)                    10         9        19        19
@@ -104,5 +104,5 @@ transport-sat11-strips (2)           0         0         0         2
 woodworking-sat08-strips (8)         0         0         7         8
 woodworking-sat11-strips (11)         0         0        11        11
 zenotravel (13)                      4         4        12        13
-Total (557)                        131       146       333       507
+Total (557)                        131       144       332       507
 ```
