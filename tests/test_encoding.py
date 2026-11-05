@@ -2,7 +2,12 @@ import unittest
 from types import SimpleNamespace
 
 from core.plan import PlanAction
-from core.refinement.encoding import concretize_abstract_actions, make_steps_optional, switches
+from core.refinement.encoding import (
+    choose_freely_while_switched_off,
+    concretize_abstract_actions,
+    make_steps_optional,
+    switches,
+)
 from core.search.incremental import IncrementalSolver
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
@@ -73,6 +78,23 @@ switch(2).
 
         self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
         self.assertTrue(any(not model & above for model in models))
+
+    def test_a_switched_on_step_holds_its_abstract_action_and_a_switched_off_step_any_action(self):
+        abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item1",), 2))
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
+        mapping = concretize_abstract_actions(abstract_plan, abstraction, gaps=False)
+        program = choose_freely_while_switched_off(OCCURRENCE_ENCODING) + """
+action(action(("inspect","item1"))).
+action(action(("unrelated","x"))).
+switch(1).
+:- switch(2).
+""" + mapping
+
+        models = self._models(program, horizon=2)
+
+        self.assertTrue(models)
+        self.assertTrue(all('occurs(action(("inspect","item1")),1)' in model for model in models))
+        self.assertTrue(any('occurs(action(("unrelated","x")),2)' in model for model in models))
 
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)

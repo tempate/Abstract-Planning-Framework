@@ -10,7 +10,12 @@ from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
-from core.refinement.encoding import concretize_abstract_actions, make_steps_optional, switches
+from core.refinement.encoding import (
+    choose_freely_while_switched_off,
+    concretize_abstract_actions,
+    make_steps_optional,
+    switches,
+)
 from core.search.relaxing import RelaxingSolver
 
 
@@ -39,6 +44,7 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
         asp = make_steps_optional(concrete_asp)
 
     gaps = not context.config.optimize
+    asp = choose_freely_while_switched_off(asp)
     asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps)
 
     plan = _solve_concrete_plan(context, asp, horizon, switches(abstract_plan, gaps))

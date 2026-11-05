@@ -12,6 +12,15 @@ def make_steps_optional(asp):
     return asp.replace(f"{EXACTLY_ONE_ACTION}.", f"{AT_MOST_ONE_ACTION}.")
 
 
+def choose_freely_while_switched_off(asp):
+    """Let a step choose among every action only while no switch holds it to an abstract action."""
+    # A held step already chooses among the groundings of its abstract action, so the free choice
+    # there only adds candidates the switch rules out anyway.
+    # EXACTLY_ONE_ACTION ends in AT_MOST_ONE_ACTION, so these two replacements cover both choices.
+    asp = asp.replace(f"{AT_MOST_ONE_ACTION} :- ", f"{AT_MOST_ONE_ACTION} :- not switch(t), ")
+    return asp.replace(f"{AT_MOST_ONE_ACTION}.", f"{AT_MOST_ONE_ACTION} :- not switch(t).")
+
+
 def concretize_abstract_actions(abstract_plan, abstraction, gaps=True):
     """Map an abstract plan to compatible grounded concrete actions."""
     rules = [f"concrete_object({_quote(name)})." for name in abstraction.objects]
