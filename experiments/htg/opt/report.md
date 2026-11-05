@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-05 14:21 — experiments/htg/opt/results.csv
+2026-11-05 18:34 — experiments/htg/opt/results.csv
 
 288 problems compared over abs-lmcut, lmcut
 
@@ -10,9 +10,9 @@
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
 Plans found                      41 (14.2%)   53 (18.4%)
-Timeouts                        132 (45.8%)  193 (67.0%)
-Out of memory                   115 (39.9%)   41 (14.2%)
-Others                             0 (0.0%)     1 (0.3%)
+Timeouts                        146 (50.7%)  193 (67.0%)
+Out of memory                    96 (33.3%)   41 (14.2%)
+Others                             5 (1.7%)     1 (0.3%)
 Total problems                          288          288
 ```
 
@@ -22,10 +22,10 @@ Total problems                          288          288
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
 Plans found by both                      23           23
-Faster                           12 (52.2%)   11 (47.8%)
+Faster                           13 (56.5%)   10 (43.5%)
 Found when the other did not             18           30
-Median runtime                      15.78 s      15.87 s
-Total runtime                    1,572.07 s   5,410.53 s
+Median runtime                      13.36 s      15.87 s
+Total runtime                    1,513.28 s   5,410.53 s
 Shorter plan                       0 (0.0%)     0 (0.0%)
 Same plan length                23 (100.0%)  23 (100.0%)
 Median plan length                       10           10
@@ -37,10 +37,9 @@ Total plan length                       235          235
 ```
 Killed during                        LMcutᵅ
 -------------------------------------------
-Abstract search                    81 (61%)
-Guided concrete search             36 (27%)
-Unguided concrete search           15 (11%)
-Total                                   132
+Abstract search                   145 (99%)
+Translating the task to ASP          1 (1%)
+Total                                   146
 ```
 
 ## How the successes were solved
