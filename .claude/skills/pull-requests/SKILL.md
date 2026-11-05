@@ -70,6 +70,16 @@ small tables, as #146 and #147 do:
 | LMcutᵅ | | 10.7 → 12.7 s |
 ```
 
+`experiments.compare` prints both tables for every track the manifests name, ready to
+paste:
+
+```bash
+python -m experiments.compare --base origin/main --branch HEAD \
+  --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json
+```
+
+For a stacked PR, pass the base branch as `--base` and its manifests as `--base-manifests`.
+
 When the change is small, the tables are the whole section. When it matters, or a
 figure shows it better than the tables can, such as a shift across many problems or a
 gain concentrated in a few domains, put the paper's figure above the tables. Either
@@ -227,15 +237,17 @@ branch a worktree has checked out cannot be deleted, and `git worktree prune` cl
 the entries whose directories are gone.
 
 For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
-with the merged results. Check first that the PR's base reproduces every number the
-paper holds for the tracks it touched, then write in the PR's numbers:
+with the merged results. `experiments.paper` writes them into the touched columns of the
+per-domain table, `tab:results`, and the touched curves and runtime plots of Figure 1,
+`fig:results`. It first checks that the merge's parent reproduces every number it
+replaces, and it skips a track whose results the paper already holds:
 
-- the touched columns of the per-domain table, `tab:results`, bolding the better of each pair
-- the touched curves and runtime plots of Figure 1, `fig:results`, as `experiments.figure` computes them
-- any number in the prose that the change makes wrong
+```bash
+python -m experiments.paper --base origin/main~1 --branch origin/main \
+  --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json
+```
 
-Skip this step when the paper already holds the PR's numbers, as it does when they
-went in before the merge.
+Fix any number in the prose that the change makes wrong by hand.
 
 Leave the prose itself to Daniel. When a claim no longer holds, tell him rather than
 rewrite it. Compile the paper, then make one local commit, named after the PR such as
