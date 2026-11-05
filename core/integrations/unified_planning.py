@@ -28,7 +28,7 @@ class PddlText:
     problem: str
     # Written name to original, for the actions and objects the writer had to
     # rename, such as an action sharing its name with a predicate.
-    renamings: dict[str, str]
+    original_names: dict[str, str]
 
 
 def read_problem(domain_path, problem_path):
@@ -56,7 +56,7 @@ def write_problem(problem: Problem):
     except Exception as error:
         raise PddlError(f"Could not serialize PDDL task: {error}") from error
 
-    renamings = {}
+    original_names = {}
     for item in (*problem.actions, *problem.all_objects):
         try:
             written = writer.get_pddl_name(item)
@@ -65,8 +65,8 @@ def write_problem(problem: Problem):
             # No plan can use that action, so it needs no entry here.
             continue
         if written != item.name:
-            renamings[written] = item.name
-    return PddlText(domain, problem_text, renamings)
+            original_names[written] = item.name
+    return PddlText(domain, problem_text, original_names)
 
 
 def to_positive_normal_form(problem):

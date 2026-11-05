@@ -125,7 +125,7 @@ class UnifiedPlanningCodecTests(unittest.TestCase):
             warnings.simplefilter("ignore")
             serialized = write_problem(parse_problem(domain, problem))
 
-        (written,) = [name for name, original in serialized.renamings.items() if original == "up"]
+        (written,) = [name for name, original in serialized.original_names.items() if original == "up"]
         self.assertIn(f"(:action {written}", serialized.domain)
 
     def test_writes_a_task_with_an_action_that_can_never_apply(self):

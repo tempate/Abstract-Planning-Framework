@@ -27,17 +27,16 @@ KILLED_IN_PHASE = {
     "problem_reading": "Finding the object classes",
     "symmetry_discovery": "Abstraction",
     "resource_detection": "Abstraction",
-    # Measured on both sides of the PNF translation, so the run died translating to PNF or writing the abstract task.
-    "abstraction": "Abstraction",
+    # Measured on both sides of the PNF translation, so either translation follows it.
+    "abstraction": "Translating the task",
     "pnf_translation": "Abstraction",
+    "concrete_fd": "Writing the abstract task",
     "abstract_pddl_writing": "Translating the abstract task",
-    "abstract_fd": "Abstract search",
+    "abstract_fd": "Translating the task to ASP",
+    "concrete_asp": "Abstract search",
     "abstract_asp": "Abstract search",
-    # The concrete task is grounded only once there is an abstract plan to refine.
-    "abstract_solving": "Translating the task",
-    "abstract_fd_search": "Translating the task",
-    "concrete_fd": "Translating the task to ASP",
-    "concrete_asp": "Guided concrete search",
+    "abstract_solving": "Guided concrete search",
+    "abstract_fd_search": "Guided concrete search",
     "guided_concrete_solving": "Extended concrete search",
 }
 # The solvability check searches the abstract task straight from its PDDL.
