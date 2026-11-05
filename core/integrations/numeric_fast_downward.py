@@ -32,10 +32,9 @@ class ResourceVariable:
 
 @dataclass(frozen=True)
 class ResourceDetection:
-    """The resource variables of one task, and the objects its grounding kept."""
+    """The resource variables of one task."""
 
     resources: tuple[ResourceVariable, ...]
-    grounded_objects: frozenset[str]
 
 
 def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME_LIMIT):
@@ -81,7 +80,7 @@ def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME
 
     sas_path = os.path.join(base_dir, "output.sas")
     resources = parse_resources(stdout, read_sas_variables(sas_path))
-    return ResourceDetection(resources, read_sas_objects(sas_path))
+    return ResourceDetection(resources)
 
 
 def _kill_process_group(process):
@@ -121,23 +120,6 @@ def read_sas_variables(sas_path):
         variables[name] = tuple(lines[index + 4 : index + 4 + count])
         index += 4 + count
     return variables
-
-
-def read_sas_objects(sas_path):
-    """Return every object the grounded task names, in an atom or an operator."""
-    with open(sas_path, encoding="utf-8") as sas_file:
-        lines = [line.rstrip("\n") for line in sas_file]
-
-    objects = set()
-    for index, line in enumerate(lines):
-        if line == "begin_operator":
-            # The line after names the operator: its action, then its arguments.
-            objects.update(lines[index + 1].split()[1:])
-            continue
-        fields = _atom_fields(line)
-        if fields is not None:
-            objects.update(fields[1])
-    return frozenset(objects)
 
 
 def varying_objects(values):

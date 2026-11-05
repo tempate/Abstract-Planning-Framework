@@ -1,20 +1,20 @@
 # Benchmark report
 
-2026-11-03 13:39 — experiments/unsat/scaled/results.csv
+2026-11-05 10:16 — experiments/unsat/scaled/results.csv
 
-210 problems compared over abs-ms, ms
+334 problems compared over abs-ms, ms
 
 ## Verdicts
 
 ```
 Verdict                                M&Sᵅ          M&S
 --------------------------------------------------------
-Unsolvable                     210 (100.0%)  163 (77.6%)
+Unsolvable                      330 (98.8%)  276 (82.6%)
 Unknown                            0 (0.0%)     0 (0.0%)
-Timeouts                           0 (0.0%)     6 (2.9%)
-Out of memory                      0 (0.0%)   41 (19.5%)
+Timeouts                           0 (0.0%)     3 (0.9%)
+Out of memory                      4 (1.2%)   55 (16.5%)
 Others                             0 (0.0%)     0 (0.0%)
-Total problems                          210          210
+Total problems                          334          334
 ```
 
 ## Head to head, over the problems both solved
@@ -22,11 +22,11 @@ Total problems                          210          210
 ```
 Metric                                 M&Sᵅ          M&S
 --------------------------------------------------------
-Proved unsolvable by both               163          163
-Faster                           29 (17.8%)  134 (82.2%)
-Proved when the other did not            47            0
-Median runtime                      14.86 s       4.43 s
-Total runtime                    8,491.22 s   9,167.72 s
+Proved unsolvable by both               276          276
+Faster                           78 (28.3%)  198 (71.7%)
+Proved when the other did not            54            0
+Median runtime                      40.12 s       8.67 s
+Total runtime                   35,017.00 s  30,914.68 s
 ```
 
 ## Where the timeouts died
@@ -42,20 +42,8 @@ Total                                     0
 ```
 Domain (problems)                 Size      M&Sᵅ       M&S
 ----------------------------------------------------------
-cave-diving (5)                      2         1         1
+cave-diving (1)                      2         1         1
                                      3         1         1
-                                     4         2         0
-                                     5         3         1
-                                     8         1         0
-                                    10         4         1
-                                    12         1         0
-                                    20         5         1
-                                    50         5         1
-                                   100         5         1
-                                   200         5         1
-                                   500         5         1
-                                  1000         5         1
-document-transfer (1)                3         1         1
                                      5         1         1
                                     10         1         1
                                     20         1         1
@@ -64,25 +52,37 @@ document-transfer (1)                3         1         1
                                    200         1         1
                                    500         1         1
                                   1000         1         1
-over-nomystery (8)                   2         8         8
-                                     3         8         8
-                                     5         8         8
-                                    10         8         8
-                                    20         8         8
-                                    50         8         8
-                                   100         8         8
-                                   200         8         8
-                                   500         8         2
-                                  1000         8         2
-over-rovers (8)                      2         6         6
-                                     3         8         8
-                                     5         8         8
-                                    10         8         8
-                                    20         8         8
-                                    50         8         8
-                                   100         8         8
-                                   200         8         8
-                                   500         8         8
-                                  1000         8         6
-Total (210)                                  210       163
+document-transfer (7)                3         2         2
+                                     4         1         1
+                                     5         6         6
+                                     6         1         1
+                                    10         7         7
+                                    20         7         7
+                                    50         7         7
+                                   100         7         7
+                                   200         7         7
+                                   500         7         3
+                                  1000         7         2
+over-nomystery (12)                  2        12        12
+                                     3        12        12
+                                     5        12        11
+                                    10        12        11
+                                    20        12        11
+                                    50        12        11
+                                   100        12        11
+                                   200        12        11
+                                   500        12         4
+                                  1000        11         4
+over-rovers (15)                     2        10        10
+                                     3        14        14
+                                     4         1         1
+                                     5        15        15
+                                    10        15        14
+                                    20        15        14
+                                    50        15        12
+                                   100        15        10
+                                   200        15        10
+                                   500        15        10
+                                  1000        12         8
+Total (334)                                  330       276
 ```

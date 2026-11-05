@@ -1,6 +1,6 @@
 import unittest
 
-from experiments.figure import extra_actions_class, select
+from experiments.figure import scaled_coverage, select
 
 
 def _row(mode, problem="p01.pddl", rank=""):
@@ -40,19 +40,27 @@ class FigureSelectionTests(unittest.TestCase):
         self.assertEqual({row["mode"] for row in selected}, {"lmcut", "abs-lmcut"})
 
 
-class ExtraActionsTests(unittest.TestCase):
-    def test_extra_actions_fall_into_the_figures_colour_classes(self):
-        def problem(abstract_length, optimal_length="10"):
-            return {
-                "asp": {"status": "success", "plan_length": optimal_length},
-                "lmcut": {"status": "timed out", "plan_length": ""},
-                "abs-asp": {"status": "success" if abstract_length else "timed out", "plan_length": abstract_length},
-            }
+class ScaledFigureTests(unittest.TestCase):
+    def test_coverage_is_the_share_proved_of_each_size(self):
+        def problem(domain, size, ms, abs_ms):
+            def row(seconds):
+                return {
+                    "domain": f"{domain}/size-{size}",
+                    "problem": "p01.pddl",
+                    "status": "success" if seconds else "out of memory",
+                    "verdict": "unsolvable" if seconds else "",
+                    "wall_time_seconds": str(seconds or 0),
+                }
 
-        classes = [extra_actions_class(problem(length), "abs-asp", "lmcut") for length in ("10", "12", "15", "16", "")]
+            return {"ms": row(ms), "abs-ms": row(abs_ms)}
 
-        self.assertEqual(classes, [0, 1, 2, 3, 4])
+        problems = [
+            problem("a", 2, 1.0, 10.0),
+            problem("b", 2, None, 20.0),
+            problem("c", 2, 2.0, 40.0),
+            problem("d", 2, 9.0, None),
+            problem("a", 50, 1.0, None),
+        ]
 
-
-if __name__ == "__main__":
-    unittest.main()
+        self.assertEqual(scaled_coverage(problems, "ms"), [(2, 75.0), (50, 100.0)])
+        self.assertEqual(scaled_coverage(problems, "abs-ms"), [(2, 75.0), (50, 0.0)])
