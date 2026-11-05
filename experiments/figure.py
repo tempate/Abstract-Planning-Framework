@@ -7,6 +7,7 @@ import json
 import shutil
 import subprocess
 import tempfile
+from collections import defaultdict
 from pathlib import Path
 
 from experiments.report import _finished_problems
@@ -15,6 +16,8 @@ from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 SOURCES = {"symmetries": "Symmetric objects", "resources": "Resource levels"}
 # The unsolvability track collapses symmetric objects only.
 KIND_SOURCES = {"sat": tuple(SOURCES), "opt": tuple(SOURCES), "unsat": ("symmetries",)}
+# The scaled figure draws the coverage of the unsat track's grown problems, for the branch alone.
+TRACKS = {"scaled": "unsat"}
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
 TIME_LIMIT = 1800
@@ -32,6 +35,10 @@ def main():
     args = _argument_parser().parse_args()
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
+    if args.kind == "scaled":
+        _render(args.paper, [_scaled_panel(_tracks(args.branch, args.kind, manifests)["scaled"])], Path(args.out))
+        print(f"Wrote {args.out}")
+        return
     panel = _unsat_panel if args.kind == "unsat" else _panel
     # A label like #134 would otherwise read as a macro parameter in LaTeX.
     base_label = args.base_label.replace("#", r"\#")
@@ -77,12 +84,13 @@ def extra_actions_class(problem, abstraction, baseline):
 
 def _tracks(revision, kind, manifests):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
+    track = TRACKS.get(kind, kind)
     tracks = {}
-    for source in KIND_SOURCES[kind]:
+    for source in ("scaled",) if kind == "scaled" else KIND_SOURCES[kind]:
         text = subprocess.check_output(
-            ["git", "-C", PROJECT_ROOT, "show", f"{revision}:experiments/{kind}/{source}/results.csv"], text=True
+            ["git", "-C", PROJECT_ROOT, "show", f"{revision}:experiments/{track}/{source}/results.csv"], text=True
         )
-        rows = select(list(csv.DictReader(io.StringIO(text))), kind, source, manifests)
+        rows = select(list(csv.DictReader(io.StringIO(text))), track, source, manifests)
         with tempfile.NamedTemporaryFile("w", suffix=".csv", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=rows[0].keys())
             writer.writeheader()
@@ -169,6 +177,36 @@ def _unsat_panel(title, _kind, tracks):
     )
 
 
+SCALED_MODES = (("ms", "conc", "*", r"\MS"), ("abs-ms", "abst", "square*", r"\MSa"))
+
+
+def scaled_coverage(problems, mode):
+    """The share of each class size's problems a mode proves unsolvable, in percent."""
+    by_size = defaultdict(list)
+    for problem in problems:
+        by_size[int(problem[mode]["domain"].rsplit("/size-", 1)[1])].append(_solved(problem[mode]))
+    return [(size, 100 * sum(proved) / len(proved)) for size, proved in sorted(by_size.items())]
+
+
+def _scaled_panel(problems):
+    lines = []
+    for mode, style, mark, name in SCALED_MODES:
+        shares = " ".join(f"({size},{share:.2f})" for size, share in scaled_coverage(problems, mode))
+        lines.append(rf"\addplot[{style}, very thick, mark={mark}, mark size=1.4pt] coordinates {{{shares}}};")
+        lines.append(rf"\addlegendentry{{{name}}}")
+    return (
+        "\\begin{tikzpicture}\n\\begin{semilogxaxis}[scale only axis, width=0.8\\columnwidth, "
+        "height=0.5\\columnwidth, xmin=1.8, xmax=1150, xtick={2,10,100,1000}, xticklabels={2,10,100,1000}, "
+        "ymin=0, ymax=105, ytick={0,25,50,75,100}, minor tick length=0pt, xlabel={Size of the symmetric class}, "
+        "ylabel={Problems proved (\\%)}, axis line style={black!50}, tick style={black!50}, "
+        "xtick pos=bottom, ytick pos=left, tick label style={font=\\footnotesize}, label style={font=\\footnotesize}, "
+        "legend style={font=\\footnotesize, draw=none, fill=none, at={(0.5,1.03)}, anchor=south, "
+        "/tikz/every even column/.append style={column sep=10pt}}, legend columns=2, legend cell align=left]\n"
+        + "\n".join(lines)
+        + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
+    )
+
+
 def _cactus(problems, mode):
     times = sorted(float(p[mode]["wall_time_seconds"]) for p in problems if _solved(p[mode]))
     # The curve runs on to the time limit, so a mode that stops solving early shows as flat.
@@ -199,14 +237,12 @@ def _time(row):
 
 
 def _render(paper, panels, out):
-    """Typeset both panels with the paper's preamble, then crop the page to a PNG."""
+    """Typeset the panels side by side with the paper's preamble, then crop the page to a PNG."""
     preamble = Path(paper).read_text().split(r"\title{")[0]
     document = (
         preamble
         + "\\pagestyle{empty}\n\\begin{document}\n\\noindent\\mbox{"
-        + panels[0]
-        + r"\hspace{2em}"
-        + panels[1]
+        + r"\hspace{2em}".join(panels)
         + "}\n\\end{document}\n"
     )
     with tempfile.TemporaryDirectory() as directory:
@@ -227,7 +263,7 @@ def _render(paper, panels, out):
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=sorted(KIND_SOURCES), help="Which of the paper's figures to draw")
+    parser.add_argument("kind", choices=sorted([*KIND_SOURCES, "scaled"]), help="Which of the paper's figures to draw")
     parser.add_argument("--base", default="origin/main", help="Revision whose results.csv files go on the left")
     parser.add_argument("--base-label", default="main", help="Name of the base in the left panel's title")
     parser.add_argument("--branch", default="HEAD", help="Revision whose results.csv files go on the right")

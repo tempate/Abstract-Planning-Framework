@@ -1,6 +1,6 @@
 import unittest
 
-from experiments.figure import extra_actions_class, select
+from experiments.figure import extra_actions_class, scaled_coverage, select
 
 
 def _row(mode, problem="p01.pddl", rank=""):
@@ -56,3 +56,29 @@ class ExtraActionsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ScaledFigureTests(unittest.TestCase):
+    def test_coverage_is_the_share_proved_of_each_size(self):
+        def problem(domain, size, ms, abs_ms):
+            def row(seconds):
+                return {
+                    "domain": f"{domain}/size-{size}",
+                    "problem": "p01.pddl",
+                    "status": "success" if seconds else "out of memory",
+                    "verdict": "unsolvable" if seconds else "",
+                    "wall_time_seconds": str(seconds or 0),
+                }
+
+            return {"ms": row(ms), "abs-ms": row(abs_ms)}
+
+        problems = [
+            problem("a", 2, 1.0, 10.0),
+            problem("b", 2, None, 20.0),
+            problem("c", 2, 2.0, 40.0),
+            problem("d", 2, 9.0, None),
+            problem("a", 50, 1.0, None),
+        ]
+
+        self.assertEqual(scaled_coverage(problems, "ms"), [(2, 75.0), (50, 100.0)])
+        self.assertEqual(scaled_coverage(problems, "abs-ms"), [(2, 75.0), (50, 0.0)])

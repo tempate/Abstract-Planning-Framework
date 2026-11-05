@@ -1,6 +1,6 @@
 # Scaled track
 
-Unsolvable problems whose symmetric class grows up to 1000 objects, to see how M&S and M&Sᵅ scale with the class. The base problems are the 22 that M&Sᵅ proves unsolvable by collapsing their largest class: 5 cave-diving, 1 document-transfer, 8 over-nomystery and 8 over-rovers.
+Unsolvable problems whose symmetric class grows up to 1000 objects, to see how M&S and M&Sᵅ scale with the class. The base problems are the 35 that both M&S and M&Sᵅ prove unsolvable at their original size, 1 in cave-diving, 7 in document-transfer, 12 in over-nomystery and 15 in over-rovers. Each grows its largest class, which M&Sᵅ collapses to prove it. pegsol-row5 `prob01` has no class to grow, since PDDL Symmetries proves it unsolvable before finding one.
 
 ## Example
 
@@ -21,7 +21,7 @@ Collapsing the grown class gives the same abstract task as collapsing the origin
 
 ## Layout
 
-`experiments/benchmarks/scaled/<domain>/size-N/` holds the base problems of `<domain>` with a class of N objects, each beside its domain file. Each base problem starts at its own class size, between 2 and 12, and grows to the sizes in `suite.py` above it.
+`experiments/benchmarks/scaled/<domain>/size-N/` holds the base problems of `<domain>` with a class of N objects, each beside its domain file. Each base problem starts at its own class size, between 2 and 6, and grows to the sizes in `suite.py` above it.
 
 ## Commands
 

@@ -71,6 +71,8 @@ python -m experiments.figure opt --base origin/main --branch HEAD \
   --out 130-opt-before-after.png
 ```
 
+`scaled` draws the share of the scaled unsat problems each mode proves per class size, for the branch alone.
+
 `--manifests` limits the branch's abstract modes to the classes its runs submitted.
 For a stacked PR, pass `--base <the base branch> --base-label '#<n>'` and the base's
 own manifests as `--base-manifests`. The script needs the paper checked out next to
