@@ -52,7 +52,7 @@ this order:
 
 1. The before/after figures, one per track kind, base on the left and branch on the right.
 2. A table of plans found, base → PR, with one row per mode and one column per track.
-3. Three to six short bullets. Gains and losses with the domains behind them, runtime and plan length on the problems both versions solve, and anything a reader would otherwise misread.
+3. At most one short sentence, and only for something a reader would otherwise misread. Never a list of facts.
 
 "Before" is the PR's base, which is `main` or, for a stacked PR, the PR below it. Compare the
 same problems and classes on both sides. For a best-class run, keep only the
