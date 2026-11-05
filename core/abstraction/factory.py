@@ -211,4 +211,4 @@ def write_abstract_problem(problem, base_dir):
     problem_path = input_directory / "problem.pddl"
     problem_path.write_text(serialized.problem, encoding="utf-8")
 
-    return domain_path, problem_path, serialized.original_names
+    return domain_path, problem_path, serialized.renamings
