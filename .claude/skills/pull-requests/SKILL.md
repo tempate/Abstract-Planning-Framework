@@ -48,7 +48,7 @@ Until the run is collected, the description is one short paragraph on what the P
 changes, then `## Results` with the word `Pending` and what was submitted.
 
 Once the results are pushed and the PR is ready, the `## Results` section holds two
-small tables and nothing else, as #146 and #147 do:
+small tables, as #146 and #147 do:
 
 1. **Plans found.** One row per abstract mode the run submitted and one column per track
    it touched, such as `sat symmetries` or `opt resources`. Each cell reads `base → PR`,
@@ -70,7 +70,10 @@ small tables and nothing else, as #146 and #147 do:
 | LMcutᵅ | | 10.7 → 12.7 s |
 ```
 
-Leave out figures, baseline rows, sentences about the numbers and tables of runs.
+When the change is small, the tables are the whole section. When it matters, or a
+figure shows it better than the tables can, such as a shift across many problems or a
+gain concentrated in a few domains, put the paper's figure above the tables. Either
+way, leave out baseline rows, sentences about the numbers and tables of runs.
 
 "Before" is the PR's base, which is `main` or, for a stacked PR, the PR below it. Compare the
 same problems and classes on both sides. For a best-class run, keep only the
@@ -78,7 +81,7 @@ abstract rows the run's manifest lists, as the `cluster-benchmarks` skill explai
 For a run over a subset of problems, report on the problems the subset was meant to
 cover, not on whatever extra the submission swept in.
 
-Descriptions carry no figure unless Daniel asks for one. `experiments.figure` draws
+`experiments.figure` draws
 the paper's sat, opt or unsat figure, problems solved or proved over time and runtime
 per problem with every mode, for the base and the branch side by side:
 
@@ -95,8 +98,8 @@ the repository, or `--paper`, plus `pdflatex`, `pdfcrop` and `pdftoppm`. After
 changing it, check that the base half reproduces the coordinates in the paper's
 `main.tex` from the `main` commit the paper's figure came from.
 
-When he asks for a figure, he uploads it by dragging it into the description, so
-leave an HTML comment where it goes:
+Daniel uploads a figure by dragging it into the description, so leave an HTML comment
+where it goes:
 
 ```markdown
 <!-- 130-sat-before-after.png: before (main) left, after right -->
