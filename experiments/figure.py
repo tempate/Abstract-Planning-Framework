@@ -32,19 +32,22 @@ DEFAULT_PAPER = PROJECT_ROOT.parent / "paper" / "planpilot_abstractions" / "icap
 
 
 def main():
-    args = _argument_parser().parse_args()
+    parser = _argument_parser()
+    args = parser.parse_args()
+    if args.sources and args.kind not in ("sat", "opt"):
+        parser.error("--sources applies to the sat and opt figures only")
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
     if args.kind == "scaled":
-        _render(args.paper, [_scaled_panel(_tracks(args.branch, args.kind, manifests)["scaled"])], Path(args.out))
+        _render(args.paper, [_scaled_panel(load_tracks(args.branch, args.kind, manifests)["scaled"])], Path(args.out))
         print(f"Wrote {args.out}")
         return
     panel = _unsat_panel if args.kind == "unsat" else _panel
     # A label like #134 would otherwise read as a macro parameter in LaTeX.
     base_label = args.base_label.replace("#", r"\#")
     panels = [
-        panel(f"Before ({base_label})", args.kind, _tracks(args.base, args.kind, base_manifests, args.sources)),
-        panel("After", args.kind, _tracks(args.branch, args.kind, manifests, args.sources)),
+        panel(f"Before ({base_label})", args.kind, load_tracks(args.base, args.kind, base_manifests, args.sources)),
+        panel("After", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources)),
     ]
     _render(args.paper, panels, Path(args.out))
     print(f"Wrote {args.out}")
@@ -73,7 +76,7 @@ def select(rows, kind, source, manifests):
     return selected
 
 
-def _tracks(revision, kind, manifests, sources=None):
+def load_tracks(revision, kind, manifests, sources=None):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
     track = TRACKS.get(kind, kind)
     if kind == "scaled":
@@ -109,7 +112,7 @@ def _panel(title, kind, tracks):
     for source, problems in tracks.items():
         lines = []
         for mode, style, name in curves:
-            lines.append(rf"\addplot[{style}, thick, const plot, mark=none] coordinates {{{_cactus(problems, mode)}}};")
+            lines.append(rf"\addplot[{style}, thick, const plot, mark=none] coordinates {{{cactus(problems, mode)}}};")
             # One legend above the plots, carried by the right one.
             if source == last:
                 lines.append(rf"\addlegendentry{{{name}}}")
@@ -128,7 +131,7 @@ def _panel(title, kind, tracks):
             # Only the top row names its sources, and only the left plot labels its y axis.
             options = [rf"title={{\small {SOURCES[source]}}}"] if solver == baseline else []
             options.append(rf"ylabel={{{abstraction_label}{{}} time (s)}}" if index == 0 else "yticklabels={}")
-            points = _scatter(problems, solver, f"abs-{solver}")
+            points = scatter(problems, solver, f"abs-{solver}")
             plots.append(rf"\runtimeplot[{', '.join(options)}]{{{solver_label}}}{{{points}}}")
         runtime_rows.append(_row(plots))
 
@@ -145,15 +148,15 @@ def _panel(title, kind, tracks):
 def _unsat_panel(title, _kind, tracks):
     problems = tracks["symmetries"]
     lines = [
-        rf"\addplot[conc, solid, thick, const plot, mark=none] coordinates {{{_cactus(problems, 'ms')}}};",
+        rf"\addplot[conc, solid, thick, const plot, mark=none] coordinates {{{cactus(problems, 'ms')}}};",
         r"\addlegendentry{\MS}",
-        rf"\addplot[abst, solid, thick, const plot, mark=none] coordinates {{{_cactus(problems, 'abs-ms')}}};",
+        rf"\addplot[abst, solid, thick, const plot, mark=none] coordinates {{{cactus(problems, 'abs-ms')}}};",
         r"\addlegendentry{\MSa}",
     ]
     options = "ylabel={Problems proved}, legend style={overlay, at={(0.5,1.26)}, anchor=south}"
     runtime = (
         rf"\runtimeplot[title={{\small {SOURCES['symmetries']}}}, ylabel={{\MSa{{}} time (s)}}]"
-        rf"{{\MS}}{{{_scatter(problems, 'ms', 'abs-ms')}}}"
+        rf"{{\MS}}{{{scatter(problems, 'ms', 'abs-ms')}}}"
     )
     return _titled(
         title,
@@ -198,7 +201,7 @@ def scaled_coverage(problems, mode):
     """The share of each class size's problems a mode proves unsolvable, in percent."""
     by_size = defaultdict(list)
     for problem in problems:
-        by_size[int(problem[mode]["domain"].rsplit("/size-", 1)[1])].append(_solved(problem[mode]))
+        by_size[int(problem[mode]["domain"].rsplit("/size-", 1)[1])].append(solved(problem[mode]))
     return [(size, 100 * sum(proved) / len(proved)) for size, proved in sorted(by_size.items())]
 
 
@@ -221,30 +224,30 @@ def _scaled_panel(problems):
     )
 
 
-def _cactus(problems, mode):
-    times = sorted(float(p[mode]["wall_time_seconds"]) for p in problems if _solved(p[mode]))
+def cactus(problems, mode):
+    times = sorted(float(p[mode]["wall_time_seconds"]) for p in problems if solved(p[mode]))
     # The curve runs on to the time limit, so a mode that stops solving early shows as flat.
     points = [f"({time:.2f},{count})" for count, time in enumerate(times, 1)]
     return " ".join(["(1,0)", *points, f"({TIME_LIMIT},{len(times)})"])
 
 
-def _scatter(problems, solver, abstraction):
+def scatter(problems, solver, abstraction):
     points = []
     for problem in problems:
-        x, y = _time(problem[solver]), _time(problem[abstraction])
+        x, y = solve_time(problem[solver]), solve_time(problem[abstraction])
         if x is None and y is None:
             continue
         points.append(f"({x or UNSOLVED:.2f},{y or UNSOLVED:.2f})")
     return " ".join(points)
 
 
-def _solved(row):
+def solved(row):
     # An abstraction that finds a plan leaves an unsolvability verdict unknown, which proves nothing.
     return row["status"] == "success" and row.get("verdict") != "unknown"
 
 
-def _time(row):
-    return float(row["wall_time_seconds"]) if _solved(row) else None
+def solve_time(row):
+    return float(row["wall_time_seconds"]) if solved(row) else None
 
 
 def _render(paper, panels, out):
