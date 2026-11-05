@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-05 14:21 — experiments/htg/opt/results.csv
+2026-11-05 23:00 — experiments/htg/opt/results.csv
 
 288 problems compared over abs-lmcut, lmcut
 
@@ -9,10 +9,10 @@
 ```
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
-Plans found                      41 (14.2%)   53 (18.4%)
-Timeouts                        132 (45.8%)  193 (67.0%)
-Out of memory                   115 (39.9%)   41 (14.2%)
-Others                             0 (0.0%)     1 (0.3%)
+Plans found                      42 (14.6%)   53 (18.4%)
+Timeouts                        149 (51.7%)  193 (67.0%)
+Out of memory                    92 (31.9%)   41 (14.2%)
+Others                             5 (1.7%)     1 (0.3%)
 Total problems                          288          288
 ```
 
@@ -21,15 +21,15 @@ Total problems                          288          288
 ```
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
-Plans found by both                      23           23
-Faster                           12 (52.2%)   11 (47.8%)
-Found when the other did not             18           30
-Median runtime                      15.78 s      15.87 s
-Total runtime                    1,572.07 s   5,410.53 s
+Plans found by both                      24           24
+Faster                           12 (50.0%)   12 (50.0%)
+Found when the other did not             18           29
+Median runtime                      18.59 s      29.66 s
+Total runtime                    2,670.88 s   5,662.57 s
 Shorter plan                       0 (0.0%)     0 (0.0%)
-Same plan length                23 (100.0%)  23 (100.0%)
-Median plan length                       10           10
-Total plan length                       235          235
+Same plan length                24 (100.0%)  24 (100.0%)
+Median plan length                     10.5         10.5
+Total plan length                       253          253
 ```
 
 ## Where the timeouts died
@@ -37,10 +37,10 @@ Total plan length                       235          235
 ```
 Killed during                        LMcutᵅ
 -------------------------------------------
-Abstract search                    81 (61%)
-Guided concrete search             36 (27%)
-Unguided concrete search           15 (11%)
-Total                                   132
+Abstract search                   147 (99%)
+Translating the task                 1 (1%)
+Guided concrete search               1 (1%)
+Total                                   149
 ```
 
 ## How the successes were solved
@@ -48,10 +48,10 @@ Total                                   132
 ```
 Solved by                            LMcutᵅ
 -------------------------------------------
-Refined directly                   32 (78%)
+Refined directly                   32 (76%)
 Refined, some actions off            0 (0%)
-Solved above the abstract plan      9 (22%)
-Total                                    41
+Solved above the abstract plan     10 (24%)
+Total                                    42
 ```
 
 ## Deletes relaxed by the refined plans
@@ -98,8 +98,8 @@ logistics-large-simple (16)     goal-1         0         4
                                 goal-4         0         1
 organic-synthesis-alkene (17)                   0        15
 pipesworld-tankage-nosplit (17)                   6         6
-rovers-large-simple (6)         goal-4         1         2
+rovers-large-simple (6)         goal-4         2         2
                                 goal-6         0         0
                                 goal-8         0         0
-Total (288)                                   41        53
+Total (288)                                   42        53
 ```
