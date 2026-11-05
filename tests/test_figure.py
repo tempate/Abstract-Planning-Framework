@@ -1,6 +1,6 @@
 import unittest
 
-from experiments.figure import extra_actions_class, scaled_coverage, select
+from experiments.figure import scaled_coverage, select
 
 
 def _row(mode, problem="p01.pddl", rank=""):
@@ -38,24 +38,6 @@ class FigureSelectionTests(unittest.TestCase):
         selected = select(rows, "opt", "symmetries", manifests)
 
         self.assertEqual({row["mode"] for row in selected}, {"lmcut", "abs-lmcut"})
-
-
-class ExtraActionsTests(unittest.TestCase):
-    def test_extra_actions_fall_into_the_figures_colour_classes(self):
-        def problem(abstract_length, optimal_length="10"):
-            return {
-                "asp": {"status": "success", "plan_length": optimal_length},
-                "lmcut": {"status": "timed out", "plan_length": ""},
-                "abs-asp": {"status": "success" if abstract_length else "timed out", "plan_length": abstract_length},
-            }
-
-        classes = [extra_actions_class(problem(length), "abs-asp", "lmcut") for length in ("10", "12", "15", "16", "")]
-
-        self.assertEqual(classes, [0, 1, 2, 3, 4])
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class ScaledFigureTests(unittest.TestCase):
