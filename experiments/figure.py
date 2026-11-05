@@ -5,8 +5,10 @@ import csv
 import io
 import json
 import shutil
+import statistics
 import subprocess
 import tempfile
+from collections import defaultdict
 from pathlib import Path
 
 from experiments.report import _finished_problems
@@ -14,7 +16,9 @@ from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 
 SOURCES = {"symmetries": "Symmetric objects", "resources": "Resource levels"}
 # The unsolvability track collapses symmetric objects only.
-KIND_SOURCES = {"sat": tuple(SOURCES), "opt": tuple(SOURCES), "unsat": ("symmetries",)}
+KIND_SOURCES = {"sat": tuple(SOURCES), "opt": tuple(SOURCES), "unsat": ("symmetries",), "scaled": ("scaled",)}
+# The scaled figure draws the unsat track's grown problems.
+TRACKS = {"scaled": "unsat"}
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
 TIME_LIMIT = 1800
@@ -32,7 +36,7 @@ def main():
     args = _argument_parser().parse_args()
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
-    panel = _unsat_panel if args.kind == "unsat" else _panel
+    panel = {"unsat": _unsat_panel, "scaled": _scaled_panel}.get(args.kind, _panel)
     # A label like #134 would otherwise read as a macro parameter in LaTeX.
     base_label = args.base_label.replace("#", r"\#")
     panels = [
@@ -77,12 +81,13 @@ def extra_actions_class(problem, abstraction, baseline):
 
 def _tracks(revision, kind, manifests):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
+    track = TRACKS.get(kind, kind)
     tracks = {}
     for source in KIND_SOURCES[kind]:
         text = subprocess.check_output(
-            ["git", "-C", PROJECT_ROOT, "show", f"{revision}:experiments/{kind}/{source}/results.csv"], text=True
+            ["git", "-C", PROJECT_ROOT, "show", f"{revision}:experiments/{track}/{source}/results.csv"], text=True
         )
-        rows = select(list(csv.DictReader(io.StringIO(text))), kind, source, manifests)
+        rows = select(list(csv.DictReader(io.StringIO(text))), track, source, manifests)
         with tempfile.NamedTemporaryFile("w", suffix=".csv", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=rows[0].keys())
             writer.writeheader()
@@ -166,6 +171,52 @@ def _unsat_panel(title, _kind, tracks):
         + scatter
         + "\n\n\\makebox[0.48\\columnwidth]{\\small (a) Problems proved}\\hfill"
         + "\\makebox[0.48\\columnwidth]{\\small (b) Runtime per problem}\n\\end{minipage}"
+    )
+
+
+def scaled_medians(problems, mode):
+    """The median time per class size, a failure counting as the fail border, over sizes half the base problems reach."""
+    times = defaultdict(list)
+    base_problems = set()
+    for problem in problems:
+        row = problem[mode]
+        domain, size = row["domain"].rsplit("/size-", 1)
+        base_problems.add((domain, row["problem"]))
+        times[int(size)].append(_time(row) or UNSOLVED)
+    return [
+        (size, statistics.median(sized))
+        for size, sized in sorted(times.items())
+        if 2 * len(sized) >= len(base_problems)
+    ]
+
+
+def _scaled_panel(title, _kind, tracks):
+    problems = tracks["scaled"]
+    curves = []
+    for mode, style, mark, name in (("ms", "conc", "*", r"\MS"), ("abs-ms", "abst", "square*", r"\MSa")):
+        coordinates = " ".join(f"({size},{time:.2f})" for size, time in scaled_medians(problems, mode))
+        curves.append(
+            rf"\addplot[{style}, very thick, mark={mark}, mark size=1.4pt] coordinates {{{coordinates}}};"
+            + "\n"
+            + rf"\addlegendentry{{{name}}}"
+        )
+    return (
+        "\\begin{minipage}[t]{\\columnwidth}\n\\centering\n"
+        + f"{{\\large\\bfseries\\strut {title}}}\\par\\vspace{{1em}}\n"
+        + "\\begin{tikzpicture}\n\\begin{loglogaxis}[scale only axis, width=0.8\\columnwidth, "
+        "height=0.5\\columnwidth, xmin=1.8, xmax=1150, ymin=1, ymax=9000, xtick={2,10,100,1000}, "
+        "xticklabels={2,10,100,1000}, ytick={1,10,100,1000,6000}, yticklabels={1,10,100,1000,fail}, "
+        "minor tick length=0pt, xlabel={Size of the symmetric class}, ylabel={Time (s)}, "
+        "axis line style={black!50}, tick style={black!50}, xtick pos=bottom, ytick pos=left, "
+        "tick label style={font=\\footnotesize}, label style={font=\\footnotesize}, "
+        "legend style={font=\\footnotesize, draw=none, fill=none, at={(0.5,1.03)}, anchor=south, "
+        "/tikz/every even column/.append style={column sep=10pt}}, legend columns=2, legend cell align=left]\n"
+        + rf"\addplot[black!35, dashed, no marks, forget plot] coordinates {{(1.8,{TIME_LIMIT}) (1150,{TIME_LIMIT})}};"
+        + "\n"
+        + rf"\node[font=\scriptsize, text=black!50, anchor=south east] at (axis cs:1150,{TIME_LIMIT}) {{time limit}};"
+        + "\n"
+        + "\n".join(curves)
+        + "\n\\end{loglogaxis}\n\\end{tikzpicture}\n\\end{minipage}"
     )
 
 

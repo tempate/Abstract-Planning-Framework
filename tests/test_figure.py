@@ -1,6 +1,6 @@
 import unittest
 
-from experiments.figure import extra_actions_class, select
+from experiments.figure import UNSOLVED, extra_actions_class, scaled_medians, select
 
 
 def _row(mode, problem="p01.pddl", rank=""):
@@ -56,3 +56,23 @@ class ExtraActionsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ScaledMediansTests(unittest.TestCase):
+    def test_a_failure_counts_as_the_border_and_rare_sizes_drop_out(self):
+        def problem(domain, size, seconds, name="p01.pddl"):
+            status = "success" if seconds else "out of memory"
+            row = {"domain": f"{domain}/size-{size}", "problem": name, "status": status}
+            return {"ms": row | {"wall_time_seconds": str(seconds or 0), "verdict": "unsolvable" if seconds else ""}}
+
+        problems = [
+            problem("a", 2, 1.0),
+            problem("b", 2, 3.0),
+            problem("c", 2, None),
+            problem("a", 10, 4.0),
+            problem("b", 10, None),
+            # Size 50 reaches one of the three base problems, fewer than half.
+            problem("a", 50, 5.0),
+        ]
+
+        self.assertEqual(scaled_medians(problems, "ms"), [(2, 3.0), (10, (4.0 + UNSOLVED) / 2)])

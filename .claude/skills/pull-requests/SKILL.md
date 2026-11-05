@@ -61,7 +61,7 @@ and say when the base used a different class. For a run over a subset of problem
 report on the problems the subset was meant to cover, not on whatever extra the
 submission swept in.
 
-`experiments.figure` draws the paper's sat, opt or unsat figure, problems solved or
+`experiments.figure` draws the paper's sat, opt, unsat or scaled figure, problems solved or
 proved over time and runtime per problem with every mode, for the base and the
 branch side by side:
 
