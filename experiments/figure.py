@@ -180,24 +180,12 @@ def _unsat_panel(title, _kind, tracks):
 SCALED_MODES = (("ms", "conc", "*", r"\MS"), ("abs-ms", "abst", "square*", r"\MSa"))
 
 
-def scaled_sizes(problems):
-    """The scaled problems of each class size that at least half the base problems reach."""
-    by_size = defaultdict(list)
-    base_problems = set()
-    for problem in problems:
-        row = problem["ms"]
-        domain, size = row["domain"].rsplit("/size-", 1)
-        base_problems.add((domain, row["problem"]))
-        by_size[int(size)].append(problem)
-    return {size: sized for size, sized in sorted(by_size.items()) if 2 * len(sized) >= len(base_problems)}
-
-
 def scaled_coverage(problems, mode):
-    """The share of each size's problems a mode proves unsolvable, in percent."""
-    return [
-        (size, 100 * sum(_solved(problem[mode]) for problem in sized) / len(sized))
-        for size, sized in scaled_sizes(problems).items()
-    ]
+    """The share of each class size's problems a mode proves unsolvable, in percent."""
+    by_size = defaultdict(list)
+    for problem in problems:
+        by_size[int(problem[mode]["domain"].rsplit("/size-", 1)[1])].append(_solved(problem[mode]))
+    return [(size, 100 * sum(proved) / len(proved)) for size, proved in sorted(by_size.items())]
 
 
 def _scaled_panel(problems):

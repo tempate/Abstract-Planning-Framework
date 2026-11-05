@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
 
 class ScaledFigureTests(unittest.TestCase):
-    def test_coverage_is_the_share_proved_of_each_size_half_the_base_problems_reach(self):
+    def test_coverage_is_the_share_proved_of_each_size(self):
         def problem(domain, size, ms, abs_ms):
             def row(seconds):
                 return {
@@ -77,9 +77,8 @@ class ScaledFigureTests(unittest.TestCase):
             problem("b", 2, None, 20.0),
             problem("c", 2, 2.0, 40.0),
             problem("d", 2, 9.0, None),
-            # Size 50 reaches one of the four base problems, fewer than half.
-            problem("a", 50, 1.0, 1.0),
+            problem("a", 50, 1.0, None),
         ]
 
-        self.assertEqual(scaled_coverage(problems, "ms"), [(2, 75.0)])
-        self.assertEqual(scaled_coverage(problems, "abs-ms"), [(2, 75.0)])
+        self.assertEqual(scaled_coverage(problems, "ms"), [(2, 75.0), (50, 100.0)])
+        self.assertEqual(scaled_coverage(problems, "abs-ms"), [(2, 75.0), (50, 0.0)])
