@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-03 10:45 — experiments/ipc/sat/resources/results.csv
+2026-11-05 11:33 — experiments/sat/resources/results.csv
 
 330 problems compared over asp, abs-asp, abs-lama, lama
 
@@ -9,8 +9,8 @@
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
-Plans found                      89 (27.0%)   90 (27.3%)  128 (38.8%)  305 (92.4%)
-Timeouts                        240 (72.7%)  240 (72.7%)  174 (52.7%)    22 (6.7%)
+Plans found                      89 (27.0%)   92 (27.9%)  121 (36.7%)  305 (92.4%)
+Timeouts                        240 (72.7%)  238 (72.1%)  181 (54.8%)    22 (6.7%)
 Out of memory                      1 (0.3%)     0 (0.0%)    28 (8.5%)     1 (0.3%)
 Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     2 (0.6%)
 Total problems                          330          330          330          330
@@ -21,15 +21,15 @@ Total problems                          330          330          330          3
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
-Plans found by both                      82           82          128          128
-Faster                           59 (72.0%)   23 (28.0%)     4 (3.1%)  124 (96.9%)
-Found when the other did not              7            8            0          177
-Median runtime                       6.27 s      12.79 s      15.20 s       3.15 s
-Total runtime                    3,374.27 s   3,886.98 s  13,083.56 s     785.69 s
-Shorter plan                     68 (82.9%)     3 (3.7%)     4 (3.1%)  112 (87.5%)
-Same plan length                 11 (13.4%)   11 (13.4%)    12 (9.4%)    12 (9.4%)
-Median plan length                        8           16         27.5         18.5
-Total plan length                     1,156        1,701        6,664        5,178
+Plans found by both                      85           85          121          121
+Faster                           61 (71.8%)   24 (28.2%)     4 (3.3%)  117 (96.7%)
+Found when the other did not              4            7            0          184
+Median runtime                       7.11 s      15.33 s      17.26 s       3.07 s
+Total runtime                    4,884.80 s   4,207.55 s   9,007.24 s     648.61 s
+Shorter plan                     69 (81.2%)     3 (3.5%)     2 (1.7%)  110 (90.9%)
+Same plan length                 13 (15.3%)   13 (15.3%)     9 (7.4%)     9 (7.4%)
+Median plan length                        8           16           23           18
+Total plan length                     1,238        1,830        6,150        4,835
 ```
 
 ## Where the timeouts died
@@ -37,12 +37,12 @@ Total plan length                     1,156        1,701        6,664        5,1
 ```
 Killed during                          ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-Abstraction                          3 (1%)       4 (2%)
-Writing the abstract task            2 (1%)       0 (0%)
-Abstract search                   133 (55%)       3 (2%)
-Guided concrete search             35 (15%)     62 (36%)
-Unguided concrete search           67 (28%)    105 (60%)
-Total                                   240          174
+Abstraction                          4 (2%)       4 (2%)
+Writing the abstract task            1 (0%)       1 (1%)
+Abstract search                   134 (56%)       3 (2%)
+Guided concrete search             28 (12%)     63 (35%)
+Unguided concrete search           71 (30%)    110 (61%)
+Total                                   238          181
 ```
 
 ## How the successes were solved
@@ -50,10 +50,10 @@ Total                                   240          174
 ```
 Solved by                              ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-Refined directly                   63 (70%)    100 (78%)
-Refined, some actions off          20 (22%)     20 (16%)
-Solved above the abstract plan       7 (8%)       8 (6%)
-Total                                    90          128
+Refined directly                   61 (66%)     93 (77%)
+Refined, some actions off          24 (26%)     20 (17%)
+Solved above the abstract plan       7 (8%)       8 (7%)
+Total                                    92          121
 ```
 
 ## Deletes relaxed by the refined plans
@@ -62,11 +62,11 @@ Total                                    90          128
 Deletes relaxed                        ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 None                                 0 (0%)       0 (0%)
-1 to 4                             25 (30%)     39 (32%)
-5 to 9                             37 (45%)     39 (32%)
-10 to 19                             7 (8%)     14 (12%)
-20 or more                         14 (17%)     28 (23%)
-Total                                    83          120
+1 to 4                             28 (33%)     35 (31%)
+5 to 9                             36 (42%)     38 (34%)
+10 to 19                             7 (8%)     12 (11%)
+20 or more                         14 (16%)     28 (25%)
+Total                                    85          113
 ```
 
 ## Plans found by domain
@@ -75,18 +75,18 @@ Total                                    83          120
 Domain (problems)                  ASP      ASPᵅ     LAMAᵅ      LAMA
 --------------------------------------------------------------------
 data-network-sat18-strips (15)         0         1         1        12
-elevators-sat08-strips (30)          2         6         9        30
+elevators-sat08-strips (30)          2         6         7        30
 elevators-sat11-strips (14)          0         0         0        14
 freecell (73)                       16        13        10        72
 mprime (29)                         28        28        29        29
 mystery (26)                        17        17        17        17
-nomystery-sat11-strips (19)          4         2        10        12
+nomystery-sat11-strips (19)          4         4         6        12
 openstacks-sat08-strips (27)         5         6        24        27
 openstacks-sat11-strips (7)          0         0         4         7
 thoughtful-sat14-strips (20)         5         5         5        15
 tpp (24)                             6         6         6        24
-transport-sat08-strips (30)          6         6        13        30
+transport-sat08-strips (30)          6         6        12        30
 transport-sat11-strips (13)          0         0         0        13
 transport-sat14-strips (3)           0         0         0         3
-Total (330)                         89        90       128       305
+Total (330)                         89        92       121       305
 ```

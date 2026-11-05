@@ -112,6 +112,17 @@ more than asked whenever names repeat across domains, as `p01` does. Keep the
 intended (domain, problem) pairs and report on those alone. `--dry-run` prints the
 job count without touching `runs/` or the queue, so compare it with the pairs first.
 
+When `fetch` reports `Incomplete benchmark run: <n> expected results are missing`,
+resubmit exactly those, each with the class and on the track the run used, rather
+than a cross product:
+
+```bash
+python -m experiments.submit --retry-missing ~/apf/<checkout>/runs/
+```
+
+It reads the run before setting `runs/` aside. Pull the retry like any run, and
+`collect` keeps the rows the first run already returned.
+
 When the run is for an open PR, make the PR a draft in the same step:
 
 ```bash
@@ -164,7 +175,9 @@ ssh copperhead 'sacct -u dquilez -S <date> -X -n -P --name=<run-name> -o State |
 ```
 
 `python -m experiments.status` reports the run's queued and running jobs and what
-its results say so far. It opens its own ssh, so run it locally from a checkout of
+its results say so far. `--all` answers "how is the cluster" instead, with one line per
+run of the last two days, its checkout, and its jobs by state, counting exit-4 tasks
+as `skipped` rather than failed. It opens its own ssh, so run it locally from a checkout of
 the branch, never on copperhead.
 
 ## Pulling a finished run

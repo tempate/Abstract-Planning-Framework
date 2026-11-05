@@ -452,7 +452,8 @@ def _relaxed_delete_bucket(relaxed_deletes):
 
 
 def _runtime(row):
-    return float(row["wall_time_seconds"])
+    # A result that never came back has no time, and ranks as unfinished anyway.
+    return float(row["wall_time_seconds"] or 0)
 
 
 def _out_of_memory(problems, modes):

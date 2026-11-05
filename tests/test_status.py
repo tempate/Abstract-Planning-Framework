@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from experiments.status import REMOTE_SUMMARY, _report
+from experiments.status import REMOTE_SUMMARY, _report, summarize_runs
 
 
 class StatusTests(unittest.TestCase):
@@ -45,3 +45,27 @@ class StatusTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AllRunsTests(unittest.TestCase):
+    def test_each_run_counts_its_jobs_by_state_and_skips_stale_records(self):
+        queue = "run-b|PENDING\nrun-b|RUNNING\n"
+        accounting = "\n".join(
+            [
+                "run-a|COMPLETED|0:0|/home/u/apf/branch-sat/runs/run-a",
+                "run-a|FAILED|4:0|/home/u/apf/branch-sat/runs/run-a",
+                "run-a|FAILED|1:0|/home/u/apf/branch-sat/runs/run-a",
+                # sacct still lists a job as running long after it left the queue.
+                "run-a|RUNNING|0:0|/home/u/apf/branch-sat/runs/run-a",
+                "run-b|OUT_OF_MEMORY|0:125|/home/u/apf/branch-opt/runs/run-b",
+            ]
+        )
+
+        runs = summarize_runs(queue, accounting)
+
+        checkout, counts = runs["run-a"]
+        self.assertEqual(checkout, "branch-sat")
+        self.assertEqual(dict(counts), {"done": 1, "skipped": 1, "failed": 1})
+        checkout, counts = runs["run-b"]
+        self.assertEqual(checkout, "branch-opt")
+        self.assertEqual(dict(counts), {"pending": 1, "running": 1, "oom": 1})
