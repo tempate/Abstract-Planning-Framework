@@ -155,8 +155,14 @@ rather than force-pushing over it. Otherwise rebase the branch's own commits ont
 `main` with `git rebase --onto origin/main <old base> <branch>`, and push with
 `--force-with-lease=<branch>:<sha you read>`.
 
-A child PR whose base branch was deleted is CLOSED for good. `gh pr reopen` and
-`gh pr edit --base` both fail. Never delete a stacked branch by hand.
+A stack member refuses `gh pr merge` and `gh pr edit --base`, so merge it with
+`gh stack merge` from a checkout of one of the stack's branches. The command reads a bare
+number as a stack number before a PR number, so check what `gh stack checkout <pr>`
+resolves to before merging by PR number.
+
+`gh stack merge` deletes no branch. Delete the merged branch on GitHub and locally once
+no open PR uses it as its base, as **After a merge** describes. Never delete it before:
+a child PR whose base branch was deleted is CLOSED for good, and `gh pr reopen` fails.
 
 ## After a merge
 
