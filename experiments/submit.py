@@ -10,8 +10,17 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
+from experiments.collect import collect
 from experiments.report import best_classes
-from experiments.run import ABSTRACTION_PREFIX, DEFAULT_TIMEOUT, MANIFEST_NAME, MODES, PROJECT_ROOT, RESULTS_DIR
+from experiments.run import (
+    ABSTRACTION_PREFIX,
+    DEFAULT_TIMEOUT,
+    MANIFEST_NAME,
+    MODES,
+    PROJECT_ROOT,
+    RESULTS_DIR,
+    class_rank,
+)
 from experiments.tracks import DEFAULT_TRACK, TRACKS, find_domain, has_other_status, is_domain_file
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.arguments import positive_int
@@ -28,8 +37,13 @@ def main():
     parser = _argument_parser()
     args = parser.parse_args()
     track_name = _track_name(args, parser)
+    missing = None
+    if args.retry_missing:
+        track_name, missing = _missing_results(args.retry_missing)
     track = TRACKS[track_name]
     modes = args.modes or track.modes[:1]
+    if missing is not None:
+        modes = sorted({mode for _domain, _problem, mode, _rank in missing})
     unknown = sorted(set(modes) - set(track.modes))
     if unknown:
         parser.error(f"{track_name} has no mode {', '.join(unknown)}; it runs {', '.join(track.modes)}")
@@ -39,13 +53,15 @@ def main():
             suite=track.suite,
             runnable=None if args.all_problems else track.runnable(),
             modes=modes,
-            domains=args.domains,
+            domains=sorted({domain for domain, *_ in missing}) if missing is not None else args.domains,
             problems=args.problems,
             class_counts=track.class_counts(),
             from_rank=args.from_rank,
-            best=best_classes(track.results_file) if args.classes == "best" else None,
+            best=best_classes(track.results_file) if args.classes == "best" and missing is None else None,
         )
     )
+    if missing is not None:
+        tasks = _only(tasks, missing)
     if args.skip_manifests:
         tasks = _not_submitted(tasks, args.skip_manifests)
     _check_worktree_is_built()
@@ -72,6 +88,30 @@ def main():
             return
         print(f"Submitting {len(tasks)} cluster jobs (one per mode, benchmark problem and class)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
+
+
+def _missing_results(results_dir):
+    """The track of an earlier run, and the results its manifest expected that never came back."""
+    manifest = json.loads((Path(results_dir) / MANIFEST_NAME).read_text(encoding="utf-8"))
+    rows = collect(results_dir)
+    missing = {(row["domain"], row["problem"], row["mode"], row["class"]) for row in rows if row["status"] == "missing"}
+    if not missing:
+        raise SystemExit(f"{results_dir} holds every result its manifest expected")
+    return manifest["track"], missing
+
+
+def _only(tasks, missing):
+    """Exactly the tasks of the missing results, each with the class it was submitted with."""
+    kept = [task for task in tasks if _task_key(task) in missing]
+    lost = missing - {_task_key(task) for task in kept}
+    if lost:
+        raise SystemExit(f"{len(lost)} missing results match no problem of the suite, such as {sorted(lost)[0]}")
+    return kept
+
+
+def _task_key(task):
+    mode, domain_name, _domain, problem, rank = task
+    return domain_name, problem.name, mode, class_rank(mode, rank)
 
 
 def _not_submitted(tasks, manifests):
@@ -211,6 +251,11 @@ def _argument_parser():
         nargs="+",
         type=Path,
         help="Leave out every mode, problem and class these earlier runs' manifests list",
+    )
+    parser.add_argument(
+        "--retry-missing",
+        type=Path,
+        help="Resubmit only the results this earlier run's directory expected and never got, on its own track",
     )
     parser.add_argument(
         "--classes",
