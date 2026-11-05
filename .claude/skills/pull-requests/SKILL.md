@@ -1,6 +1,6 @@
 ---
 name: pull-requests
-description: Open, describe, stack, merge and clean up pull requests in this repo. Use when asked to open or update a PR, write or rewrite its description or results, add its before/after figures, stack a branch on another, wait for CI and merge, rebase a branch whose base has merged, or tidy up branches after a merge.
+description: Open, describe, stack, merge and clean up pull requests in this repo. Use when asked to open or update a PR, write or rewrite its description or results, add its before/after figures, stack a branch on another, wait for CI and merge, rebase a branch whose base has merged, or tidy up after a merge: branches, scratch checkouts, the paper's results and the cluster's checkouts.
 ---
 
 # Pull requests
@@ -81,9 +81,9 @@ abstract rows the run's manifest lists, as the `cluster-benchmarks` skill explai
 For a run over a subset of problems, report on the problems the subset was meant to
 cover, not on whatever extra the submission swept in.
 
-`experiments.figure` draws
-the paper's sat, opt or unsat figure, problems solved or proved over time and runtime
-per problem with every mode, for the base and the branch side by side:
+`experiments.figure` draws the paper's sat, opt or unsat figure, problems solved or
+proved over time and runtime per problem with every mode, for the base and the branch
+side by side:
 
 ```bash
 python -m experiments.figure opt --base origin/main --branch HEAD \
@@ -123,7 +123,8 @@ asked for in so many words, so one yes has to cover all three.
 
 `--delete-branch` is safe only when no open PR uses the branch as its base. If one
 does, merge with `gh stack merge` below, since deleting a base cannot be undone.
-It also deletes the local branch and switches to `main`.
+It also deletes the local branch, and a checkout that has the branch checked out
+switches to `main`. Run it where the merged branch is not checked out.
 
 **`--auto` does not wait.** The repo has no required checks, so GitHub merges at
 once while CI is still running. Watch the run, then merge.
@@ -150,6 +151,12 @@ so list every PR the stack already holds. When a merged PR's branch is gone, it
 also tries to retarget the next PR onto it and prints a harmless
 `HTTP 422 ... PullRequest.base is invalid`. Check the bases afterwards with
 `gh pr view <n> --json baseRefName`.
+
+A stack member refuses `gh pr merge` and `gh pr edit --base`, and `gh stack merge`
+needs the stack set up locally, which `gh stack checkout` does. Both commands read a bare
+number as a stack number before a PR number, and neither takes a URL. Confirm that
+`gh stack checkout <pr>` lands on this stack, then merge by the PR's own number, which
+is what was asked for. Merging by the stack's number reads as a different request.
 
 Merge from the bottom up, after CI passes on the PR being merged:
 
@@ -180,19 +187,13 @@ cmp <(git show HEAD:experiments/<track>/<source>/results.csv) <(git show origin/
 
 Run the `cmp` after `git rebase --continue`. The CSV must match the one the child pushed.
 
-A stack member refuses `gh pr merge` and `gh pr edit --base`, and `gh stack merge`
-needs the stack set up locally, which `gh stack checkout` does. Both commands read a bare
-number as a stack number before a PR number, and neither takes a URL. Confirm that
-`gh stack checkout <pr>` lands on this stack, then merge by the PR's own number, which
-is what was asked for. Merging by the stack's number reads as a different request.
-
 `gh stack merge` deletes no branch. Delete the merged branch on GitHub and locally once
 no open PR uses it as its base, as **After a merge** describes. Never delete it before:
 a child PR whose base branch was deleted is CLOSED for good, and `gh pr reopen` fails.
 
 ## After a merge
 
-Do this without being asked:
+The merge question already covered these steps, so run them right after the merge:
 
 ```bash
 git fetch origin main:main                                     # never switch Daniel's checkout
@@ -217,12 +218,10 @@ done
 ```
 
 A branch whose PR merged or closed and that has no local-only commits can go. Ask
-before deleting one that has some.
-
-Leave branches whose PR is still open. `gh pr list --head <branch> --state all`
-says whether a branch merged, and `git branch --merged main` cannot. A branch a
-worktree has checked out cannot be deleted. `git worktree list` shows which, and
-`git worktree prune` clears the entries whose directories are gone.
+before deleting one that has some, and leave branches whose PR is still open. The PR
+state is the test, since `git branch --merged main` misses every squash merge. A
+branch a worktree has checked out cannot be deleted, and `git worktree prune` clears
+the entries whose directories are gone.
 
 For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
 with the merged results. Check first that the PR's base reproduces every number the
@@ -231,6 +230,9 @@ paper holds for the tracks it touched, then write in the PR's numbers:
 - the touched columns of the per-domain table, `tab:results`, bolding the better of each pair
 - the touched curves and runtime plots of Figure 1, `fig:results`, as `experiments.figure` computes them
 - any number in the prose that the change makes wrong
+
+Skip this step when the paper already holds the PR's numbers, as it does when they
+went in before the merge.
 
 Leave the prose itself to Daniel. When a claim no longer holds, tell him rather than
 rewrite it. Compile the paper, then make one local commit, named after the PR such as
