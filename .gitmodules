@@ -11,3 +11,6 @@
 [submodule "lib/numeric-fast-downward"]
 	path = lib/numeric-fast-downward
 	url = https://github.com/dgnad/numeric-fast-downward.git
+[submodule "experiments/benchmarks/htg-domains"]
+	path = experiments/benchmarks/htg-domains
+	url = https://github.com/abcorrea/htg-domains.git

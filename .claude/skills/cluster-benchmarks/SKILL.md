@@ -209,7 +209,7 @@ delete it.
 ## Before reporting on a run
 
 ```bash
-awk -F, '$5=="running"' experiments/<track>/<source>/results.csv | wc -l
+awk -F, '$5=="running"' experiments/ipc/<track>/<source>/results.csv | wc -l
 ```
 
 A `running` row is a job killed without a terminal status, not live work. Report the

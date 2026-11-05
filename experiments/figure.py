@@ -15,9 +15,17 @@ from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 
 SOURCES = {"symmetries": "Symmetries", "resources": "Resources"}
 # The unsolvability track collapses symmetric objects only.
-KIND_SOURCES = {"sat": tuple(SOURCES), "opt": tuple(SOURCES), "unsat": ("symmetries",)}
+# The hard-to-ground tracks collapse symmetric objects only, and the htg figure draws both of them.
+KIND_SOURCES = {
+    "sat": tuple(SOURCES),
+    "opt": tuple(SOURCES),
+    "unsat": ("symmetries",),
+    "sat-htg": ("symmetries",),
+    "opt-htg": ("symmetries",),
+}
 # The scaled figure draws the coverage of the unsat track's grown problems, for the branch alone.
 TRACKS = {"scaled": "unsat"}
+FIGURES = ("sat", "opt", "unsat", "htg", "scaled")
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
 TIME_LIMIT = 1800
@@ -42,20 +50,24 @@ def main():
         _render(args.paper, [_scaled_panel(load_tracks(args.branch, args.kind, manifests)["scaled"])], Path(args.out))
         print(f"Wrote {args.out}")
         return
-    panel = _unsat_panel if args.kind == "unsat" else _panel
+    panel = {"unsat": _unsat_panel, "htg": _htg_panel}.get(args.kind, _panel)
     # A label like #134 would otherwise read as a macro parameter in LaTeX.
     base_label = args.base_label.replace("#", r"\#")
-    panels = [
-        panel(f"Before ({base_label})", args.kind, load_tracks(args.base, args.kind, base_manifests, args.sources)),
-        panel("After", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources)),
-    ]
+    if args.no_base:
+        panels = [panel("", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources))]
+    else:
+        panels = [
+            panel(f"Before ({base_label})", args.kind, load_tracks(args.base, args.kind, base_manifests, args.sources)),
+            panel("After", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources)),
+        ]
     _render(args.paper, panels, Path(args.out))
     print(f"Wrote {args.out}")
 
 
 def select(rows, kind, source, manifests):
     """Rename old modes, and keep only the abstract rows this track's manifests submitted, for the modes they submitted."""
-    renames = OLD_NAMES[kind]
+    # The HTG tracks came after #135, so they never used the old names.
+    renames = OLD_NAMES.get(kind, {})
     submitted = set()
     for manifest in manifests:
         # A manifest speaks for its own track only, which may have run other classes.
@@ -78,6 +90,8 @@ def select(rows, kind, source, manifests):
 
 def load_tracks(revision, kind, manifests, sources=None):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
+    if kind == "htg":
+        return {track: load_tracks(revision, f"{track}-htg", manifests)["symmetries"] for track in ("sat", "opt")}
     track = TRACKS.get(kind, kind)
     if kind == "scaled":
         sources = ("scaled",)
@@ -85,9 +99,7 @@ def load_tracks(revision, kind, manifests, sources=None):
         sources = KIND_SOURCES[kind]
     tracks = {}
     for source in sources:
-        text = subprocess.check_output(
-            ["git", "-C", PROJECT_ROOT, "show", f"{revision}:experiments/{track}/{source}/results.csv"], text=True
-        )
+        text = _results_at(revision, track, source)
         rows = select(list(csv.DictReader(io.StringIO(text))), track, source, manifests)
         with tempfile.NamedTemporaryFile("w", suffix=".csv", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=rows[0].keys())
@@ -96,6 +108,21 @@ def load_tracks(revision, kind, manifests, sources=None):
             stream.flush()
             tracks[source] = _finished_problems(stream.name)[1]
     return tracks
+
+
+def _results_at(revision, kind, source):
+    if kind.endswith("-htg"):
+        directories = (f"experiments/htg/{kind.removesuffix('-htg')}",)
+    else:
+        # Revisions from before experiments/ipc/ keep the IPC tracks one level higher.
+        directories = (f"experiments/ipc/{kind}/{source}", f"experiments/{kind}/{source}")
+    for directory in directories:
+        shown = subprocess.run(
+            ["git", "-C", PROJECT_ROOT, "show", f"{revision}:{directory}/results.csv"], capture_output=True, text=True
+        )
+        if shown.returncode == 0:
+            return shown.stdout
+    raise SystemExit(f"No {kind}/{source} results.csv at {revision}")
 
 
 def _panel(title, kind, tracks):
@@ -178,9 +205,41 @@ def _cactus_plot(source_title, options, lines):
     )
 
 
-def _row(plots):
+# Both htg plots label their own y axis, so they need more room between them than the paper's rows.
+HTG_GAP = "0.75in"
+
+
+def _htg_panel(title, _kind, tracks):
+    cactus_plots, runtimes = [], []
+    for track, name in (("sat", "Satisficing"), ("opt", "Optimal")):
+        baseline, label, abstract_label = BASELINES[track]
+        problems = tracks[track]
+        lines = [
+            rf"\addplot[conc, solid, thick, const plot, mark=none] coordinates {{{cactus(problems, baseline)}}};",
+            rf"\addlegendentry{{{label}}}",
+            rf"\addplot[abst, solid, thick, const plot, mark=none] coordinates {{{cactus(problems, 'abs-' + baseline)}}};",
+            rf"\addlegendentry{{{abstract_label}}}",
+        ]
+        # Each track has its own baseline, so each plot carries its own legend.
+        options = "ylabel={Problems solved}, legend columns=1, legend style={at={(0.03,0.97)}, anchor=north west}"
+        cactus_plots.append(_cactus_plot(name, options, lines))
+        points = scatter(problems, baseline, f"abs-{baseline}")
+        runtimes.append(
+            rf"\runtimeplot[title={{\small {name}}}, ylabel={{{abstract_label}{{}} time (s)}}]{{{label}}}{{{points}}}"
+        )
+    return _titled(
+        title,
+        _row(cactus_plots, HTG_GAP)
+        + "\n\n\\smallskip\n{\\small (a) Problems solved over time}\n\n\\medskip\n"
+        + _row(runtimes, HTG_GAP)
+        + "\n\n\\smallskip\n{\\small (b) Runtime per problem}",
+        2,
+    )
+
+
+def _row(plots, gap="0.3in"):
     # The paper's spacing: room for the y label on the left, then a gap between the plots.
-    return "\\noindent\\makebox[\\linewidth][c]{%\n\\hspace*{0.42in}%\n" + "%\n\\hspace{0.3in}%\n".join(plots) + "}"
+    return "\\noindent\\makebox[\\linewidth][c]{%\n\\hspace*{0.42in}%\n" + f"%\n\\hspace{{{gap}}}%\n".join(plots) + "}"
 
 
 def _titled(title, body, columns):
@@ -277,9 +336,10 @@ def _render(paper, panels, out):
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=sorted([*KIND_SOURCES, "scaled"]), help="Which of the paper's figures to draw")
+    parser.add_argument("kind", choices=FIGURES, help="Which of the paper's figures to draw")
     parser.add_argument("--base", default="origin/main", help="Revision whose results.csv files go on the left")
     parser.add_argument("--base-label", default="main", help="Name of the base in the left panel's title")
+    parser.add_argument("--no-base", action="store_true", help="Draw the branch alone, for a track the base lacks")
     parser.add_argument("--branch", default="HEAD", help="Revision whose results.csv files go on the right")
     parser.add_argument(
         "--manifests",

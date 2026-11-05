@@ -5,10 +5,12 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from experiments.opt import suite as opt
-from experiments.sat import suite as sat
-from experiments.unsat import suite as unsat
-from experiments.unsat.scaled import suite as scaled
+from experiments.htg.opt import suite as htg_opt
+from experiments.htg.sat import suite as htg
+from experiments.ipc.opt import suite as opt
+from experiments.ipc.sat import suite as sat
+from experiments.ipc.unsat import suite as unsat
+from experiments.ipc.unsat.scaled import suite as scaled
 
 # The benchmark collections. A track says which of their problems it runs; it
 # does not own the PDDL, so that two tracks over one collection cannot drift
@@ -81,6 +83,23 @@ TRACKS = {
         driver="scripts.planner",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
         abstract_arguments=("--abstraction-source", "resources"),
+    ),
+    # The hard-to-ground benchmarks, refined with the full grounding like sat/symmetries.
+    "sat-htg/symmetries": Track(
+        directory=Path(htg.__file__).parent,
+        suite=htg.SUITE,
+        benchmarks_dir=BENCHMARKS / "htg-domains",
+        driver="scripts.planner",
+        modes=("abs-asp", "abs-lama", "asp", "lama"),
+    ),
+    # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
+    "opt-htg/symmetries": Track(
+        directory=Path(htg_opt.__file__).parent,
+        suite=htg_opt.SUITE,
+        benchmarks_dir=BENCHMARKS / "htg-domains",
+        driver="scripts.planner",
+        modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+        optimizing_arguments=("--optimize",),
     ),
     # The optimal suite, refined without gaps so that every plan is optimal, with
     # abs-lmcut searching the abstract task optimally like its lmcut baseline.

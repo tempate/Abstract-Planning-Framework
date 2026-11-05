@@ -26,13 +26,13 @@ Collapsing the grown class gives the same abstract task as collapsing the origin
 ## Commands
 
 ```bash
-# Regenerate one base problem at every size (the object to copy and the class size come from rank 0 of experiments/unsat/symmetries/classes.txt)
-python -m experiments.unsat.scaled.generate \
+# Regenerate one base problem at every size (the object to copy and the class size come from rank 0 of experiments/ipc/unsat/symmetries/classes.txt)
+python -m experiments.ipc.unsat.scaled.generate \
   --problem experiments/benchmarks/unsolve-ipc-2016/over-nomystery/prob01.pddl --object p3 --class-size 2
 
 # Submit both modes
 python -m experiments.submit --track scaled --abstraction-source symmetries --modes abs-ms ms
 
 # Draw the median time against class size, and write the plot as TikZ for the paper
-python -m experiments.unsat.scaled.figure --out scaled.png --tex scaled.tex
+python -m experiments.ipc.unsat.scaled.figure --out scaled.png --tex scaled.tex
 ```

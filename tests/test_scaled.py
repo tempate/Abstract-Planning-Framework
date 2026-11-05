@@ -4,7 +4,7 @@ from pathlib import Path
 
 from unified_planning.io import PDDLReader
 
-from experiments.unsat.scaled.generate import scale, scale_domain
+from experiments.ipc.unsat.scaled.generate import scale, scale_domain
 
 DOMAIN = """
 (define (domain dive)

@@ -64,26 +64,31 @@ first mode alone. The unsat track runs `abs-ms` and `ms`.
 ```bash
 python -m experiments.submit
 python -m experiments.collect
-python -m experiments.report experiments/sat/symmetries/results.csv
+python -m experiments.report experiments/ipc/sat/symmetries/results.csv
 python -m experiments.figure sat --base origin/main --out before-after.png
 ```
 
-- `experiments/sat/suite.py` holds the domains, but a problem is submitted
-  only when `experiments/sat/symmetries/problems.txt` records an abstraction
+- `experiments/ipc/sat/suite.py` holds the domains, but a problem is submitted
+  only when `experiments/ipc/sat/symmetries/problems.txt` records an abstraction
   class for it.
   That file's header carries the command that regenerates it.
-- `--abstraction-source resources` submits `experiments/sat/resources/`, the
+- `--abstraction-source resources` submits `experiments/ipc/sat/resources/`, the
   problems its `problems.txt` lists, and collapses a resource instead of a symmetry
   class.
-- `--track opt` submits `experiments/opt/symmetries/`, the problems of the optimal
+- `--track opt` submits `experiments/ipc/opt/symmetries/`, the problems of the optimal
   suite with a symmetry class, refined to the plan that fills the fewest gaps, with
   `asp` and `lmcut` as the baselines, and `abs-lmcut` in place of `abs-lama`.
-  `--abstraction-source resources` submits `experiments/opt/resources/` instead, whose list
+  `--abstraction-source resources` submits `experiments/ipc/opt/resources/` instead, whose list
   `python -m experiments.scan --track opt/resources` writes.
-- `--track unsat` submits `experiments/unsat/symmetries/` over unsolve-ipc-2016
+- `--track unsat` submits `experiments/ipc/unsat/symmetries/` over unsolve-ipc-2016
   through `scripts.unsolvability`, which reports a solvability verdict instead of
   a plan. Both modes search with MS-unsat, Torralba and Hoffmann's
   merge-and-shrink entry to that competition. Only the probNN problems run, the ones known to be unsolvable.
+- `--track sat-htg` submits `experiments/htg/sat/` over the hard-to-ground
+  benchmarks of [htg-domains](https://github.com/abcorrea/htg-domains), a
+  submodule, with the sat track's modes and the full grounding.
+- `--track opt-htg` submits `experiments/htg/opt/` over the same benchmarks,
+  with `labyrinth/OPT` in place of `labyrinth/SAT`, and the opt track's modes.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
 - `collect` rewrites the `results.csv` of the track the run's manifest names,
