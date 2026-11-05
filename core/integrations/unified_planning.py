@@ -1,5 +1,6 @@
 """Unified Planning boundary for parsing, rewriting and serializing paired PDDL tasks."""
 
+import copy
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -8,6 +9,7 @@ from unified_planning.environment import get_environment
 from unified_planning.exceptions import UPException
 from unified_planning.io import PDDLReader, PDDLWriter
 from unified_planning.model import Problem
+from unified_planning.model.fluent import get_all_fluent_exp
 from unified_planning.model.metrics import MinimizeActionCosts, MinimizeExpressionOnFinalState
 from unified_planning.plans import ActionInstance, SequentialPlan
 from unified_planning.shortcuts import Compiler, PlanValidator
@@ -51,7 +53,7 @@ def parse_problem(domain_text, problem_text):
 def write_problem(problem: Problem):
     """Serialize a Unified Planning problem as a matched PDDL pair."""
     try:
-        writer = PDDLWriter(problem)
+        writer = PDDLWriter(_with_explicit_initial_state(problem))
         domain, problem_text = writer.get_domain(), writer.get_problem()
     except Exception as error:
         raise PddlError(f"Could not serialize PDDL task: {error}") from error
@@ -67,6 +69,32 @@ def write_problem(problem: Problem):
         if written != item.name:
             renamings[written] = item.name
     return PddlText(domain, problem_text, renamings)
+
+
+def _with_explicit_initial_state(problem):
+    """A view of the problem whose initial values leave out the false facts the closed world implies.
+
+    The writer prints `problem.initial_values`, which grounds every fluent over
+    every object and stores the result in the problem: 8 million facts for a
+    rovers task that sets 27 thousand. A false fact prints nothing, so the
+    file is the same without them.
+
+    A workaround for Unified Planning 1.3.0: remove it when an upgrade's
+    PDDLWriter no longer iterates `initial_values` to write the init.
+    """
+
+    def initial_values(view):
+        values = dict(view.explicit_initial_values)
+        for fluent, default in view.fluents_defaults.items():
+            if default.is_bool_constant() and default.is_false():
+                continue
+            for expression in get_all_fluent_exp(view, fluent):
+                values.setdefault(expression, default)
+        return values
+
+    view = copy.copy(problem)
+    view.__class__ = type("ExplicitInitialState", (type(problem),), {"initial_values": property(initial_values)})
+    return view
 
 
 def to_positive_normal_form(problem):
