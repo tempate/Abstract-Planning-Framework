@@ -1,6 +1,6 @@
 ---
 name: pull-requests
-description: Open, describe, stack, merge and clean up pull requests in this repo. Use when asked to open or update a PR, write or rewrite its description or results, add its before/after figures, stack a branch on another, wait for CI and merge, rebase a branch whose base has merged, or tidy up branches after a merge.
+description: Open, describe, stack, merge and clean up pull requests in this repo. Use when asked to open or update a PR, write or rewrite its description or results, add its before/after figures, stack a branch on another, wait for CI and merge, rebase a branch whose base has merged, or tidy up after a merge: branches, scratch checkouts, the paper's results and the cluster's checkouts.
 ---
 
 # Pull requests
@@ -47,23 +47,53 @@ never add a paragraph interpreting the numbers.
 Until the run is collected, the description is one short paragraph on what the PR
 changes, then `## Results` with the word `Pending` and what was submitted.
 
-Once the results are pushed and the PR is ready, the `## Results` section holds, in
-this order:
+Once the results are pushed and the PR is ready, the `## Results` section holds two
+small tables, as #146 and #147 do:
 
-1. The before/after figures, one per track kind, base on the left and branch on the right.
-2. A table of plans found, base → PR, with one row per mode and one column per track.
-3. Three to six short bullets. Gains and losses with the domains behind them, runtime and plan length on the problems both versions solve, and anything a reader would otherwise misread.
+1. **Plans found.** One row per abstract mode the run submitted and one column per track
+   it touched, such as `sat symmetries` or `opt resources`. Each cell reads `base → PR`,
+   with the larger number in bold. A mode that does not run on a track leaves its cell empty.
+2. **Median runtime.** The same rows and columns. Each cell reads `base → PR` in seconds
+   with one decimal, the median over the problems both sides solve.
+
+```markdown
+| Plans found | sat resources | opt resources |
+|---|---|---|
+| ASPᵅ | 90 → **92** | **126** → 119 |
+| LAMAᵅ | **125** → 121 | |
+| LMcutᵅ | | **138** → 131 |
+
+| Median runtime | sat resources | opt resources |
+|---|---|---|
+| ASPᵅ | 15.4 → 15.2 s | 15.3 → 17.3 s |
+| LAMAᵅ | 17.7 → 17.3 s | |
+| LMcutᵅ | | 10.7 → 12.7 s |
+```
+
+`experiments.compare` prints both tables for every track the manifests name, ready to
+paste:
+
+```bash
+python -m experiments.compare --base origin/main --branch HEAD \
+  --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json
+```
+
+For a stacked PR, pass the base branch as `--base` and its manifests as `--base-manifests`.
+
+When the change is small, the tables are the whole section. When it matters, or a
+figure shows it better than the tables can, such as a shift across many problems or a
+gain concentrated in a few domains, put the paper's figure above the tables. Either
+way, leave out baseline rows, sentences about the numbers and tables of runs.
 
 "Before" is the PR's base, which is `main` or, for a stacked PR, the PR below it. Compare the
 same problems and classes on both sides. For a best-class run, keep only the
-abstract rows the run's manifest lists, as the `cluster-benchmarks` skill explains,
-and say when the base used a different class. For a run over a subset of problems,
-report on the problems the subset was meant to cover, not on whatever extra the
-submission swept in.
+abstract rows the run's manifest lists, as the `cluster-benchmarks` skill explains.
+For a run over a subset of problems, report on the problems the subset was meant to
+cover, not on whatever extra the submission swept in.
 
 `experiments.figure` draws the paper's sat, opt or unsat figure, problems solved or
-proved over time and runtime per problem with every mode, for the base and the
-branch side by side:
+proved over time and runtime per problem with every mode, for the base and the branch
+side by side:
 
 ```bash
 python -m experiments.figure opt --base origin/main --branch HEAD \
@@ -81,8 +111,8 @@ the repository, or `--paper`, plus `pdflatex`, `pdfcrop` and `pdftoppm`. After
 changing it, check that the base half reproduces the coordinates in the paper's
 `main.tex` from the `main` commit the paper's figure came from.
 
-Daniel uploads the images by dragging them into the description, so leave an HTML
-comment where each one goes:
+Daniel uploads a figure by dragging it into the description, so leave an HTML comment
+where it goes:
 
 ```markdown
 <!-- 130-sat-before-after.png: before (main) left, after right -->
@@ -92,13 +122,22 @@ comment where each one goes:
 
 ```bash
 gh pr list --state open --json number,headRefName,baseRefName   # anything stacked on it?
+git rev-list --left-right --count origin/<branch>...<branch>    # right side > 0: unpushed commits
 gh pr checks <n> --watch --interval 30                          # in the background
 gh pr merge <n> --squash --delete-branch                        # only if nothing is stacked on it
 ```
 
+A commit that exists only locally, such as one Daniel said not to push yet, does not
+reach `main` through the merge. Ask whether to push it first.
+
+Ask once. When asking whether to merge, ask in the same question whether to delete
+the branch and clean the cluster afterwards. The harness blocks a deletion that was not
+asked for in so many words, so one yes has to cover all three.
+
 `--delete-branch` is safe only when no open PR uses the branch as its base. If one
 does, merge with `gh stack merge` below, since deleting a base cannot be undone.
-It also deletes the local branch and switches to `main`.
+It also deletes the local branch, and a checkout that has the branch checked out
+switches to `main`. Run it where the merged branch is not checked out.
 
 **`--auto` does not wait.** The repo has no required checks, so GitHub merges at
 once while CI is still running. Watch the run, then merge.
@@ -126,10 +165,19 @@ also tries to retarget the next PR onto it and prints a harmless
 `HTTP 422 ... PullRequest.base is invalid`. Check the bases afterwards with
 `gh pr view <n> --json baseRefName`.
 
+A stack member refuses `gh pr merge` and `gh pr edit --base`, and `gh stack merge`
+needs the stack set up locally, which `gh stack checkout` does. Both commands read a bare
+number as a stack number before a PR number, and neither takes a URL. Confirm that
+`gh stack checkout <pr>` lands on this stack, then merge by the PR's own number, which
+is what was asked for. Merging by the stack's number reads as a different request.
+
 Merge from the bottom up, after CI passes on the PR being merged:
 
 ```bash
-gh stack merge <pr> --squash                # merges every PR up to and including <pr>
+git worktree add <scratch>/stack <branch>   # a scratch checkout, never Daniel's, and not detached
+cd <scratch>/stack
+gh stack checkout <pr>                      # imports the stack and prints its number and branches
+gh stack merge <pr> --squash --yes          # merges every PR up to and including <pr>
 gh stack sync                               # fetch, rebase what is left, prune merged branches
 ```
 
@@ -141,21 +189,79 @@ rather than force-pushing over it. Otherwise rebase the branch's own commits ont
 `main` with `git rebase --onto origin/main <old base> <branch>`, and push with
 `--force-with-lease=<branch>:<sha you read>`.
 
-A child PR whose base branch was deleted is CLOSED for good. `gh pr reopen` and
-`gh pr edit --base` both fail. Never delete a stacked branch by hand.
+When the rebase stops on a results file, the child keeps its own results, since they
+come from its own run. During a rebase `--theirs` is the child's commit:
+
+```bash
+git checkout --theirs experiments/<track>/<source>/results.csv
+python -m experiments.report experiments/<track>/<source>/results.csv
+cmp <(git show HEAD:experiments/<track>/<source>/results.csv) <(git show origin/<branch>:experiments/<track>/<source>/results.csv)
+```
+
+Run the `cmp` after `git rebase --continue`. The CSV must match the one the child pushed.
+
+`gh stack merge` deletes no branch. Delete the merged branch on GitHub and locally once
+no open PR uses it as its base, as **After a merge** describes. Never delete it before:
+a child PR whose base branch was deleted is CLOSED for good, and `gh pr reopen` fails.
 
 ## After a merge
 
-Do this without being asked:
+The merge question already covered these steps, so run them right after the merge:
 
 ```bash
-git checkout main && git pull
-git rev-list --left-right --count origin/<branch>...<branch>   # ahead 0, or -D drops commits
+git fetch origin main:main                                     # never switch Daniel's checkout
+git worktree list                                              # scratch checkouts of <branch> go first
+git rev-list --left-right --count origin/<branch>...<branch>   # right side 0, or -D drops commits
 git branch -D <branch>                                         # if gh did not delete it, -d refuses
-git branch -vv                                                 # stale branches pile up
 ```
 
-Leave branches whose PR is still open. `gh pr list --head <branch> --state all`
-says whether a branch merged, and `git branch --merged main` cannot. A branch a
-worktree has checked out cannot be deleted. `git worktree list` shows which, and
-`git worktree prune` clears the entries whose directories are gone.
+Daniel's checkout is usually on another branch with work in progress, so update
+`main` with a fetch instead of checking it out. When his checkout is on `main`, use
+`git pull` there instead, since a fetch refuses to update the checked-out branch.
+Remove scratch checkouts of the branch with `git worktree remove`, after
+`git -C <dir> status --porcelain` shows nothing that is not already pushed.
+
+Stale branches pile up, and `git branch -vv` does not show their PRs. This sweep does:
+
+```bash
+for b in $(git for-each-ref --format='%(refname:short)' refs/heads); do
+  echo "$b | $(gh pr list --head "$b" --state all --json number,state -q '.[0] | "#\(.number) \(.state)"') \
+    | local-only: $(git rev-list --count "$b" --not --remotes)"
+done
+```
+
+A branch whose PR merged or closed and that has no local-only commits can go. Ask
+before deleting one that has some, and leave branches whose PR is still open. The PR
+state is the test, since `git branch --merged main` misses every squash merge. A
+branch a worktree has checked out cannot be deleted, and `git worktree prune` clears
+the entries whose directories are gone.
+
+For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
+with the merged results. `experiments.paper` writes them into the touched columns of the
+per-domain table, `tab:results`, and the touched curves and runtime plots of Figure 1,
+`fig:results`. It first checks that the merge's parent reproduces every number it
+replaces, and it skips a track whose results the paper already holds:
+
+```bash
+python -m experiments.paper --base origin/main~1 --branch origin/main \
+  --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json
+```
+
+Fix any number in the prose that the change makes wrong by hand.
+
+Leave the prose itself to Daniel. When a claim no longer holds, tell him rather than
+rewrite it. Compile the paper, then make one local commit, named after the PR such as
+`Update the resource results with #147`, with no Claude trailer. Never push it.
+
+Then clean the cluster. Remove every checkout the PR ran from, the branch's own and
+its `<branch>-<track>` copies, together with their branches in the bare repo. Their
+results are in `main` by now, so only the raw run directories go with them. Check
+first that none of their jobs is queued and that none has local changes:
+
+```bash
+ssh -o BatchMode=yes copperhead 'squeue -u dquilez -h | wc -l; git -C ~/apf/.bare worktree list'
+ssh -o BatchMode=yes copperhead 'for b in <branch> <branch>-<track>; do
+  git -C ~/apf/.bare worktree remove --force ~/apf/$b && git -C ~/apf/.bare branch -D $b; done'
+```
+
+Leave the checkouts of PRs that are still open, and `~/apf/main`.
