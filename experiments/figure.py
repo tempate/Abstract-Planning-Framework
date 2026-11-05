@@ -13,7 +13,7 @@ from pathlib import Path
 from experiments.report import _finished_problems
 from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 
-SOURCES = {"symmetries": "Symmetric objects", "resources": "Resource levels"}
+SOURCES = {"symmetries": "Symmetries", "resources": "Resources"}
 # The unsolvability track collapses symmetric objects only.
 KIND_SOURCES = {"sat": tuple(SOURCES), "opt": tuple(SOURCES), "unsat": ("symmetries",)}
 # The scaled figure draws the coverage of the unsat track's grown problems, for the branch alone.
@@ -43,8 +43,8 @@ def main():
     # A label like #134 would otherwise read as a macro parameter in LaTeX.
     base_label = args.base_label.replace("#", r"\#")
     panels = [
-        panel(f"Before ({base_label})", args.kind, _tracks(args.base, args.kind, base_manifests)),
-        panel("After", args.kind, _tracks(args.branch, args.kind, manifests)),
+        panel(f"Before ({base_label})", args.kind, _tracks(args.base, args.kind, base_manifests, args.sources)),
+        panel("After", args.kind, _tracks(args.branch, args.kind, manifests, args.sources)),
     ]
     _render(args.paper, panels, Path(args.out))
     print(f"Wrote {args.out}")
@@ -73,20 +73,15 @@ def select(rows, kind, source, manifests):
     return selected
 
 
-def extra_actions_class(problem, abstraction, baseline):
-    """The colour class of an abstract plan's extra actions over an optimal plan, 4 when there is none to compare."""
-    optimum = next((int(problem[m]["plan_length"]) for m in ("asp", baseline) if _solved(problem[m])), None)
-    if optimum is None or not _solved(problem[abstraction]):
-        return 4
-    extra = int(problem[abstraction]["plan_length"]) - optimum
-    return 0 if extra <= 0 else 1 if extra <= 2 else 2 if extra <= 5 else 3
-
-
-def _tracks(revision, kind, manifests):
+def _tracks(revision, kind, manifests, sources=None):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
     track = TRACKS.get(kind, kind)
+    if kind == "scaled":
+        sources = ("scaled",)
+    elif not sources:
+        sources = KIND_SOURCES[kind]
     tracks = {}
-    for source in ("scaled",) if kind == "scaled" else KIND_SOURCES[kind]:
+    for source in sources:
         text = subprocess.check_output(
             ["git", "-C", PROJECT_ROOT, "show", f"{revision}:experiments/{track}/{source}/results.csv"], text=True
         )
@@ -101,79 +96,98 @@ def _tracks(revision, kind, manifests):
 
 
 def _panel(title, kind, tracks):
+    """One track's half of the paper's results figure, under a title."""
     baseline, label, abstract_label = BASELINES[kind]
-    plot = r"\borderlengthplot" if kind == "opt" else r"\borderplot"
     curves = (
-        ("asp", "conc, solid", r"\ASP"),
-        ("abs-asp", "abst, solid", r"\ASPa"),
-        (f"abs-{baseline}", "abst, dashed", abstract_label),
-        (baseline, "conc, dashed", label),
+        (baseline, "conc, solid", label),
+        (f"abs-{baseline}", "abst, solid", abstract_label),
+        ("asp", "conc, dashed", r"\ASP"),
+        ("abs-asp", "abst, dashed", r"\ASPa"),
     )
-
     cactus_plots = []
+    last = list(tracks)[-1]
     for source, problems in tracks.items():
         lines = []
         for mode, style, name in curves:
             lines.append(rf"\addplot[{style}, thick, const plot, mark=none] coordinates {{{_cactus(problems, mode)}}};")
-            # One legend serves both plots, so only the last carries it.
-            if source == "resources":
+            # One legend above the plots, carried by the right one.
+            if source == last:
                 lines.append(rf"\addlegendentry{{{name}}}")
-        cactus_plots.append(
-            "\\begin{tikzpicture}\n\\begin{semilogxaxis}[cactusplot, title={\\small "
-            + SOURCES[source]
-            + "}]\n"
-            + "\n".join(lines)
-            + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
-        )
+        options = "ylabel={Problems solved}"
+        if len(tracks) == 1:
+            # Alone, the plot is too narrow for one row, so the baselines sit above ASP.
+            options += ", legend columns=2, legend style={overlay, at={(0.5,1.26)}, anchor=south}"
+        elif source == last:
+            options = "ylabel={}, legend style={overlay, at={(-0.16,1.26)}, anchor=south}"
+        cactus_plots.append(_cactus_plot(SOURCES[source], options, lines))
 
-    scatter_rows = []
-    for source, problems in tracks.items():
-        asp = _scatter(problems, "asp", "abs-asp", kind, baseline)
-        fd = _scatter(problems, baseline, f"abs-{baseline}", kind, baseline)
-        scatter_rows.append(
-            rf"{{\small {SOURCES[source]}}}\\[2pt]"
-            + "\n"
-            + rf"{plot}{{\ASP}}{{\ASPa}}{{{asp}}}\hfill{plot}{{{label}}}{{{abstract_label}}}{{{fd}}}"
-        )
+    runtime_rows = []
+    for solver, solver_label, abstraction_label in ((baseline, label, abstract_label), ("asp", r"\ASP", r"\ASPa")):
+        plots = []
+        for index, (source, problems) in enumerate(tracks.items()):
+            # Only the top row names its sources, and only the left plot labels its y axis.
+            options = [rf"title={{\small {SOURCES[source]}}}"] if solver == baseline else []
+            options.append(rf"ylabel={{{abstraction_label}{{}} time (s)}}" if index == 0 else "yticklabels={}")
+            points = _scatter(problems, solver, f"abs-{solver}")
+            plots.append(rf"\runtimeplot[{', '.join(options)}]{{{solver_label}}}{{{points}}}")
+        runtime_rows.append(_row(plots))
 
-    key = ""
-    if kind == "opt":
-        key = (
-            r"{\footnotesize Extra actions over the optimum\\ \outcomekey{ext0} 0\quad \outcomekey{ext1} 1--2\quad "
-            r"\outcomekey{ext2} 3--5\quad \outcomekey{ext3} 6 or more\quad \outcomekey{black!40} no plan to compare}"
-            "\n\n"
-        )
-    return (
-        "\\begin{minipage}[t]{\\columnwidth}\n\\centering\n"
-        + f"{{\\large\\bfseries\\strut {title}}}\\par\\vspace{{2.2em}}\n"
-        + "\\hfill".join(cactus_plots)
-        + "\n\n{\\small (a) Problems solved over time}\n\n\\bigskip\n"
-        + "\n\n".join(scatter_rows)
-        + "\n\n"
-        + key
-        + "{\\small (b) Runtime per problem}\n\\end{minipage}"
+    return _titled(
+        title,
+        _row(cactus_plots)
+        + "\n\n\\smallskip\n{\\small (a) Problems solved over time}\n\n\\medskip\n"
+        + "\n\n\\smallskip\n".join(runtime_rows)
+        + "\n\n\\smallskip\n{\\small (b) Runtime per problem}",
+        len(tracks),
     )
 
 
 def _unsat_panel(title, _kind, tracks):
     problems = tracks["symmetries"]
-    cactus = (
-        "\\begin{tikzpicture}\n\\begin{semilogxaxis}[cactusplot, ylabel={Problems proved}, legend columns=1, "
-        "legend style={at={(0.03,0.97)}, anchor=north west}]\n"
-        + rf"\addplot[abst, solid, thick, const plot, mark=none] coordinates {{{_cactus(problems, 'abs-ms')}}};"
-        + "\n\\addlegendentry{\\MSa}\n"
-        + rf"\addplot[conc, solid, thick, const plot, mark=none] coordinates {{{_cactus(problems, 'ms')}}};"
-        + "\n\\addlegendentry{\\MS}\n\\end{semilogxaxis}\n\\end{tikzpicture}"
+    lines = [
+        rf"\addplot[conc, solid, thick, const plot, mark=none] coordinates {{{_cactus(problems, 'ms')}}};",
+        r"\addlegendentry{\MS}",
+        rf"\addplot[abst, solid, thick, const plot, mark=none] coordinates {{{_cactus(problems, 'abs-ms')}}};",
+        r"\addlegendentry{\MSa}",
+    ]
+    options = "ylabel={Problems proved}, legend style={overlay, at={(0.5,1.26)}, anchor=south}"
+    runtime = (
+        rf"\runtimeplot[title={{\small {SOURCES['symmetries']}}}, ylabel={{\MSa{{}} time (s)}}]"
+        rf"{{\MS}}{{{_scatter(problems, 'ms', 'abs-ms')}}}"
     )
-    scatter = rf"\borderplot{{\MS}}{{\MSa}}{{{_scatter(problems, 'ms', 'abs-ms', 'unsat', None)}}}"
+    return _titled(
+        title,
+        _row([_cactus_plot(SOURCES["symmetries"], options, lines)])
+        + "\n\n\\smallskip\n{\\small (a) Problems proved over time}\n\n\\medskip\n"
+        + _row([runtime])
+        + "\n\n\\smallskip\n{\\small (b) Runtime per problem}",
+        1,
+    )
+
+
+def _cactus_plot(source_title, options, lines):
     return (
-        "\\begin{minipage}[t]{\\columnwidth}\n\\centering\n"
-        + f"{{\\large\\bfseries\\strut {title}}}\\par\\vspace{{1em}}\n"
-        + cactus
-        + "\\hfill"
-        + scatter
-        + "\n\n\\makebox[0.48\\columnwidth]{\\small (a) Problems proved}\\hfill"
-        + "\\makebox[0.48\\columnwidth]{\\small (b) Runtime per problem}\n\\end{minipage}"
+        "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
+        + rf"\begin{{semilogxaxis}}[cactusplot, title={{\small {source_title}}}, {options}]"
+        + "\n"
+        + "\n".join(lines)
+        + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
+    )
+
+
+def _row(plots):
+    # The paper's spacing: room for the y label on the left, then a gap between the plots.
+    return "\\noindent\\makebox[\\linewidth][c]{%\n\\hspace*{0.42in}%\n" + "%\n\\hspace{0.3in}%\n".join(plots) + "}"
+
+
+def _titled(title, body, columns):
+    # A single column of plots gets a narrow panel, so the two halves sit close together.
+    width = "\\columnwidth" if columns > 1 else "2in"
+    return (
+        f"\\begin{{minipage}}[t]{{{width}}}\n\\centering\n"
+        + f"{{\\large\\bfseries\\strut {title}}}\\par\\vspace{{2.4em}}\n"
+        + body
+        + "\n\\end{minipage}"
     )
 
 
@@ -214,16 +228,13 @@ def _cactus(problems, mode):
     return " ".join(["(1,0)", *points, f"({TIME_LIMIT},{len(times)})"])
 
 
-def _scatter(problems, solver, abstraction, kind, baseline):
+def _scatter(problems, solver, abstraction):
     points = []
     for problem in problems:
         x, y = _time(problem[solver]), _time(problem[abstraction])
         if x is None and y is None:
             continue
-        point = f"({x or UNSOLVED:.2f},{y or UNSOLVED:.2f})"
-        if kind == "opt":
-            point += f" [{extra_actions_class(problem, abstraction, baseline)}]"
-        points.append(point)
+        points.append(f"({x or UNSOLVED:.2f},{y or UNSOLVED:.2f})")
     return " ".join(points)
 
 
@@ -275,6 +286,9 @@ def _argument_parser():
     )
     parser.add_argument(
         "--base-manifests", nargs="*", default=[], help="The same for the base, when it is a PR with its own runs"
+    )
+    parser.add_argument(
+        "--sources", nargs="+", choices=list(SOURCES), help="Draw only these abstraction sources of a sat or opt figure"
     )
     parser.add_argument("--paper", default=DEFAULT_PAPER, help="The paper's main.tex, whose preamble the figure uses")
     parser.add_argument("--out", required=True, help="PNG file to write, named <PR>-<kind>-before-after.png")
