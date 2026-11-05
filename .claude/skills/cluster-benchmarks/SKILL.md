@@ -112,6 +112,17 @@ more than asked whenever names repeat across domains, as `p01` does. Keep the
 intended (domain, problem) pairs and report on those alone. `--dry-run` prints the
 job count without touching `runs/` or the queue, so compare it with the pairs first.
 
+When `fetch` reports `Incomplete benchmark run: <n> expected results are missing`,
+resubmit exactly those, each with the class and on the track the run used, rather
+than a cross product:
+
+```bash
+python -m experiments.submit --retry-missing ~/apf/<checkout>/runs/
+```
+
+It reads the run before setting `runs/` aside. Pull the retry like any run, and
+`collect` keeps the rows the first run already returned.
+
 When the run is for an open PR, make the PR a draft in the same step:
 
 ```bash
