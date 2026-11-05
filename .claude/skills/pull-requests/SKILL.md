@@ -61,7 +61,7 @@ and say when the base used a different class. For a run over a subset of problem
 report on the problems the subset was meant to cover, not on whatever extra the
 submission swept in.
 
-`experiments.figure` draws the paper's sat, opt, unsat or scaled figure, problems solved or
+`experiments.figure` draws the paper's sat, opt or unsat figure, problems solved or
 proved over time and runtime per problem with every mode, for the base and the
 branch side by side:
 
@@ -70,6 +70,8 @@ python -m experiments.figure opt --base origin/main --branch HEAD \
   --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json \
   --out 130-opt-before-after.png
 ```
+
+`scaled` draws the share of the scaled unsat problems each mode proves per class size, for the branch alone.
 
 `--manifests` limits the branch's abstract modes to the classes its runs submitted.
 For a stacked PR, pass `--base <the base branch> --base-label '#<n>'` and the base's

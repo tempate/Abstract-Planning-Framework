@@ -5,7 +5,6 @@ import csv
 import io
 import json
 import shutil
-import statistics
 import subprocess
 import tempfile
 from collections import defaultdict
@@ -16,8 +15,8 @@ from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 
 SOURCES = {"symmetries": "Symmetric objects", "resources": "Resource levels"}
 # The unsolvability track collapses symmetric objects only.
-KIND_SOURCES = {"sat": tuple(SOURCES), "opt": tuple(SOURCES), "unsat": ("symmetries",), "scaled": ("scaled",)}
-# The scaled figure draws the unsat track's grown problems.
+KIND_SOURCES = {"sat": tuple(SOURCES), "opt": tuple(SOURCES), "unsat": ("symmetries",)}
+# The scaled figure draws the coverage of the unsat track's grown problems, for the branch alone.
 TRACKS = {"scaled": "unsat"}
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
@@ -36,7 +35,11 @@ def main():
     args = _argument_parser().parse_args()
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
-    panel = {"unsat": _unsat_panel, "scaled": _scaled_panel}.get(args.kind, _panel)
+    if args.kind == "scaled":
+        _render(args.paper, [_scaled_panel(_tracks(args.branch, args.kind, manifests)["scaled"])], Path(args.out))
+        print(f"Wrote {args.out}")
+        return
+    panel = _unsat_panel if args.kind == "unsat" else _panel
     # A label like #134 would otherwise read as a macro parameter in LaTeX.
     base_label = args.base_label.replace("#", r"\#")
     panels = [
@@ -83,7 +86,7 @@ def _tracks(revision, kind, manifests):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
     track = TRACKS.get(kind, kind)
     tracks = {}
-    for source in KIND_SOURCES[kind]:
+    for source in ("scaled",) if kind == "scaled" else KIND_SOURCES[kind]:
         text = subprocess.check_output(
             ["git", "-C", PROJECT_ROOT, "show", f"{revision}:experiments/{track}/{source}/results.csv"], text=True
         )
@@ -174,49 +177,45 @@ def _unsat_panel(title, _kind, tracks):
     )
 
 
-def scaled_medians(problems, mode):
-    """The median time per class size, a failure counting as the fail border, over sizes half the base problems reach."""
-    times = defaultdict(list)
+SCALED_MODES = (("ms", "conc", "*", r"\MS"), ("abs-ms", "abst", "square*", r"\MSa"))
+
+
+def scaled_sizes(problems):
+    """The scaled problems of each class size that at least half the base problems reach."""
+    by_size = defaultdict(list)
     base_problems = set()
     for problem in problems:
-        row = problem[mode]
+        row = problem["ms"]
         domain, size = row["domain"].rsplit("/size-", 1)
         base_problems.add((domain, row["problem"]))
-        times[int(size)].append(_time(row) or UNSOLVED)
+        by_size[int(size)].append(problem)
+    return {size: sized for size, sized in sorted(by_size.items()) if 2 * len(sized) >= len(base_problems)}
+
+
+def scaled_coverage(problems, mode):
+    """The share of each size's problems a mode proves unsolvable, in percent."""
     return [
-        (size, statistics.median(sized))
-        for size, sized in sorted(times.items())
-        if 2 * len(sized) >= len(base_problems)
+        (size, 100 * sum(_solved(problem[mode]) for problem in sized) / len(sized))
+        for size, sized in scaled_sizes(problems).items()
     ]
 
 
-def _scaled_panel(title, _kind, tracks):
-    problems = tracks["scaled"]
-    curves = []
-    for mode, style, mark, name in (("ms", "conc", "*", r"\MS"), ("abs-ms", "abst", "square*", r"\MSa")):
-        coordinates = " ".join(f"({size},{time:.2f})" for size, time in scaled_medians(problems, mode))
-        curves.append(
-            rf"\addplot[{style}, very thick, mark={mark}, mark size=1.4pt] coordinates {{{coordinates}}};"
-            + "\n"
-            + rf"\addlegendentry{{{name}}}"
-        )
+def _scaled_panel(problems):
+    lines = []
+    for mode, style, mark, name in SCALED_MODES:
+        shares = " ".join(f"({size},{share:.2f})" for size, share in scaled_coverage(problems, mode))
+        lines.append(rf"\addplot[{style}, very thick, mark={mark}, mark size=1.4pt] coordinates {{{shares}}};")
+        lines.append(rf"\addlegendentry{{{name}}}")
     return (
-        "\\begin{minipage}[t]{\\columnwidth}\n\\centering\n"
-        + f"{{\\large\\bfseries\\strut {title}}}\\par\\vspace{{1em}}\n"
-        + "\\begin{tikzpicture}\n\\begin{loglogaxis}[scale only axis, width=0.8\\columnwidth, "
-        "height=0.5\\columnwidth, xmin=1.8, xmax=1150, ymin=1, ymax=9000, xtick={2,10,100,1000}, "
-        "xticklabels={2,10,100,1000}, ytick={1,10,100,1000,6000}, yticklabels={1,10,100,1000,fail}, "
-        "minor tick length=0pt, xlabel={Size of the symmetric class}, ylabel={Time (s)}, "
-        "axis line style={black!50}, tick style={black!50}, xtick pos=bottom, ytick pos=left, "
-        "tick label style={font=\\footnotesize}, label style={font=\\footnotesize}, "
+        "\\begin{tikzpicture}\n\\begin{semilogxaxis}[scale only axis, width=0.8\\columnwidth, "
+        "height=0.5\\columnwidth, xmin=1.8, xmax=1150, xtick={2,10,100,1000}, xticklabels={2,10,100,1000}, "
+        "ymin=0, ymax=105, ytick={0,25,50,75,100}, minor tick length=0pt, xlabel={Size of the symmetric class}, "
+        "ylabel={Problems proved (\\%)}, axis line style={black!50}, tick style={black!50}, "
+        "xtick pos=bottom, ytick pos=left, tick label style={font=\\footnotesize}, label style={font=\\footnotesize}, "
         "legend style={font=\\footnotesize, draw=none, fill=none, at={(0.5,1.03)}, anchor=south, "
         "/tikz/every even column/.append style={column sep=10pt}}, legend columns=2, legend cell align=left]\n"
-        + rf"\addplot[black!35, dashed, no marks, forget plot] coordinates {{(1.8,{TIME_LIMIT}) (1150,{TIME_LIMIT})}};"
-        + "\n"
-        + rf"\node[font=\scriptsize, text=black!50, anchor=south east] at (axis cs:1150,{TIME_LIMIT}) {{time limit}};"
-        + "\n"
-        + "\n".join(curves)
-        + "\n\\end{loglogaxis}\n\\end{tikzpicture}\n\\end{minipage}"
+        + "\n".join(lines)
+        + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
     )
 
 
@@ -250,14 +249,12 @@ def _time(row):
 
 
 def _render(paper, panels, out):
-    """Typeset both panels with the paper's preamble, then crop the page to a PNG."""
+    """Typeset the panels side by side with the paper's preamble, then crop the page to a PNG."""
     preamble = Path(paper).read_text().split(r"\title{")[0]
     document = (
         preamble
         + "\\pagestyle{empty}\n\\begin{document}\n\\noindent\\mbox{"
-        + panels[0]
-        + r"\hspace{2em}"
-        + panels[1]
+        + r"\hspace{2em}".join(panels)
         + "}\n\\end{document}\n"
     )
     with tempfile.TemporaryDirectory() as directory:
@@ -278,7 +275,7 @@ def _render(paper, panels, out):
 
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=sorted(KIND_SOURCES), help="Which of the paper's figures to draw")
+    parser.add_argument("kind", choices=sorted([*KIND_SOURCES, "scaled"]), help="Which of the paper's figures to draw")
     parser.add_argument("--base", default="origin/main", help="Revision whose results.csv files go on the left")
     parser.add_argument("--base-label", default="main", help="Name of the base in the left panel's title")
     parser.add_argument("--branch", default="HEAD", help="Revision whose results.csv files go on the right")
