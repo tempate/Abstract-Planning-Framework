@@ -25,12 +25,23 @@ from experiments.run import (
 )
 import experiments.report
 import experiments.submit
-from experiments.report import SOLVER_LABELS, _by_domain, _coverage, _finished_problems, _head_to_head, _labels, _pairs
+from experiments.report import (
+    SOLVER_LABELS,
+    _by_domain,
+    _coverage,
+    _finished_problems,
+    _head_to_head,
+    _labels,
+    _pairs,
+    best_classes,
+)
 from experiments.submit import (
     MANIFEST_NAME,
     _benchmark_tasks,
     _check_worktree_is_built,
+    _missing_results,
     _not_submitted,
+    _only,
     _set_aside_results_dir,
     _write_copperbench_config,
     _write_manifest,
@@ -271,6 +282,49 @@ class BenchmarkTests(unittest.TestCase):
             ranks = [rank for _mode, _domain, _domain_file, _problem, rank in _not_submitted(tasks, [manifest])]
 
         self.assertEqual(ranks, [0, 2])
+
+    def test_a_retry_resubmits_only_the_results_a_run_never_returned_with_their_classes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+            run = root / "run"
+            run.mkdir()
+            expected = [
+                {"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": 1},
+                {"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": 2},
+                {"domain": "example", "problem": "p01.pddl", "mode": "asp", "class": None},
+            ]
+            (run / MANIFEST_NAME).write_text(json.dumps({"track": "sat/symmetries", "expected_results": expected}))
+            for mode, rank in (("abs-asp", 2), ("asp", None)):
+                result = {"domain": "example", "problem": "p01.pddl", "mode": mode, "class": rank, "status": "success"}
+                result |= {
+                    "return_code": 0,
+                    "timed_out": False,
+                    "wall_time_seconds": 1.0,
+                    "output": "Plan found: yes\n",
+                }
+                (run / f"{mode}-{rank}.json").write_text(json.dumps(result))
+
+            track, missing = _missing_results(run)
+            tasks = _benchmark_tasks(
+                root, ["example"], None, modes=("abs-asp", "asp"), class_counts={("example", "p01.pddl"): 3}
+            )
+            kept = [(mode, rank) for mode, _domain, _domain_file, _problem, rank in _only(tasks, missing)]
+
+        self.assertEqual(track, "sat/symmetries")
+        self.assertEqual(kept, [("abs-asp", 1)])
+
+    def test_a_missing_result_ranks_below_a_finished_class_without_a_time(self):
+        with tempfile.TemporaryDirectory() as directory:
+            results = Path(directory) / "results.csv"
+            fields = "domain,problem,mode,class,status,wall_time_seconds,last_completed_phase,verdict"
+            rows = ["d,p01.pddl,abs-asp,0,timed out,1800,,", "d,p01.pddl,abs-asp,1,missing,,,"]
+            results.write_text("\n".join([fields, *rows]) + "\n")
+
+            self.assertEqual(best_classes(results), {("d", "p01.pddl", "abs-asp"): 0})
 
     def test_an_abstract_mode_runs_only_its_best_class_where_one_is_known(self):
         with tempfile.TemporaryDirectory() as directory:
