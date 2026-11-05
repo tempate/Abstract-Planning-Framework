@@ -183,6 +183,18 @@ says whether a branch merged, and `git branch --merged main` cannot. A branch a
 worktree has checked out cannot be deleted. `git worktree list` shows which, and
 `git worktree prune` clears the entries whose directories are gone.
 
+For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
+with the merged results. Check first that the PR's base reproduces every number the
+paper holds for the tracks it touched, then write in the PR's numbers:
+
+- the touched columns of the per-domain table, `tab:results`, bolding the better of each pair
+- the touched curves and runtime plots of Figure 1, `fig:results`, as `experiments.figure` computes them
+- any number in the prose that the change makes wrong
+
+Leave the prose itself to Daniel. When a claim no longer holds, tell him rather than
+rewrite it. Compile the paper, then make one local commit, named after the PR such as
+`Update the resource results with #147`, with no Claude trailer. Never push it.
+
 Then clean the cluster. Remove every checkout the PR ran from, the branch's own and
 its `<branch>-<track>` copies, together with their branches in the bare repo. Their
 results are in `main` by now, so only the raw run directories go with them. Check
