@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-05 10:16 — experiments/htg/opt/results.csv
+2026-11-05 14:21 — experiments/htg/opt/results.csv
 
 288 problems compared over abs-lmcut, lmcut
 
@@ -10,8 +10,8 @@
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
 Plans found                      41 (14.2%)   53 (18.4%)
-Timeouts                        135 (46.9%)  193 (67.0%)
-Out of memory                   112 (38.9%)   41 (14.2%)
+Timeouts                        132 (45.8%)  193 (67.0%)
+Out of memory                   115 (39.9%)   41 (14.2%)
 Others                             0 (0.0%)     1 (0.3%)
 Total problems                          288          288
 ```
@@ -37,8 +37,10 @@ Total plan length                       235          235
 ```
 Killed during                        LMcutᵅ
 -------------------------------------------
-Guided concrete search           135 (100%)
-Total                                   135
+Abstract search                    81 (61%)
+Guided concrete search             36 (27%)
+Unguided concrete search           15 (11%)
+Total                                   132
 ```
 
 ## How the successes were solved
