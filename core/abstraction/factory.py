@@ -7,7 +7,13 @@ from pathlib import Path
 from unified_planning.model import Problem
 
 from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
-from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities, split_actions
+from core.abstraction.relaxation import (
+    find_relaxable_deletes,
+    relax_inequalities,
+    restore_inequalities,
+    set_inequalities_aside,
+    split_actions,
+)
 from core.integrations.numeric_fast_downward import detect_resources
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import (
@@ -62,8 +68,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
             abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
 
         # The class has to be chosen before the inequalities can be relaxed,
-        # and they have to be relaxed before the translation, which rewrites
-        # every one of them into a disjunction over pairs of objects.
+        # and they have to be relaxed before the collapse makes them false.
         # Split before relaxing anything, so that both relaxations see which
         # groundings of an action can take a collapsed object.
         problem = split_actions(problem, abstraction)
@@ -74,9 +79,15 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     # With nothing to rewrite the translation still writes out the closed
     # world, which nomystery's ternary sum predicate turns into 240k initial
     # facts and 600 seconds, so skip what would only rebuild the problem.
+    # An inequality is static, so no relaxed delete can falsify it, and the
+    # translation would rewrite it into a disjunction over pairs of objects,
+    # which Fast Downward's translator expands into thousands of copies of
+    # each action. Keep the ones the relaxation left out of the translation.
     with metrics.measure("pnf_translation"):
+        problem, inequalities = set_inequalities_aside(problem)
         if problem.kind.has_negative_conditions():
             problem = to_positive_normal_form(problem)
+        problem = restore_inequalities(problem, inequalities)
 
     with metrics.measure("abstraction"):
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)

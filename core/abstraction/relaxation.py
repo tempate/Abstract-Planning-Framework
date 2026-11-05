@@ -239,6 +239,33 @@ def relax_inequalities(problem, abstraction):
     return relaxed_problem, tuple(relaxed)
 
 
+def set_inequalities_aside(problem):
+    """The problem without its remaining inequalities, and each action's inequalities to restore later."""
+    aside = {}
+    stripped_problem = problem.clone()
+    for action in stripped_problem.actions:
+        found = []
+        kept = []
+        for precondition in action.preconditions:
+            condition = _without_inequalities(action, precondition, lambda *_: True, found)
+            if condition is not None:
+                kept.append(condition)
+        if found:
+            action.clear_preconditions()
+            for condition in kept:
+                action.add_precondition(condition)
+            aside[action.name] = [inequality for _, inequality in found]
+    return stripped_problem, aside
+
+
+def restore_inequalities(problem, aside):
+    """Give each action back the inequalities set aside from it."""
+    for action in problem.actions:
+        for inequality in aside.get(action.name, ()):
+            action.add_precondition(inequality)
+    return problem
+
+
 def _without_inequalities(action, condition, can_be_collapsed, relaxed):
     """Drop the relaxable inequalities from a condition, or None if nothing is left.
 
