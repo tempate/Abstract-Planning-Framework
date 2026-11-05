@@ -202,7 +202,7 @@ def _completed(returncode, stderr=""):
 
 class PlaspPostProcessingTests(unittest.TestCase):
     @patch("core.integrations.plasp.subprocess.run")
-    def test_program_combines_exact_encoding_with_translator_output(self, run):
+    def test_program_keeps_the_exact_encoding_apart_from_the_translator_output(self, run):
         run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="translated.\n", stderr="")
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -219,7 +219,7 @@ class PlaspPostProcessingTests(unittest.TestCase):
             ):
                 program = sas_to_asp(str(sas))
 
-            self.assertEqual(program.split(), ["exact.", "translated."])
+            self.assertEqual((program.rules.split(), program.facts.split()), (["exact."], ["translated."]))
 
 
 if __name__ == "__main__":

@@ -147,13 +147,18 @@ class ArgumentTests(unittest.TestCase):
 
 
 # A counter that three actions advance from 0 to 3, in the facts plasp would emit.
+# plasp writes one fact per line; the encoding shows occurs/2.
 COUNTER_TASK = """
-#show occurs/2.
 variable(variable(x)).
-contains(variable(x), value(x, 0..3)).
+contains(variable(x), value(x, 0)).
+contains(variable(x), value(x, 1)).
+contains(variable(x), value(x, 2)).
+contains(variable(x), value(x, 3)).
 initialState(variable(x), value(x, 0)).
 goal(variable(x), value(x, 3)).
-action(action(("advance", "s1"))). action(action(("advance", "s2"))). action(action(("advance", "s3"))).
+action(action(("advance", "s1"))).
+action(action(("advance", "s2"))).
+action(action(("advance", "s3"))).
 precondition(action(("advance", "s1")), variable(x), value(x, 0)).
 precondition(action(("advance", "s2")), variable(x), value(x, 1)).
 precondition(action(("advance", "s3")), variable(x), value(x, 2)).
