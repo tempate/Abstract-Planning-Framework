@@ -7,7 +7,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from experiments.compare import submitted_tracks
-from experiments.figure import BASELINES, DEFAULT_PAPER, _cactus, _scatter, _solved, _tracks
+from experiments.figure import BASELINES, DEFAULT_PAPER, cactus, load_tracks, scatter, solved
 
 # Where each track's columns start in tab:results, and the modes they count in order.
 TABLE_COLUMNS = {
@@ -28,8 +28,8 @@ def main():
     tex = paper.read_text()
     for track in submitted_tracks(manifests):
         kind, source = track.split("/")
-        base = _tracks(args.base, kind, base_manifests, [source])[source]
-        branch = _tracks(args.branch, kind, manifests, [source])[source]
+        base = load_tracks(args.base, kind, base_manifests, [source])[source]
+        branch = load_tracks(args.branch, kind, manifests, [source])[source]
         if _holds(tex, kind, branch):
             print(f"{track}: the paper already holds the branch's results")
             continue
@@ -47,7 +47,7 @@ def domain_counts(problems, kind):
         row = rows[_short(next(iter(problem.values()))["domain"])]
         row[0] += 1
         for index, mode in enumerate(modes, 1):
-            row[index] += _solved(problem[mode])
+            row[index] += solved(problem[mode])
     # A domain from a single IPC edition goes without its year, such as agricola.
     editions = Counter(_without_year(name) for name in rows)
     return {(_without_year(name) if editions[_without_year(name)] == 1 else name): row for name, row in rows.items()}
@@ -94,8 +94,8 @@ def figure_sets(problems, kind):
         pairs = [("ms", "abs-ms")]
     else:
         pairs = [(BASELINES[kind][0], f"abs-{BASELINES[kind][0]}"), ("asp", "abs-asp")]
-    curves = [_cactus(problems, mode) for pair in pairs for mode in pair]
-    return curves + [_scatter(problems, solver, abstraction) for solver, abstraction in pairs]
+    curves = [cactus(problems, mode) for pair in pairs for mode in pair]
+    return curves + [scatter(problems, solver, abstraction) for solver, abstraction in pairs]
 
 
 def update_figure(tex, base_sets, branch_sets):

@@ -5,7 +5,7 @@ import json
 import statistics
 from pathlib import Path
 
-from experiments.figure import _solved, _time, _tracks
+from experiments.figure import load_tracks, solve_time, solved
 
 LABELS = {"abs-asp": "ASPᵅ", "abs-lama": "LAMAᵅ", "abs-lmcut": "LMcutᵅ", "abs-ms": "M&Sᵅ"}
 
@@ -17,8 +17,8 @@ def main():
     columns = {}
     for track, modes in submitted_tracks(manifests).items():
         kind, source = track.split("/")
-        base = _tracks(args.base, kind, base_manifests, [source])[source]
-        branch = _tracks(args.branch, kind, manifests, [source])[source]
+        base = load_tracks(args.base, kind, base_manifests, [source])[source]
+        branch = load_tracks(args.branch, kind, manifests, [source])[source]
         columns[f"{kind} {source}"] = (base, branch, modes)
     print(tables(columns))
 
@@ -62,20 +62,20 @@ def tables(columns):
 
 
 def _plans_cell(base, branch, mode):
-    before = sum(_solved(problem[mode]) for problem in base)
-    after = sum(_solved(problem[mode]) for problem in branch)
+    before = sum(solved(problem[mode]) for problem in base)
+    after = sum(solved(problem[mode]) for problem in branch)
     bold = lambda count, other: f"**{count}**" if count > other else str(count)
     return f"{bold(before, after)} → {bold(after, before)}"
 
 
 def _runtime_cell(base, branch, mode):
     # Compare the two sides on the problems both solve, so a newly solved hard problem does not skew the median.
-    before = {_key(problem): problem[mode] for problem in base if _solved(problem[mode])}
-    after = {_key(problem): problem[mode] for problem in branch if _solved(problem[mode])}
+    before = {_key(problem): problem[mode] for problem in base if solved(problem[mode])}
+    after = {_key(problem): problem[mode] for problem in branch if solved(problem[mode])}
     shared = before.keys() & after.keys()
     if not shared:
         return ""
-    median = lambda rows: statistics.median(_time(rows[key]) for key in shared)
+    median = lambda rows: statistics.median(solve_time(rows[key]) for key in shared)
     return f"{median(before):.1f} → {median(after):.1f} s"
 
 
