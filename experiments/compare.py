@@ -85,7 +85,7 @@ def _key(problem):
 
 
 def _line(label, cells):
-    return "| " + " | ".join([label, *cells]) + " |"
+    return "|" + "|".join(f" {cell} " if cell else " " for cell in [label, *cells]) + "|"
 
 
 def _rule(header):

@@ -33,5 +33,5 @@ class CompareTablesTests(unittest.TestCase):
         text = tables({"sat resources": (base, branch, {"abs-asp"}), "opt resources": (base, base, set())})
 
         # p2 is new on the branch, so the medians cover p1 and p3 alone.
-        self.assertIn("| ASPᵅ | 2 → **3** |  |", text)
-        self.assertIn("| ASPᵅ | 20.0 → 30.0 s |  |", text)
+        self.assertIn("| ASPᵅ | 2 → **3** | |", text)
+        self.assertIn("| ASPᵅ | 20.0 → 30.0 s | |", text)

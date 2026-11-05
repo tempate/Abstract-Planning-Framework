@@ -30,7 +30,7 @@ def main():
         kind, source = track.split("/")
         base = _tracks(args.base, kind, base_manifests, [source])[source]
         branch = _tracks(args.branch, kind, manifests, [source])[source]
-        if _holds(tex, kind, source, branch):
+        if _holds(tex, kind, branch):
             print(f"{track}: the paper already holds the branch's results")
             continue
         tex, changed = update_table(tex, kind, source, domain_counts(base, kind), domain_counts(branch, kind))
@@ -113,7 +113,7 @@ def update_figure(tex, base_sets, branch_sets):
     return tex[:start] + figure + tex[end:], replaced
 
 
-def _holds(tex, kind, source, branch):
+def _holds(tex, kind, branch):
     # Results that went in before the merge leave nothing to write.
     figure = tex[tex.index(r"\begin{figure*}") : tex.index(r"\label{fig:results}")]
     stored = {re.sub(r" \[\d\]", "", match.group(1)) for match in COORDINATES.finditer(figure)}
