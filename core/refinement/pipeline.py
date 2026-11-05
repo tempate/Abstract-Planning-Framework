@@ -67,16 +67,19 @@ def _concrete_asp(context):
         concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
 
     with context.metrics.measure("concrete_asp"):
-        return sas_to_asp(concrete_sas)
+        concrete_asp = sas_to_asp(concrete_sas)
+
+    if not context.config.optimize:
+        concrete_asp = make_steps_optional(concrete_asp)
+
+    return concrete_asp
 
 
 def _solve_concrete_plan(context, abstract_plan, init_horizon):
     """Refine the abstract plan, then search above its horizon if it does not refine."""
-    # One name for the program text, so that each rewrite lets the previous copy go.
-    gaps = not context.config.optimize
     asp = _concrete_asp(context)
-    if gaps:
-        asp = make_steps_optional(asp)
+
+    gaps = not context.config.optimize
     asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps)
 
     # Publish the counters before searching so an interrupted run still has them.
