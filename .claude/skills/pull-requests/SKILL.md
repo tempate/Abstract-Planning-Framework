@@ -173,3 +173,16 @@ Leave branches whose PR is still open. `gh pr list --head <branch> --state all`
 says whether a branch merged, and `git branch --merged main` cannot. A branch a
 worktree has checked out cannot be deleted. `git worktree list` shows which, and
 `git worktree prune` clears the entries whose directories are gone.
+
+Then clean the cluster. Remove every checkout the PR ran from, the branch's own and
+its `<branch>-<track>` copies, together with their branches in the bare repo. Their
+results are in `main` by now, so only the raw run directories go with them. Check
+first that none of their jobs is queued and that none has local changes:
+
+```bash
+ssh -o BatchMode=yes copperhead 'squeue -u dquilez -h | wc -l; git -C ~/apf/.bare worktree list'
+ssh -o BatchMode=yes copperhead 'for b in <branch> <branch>-<track>; do
+  git -C ~/apf/.bare worktree remove --force ~/apf/$b && git -C ~/apf/.bare branch -D $b; done'
+```
+
+Leave the checkouts of PRs that are still open, and `~/apf/main`.
