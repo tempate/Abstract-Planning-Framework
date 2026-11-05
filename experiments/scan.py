@@ -155,13 +155,16 @@ def _submit(track_name, track, domains):
 
 def _scan_task(track_name, track, index, source, timeout):
     directory = _task_dir(track_name)
+    task = (directory / "tasks.txt").read_text(encoding="utf-8").splitlines()[index]
+    # Named after the problem, not the index, since a later submit renumbers the tasks.
+    result = directory / "outcomes" / f"{task}.tsv"
     # Slurm requeues tasks, sometimes after they finished, and the outcome stands.
-    if (directory / f"{index}.tsv").is_file():
+    if result.is_file():
         return
-    name = (directory / "tasks.txt").read_text(encoding="utf-8").splitlines()[index]
-    domain_name, _, problem = name.rpartition("/")
+    domain_name, _, problem = task.rpartition("/")
     name, outcome = _scan(track.benchmarks_dir, domain_name, problem, RANK, source, timeout)
-    (directory / f"{index}.tsv").write_text(f"{name}\t{outcome}\n", encoding="utf-8")
+    result.parent.mkdir(parents=True, exist_ok=True)
+    result.write_text(f"{name}\t{outcome}\n", encoding="utf-8")
 
 
 def _collect(track_name, track):
@@ -188,7 +191,7 @@ def _collect(track_name, track):
 
 def _task_outcomes(track_name):
     outcomes = {}
-    for result in sorted(_task_dir(track_name).glob("*.tsv")):
+    for result in sorted((_task_dir(track_name) / "outcomes").rglob("*.tsv")):
         name, _, outcome = result.read_text(encoding="utf-8").strip().partition("\t")
         outcomes[name] = outcome
     return outcomes

@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-05 10:16 — experiments/htg/sat/results.csv
+2026-11-05 14:21 — experiments/htg/sat/results.csv
 
 288 problems compared over abs-lama, lama
 
@@ -10,8 +10,8 @@
 Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
 Plans found                      88 (30.6%)  209 (72.6%)
-Timeouts                         34 (11.8%)   38 (13.2%)
-Out of memory                   166 (57.6%)   41 (14.2%)
+Timeouts                          27 (9.4%)   38 (13.2%)
+Out of memory                   173 (60.1%)   41 (14.2%)
 Others                             0 (0.0%)     0 (0.0%)
 Total problems                          288          288
 ```
@@ -37,9 +37,9 @@ Total plan length                     2,556        2,041
 ```
 Killed during                         LAMAᵅ
 -------------------------------------------
-Translating the task                9 (26%)
-Guided concrete search             25 (74%)
-Total                                    34
+Abstract search                    18 (67%)
+Guided concrete search              9 (33%)
+Total                                    27
 ```
 
 ## How the successes were solved
