@@ -47,23 +47,40 @@ never add a paragraph interpreting the numbers.
 Until the run is collected, the description is one short paragraph on what the PR
 changes, then `## Results` with the word `Pending` and what was submitted.
 
-Once the results are pushed and the PR is ready, the `## Results` section holds, in
-this order:
+Once the results are pushed and the PR is ready, the `## Results` section holds two
+small tables and nothing else, as #146 and #147 do:
 
-1. The before/after figures, one per track kind, base on the left and branch on the right.
-2. A table of plans found, base → PR, with one row per mode and one column per track.
-3. At most one short sentence, and only for something a reader would otherwise misread. Never a list of facts.
+1. **Plans found.** One row per abstract mode the run submitted and one column per track
+   it touched, such as `sat symmetries` or `opt resources`. Each cell reads `base → PR`,
+   with the larger number in bold. A mode that does not run on a track leaves its cell empty.
+2. **Median runtime.** The same rows and columns. Each cell reads `base → PR` in seconds
+   with one decimal, the median over the problems both sides solve.
+
+```markdown
+| Plans found | sat resources | opt resources |
+|---|---|---|
+| ASPᵅ | 90 → **92** | **126** → 119 |
+| LAMAᵅ | **125** → 121 | |
+| LMcutᵅ | | **138** → 131 |
+
+| Median runtime | sat resources | opt resources |
+|---|---|---|
+| ASPᵅ | 15.4 → 15.2 s | 15.3 → 17.3 s |
+| LAMAᵅ | 17.7 → 17.3 s | |
+| LMcutᵅ | | 10.7 → 12.7 s |
+```
+
+Leave out figures, baseline rows, sentences about the numbers and tables of runs.
 
 "Before" is the PR's base, which is `main` or, for a stacked PR, the PR below it. Compare the
 same problems and classes on both sides. For a best-class run, keep only the
-abstract rows the run's manifest lists, as the `cluster-benchmarks` skill explains,
-and say when the base used a different class. For a run over a subset of problems,
-report on the problems the subset was meant to cover, not on whatever extra the
-submission swept in.
+abstract rows the run's manifest lists, as the `cluster-benchmarks` skill explains.
+For a run over a subset of problems, report on the problems the subset was meant to
+cover, not on whatever extra the submission swept in.
 
-`experiments.figure` draws the paper's sat, opt or unsat figure, problems solved or
-proved over time and runtime per problem with every mode, for the base and the
-branch side by side:
+Descriptions carry no figure unless Daniel asks for one. `experiments.figure` draws
+the paper's sat, opt or unsat figure, problems solved or proved over time and runtime
+per problem with every mode, for the base and the branch side by side:
 
 ```bash
 python -m experiments.figure opt --base origin/main --branch HEAD \
@@ -78,8 +95,8 @@ the repository, or `--paper`, plus `pdflatex`, `pdfcrop` and `pdftoppm`. After
 changing it, check that the base half reproduces the coordinates in the paper's
 `main.tex` from the `main` commit the paper's figure came from.
 
-Daniel uploads the images by dragging them into the description, so leave an HTML
-comment where each one goes:
+When he asks for a figure, he uploads it by dragging it into the description, so
+leave an HTML comment where it goes:
 
 ```markdown
 <!-- 130-sat-before-after.png: before (main) left, after right -->
