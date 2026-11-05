@@ -164,7 +164,9 @@ ssh copperhead 'sacct -u dquilez -S <date> -X -n -P --name=<run-name> -o State |
 ```
 
 `python -m experiments.status` reports the run's queued and running jobs and what
-its results say so far. It opens its own ssh, so run it locally from a checkout of
+its results say so far. `--all` answers "how is the cluster" instead, with one line per
+run of the last two days, its checkout, and its jobs by state, counting exit-4 tasks
+as `skipped` rather than failed. It opens its own ssh, so run it locally from a checkout of
 the branch, never on copperhead.
 
 ## Pulling a finished run
