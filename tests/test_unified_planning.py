@@ -235,12 +235,15 @@ NEGATION_PROBLEM = """
 
 
 class PositiveNormalFormTests(unittest.TestCase):
-    def test_translation_leaves_no_condition_negating_a_fluent(self):
+    def test_translation_negates_only_the_inequalities(self):
         problem = parse_problem(NEGATION_DOMAIN, NEGATION_PROBLEM)
 
         translated = to_positive_normal_form(problem)
 
-        self.assertFalse(translated.kind.has_negative_conditions())
+        (precondition,) = translated.action("move").preconditions
+        negated = [condition.arg(0) for condition in precondition.args if condition.is_not()]
+        self.assertTrue(negated)
+        self.assertTrue(all(argument.is_equals() for argument in negated))
 
     def test_translation_keeps_the_actions_the_refinement_maps_back(self):
         problem = parse_problem(NEGATION_DOMAIN, NEGATION_PROBLEM)
