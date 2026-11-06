@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-05 14:21 — experiments/htg/sat/results.csv
+2026-11-06 07:53 — experiments/htg/sat/results.csv
 
 288 problems compared over abs-lama, lama
 
@@ -9,9 +9,9 @@
 ```
 Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
-Plans found                      88 (30.6%)  209 (72.6%)
-Timeouts                          27 (9.4%)   38 (13.2%)
-Out of memory                   173 (60.1%)   41 (14.2%)
+Plans found                      92 (31.9%)  209 (72.6%)
+Timeouts                         34 (11.8%)   38 (13.2%)
+Out of memory                   162 (56.2%)   41 (14.2%)
 Others                             0 (0.0%)     0 (0.0%)
 Total problems                          288          288
 ```
@@ -21,15 +21,15 @@ Total problems                          288          288
 ```
 Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
-Plans found by both                      88           88
-Faster                             1 (1.1%)   87 (98.9%)
-Found when the other did not              0          121
-Median runtime                      14.17 s       4.28 s
-Total runtime                    4,518.45 s     778.55 s
-Shorter plan                     12 (13.6%)   62 (70.5%)
-Same plan length                 14 (15.9%)   14 (15.9%)
-Median plan length                     24.5           18
-Total plan length                     2,556        2,041
+Plans found by both                      92           92
+Faster                             1 (1.1%)   91 (98.9%)
+Found when the other did not              0          117
+Median runtime                      11.94 s       4.36 s
+Total runtime                    5,869.51 s   1,598.89 s
+Shorter plan                     11 (12.0%)   66 (71.7%)
+Same plan length                 15 (16.3%)   15 (16.3%)
+Median plan length                       25         20.5
+Total plan length                     2,735        2,211
 ```
 
 ## Where the timeouts died
@@ -37,9 +37,10 @@ Total plan length                     2,556        2,041
 ```
 Killed during                         LAMAᵅ
 -------------------------------------------
-Abstract search                    18 (67%)
-Guided concrete search              9 (33%)
-Total                                    27
+Abstract search                    23 (68%)
+Translating the task to ASP          1 (3%)
+Guided concrete search             10 (29%)
+Total                                    34
 ```
 
 ## How the successes were solved
@@ -47,10 +48,10 @@ Total                                    27
 ```
 Solved by                             LAMAᵅ
 -------------------------------------------
-Refined directly                   57 (65%)
-Refined, some actions off          31 (35%)
+Refined directly                   61 (66%)
+Refined, some actions off          31 (34%)
 Solved above the abstract plan       0 (0%)
-Total                                    88
+Total                                    92
 ```
 
 ## Deletes relaxed by the refined plans
@@ -58,12 +59,12 @@ Total                                    88
 ```
 Deletes relaxed                       LAMAᵅ
 -------------------------------------------
-None                               17 (19%)
-1 to 4                             57 (65%)
+None                               21 (23%)
+1 to 4                             57 (62%)
 5 to 9                               0 (0%)
-10 to 19                           12 (14%)
+10 to 19                           12 (13%)
 20 or more                           2 (2%)
-Total                                    88
+Total                                    92
 ```
 
 ## Plans found by domain
@@ -97,8 +98,8 @@ logistics-large-simple (16)     goal-1         0         4
                                 goal-4         0         4
 organic-synthesis-alkene (17)                   0        15
 pipesworld-tankage-nosplit (17)                   8        15
-rovers-large-simple (6)         goal-4         1         3
-                                goal-6         1         2
-                                goal-8         0         1
-Total (288)                                   88       209
+rovers-large-simple (6)         goal-4         3         3
+                                goal-6         2         2
+                                goal-8         1         1
+Total (288)                                   92       209
 ```
