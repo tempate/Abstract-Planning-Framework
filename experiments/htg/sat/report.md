@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-05 14:21 — experiments/htg/sat/results.csv
+2026-11-06 07:53 — experiments/htg/sat/results.csv
 
 288 problems compared over abs-lama, lama
 
@@ -9,9 +9,9 @@
 ```
 Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
-Plans found                      88 (30.6%)  209 (72.6%)
-Timeouts                          27 (9.4%)   38 (13.2%)
-Out of memory                   173 (60.1%)   41 (14.2%)
+Plans found                     112 (38.9%)  209 (72.6%)
+Timeouts                         42 (14.6%)   38 (13.2%)
+Out of memory                   134 (46.5%)   41 (14.2%)
 Others                             0 (0.0%)     0 (0.0%)
 Total problems                          288          288
 ```
@@ -21,15 +21,15 @@ Total problems                          288          288
 ```
 Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
-Plans found by both                      88           88
-Faster                             1 (1.1%)   87 (98.9%)
-Found when the other did not              0          121
-Median runtime                      14.17 s       4.28 s
-Total runtime                    4,518.45 s     778.55 s
-Shorter plan                     12 (13.6%)   62 (70.5%)
-Same plan length                 14 (15.9%)   14 (15.9%)
-Median plan length                     24.5           18
-Total plan length                     2,556        2,041
+Plans found by both                     112          112
+Faster                             1 (0.9%)  111 (99.1%)
+Found when the other did not              0           97
+Median runtime                      17.96 s       4.38 s
+Total runtime                    7,589.73 s   1,964.48 s
+Shorter plan                      11 (9.8%)   71 (63.4%)
+Same plan length                 30 (26.8%)   30 (26.8%)
+Median plan length                     18.5           17
+Total plan length                     2,901        2,305
 ```
 
 ## Where the timeouts died
@@ -37,9 +37,10 @@ Total plan length                     2,556        2,041
 ```
 Killed during                         LAMAᵅ
 -------------------------------------------
-Abstract search                    18 (67%)
-Guided concrete search              9 (33%)
-Total                                    27
+Abstract search                    30 (71%)
+Translating the task                 1 (2%)
+Guided concrete search             11 (26%)
+Total                                    42
 ```
 
 ## How the successes were solved
@@ -47,10 +48,10 @@ Total                                    27
 ```
 Solved by                             LAMAᵅ
 -------------------------------------------
-Refined directly                   57 (65%)
-Refined, some actions off          31 (35%)
+Refined directly                   81 (72%)
+Refined, some actions off          31 (28%)
 Solved above the abstract plan       0 (0%)
-Total                                    88
+Total                                   112
 ```
 
 ## Deletes relaxed by the refined plans
@@ -58,12 +59,12 @@ Total                                    88
 ```
 Deletes relaxed                       LAMAᵅ
 -------------------------------------------
-None                               17 (19%)
-1 to 4                             57 (65%)
+None                               21 (19%)
+1 to 4                             57 (51%)
 5 to 9                               0 (0%)
-10 to 19                           12 (14%)
-20 or more                           2 (2%)
-Total                                    88
+10 to 19                           12 (11%)
+20 or more                         22 (20%)
+Total                                   112
 ```
 
 ## Plans found by domain
@@ -84,7 +85,7 @@ childsnack-contents (44)    parsize1-cham3        12        12
                             parsize3-cham3        11        12
                             parsize3-cham5         2         9
                             parsize3-cham7         0         5
-                            parsize4-cham3         0        11
+                            parsize4-cham3         5        11
                             parsize4-cham5         0         2
 gnad-et-al-aaai19-large-instances (93)agricola-large         0        18
                             caldera-large         0         1
@@ -95,10 +96,10 @@ logistics-large-simple (16)     goal-1         0         4
                                 goal-2         0         4
                                 goal-3         0         4
                                 goal-4         0         4
-organic-synthesis-alkene (17)                   0        15
+organic-synthesis-alkene (17)                  15        15
 pipesworld-tankage-nosplit (17)                   8        15
-rovers-large-simple (6)         goal-4         1         3
-                                goal-6         1         2
-                                goal-8         0         1
-Total (288)                                   88       209
+rovers-large-simple (6)         goal-4         3         3
+                                goal-6         2         2
+                                goal-8         1         1
+Total (288)                                  112       209
 ```
