@@ -6,6 +6,7 @@ import subprocess
 from core.encodings.rules import AT_MOST_ONE_ACTION, EXACTLY_ONE_ACTION
 from core.integrations.paths import PLASP_BIN, SEQUENTIAL_ENCODING
 from core.outcomes import IntegrationError
+from core.encodings.program import AspProgram
 
 
 def sas_to_asp(sas_path, optimize=True):
@@ -17,7 +18,7 @@ def sas_to_asp(sas_path, optimize=True):
     if not optimize:
         encoding = encoding.replace(EXACTLY_ONE_ACTION, AT_MOST_ONE_ACTION)
 
-    return encoding + "\n" + _translate(sas_path) + "\n"
+    return AspProgram(encoding, _translate(sas_path))
 
 
 def _translate(sas_path):

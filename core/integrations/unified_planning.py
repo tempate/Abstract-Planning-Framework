@@ -1,13 +1,18 @@
 """Unified Planning boundary for parsing, rewriting and serializing paired PDDL tasks."""
 
+import copy
 from dataclasses import dataclass
 from pathlib import Path
+from unittest.mock import patch
 
 from unified_planning.engines import CompilationKind, ValidationResultStatus
+from unified_planning.engines.compilers import negative_conditions_remover
+from unified_planning.engines.compilers.negative_conditions_remover import NegativeFluentRemover
 from unified_planning.environment import get_environment
 from unified_planning.exceptions import UPException
 from unified_planning.io import PDDLReader, PDDLWriter
 from unified_planning.model import Problem
+from unified_planning.model.fluent import get_all_fluent_exp
 from unified_planning.model.metrics import MinimizeActionCosts, MinimizeExpressionOnFinalState
 from unified_planning.plans import ActionInstance, SequentialPlan
 from unified_planning.shortcuts import Compiler, PlanValidator
@@ -51,7 +56,7 @@ def parse_problem(domain_text, problem_text):
 def write_problem(problem: Problem):
     """Serialize a Unified Planning problem as a matched PDDL pair."""
     try:
-        writer = PDDLWriter(problem)
+        writer = PDDLWriter(_with_explicit_initial_state(problem))
         domain, problem_text = writer.get_domain(), writer.get_problem()
     except Exception as error:
         raise PddlError(f"Could not serialize PDDL task: {error}") from error
@@ -69,8 +74,68 @@ def write_problem(problem: Problem):
     return PddlText(domain, problem_text, renamings)
 
 
+def _with_explicit_initial_state(problem):
+    """A view of the problem whose initial values leave out the false facts the closed world implies.
+
+    The writer prints `problem.initial_values`, which grounds every fluent over
+    every object and stores the result in the problem: 8 million facts for a
+    rovers task that sets 27 thousand. A false fact prints nothing, so the
+    file is the same without them.
+
+    A workaround for Unified Planning 1.3.0: remove it when an upgrade's
+    PDDLWriter no longer iterates `initial_values` to write the init.
+    """
+
+    def initial_values(view):
+        values = dict(view.explicit_initial_values)
+        for fluent, default in view.fluents_defaults.items():
+            if default.is_bool_constant() and default.is_false():
+                continue
+            for expression in get_all_fluent_exp(view, fluent):
+                values.setdefault(expression, default)
+        return values
+
+    view = copy.copy(problem)
+    view.__class__ = type("ExplicitInitialState", (type(problem),), {"initial_values": property(initial_values)})
+    return view
+
+
+class _InequalityKeeper(NegativeFluentRemover):
+    # An inequality between objects is static, so no relaxed delete can falsify
+    # it, and the translation would rewrite it into a disjunction over pairs of
+    # objects, which Fast Downward's translator expands into a copy of the
+    # action per pair. Leave it negated.
+    def walk_not(self, expression, args, **kwargs):
+        if args[0].is_equals() and args[0].arg(0).type.is_user_type():
+            return self._env.expression_manager.Not(args[0])
+        return super().walk_not(expression, args, **kwargs)
+
+
+def negates_a_fluent(problem):
+    """Whether a condition of the problem negates anything other than an inequality between objects."""
+    conditions = list(problem.goals)
+    for action in problem.actions:
+        conditions += action.preconditions
+        conditions += [effect.condition for effect in action.conditional_effects]
+
+    for condition in conditions:
+        if _negates_a_fluent(condition):
+            return True
+    return False
+
+
+def _negates_a_fluent(expression):
+    if expression.is_not():
+        negated = expression.arg(0)
+        return not (negated.is_equals() and negated.arg(0).type.is_user_type())
+    for argument in expression.args:
+        if _negates_a_fluent(argument):
+            return True
+    return False
+
+
 def to_positive_normal_form(problem):
-    """Rewrite a problem so that no condition negates a fluent.
+    """Rewrite a problem so that no condition negates a fluent, leaving its inequalities as they are.
 
     Every negated fluent gains a companion that carries its complement, which
     the actions keep opposite, so relaxing a delete can no longer falsify a
@@ -81,7 +146,10 @@ def to_positive_normal_form(problem):
         # Selected by name, not by problem kind: the kind lookup refuses a task
         # over features the translation never touches, such as the undefined
         # initial numeric every action-costs domain in the suite carries.
-        with Compiler(name="up_negative_conditions_remover") as compiler:
+        with (
+            patch.object(negative_conditions_remover, "NegativeFluentRemover", _InequalityKeeper),
+            Compiler(name="up_negative_conditions_remover") as compiler,
+        ):
             translated = compiler.compile(problem, CompilationKind.NEGATIVE_CONDITIONS_REMOVING).problem
     except Exception as error:
         raise PddlError(f"Could not translate the task to PNF: {error}") from error

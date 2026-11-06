@@ -13,6 +13,8 @@ from core.integrations.unified_planning import (
     write_problem,
 )
 from core.plan import PlanAction
+from unified_planning.io import PDDLWriter
+from unified_planning.shortcuts import BoolType, Fluent, IntType, Object, Problem, UserType
 
 ROUND_TRIP_DOMAIN = """
 (define (domain travel)
@@ -104,6 +106,35 @@ MIXED_NUMERIC_PROBLEM = """
 
 
 class UnifiedPlanningCodecTests(unittest.TestCase):
+    def test_writing_leaves_the_closed_world_out_of_the_problem(self):
+        problem = parse_problem(ROUND_TRIP_DOMAIN, ROUND_TRIP_PROBLEM)
+        before = len(problem.explicit_initial_values)
+
+        write_problem(problem)
+
+        self.assertEqual(len(problem.explicit_initial_values), before)
+
+    def test_writes_the_initial_state_unified_planning_writes(self):
+        # Fluents that default to true or to a number print for every object they leave unset.
+        item = UserType("item")
+        problem = Problem("defaults")
+        lit = Fluent("lit", BoolType(), x=item)
+        off = Fluent("off", BoolType(), x=item)
+        level = Fluent("level", IntType(), x=item)
+        problem.add_fluent(lit, default_initial_value=True)
+        problem.add_fluent(off, default_initial_value=False)
+        problem.add_fluent(level, default_initial_value=3)
+        a, b = Object("a", item), Object("b", item)
+        problem.add_objects([a, b])
+        problem.set_initial_value(lit(a), False)
+        problem.set_initial_value(off(b), True)
+        problem.set_initial_value(level(b), 7)
+        problem.add_goal(lit(b))
+
+        expected = PDDLWriter(problem.clone()).get_problem()
+
+        self.assertEqual(write_problem(problem).problem, expected)
+
     def test_allows_different_model_elements_to_share_a_name(self):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -204,12 +235,15 @@ NEGATION_PROBLEM = """
 
 
 class PositiveNormalFormTests(unittest.TestCase):
-    def test_translation_leaves_no_condition_negating_a_fluent(self):
+    def test_translation_negates_only_the_inequalities(self):
         problem = parse_problem(NEGATION_DOMAIN, NEGATION_PROBLEM)
 
         translated = to_positive_normal_form(problem)
 
-        self.assertFalse(translated.kind.has_negative_conditions())
+        (precondition,) = translated.action("move").preconditions
+        negated = [condition.arg(0) for condition in precondition.args if condition.is_not()]
+        self.assertTrue(negated)
+        self.assertTrue(all(argument.is_equals() for argument in negated))
 
     def test_translation_keeps_the_actions_the_refinement_maps_back(self):
         problem = parse_problem(NEGATION_DOMAIN, NEGATION_PROBLEM)

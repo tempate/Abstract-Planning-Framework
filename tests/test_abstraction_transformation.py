@@ -95,6 +95,14 @@ def _read_by_an_action(problem, fluent, item):
     problem.add_action(read)
 
 
+def _conjuncts(conditions):
+    for condition in conditions:
+        if condition.is_and():
+            yield from _conjuncts(condition.args)
+        else:
+            yield condition
+
+
 def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
     config = AbstractPlanningConfig(
         "domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract, abstract_name=abstract_name
@@ -192,11 +200,16 @@ class InequalityRelaxationTests(unittest.TestCase):
 
         result = _build_from_problem(source, ["hall", "study"])
 
-        drive = result.problem.action("drive")
         abstract_object = result.problem.object("place_abs")
-        substitution = {drive.parameters[1]: abstract_object, drive.parameters[2]: abstract_object}
-        for precondition in drive.preconditions:
-            self.assertFalse(precondition.substitute(substitution).simplify().is_false())
+
+        def survives(drive):
+            substitution = {drive.parameters[1]: abstract_object, drive.parameters[2]: abstract_object}
+            return not any(p.substitute(substitution).simplify().is_false() for p in drive.preconditions)
+
+        # The split leaves a variant whose destination stays concrete, which
+        # keeps the inequality; the variant that can take the abstract place drops it.
+        drives = [action for action in result.problem.actions if action.name.startswith("drive")]
+        self.assertTrue(any(survives(drive) for drive in drives))
 
     def test_keeps_an_inequality_over_a_type_that_is_not_collapsed(self):
         source = parse_problem(INEQUALITY_DOMAIN, INEQUALITY_PROBLEM)
@@ -207,6 +220,20 @@ class InequalityRelaxationTests(unittest.TestCase):
 
 
 class PositiveNormalFormTests(unittest.TestCase):
+    def test_a_kept_inequality_stays_out_of_positive_normal_form(self):
+        """The translation would rewrite the inequality into a disjunction over
+        pairs of places, which Fast Downward expands into a copy per pair."""
+        domain = INEQUALITY_DOMAIN.replace("(not (= ?from ?to))", "(not (= ?from ?to)) (not (at ?v ?to))")
+        source = parse_problem(domain, INEQUALITY_PROBLEM)
+
+        result = _build_from_problem(source, ["van", "truck"])
+
+        conditions = list(_conjuncts(result.problem.action("drive").preconditions))
+        negated = [condition.arg(0) for condition in conditions if condition.is_not()]
+        self.assertTrue(negated)
+        self.assertTrue(all(argument.is_equals() for argument in negated))
+        self.assertFalse(any(condition.is_or() for condition in conditions))
+
     def test_abstracts_a_negated_precondition_in_positive_normal_form(self):
         source = parse_problem(NEGATED_PRECONDITION_DOMAIN, NEGATED_PRECONDITION_PROBLEM)
 
