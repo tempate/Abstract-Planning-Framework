@@ -29,6 +29,9 @@ FIGURES = ("sat", "opt", "unsat", "htg", "scaled")
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
 TIME_LIMIT = 1800
+TRACK_NAMES = {"sat": "Satisficing", "opt": "Optimal", "unsat": "Unsolvability"}
+# Lifts a cactus plot's source title over the legend that sits just above the plot.
+ABOVE_LEGEND = "title style={yshift=11pt}"
 BASELINES = {"sat": ("lama", r"\LAMA", r"\LAMAa"), "opt": ("lmcut", r"\LMcut", r"\LMcuta")}
 # Branches from before #135 still call Fast Downward's modes by their old names.
 OLD_NAMES = {
@@ -143,31 +146,30 @@ def _panel(title, kind, tracks):
             # One legend above the plots, carried by the right one.
             if source == last:
                 lines.append(rf"\addlegendentry{{{name}}}")
-        options = "ylabel={Problems solved}"
+        options = f"{ABOVE_LEGEND}, ylabel={{Problems solved}}"
         if len(tracks) == 1:
             # Alone, the plot is too narrow for one row, so the baselines sit above ASP.
-            options += ", legend columns=2, legend style={overlay, at={(0.5,1.26)}, anchor=south}"
+            options += ", legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
         elif source == last:
-            options = "ylabel={}, legend style={overlay, at={(-0.16,1.26)}, anchor=south}"
+            options = f"{ABOVE_LEGEND}, ylabel={{}}, legend style={{overlay, at={{(-0.16,1.04)}}, anchor=south}}"
         cactus_plots.append(_cactus_plot(SOURCES[source], options, lines))
 
     runtime_rows = []
     for solver, solver_label, abstraction_label in ((baseline, label, abstract_label), ("asp", r"\ASP", r"\ASPa")):
         plots = []
         for index, (source, problems) in enumerate(tracks.items()):
-            # Only the top row names its sources, and only the left plot labels its y axis.
-            options = [rf"title={{\small {SOURCES[source]}}}"] if solver == baseline else []
-            options.append(rf"ylabel={{{abstraction_label}{{}} time (s)}}" if index == 0 else "yticklabels={}")
+            # The cactus plots above name the sources, and only the left plot labels its y axis.
+            option = rf"ylabel={{{abstraction_label}{{}} time (s)}}" if index == 0 else "yticklabels={}"
             points = scatter(problems, solver, f"abs-{solver}")
-            plots.append(rf"\runtimeplot[{', '.join(options)}]{{{solver_label}}}{{{points}}}")
+            plots.append(rf"\runtimeplot[{option}]{{{solver_label}}}{{{points}}}")
         runtime_rows.append(_row(plots))
 
     return _titled(
         title,
-        _row(cactus_plots)
-        + "\n\n\\smallskip\n{\\small (a) Problems solved over time}\n\n\\medskip\n"
-        + "\n\n\\smallskip\n".join(runtime_rows)
-        + "\n\n\\smallskip\n{\\small (b) Runtime per problem}",
+        _track_header(TRACK_NAMES[kind], len(tracks))
+        + _row(cactus_plots)
+        + "\n\n\\medskip\n"
+        + "\n\n\\smallskip\n".join(runtime_rows),
         len(tracks),
     )
 
@@ -180,17 +182,14 @@ def _unsat_panel(title, _kind, tracks):
         rf"\addplot[abst, solid, thick, const plot, mark=none] coordinates {{{cactus(problems, 'abs-ms')}}};",
         r"\addlegendentry{\MSa}",
     ]
-    options = "ylabel={Problems proved}, legend style={overlay, at={(0.5,1.26)}, anchor=south}"
-    runtime = (
-        rf"\runtimeplot[title={{\small {SOURCES['symmetries']}}}, ylabel={{\MSa{{}} time (s)}}]"
-        rf"{{\MS}}{{{scatter(problems, 'ms', 'abs-ms')}}}"
-    )
+    options = f"{ABOVE_LEGEND}, ylabel={{Problems proved}}, legend style={{overlay, at={{(0.5,1.04)}}, anchor=south}}"
+    runtime = rf"\runtimeplot[ylabel={{\MSa{{}} time (s)}}]{{\MS}}{{{scatter(problems, 'ms', 'abs-ms')}}}"
     return _titled(
         title,
-        _row([_cactus_plot(SOURCES["symmetries"], options, lines)])
-        + "\n\n\\smallskip\n{\\small (a) Problems proved over time}\n\n\\medskip\n"
-        + _row([runtime])
-        + "\n\n\\smallskip\n{\\small (b) Runtime per problem}",
+        _track_header(TRACK_NAMES["unsat"], 1)
+        + _row([_cactus_plot(SOURCES["symmetries"], options, lines)])
+        + "\n\n\\medskip\n"
+        + _row([runtime]),
         1,
     )
 
@@ -211,7 +210,8 @@ HTG_GAP = "0.75in"
 
 def _htg_panel(title, _kind, tracks):
     cactus_plots, runtimes = [], []
-    for track, name in (("sat", "Satisficing"), ("opt", "Optimal")):
+    for track in ("sat", "opt"):
+        name = TRACK_NAMES[track]
         baseline, label, abstract_label = BASELINES[track]
         problems = tracks[track]
         lines = [
@@ -221,19 +221,22 @@ def _htg_panel(title, _kind, tracks):
             rf"\addlegendentry{{{abstract_label}}}",
         ]
         # Each track has its own baseline, so each plot carries its own legend.
-        options = "ylabel={Problems solved}, legend columns=1, legend style={at={(0.03,0.97)}, anchor=north west}"
+        options = (
+            f"{ABOVE_LEGEND}, ylabel={{Problems solved}}, legend style={{overlay, at={{(0.5,1.04)}}, anchor=south}}"
+        )
         cactus_plots.append(_cactus_plot(name, options, lines))
         points = scatter(problems, baseline, f"abs-{baseline}")
-        runtimes.append(
-            rf"\runtimeplot[title={{\small {name}}}, ylabel={{{abstract_label}{{}} time (s)}}]{{{label}}}{{{points}}}"
-        )
-    return _titled(
-        title,
-        _row(cactus_plots, HTG_GAP)
-        + "\n\n\\smallskip\n{\\small (a) Problems solved over time}\n\n\\medskip\n"
-        + _row(runtimes, HTG_GAP)
-        + "\n\n\\smallskip\n{\\small (b) Runtime per problem}",
-        2,
+        runtimes.append(rf"\runtimeplot[ylabel={{{abstract_label}{{}} time (s)}}]{{{label}}}{{{points}}}")
+    return _titled(title, _row(cactus_plots, HTG_GAP) + "\n\n\\medskip\n" + _row(runtimes, HTG_GAP), 2)
+
+
+def _track_header(name, columns):
+    # The track's name over its plots and the gaps between them, ruled like a table's cmidrule.
+    width = f"\\dimexpr{columns}\\plotsize+{0.3 * (columns - 1):.1f}in\\relax"
+    return (
+        "\\noindent\\makebox[\\linewidth][c]{%\n\\hspace*{0.42in}%\n"
+        + rf"\parbox[b]{{{width}}}{{\centering\small {name}\\[-2pt]\rule{{\linewidth}}{{0.4pt}}}}}}"
+        + "\n\n\\vspace{0.4em}\n"
     )
 
 
