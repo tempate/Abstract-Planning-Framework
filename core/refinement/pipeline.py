@@ -102,7 +102,10 @@ def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
         plan = _one_shot(context, asp, abstract_plan, abstract_horizon)
         if plan is not None:
             return plan
-        return _fallback(context, asp, abstract_plan, abstract_horizon, record_attempt)
+        solver = _fallback_solver(context, asp, abstract_plan, abstract_horizon)
+        # Clingo holds its own copy of the program, so the text would only take memory from the search.
+        del asp
+        return _fallback(context, solver, abstract_plan, record_attempt)
 
 
 def _one_shot(context, asp, abstract_plan, abstract_horizon):
@@ -115,22 +118,28 @@ def _one_shot(context, asp, abstract_plan, abstract_horizon):
     return solver.solve()
 
 
-def _fallback(context, asp, abstract_plan, abstract_horizon, record_attempt):
-    """Give the abstract plan up step by step, from its end, and search above its horizon."""
+def _fallback_solver(context, asp, abstract_plan, abstract_horizon):
+    """Load the program whose switches can give the abstract plan up step by step."""
     gaps = not context.config.optimize
     if gaps:
         init_horizon = 2 * abstract_horizon + 1
     else:
         init_horizon = abstract_horizon
 
-    def record_search(horizon, dropped, search_calls):
-        record_attempt(horizon - init_horizon, dropped, search_calls)
-
     choices = map_abstract_actions(abstract_plan, context.abstraction, gaps)
     rules = [asp.rules, *add_concrete_objects(context.abstraction), *add_switches(choices)]
-    solver = RelaxingSolver(
+    return RelaxingSolver(
         asp=replace(asp, rules="\n".join(rules)), init_horizon=init_horizon, optimize=context.config.optimize
     )
+
+
+def _fallback(context, solver, abstract_plan, record_attempt):
+    """Give the abstract plan up step by step, from its end, and search above its horizon."""
+    gaps = not context.config.optimize
+
+    def record_search(horizon, dropped, search_calls):
+        record_attempt(horizon - solver.init_horizon, dropped, search_calls)
+
     result = solver.search(switches(abstract_plan, gaps), record_search)
 
     record_search(result.horizon, result.dropped, result.attempts)
