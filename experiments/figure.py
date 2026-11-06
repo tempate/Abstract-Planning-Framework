@@ -221,7 +221,9 @@ def _htg_panel(title, _kind, tracks):
             rf"\addlegendentry{{{abstract_label}}}",
         ]
         # Each track has its own baseline, so each plot carries its own legend.
-        options = "ylabel={Problems solved}, legend columns=1, legend style={at={(0.03,0.97)}, anchor=north west}"
+        options = (
+            f"{ABOVE_LEGEND}, ylabel={{Problems solved}}, legend style={{overlay, at={{(0.5,1.04)}}, anchor=south}}"
+        )
         cactus_plots.append(_cactus_plot(name, options, lines))
         points = scatter(problems, baseline, f"abs-{baseline}")
         runtimes.append(rf"\runtimeplot[ylabel={{{abstract_label}{{}} time (s)}}]{{{label}}}{{{points}}}")
