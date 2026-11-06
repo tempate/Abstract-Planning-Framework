@@ -10,7 +10,15 @@ from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
-from core.refinement.encoding import concretize_abstract_actions, make_steps_optional, switches
+from core.refinement.encoding import (
+    add_concrete_objects,
+    add_switches,
+    drop_action_choice,
+    map_abstract_actions,
+    make_steps_optional,
+    switches,
+)
+from core.search.incremental import IncrementalSolver
 from core.search.relaxing import RelaxingSolver
 
 
@@ -30,12 +38,7 @@ class RefinementContext:
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Ground the concrete task, then use an abstract plan to guide its search."""
     abstract_plan = _with_original_names(abstract_plan, context.renamings)
-    if context.config.optimize:
-        horizon = abstract_horizon
-    else:
-        horizon = 2 * abstract_horizon + 1
-
-    plan = _solve_concrete_plan(context, abstract_plan, horizon)
+    plan = _solve_concrete_plan(context, abstract_plan, abstract_horizon)
     if plan is not None:
         context.metrics.set_counter("plan_length", plan_length(plan))
 
@@ -75,12 +78,9 @@ def _concrete_asp(context):
     return concrete_asp
 
 
-def _solve_concrete_plan(context, abstract_plan, init_horizon):
-    """Refine the abstract plan, then search above its horizon if it does not refine."""
+def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
+    """Refine the abstract plan as it is, then give it up step by step and search above its horizon."""
     asp = _concrete_asp(context)
-
-    gaps = not context.config.optimize
-    asp = replace(asp, rules=asp.rules + "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps))
 
     # Publish the counters before searching so an interrupted run still has them.
     counters = {
@@ -90,17 +90,57 @@ def _solve_concrete_plan(context, abstract_plan, init_horizon):
     }
     context.metrics.set_counters(counters)
 
-    def record_attempt(horizon, dropped, solve_calls):
-        counters["increments"] = horizon - init_horizon
+    def record_attempt(increments, dropped, search_calls):
+        counters["increments"] = increments
         counters["decrements"] = dropped
-        counters["concrete_solve_calls"] = solve_calls
+        # The solve with every switch held comes before the search's own calls.
+        counters["concrete_solve_calls"] = search_calls + 1
         context.metrics.set_counters(counters)
 
     with context.metrics.measure("guided_concrete_solving"):
-        solver = RelaxingSolver(asp, init_horizon, optimize=context.config.optimize)
+        record_attempt(0, 0, 0)
+        plan = _one_shot(context, asp, abstract_plan, abstract_horizon)
+        if plan is not None:
+            return plan
+        solver = _fallback_solver(context, asp, abstract_plan, abstract_horizon)
         # Clingo holds its own copy of the program, so the text would only take memory from the search.
         del asp
-        result = solver.search(switches(abstract_plan, gaps), record_attempt)
+        return _fallback(context, solver, abstract_plan, record_attempt)
 
-    record_attempt(result.horizon, result.dropped, result.attempts)
+
+def _one_shot(context, asp, abstract_plan, abstract_horizon):
+    """Refine the abstract plan as it is, in one solve at its horizon."""
+    choices = map_abstract_actions(abstract_plan, context.abstraction, gaps=False)
+    rules = [drop_action_choice(asp.rules), *add_concrete_objects(context.abstraction), *choices.values()]
+    solver = IncrementalSolver(
+        asp=replace(asp, rules="\n".join(rules)), init_horizon=abstract_horizon, optimize=context.config.optimize
+    )
+    return solver.solve()
+
+
+def _fallback_solver(context, asp, abstract_plan, abstract_horizon):
+    """Load the program whose switches can give the abstract plan up step by step."""
+    gaps = not context.config.optimize
+    if gaps:
+        init_horizon = 2 * abstract_horizon + 1
+    else:
+        init_horizon = abstract_horizon
+
+    choices = map_abstract_actions(abstract_plan, context.abstraction, gaps)
+    rules = [asp.rules, *add_concrete_objects(context.abstraction), *add_switches(choices)]
+    return RelaxingSolver(
+        asp=replace(asp, rules="\n".join(rules)), init_horizon=init_horizon, optimize=context.config.optimize
+    )
+
+
+def _fallback(context, solver, abstract_plan, record_attempt):
+    """Give the abstract plan up step by step, from its end, and search above its horizon."""
+    gaps = not context.config.optimize
+
+    def record_search(horizon, dropped, search_calls):
+        record_attempt(horizon - solver.init_horizon, dropped, search_calls)
+
+    result = solver.search(switches(abstract_plan, gaps), record_search)
+
+    record_search(result.horizon, result.dropped, result.attempts)
     return result.plan

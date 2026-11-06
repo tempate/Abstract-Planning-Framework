@@ -4,6 +4,7 @@ import unittest
 from contextlib import redirect_stdout
 from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from unified_planning.engines.plan_validator import SequentialPlanValidator
 from unified_planning.engines.results import ValidationResultStatus
@@ -14,7 +15,9 @@ from core.abstraction.factory import build_abstract_problem
 from core.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.unified_planning import parse_problem
+from core.plan import PlanAction
 from core.planning import abstraction
+from core.planning.backends import BACKENDS
 from core.planning.config import AbstractPlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
@@ -131,6 +134,67 @@ class SoundnessTests(unittest.TestCase):
                     steps = [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
 
                     self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
+
+
+LIGHTS_DOMAIN = """
+(define (domain lights)
+  (:requirements :strips :typing)
+  (:types light)
+  (:predicates (on ?l - light) (off ?l - light))
+  (:action switch-on
+    :parameters (?l - light)
+    :precondition (off ?l)
+    :effect (and (on ?l) (not (off ?l))))
+  (:action switch-off
+    :parameters (?l - light)
+    :precondition (on ?l)
+    :effect (and (off ?l) (not (on ?l)))))
+"""
+LIGHTS_PROBLEM = """
+(define (problem both-on)
+  (:domain lights)
+  (:objects l1 l2 - light)
+  (:init (off l1) (off l2))
+  (:goal (and (on l1) (on l2))))
+"""
+
+
+class RefinementTests(unittest.TestCase):
+    def setUp(self):
+        directory = tempfile.TemporaryDirectory()
+        self.addCleanup(directory.cleanup)
+        self.domain = Path(directory.name, "domain.pddl")
+        self.problem = Path(directory.name, "problem.pddl")
+        self.domain.write_text(LIGHTS_DOMAIN, encoding="utf-8")
+        self.problem.write_text(LIGHTS_PROBLEM, encoding="utf-8")
+        self.concrete = parse_problem(LIGHTS_DOMAIN, LIGHTS_PROBLEM)
+
+    def _refine(self, steps):
+        config = AbstractPlanningConfig(
+            self.domain, self.problem, planner="lama", optimize=True, objects_to_abstract=("l1", "l2")
+        )
+        with redirect_stdout(StringIO()):
+            light = build_abstract_problem(config).abstraction.name
+        plan = tuple(PlanAction("switch-on", (light,), step) for step in range(1, steps + 1))
+        with (
+            patch.object(type(BACKENDS["lama"]), "find_abstract_plan", return_value=(plan, steps)),
+            redirect_stdout(StringIO()),
+        ):
+            result = abstraction.solve(config)
+        return [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
+
+    @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
+    def test_a_plan_that_refines_as_it_is_solves_the_concrete_task(self):
+        steps = self._refine(2)
+
+        self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
+
+    @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
+    def test_a_plan_that_must_give_up_steps_still_solves_the_concrete_task(self):
+        # The third switch-on has no light left to switch on, so refinement has to drop switches.
+        steps = self._refine(3)
+
+        self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
 
 
 if __name__ == "__main__":
