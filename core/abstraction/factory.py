@@ -11,6 +11,7 @@ from core.abstraction.relaxation import find_relaxable_deletes, relax_inequaliti
 from core.integrations.numeric_fast_downward import detect_resources
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import (
+    negates_a_fluent,
     read_problem,
     to_positive_normal_form,
     without_action_costs,
@@ -62,8 +63,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
             abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
 
         # The class has to be chosen before the inequalities can be relaxed,
-        # and they have to be relaxed before the translation, which rewrites
-        # every one of them into a disjunction over pairs of objects.
+        # and they have to be relaxed before the collapse makes them false.
         # Split before relaxing anything, so that both relaxations see which
         # groundings of an action can take a collapsed object.
         problem = split_actions(problem, abstraction)
@@ -75,7 +75,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     # world, which nomystery's ternary sum predicate turns into 240k initial
     # facts and 600 seconds, so skip what would only rebuild the problem.
     with metrics.measure("pnf_translation"):
-        if problem.kind.has_negative_conditions():
+        if negates_a_fluent(problem):
             problem = to_positive_normal_form(problem)
 
     with metrics.measure("abstraction"):

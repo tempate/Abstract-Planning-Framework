@@ -9,9 +9,9 @@
 ```
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
-Plans found                      46 (16.0%)   53 (18.4%)
-Timeouts                        149 (51.7%)  193 (67.0%)
-Out of memory                    88 (30.6%)   41 (14.2%)
+Plans found                      61 (21.2%)   53 (18.4%)
+Timeouts                        177 (61.5%)  193 (67.0%)
+Out of memory                    45 (15.6%)   41 (14.2%)
 Others                             5 (1.7%)     1 (0.3%)
 Total problems                          288          288
 ```
@@ -21,15 +21,15 @@ Total problems                          288          288
 ```
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
-Plans found by both                      28           28
-Faster                           13 (46.4%)   15 (53.6%)
-Found when the other did not             18           25
-Median runtime                      17.73 s      63.20 s
-Total runtime                    4,725.06 s   7,004.80 s
+Plans found by both                      43           43
+Faster                           13 (30.2%)   30 (69.8%)
+Found when the other did not             18           10
+Median runtime                      21.37 s      10.23 s
+Total runtime                    5,685.52 s   7,166.72 s
 Shorter plan                       0 (0.0%)     0 (0.0%)
-Same plan length                28 (100.0%)  28 (100.0%)
-Median plan length                       10           10
-Total plan length                       271          271
+Same plan length                43 (100.0%)  43 (100.0%)
+Median plan length                        6            6
+Total plan length                       292          292
 ```
 
 ## Where the timeouts died
@@ -37,9 +37,9 @@ Total plan length                       271          271
 ```
 Killed during                        LMcutᵅ
 -------------------------------------------
-Abstract search                   148 (99%)
-Guided concrete search               1 (1%)
-Total                                   149
+Abstract search                   175 (99%)
+Guided concrete search               2 (1%)
+Total                                   177
 ```
 
 ## How the successes were solved
@@ -47,10 +47,10 @@ Total                                   149
 ```
 Solved by                            LMcutᵅ
 -------------------------------------------
-Refined directly                   36 (78%)
+Refined directly                   51 (84%)
 Refined, some actions off            0 (0%)
-Solved above the abstract plan     10 (22%)
-Total                                    46
+Solved above the abstract plan     10 (16%)
+Total                                    61
 ```
 
 ## Deletes relaxed by the refined plans
@@ -59,11 +59,11 @@ Total                                    46
 Deletes relaxed                      LMcutᵅ
 -------------------------------------------
 None                                 0 (0%)
-1 to 4                             20 (56%)
+1 to 4                             20 (39%)
 5 to 9                               0 (0%)
-10 to 19                           16 (44%)
-20 or more                           0 (0%)
-Total                                    36
+10 to 19                           16 (31%)
+20 or more                         15 (29%)
+Total                                    51
 ```
 
 ## Plans found by domain
@@ -95,10 +95,10 @@ logistics-large-simple (16)     goal-1         2         4
                                 goal-2         0         3
                                 goal-3         0         2
                                 goal-4         0         1
-organic-synthesis-alkene (17)                   0        15
+organic-synthesis-alkene (17)                  15        15
 pipesworld-tankage-nosplit (17)                   6         6
 rovers-large-simple (6)         goal-4         2         2
                                 goal-6         0         0
                                 goal-8         0         0
-Total (288)                                   46        53
+Total (288)                                   61        53
 ```

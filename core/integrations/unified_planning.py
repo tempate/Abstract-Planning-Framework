@@ -3,8 +3,11 @@
 import copy
 from dataclasses import dataclass
 from pathlib import Path
+from unittest.mock import patch
 
 from unified_planning.engines import CompilationKind, ValidationResultStatus
+from unified_planning.engines.compilers import negative_conditions_remover
+from unified_planning.engines.compilers.negative_conditions_remover import NegativeFluentRemover
 from unified_planning.environment import get_environment
 from unified_planning.exceptions import UPException
 from unified_planning.io import PDDLReader, PDDLWriter
@@ -97,8 +100,42 @@ def _with_explicit_initial_state(problem):
     return view
 
 
+class _InequalityKeeper(NegativeFluentRemover):
+    # An inequality between objects is static, so no relaxed delete can falsify
+    # it, and the translation would rewrite it into a disjunction over pairs of
+    # objects, which Fast Downward's translator expands into a copy of the
+    # action per pair. Leave it negated.
+    def walk_not(self, expression, args, **kwargs):
+        if args[0].is_equals() and args[0].arg(0).type.is_user_type():
+            return self._env.expression_manager.Not(args[0])
+        return super().walk_not(expression, args, **kwargs)
+
+
+def negates_a_fluent(problem):
+    """Whether a condition of the problem negates anything other than an inequality between objects."""
+    conditions = list(problem.goals)
+    for action in problem.actions:
+        conditions += action.preconditions
+        conditions += [effect.condition for effect in action.conditional_effects]
+
+    for condition in conditions:
+        if _negates_a_fluent(condition):
+            return True
+    return False
+
+
+def _negates_a_fluent(expression):
+    if expression.is_not():
+        negated = expression.arg(0)
+        return not (negated.is_equals() and negated.arg(0).type.is_user_type())
+    for argument in expression.args:
+        if _negates_a_fluent(argument):
+            return True
+    return False
+
+
 def to_positive_normal_form(problem):
-    """Rewrite a problem so that no condition negates a fluent.
+    """Rewrite a problem so that no condition negates a fluent, leaving its inequalities as they are.
 
     Every negated fluent gains a companion that carries its complement, which
     the actions keep opposite, so relaxing a delete can no longer falsify a
@@ -109,7 +146,10 @@ def to_positive_normal_form(problem):
         # Selected by name, not by problem kind: the kind lookup refuses a task
         # over features the translation never touches, such as the undefined
         # initial numeric every action-costs domain in the suite carries.
-        with Compiler(name="up_negative_conditions_remover") as compiler:
+        with (
+            patch.object(negative_conditions_remover, "NegativeFluentRemover", _InequalityKeeper),
+            Compiler(name="up_negative_conditions_remover") as compiler,
+        ):
             translated = compiler.compile(problem, CompilationKind.NEGATIVE_CONDITIONS_REMOVING).problem
     except Exception as error:
         raise PddlError(f"Could not translate the task to PNF: {error}") from error
