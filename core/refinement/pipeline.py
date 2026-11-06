@@ -70,7 +70,7 @@ def _concrete_asp(context):
         concrete_asp = sas_to_asp(concrete_sas)
 
     if not context.config.optimize:
-        concrete_asp = make_steps_optional(concrete_asp)
+        concrete_asp = replace(concrete_asp, rules=make_steps_optional(concrete_asp.rules))
 
     return concrete_asp
 
@@ -80,7 +80,7 @@ def _solve_concrete_plan(context, abstract_plan, init_horizon):
     asp = _concrete_asp(context)
 
     gaps = not context.config.optimize
-    asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps)
+    asp = replace(asp, rules=asp.rules + "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps))
 
     # Publish the counters before searching so an interrupted run still has them.
     counters = {

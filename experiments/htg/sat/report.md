@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-05 23:00 — experiments/htg/sat/results.csv
+2026-11-06 07:53 — experiments/htg/sat/results.csv
 
 288 problems compared over abs-lama, lama
 
@@ -10,8 +10,8 @@
 Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
 Plans found                      92 (31.9%)  209 (72.6%)
-Timeouts                         33 (11.5%)   38 (13.2%)
-Out of memory                   163 (56.6%)   41 (14.2%)
+Timeouts                         34 (11.8%)   38 (13.2%)
+Out of memory                   162 (56.2%)   41 (14.2%)
 Others                             0 (0.0%)     0 (0.0%)
 Total problems                          288          288
 ```
@@ -22,10 +22,10 @@ Total problems                          288          288
 Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
 Plans found by both                      92           92
-Faster                             2 (2.2%)   90 (97.8%)
+Faster                             1 (1.1%)   91 (98.9%)
 Found when the other did not              0          117
-Median runtime                      13.21 s       4.36 s
-Total runtime                    5,981.36 s   1,598.89 s
+Median runtime                      11.94 s       4.36 s
+Total runtime                    5,869.51 s   1,598.89 s
 Shorter plan                     11 (12.0%)   66 (71.7%)
 Same plan length                 15 (16.3%)   15 (16.3%)
 Median plan length                       25         20.5
@@ -37,10 +37,10 @@ Total plan length                     2,735        2,211
 ```
 Killed during                         LAMAᵅ
 -------------------------------------------
-Abstract search                    23 (70%)
+Abstract search                    23 (68%)
 Translating the task to ASP          1 (3%)
-Guided concrete search              9 (27%)
-Total                                    33
+Guided concrete search             10 (29%)
+Total                                    34
 ```
 
 ## How the successes were solved
