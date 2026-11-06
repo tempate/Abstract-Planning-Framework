@@ -121,7 +121,7 @@ childsnack-contents/parsize3-cham5,contentam5-p8.pddl,abs-lama,6
 childsnack-contents/parsize3-cham7,contentam3-p0.pddl,abs-lama,4
 childsnack-contents/parsize3-cham7,contentam3-p2.pddl,abs-lama,6
 childsnack-contents/parsize3-cham7,contentam3-p4.pddl,abs-lama,5
-childsnack-contents/parsize3-cham7,contentam5-p0.pddl,abs-lama,6
+childsnack-contents/parsize3-cham7,contentam5-p0.pddl,abs-lama,3
 childsnack-contents/parsize3-cham7,contentam5-p2.pddl,abs-lama,8
 childsnack-contents/parsize4-cham3,contentam4-p0.pddl,abs-lama,1
 childsnack-contents/parsize4-cham3,contentam4-p1.pddl,abs-lama,4
@@ -221,11 +221,11 @@ gnad-et-al-aaai19-large-instances/tpp-large,p03-34-22-7-8-8.pddl,abs-lama,0
 gnad-et-al-aaai19-large-instances/tpp-large,p04-36-24-8-9-9.pddl,abs-lama,0
 gnad-et-al-aaai19-large-instances/tpp-large,p05-38-25-8-9-9.pddl,abs-lama,2
 gnad-et-al-aaai19-large-instances/tpp-large,p06-40-26-9-10-10.pddl,abs-lama,1
-gnad-et-al-aaai19-large-instances/tpp-large,p07-42-28-9-10-10.pddl,abs-lama,3
-gnad-et-al-aaai19-large-instances/tpp-large,p08-44-29-10-11-11.pddl,abs-lama,3
+gnad-et-al-aaai19-large-instances/tpp-large,p07-42-28-9-10-10.pddl,abs-lama,0
+gnad-et-al-aaai19-large-instances/tpp-large,p08-44-29-10-11-11.pddl,abs-lama,1
 gnad-et-al-aaai19-large-instances/tpp-large,p09-46-30-10-11-11.pddl,abs-lama,1
-gnad-et-al-aaai19-large-instances/tpp-large,p10-48-32-11-12-12.pddl,abs-lama,1
-gnad-et-al-aaai19-large-instances/tpp-large,p11-50-33-11-12-12.pddl,abs-lama,3
+gnad-et-al-aaai19-large-instances/tpp-large,p10-48-32-11-12-12.pddl,abs-lama,2
+gnad-et-al-aaai19-large-instances/tpp-large,p11-50-33-11-12-12.pddl,abs-lama,1
 gnad-et-al-aaai19-large-instances/tpp-large,p21-20-13-4-5-5.pddl,abs-lama,0
 gnad-et-al-aaai19-large-instances/tpp-large,p22-22-14-4-5-5.pddl,abs-lama,0
 gnad-et-al-aaai19-large-instances/tpp-large,p23-24-16-5-6-6.pddl,abs-lama,0
@@ -277,9 +277,9 @@ pipesworld-tankage-nosplit,p12-net2-b10-g4-t60.pddl,abs-lama,1
 pipesworld-tankage-nosplit,p13-net2-b12-g3-t70.pddl,abs-lama,5
 pipesworld-tankage-nosplit,p14-net2-b12-g5-t30.pddl,abs-lama,1
 pipesworld-tankage-nosplit,p15-net2-b14-g4-t30.pddl,abs-lama,0
-pipesworld-tankage-nosplit,p17-net2-b16-g5-t20.pddl,abs-lama,0
+pipesworld-tankage-nosplit,p17-net2-b16-g5-t20.pddl,abs-lama,3
 pipesworld-tankage-nosplit,p21-net3-b12-g2-t60.pddl,abs-lama,2
-pipesworld-tankage-nosplit,p22-net3-b12-g4-t60.pddl,abs-lama,0
+pipesworld-tankage-nosplit,p22-net3-b12-g4-t60.pddl,abs-lama,1
 pipesworld-tankage-nosplit,p32-net4-b14-g5-t30.pddl,abs-lama,0
 rovers-large-simple/goal-4,p-r1-w1000-o1-1-g4.pddl,abs-lama,0
 rovers-large-simple/goal-4,p-r1-w1500-o1-1-g4.pddl,abs-lama,0

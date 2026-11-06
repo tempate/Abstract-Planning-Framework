@@ -30,18 +30,12 @@ class RefinementContext:
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Ground the concrete task, then use an abstract plan to guide its search."""
     abstract_plan = _with_original_names(abstract_plan, context.renamings)
-    concrete_asp = _concrete_asp(context)
     if context.config.optimize:
         horizon = abstract_horizon
-        asp = concrete_asp
     else:
         horizon = 2 * abstract_horizon + 1
-        asp = make_steps_optional(concrete_asp)
 
-    gaps = not context.config.optimize
-    asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps)
-
-    plan = _solve_concrete_plan(context, asp, horizon, switches(abstract_plan, gaps))
+    plan = _solve_concrete_plan(context, abstract_plan, horizon)
     if plan is not None:
         context.metrics.set_counter("plan_length", plan_length(plan))
 
@@ -73,11 +67,21 @@ def _concrete_asp(context):
         concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
 
     with context.metrics.measure("concrete_asp"):
-        return sas_to_asp(concrete_sas)
+        concrete_asp = sas_to_asp(concrete_sas)
+
+    if not context.config.optimize:
+        concrete_asp = make_steps_optional(concrete_asp)
+
+    return concrete_asp
 
 
-def _solve_concrete_plan(context, asp, init_horizon, switches):
+def _solve_concrete_plan(context, abstract_plan, init_horizon):
     """Refine the abstract plan, then search above its horizon if it does not refine."""
+    asp = _concrete_asp(context)
+
+    gaps = not context.config.optimize
+    asp += "\n" + concretize_abstract_actions(abstract_plan, context.abstraction, gaps)
+
     # Publish the counters before searching so an interrupted run still has them.
     counters = {
         "increments": 0,
@@ -94,7 +98,9 @@ def _solve_concrete_plan(context, asp, init_horizon, switches):
 
     with context.metrics.measure("guided_concrete_solving"):
         solver = RelaxingSolver(asp, init_horizon, optimize=context.config.optimize)
-        result = solver.search(switches, record_attempt)
+        # Clingo holds its own copy of the program, so the text would only take memory from the search.
+        del asp
+        result = solver.search(switches(abstract_plan, gaps), record_attempt)
 
     record_attempt(result.horizon, result.dropped, result.attempts)
     return result.plan
