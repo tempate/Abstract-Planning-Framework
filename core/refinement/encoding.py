@@ -12,31 +12,46 @@ def make_steps_optional(asp):
     return asp.replace(f"{EXACTLY_ONE_ACTION}.", f"{AT_MOST_ONE_ACTION}.")
 
 
-def choose_freely_while_switched_off(asp):
-    """Let a step choose among every action only while no switch holds it to an abstract action."""
-    # A held step already chooses among the groundings of its abstract action, so the free choice
-    # there only adds candidates the switch rules out anyway.
-    # EXACTLY_ONE_ACTION ends in AT_MOST_ONE_ACTION, so these two replacements cover both choices.
-    asp = asp.replace(f"{AT_MOST_ONE_ACTION} :- ", f"{AT_MOST_ONE_ACTION} :- not switch(t), ")
-    return asp.replace(f"{AT_MOST_ONE_ACTION}.", f"{AT_MOST_ONE_ACTION} :- not switch(t).")
+def drop_action_choice(asp):
+    """Remove the choice of any action at every step, leaving each step to the abstract plan."""
+    # EXACTLY_ONE_ACTION ends in AT_MOST_ONE_ACTION, so it goes first.
+    return asp.replace(f"{EXACTLY_ONE_ACTION}.", "").replace(f"{AT_MOST_ONE_ACTION}.", "")
 
 
-def concretize_abstract_actions(abstract_plan, abstraction, gaps=True, held=False):
-    """Map an abstract plan to compatible grounded concrete actions, every switch a fact if held."""
-    rules = [f"concrete_object({_quote(name)})." for name in abstraction.objects]
+def add_concrete_objects(abstraction):
+    """The constants an abstract action's groundings may use in place of the abstract one."""
+    rules = []
+    for name in abstraction.objects:
+        rules.append(f"concrete_object({_quote(name)}).")
+    return rules
+
+
+def map_abstract_actions(abstract_plan, abstraction, gaps=True):
+    """Each abstract action's step, and the rule choosing exactly one of its groundings there."""
+    choices = {}
 
     for action in abstract_plan:
         time_step = _concrete_time_step(action.time_step, gaps)
 
+        # Map each abstract action to one of its groundings.
+        action_str, conds_str = _action_pattern(action, abstraction)
+        choices[time_step] = f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1."
+
+    return choices
+
+
+def add_switches(choices):
+    """Rules that refine an abstract action only while the switch at its step is on."""
+    rules = []
+
+    for time_step, choice in choices.items():
         # A switch per step, so the search can give up the abstract plan one action at a time.
         switch = _switch(time_step)
-        rules.append(f"{switch}." if held else f"0 {{ {switch} }} 1.")
+        rules.append(f"0 {{ {switch} }} 1.")
+        # Only the final period ends the rule; a constant in it may hold periods of its own.
+        rules.append(f"{choice.removesuffix('.')} :- {switch}.")
 
-        # While the switch is on, some grounding of the abstract action occurs at its step.
-        action_str, conds_str = _action_pattern(action, abstraction)
-        rules.append(f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1 :- {switch}.")
-
-    return "\n".join(rules)
+    return rules
 
 
 def switches(abstract_plan, gaps=True):

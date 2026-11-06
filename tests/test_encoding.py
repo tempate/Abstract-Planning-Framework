@@ -3,9 +3,11 @@ from types import SimpleNamespace
 
 from core.plan import PlanAction
 from core.refinement.encoding import (
-    choose_freely_while_switched_off,
-    concretize_abstract_actions,
+    add_concrete_objects,
+    add_switches,
+    drop_action_choice,
     make_steps_optional,
+    map_abstract_actions,
     switches,
 )
 from core.search.incremental import IncrementalSolver
@@ -20,7 +22,7 @@ class EncodingTests(unittest.TestCase):
         # refines only once its switch is off and it holds nothing.
         abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item1",), 2))
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = concretize_abstract_actions(abstract_plan, abstraction)
+        mapping = _switched(abstract_plan, abstraction)
         program = make_steps_optional(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 #program step(t).
@@ -36,7 +38,7 @@ action(action(("inspect","item1"))).
     def test_a_gap_holds_any_concrete_action_or_none(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = concretize_abstract_actions(abstract_plan, abstraction)
+        mapping = _switched(abstract_plan, abstraction)
         program = make_steps_optional(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
@@ -53,7 +55,7 @@ switch(2).
     def test_without_gaps_an_abstract_action_keeps_its_time_step(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = concretize_abstract_actions(abstract_plan, abstraction, gaps=False)
+        mapping = _switched(abstract_plan, abstraction, gaps=False)
         program = OCCURRENCE_ENCODING + """
 action(action(("inspect","item1"))).
 action(action(("unrelated","x"))).
@@ -68,7 +70,7 @@ action(action(("unrelated","x"))).
     def test_an_exponential_horizon_lets_the_steps_above_the_abstract_plan_stay_empty(self):
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = concretize_abstract_actions(abstract_plan, abstraction)
+        mapping = _switched(abstract_plan, abstraction)
         program = make_steps_optional(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 switch(2).
@@ -80,43 +82,30 @@ switch(2).
         self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
         self.assertTrue(any(not model & above for model in models))
 
-    def test_a_switched_on_step_holds_its_abstract_action_and_a_switched_off_step_any_action(self):
-        abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item1",), 2))
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = concretize_abstract_actions(abstract_plan, abstraction, gaps=False)
-        program = choose_freely_while_switched_off(OCCURRENCE_ENCODING) + """
+    def test_a_held_step_takes_exactly_one_grounding_of_its_abstract_action(self):
+        abstract_plan = (PlanAction("inspect", ("item_abs",), 1),)
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
+        choices = map_abstract_actions(abstract_plan, abstraction, gaps=False)
+        program = (
+            drop_action_choice(OCCURRENCE_ENCODING)
+            + "\n".join([*add_concrete_objects(abstraction), *choices.values()])
+            + """
 action(action(("inspect","item1"))).
+action(action(("inspect","item2"))).
 action(action(("unrelated","x"))).
-switch(1).
-:- switch(2).
-""" + mapping
+"""
+        )
 
-        models = self._models(program, horizon=2)
+        models = self._models(program, horizon=1)
+        groundings = {f'occurs(action(("inspect","{item}")),1)' for item in ("item1", "item2")}
 
-        self.assertTrue(models)
-        self.assertTrue(all('occurs(action(("inspect","item1")),1)' in model for model in models))
-        self.assertTrue(any('occurs(action(("unrelated","x")),2)' in model for model in models))
-
-    def test_a_held_step_holds_its_abstract_action_and_a_step_without_a_switch_any_action(self):
-        abstract_plan = (PlanAction("inspect", ("item1",), 1),)
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = concretize_abstract_actions(abstract_plan, abstraction, gaps=False, held=True)
-        program = choose_freely_while_switched_off(OCCURRENCE_ENCODING) + """
-action(action(("inspect","item1"))).
-action(action(("unrelated","x"))).
-""" + mapping
-
-        models = self._models(program, horizon=2)
-
-        self.assertTrue(models)
-        self.assertTrue(all('occurs(action(("inspect","item1")),1)' in model for model in models))
+        self.assertEqual({len(model & groundings) for model in models}, {1})
         self.assertTrue(all('occurs(action(("unrelated","x")),1)' not in model for model in models))
-        self.assertTrue(any('occurs(action(("unrelated","x")),2)' in model for model in models))
 
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
         abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))
-        mapping = concretize_abstract_actions(abstract_plan, abstraction)
+        mapping = _switched(abstract_plan, abstraction)
         program = """
 action(action(("link","a","b"))).
 switch(2).
@@ -131,7 +120,7 @@ switch(2).
     def test_mapping_rejects_plan_actions_that_are_not_concrete_actions(self):
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
-        mapping = concretize_abstract_actions(abstract_plan, abstraction)
+        mapping = _switched(abstract_plan, abstraction)
         program = """
 action(action(("move","item1"))).
 switch(2).
@@ -155,6 +144,11 @@ switch(2).
             for model in handle:
                 models.append({str(symbol) for symbol in model.symbols(atoms=True)})
         return models
+
+
+def _switched(abstract_plan, abstraction, gaps=True):
+    choices = map_abstract_actions(abstract_plan, abstraction, gaps)
+    return "\n".join([*add_concrete_objects(abstraction), *add_switches(choices)])
 
 
 if __name__ == "__main__":
