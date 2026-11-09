@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-06 11:27 — experiments/htg/opt/results.csv
+2026-11-09 09:01 — experiments/htg/opt/results.csv
 
 288 problems compared over abs-lmcut, lmcut
 
@@ -9,10 +9,10 @@
 ```
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
-Plans found                      85 (29.5%)   53 (18.4%)
-Timeouts                        176 (61.1%)  193 (67.0%)
-Out of memory                     21 (7.3%)   41 (14.2%)
-Others                             6 (2.1%)     1 (0.3%)
+Plans found                      86 (29.9%)   53 (18.4%)
+Timeouts                        178 (61.8%)  193 (67.0%)
+Out of memory                     17 (5.9%)   41 (14.2%)
+Others                             7 (2.4%)     1 (0.3%)
 Total problems                          288          288
 ```
 
@@ -22,10 +22,10 @@ Total problems                          288          288
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
 Plans found by both                      53           53
-Faster                           23 (43.4%)   30 (56.6%)
-Found when the other did not             32            0
-Median runtime                      46.65 s      43.46 s
-Total runtime                   11,859.03 s  16,299.39 s
+Faster                           27 (50.9%)   26 (49.1%)
+Found when the other did not             33            0
+Median runtime                      30.44 s      43.46 s
+Total runtime                    7,922.23 s  16,299.39 s
 Shorter plan                       0 (0.0%)     0 (0.0%)
 Same plan length                53 (100.0%)  53 (100.0%)
 Median plan length                        8            8
@@ -37,9 +37,11 @@ Total plan length                       382          382
 ```
 Killed during                        LMcutᵅ
 -------------------------------------------
-Abstract search                   175 (99%)
+Abstract search                   120 (67%)
 Translating the task to ASP          1 (1%)
-Total                                   176
+Guided concrete search             38 (21%)
+Unguided concrete search           19 (11%)
+Total                                   178
 ```
 
 ## How the successes were solved
@@ -47,10 +49,10 @@ Total                                   176
 ```
 Solved by                            LMcutᵅ
 -------------------------------------------
-Refined directly                   75 (88%)
+Refined directly                   76 (88%)
 Refined, some actions off            0 (0%)
 Solved above the abstract plan     10 (12%)
-Total                                    85
+Total                                    86
 ```
 
 ## Deletes relaxed by the refined plans
@@ -61,9 +63,9 @@ Deletes relaxed                      LMcutᵅ
 None                                 0 (0%)
 1 to 4                             34 (45%)
 5 to 9                               0 (0%)
-10 to 19                           26 (35%)
+10 to 19                           27 (36%)
 20 or more                         15 (20%)
-Total                                    75
+Total                                    76
 ```
 
 ## Plans found by domain
@@ -96,9 +98,9 @@ logistics-large-simple (16)     goal-1         4         4
                                 goal-3         4         2
                                 goal-4         4         1
 organic-synthesis-alkene (17)                  15        15
-pipesworld-tankage-nosplit (17)                   6         6
+pipesworld-tankage-nosplit (17)                   7         6
 rovers-large-simple (6)         goal-4         2         2
                                 goal-6         0         0
                                 goal-8         0         0
-Total (288)                                   85        53
+Total (288)                                   86        53
 ```
