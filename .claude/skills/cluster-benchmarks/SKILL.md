@@ -18,7 +18,7 @@ its results are pushed, and ready from then on (see **Closing the loop**).
 ## Checkouts
 
 Every run has its own checkout, a worktree of the bare repo `~/apf/.bare` at
-`~/apf/<branch>`. Its `lib/downward`, `lib/pddl-symmetries`, `lib/plasp/bin`, `lib/ms-unsat/src`,
+`~/apf/<branch>`. Its `lib/downward`, `lib/structural-symmetries`, `lib/pddl-symmetries`, `lib/plasp/bin`, `lib/ms-unsat/src`,
 `experiments/benchmarks/downward-benchmarks` and, where vendored,
 `lib/numeric-fast-downward` are symlinks into `~/apf/.shared`, the only built copy.
 Nothing is built per checkout, so a branch that moved a submodule pointer would
@@ -51,6 +51,7 @@ and names what is missing, rather than queueing jobs that all die the same way:
 | `lib/downward/builds/release` | exit code 36, `Could not find build 'release'` |
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
 | `lib/ms-unsat/src/search/downward-release` | every unsat-track job fails before its search |
+| `lib/structural-symmetries/builds/release` | every `oss` job fails before its search |
 | `lib/numeric-fast-downward/builds/release64` | `numeric-fast-downward binary not found`, on every resources-track job |
 
 Smoke-test a branch that changes the pipeline, which the checks above cannot
@@ -82,6 +83,7 @@ python -m experiments.submit --track sat --abstraction-source symmetries --modes
 | `sat` | `asp`, `abs-asp`, `lama`, `abs-lama` | `lama`, Fast Downward's lama-first |
 | `opt` | `asp`, `abs-asp`, `lmcut`, `abs-lmcut` | `lmcut`, A* with LM-cut |
 | `unsat` | `ms`, `abs-ms` | `ms`, A* with merge-and-shrink |
+| `scaled` | `ms`, `abs-ms`, `oss` | `ms`, and `oss`, blind A* with structural symmetry pruning |
 
 `--abstraction-source resources` collapses resources instead of symmetric objects.
 `--track unsat` runs `scripts.unsolvability` over the probNN problems of

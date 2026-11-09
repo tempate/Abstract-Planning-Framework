@@ -13,8 +13,8 @@ python -m pip install -e ".[dev]"
 python -m scripts.setup
 ```
 
-`scripts.setup` initializes the submodules and builds the four things pip does
-not install: the pybliss extension, the Fast Downward release build, the
+`scripts.setup` initializes the submodules and builds the five things pip does
+not install: the pybliss extension, the Fast Downward release build, Silvan Sievers' structural symmetries fork of it, the
 pinned plasp binary, and MS-unsat from the Unsolvability IPC 2016. Skipping it fails at planning time rather than at setup
 time.
 

@@ -1,6 +1,6 @@
 # Scaled track
 
-Unsolvable problems whose symmetric class grows up to 1000 objects, to see how M&S and M&Sᵅ scale with the class. The base problems are the 35 that both M&S and M&Sᵅ prove unsolvable at their original size, 1 in cave-diving, 7 in document-transfer, 12 in over-nomystery and 15 in over-rovers. Each grows its largest class, which M&Sᵅ collapses to prove it. pegsol-row5 `prob01` has no class to grow, since PDDL Symmetries proves it unsolvable before finding one.
+Unsolvable problems whose symmetric class grows up to 1000 objects, to see how M&S and M&Sᵅ scale with the class. OSS runs blind A* with structural symmetry pruning (Silvan Sievers' Fast Downward fork, orbit space search) on the same problems, as a concrete baseline that exploits the symmetry too. The base problems are the 35 that both M&S and M&Sᵅ prove unsolvable at their original size, 1 in cave-diving, 7 in document-transfer, 12 in over-nomystery and 15 in over-rovers. Each grows its largest class, which M&Sᵅ collapses to prove it. pegsol-row5 `prob01` has no class to grow, since PDDL Symmetries proves it unsolvable before finding one.
 
 ## Example
 
@@ -30,8 +30,8 @@ Collapsing the grown class gives the same abstract task as collapsing the origin
 python -m experiments.ipc.unsat.scaled.generate \
   --problem experiments/benchmarks/unsolve-ipc-2016/over-nomystery/prob01.pddl --object p3 --class-size 2
 
-# Submit both modes
-python -m experiments.submit --track scaled --abstraction-source symmetries --modes abs-ms ms
+# Submit every mode
+python -m experiments.submit --track scaled --abstraction-source symmetries --modes abs-ms ms oss
 
 # Draw the median time against class size, and write the plot as TikZ for the paper
 python -m experiments.ipc.unsat.scaled.figure --out scaled.png --tex scaled.tex

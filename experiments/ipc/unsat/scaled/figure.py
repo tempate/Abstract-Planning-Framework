@@ -9,7 +9,11 @@ from pathlib import Path
 from experiments.figure import DEFAULT_PAPER, TIME_LIMIT, UNSOLVED, _render
 from experiments.tracks import TRACKS
 
-MODES = (("ms", "conc", "mark=*", r"\MS"), ("abs-ms", "abst", "mark=square*", r"\MSa"))
+MODES = (
+    ("ms", "conc", "mark=*", r"\MS"),
+    ("abs-ms", "abst", "mark=square*", r"\MSa"),
+    ("oss", "conc, dashed", "mark=triangle*", "OSS"),
+)
 
 
 def series(results_file):
@@ -51,7 +55,7 @@ def figure(results_file):
         " axis line style={black!50}, tick style={black!50}, xtick pos=bottom, ytick pos=left,"
         r" tick label style={font=\footnotesize}, label style={font=\footnotesize},"
         r" legend style={font=\footnotesize, draw=none, fill=none, at={(0.5,1.03)}, anchor=south,"
-        " /tikz/every even column/.append style={column sep=10pt}}, legend columns=2, legend cell align=left"
+        " /tikz/every even column/.append style={column sep=10pt}}, legend columns=3, legend cell align=left"
     )
     body = "\n".join(lines)
     return (
