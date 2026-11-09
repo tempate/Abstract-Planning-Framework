@@ -240,7 +240,7 @@ the entries whose directories are gone.
 
 For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
 with the merged results. `experiments.paper` writes `main`'s results into every column of
-the per-domain table, `tab:results`, and draws the three figures again as the PDFs
+the per-domain table, `tab:ipc`, and draws the three figures again as the PDFs
 `main.tex` includes from `figures/`:
 
 ```bash

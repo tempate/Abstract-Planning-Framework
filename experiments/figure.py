@@ -132,7 +132,7 @@ def paper_figures(revision):
     htg = load_tracks(revision, "htg", [])
     # Each PDF is as wide as the float main.tex includes it in, so it keeps the paper's sizes.
     return {
-        "results": _minipage(r"\textwidth", _results_figure(tracks)),
+        "ipc": _minipage(r"\textwidth", _ipc_figure(tracks)),
         "scaled": _minipage(r"\columnwidth", _scaled_plot(load_tracks(revision, "scaled", [])["symmetries"])),
         "htg": _minipage(r"\columnwidth", _htg_figure(htg, PAPER_ROW_GAP)),
     }
@@ -142,7 +142,7 @@ def paper_figures(revision):
 PAPER_ROW_GAP = "\n\n\\smallskip\n\n\\medskip\n"
 
 
-def _results_figure(tracks):
+def _ipc_figure(tracks):
     """Figure 1, every track's plots side by side, so each row joins the tracks' own rows."""
     track_gap = "%\n\\hspace{0.1in}%\n\\hspace*{0.42in}%\n"
     header = "%\n\\hspace{0.52in}%\n".join(_track_title(TRACK_NAMES[kind], len(tracks[kind])) for kind in tracks)

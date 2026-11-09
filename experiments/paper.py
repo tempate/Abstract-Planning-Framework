@@ -7,7 +7,7 @@ from pathlib import Path
 
 from experiments.figure import DEFAULT_PAPER, load_tracks, paper_figures, render_pdf, solved
 
-# Where each track's columns start in tab:results, and the modes they count in order.
+# Where each track's columns start in tab:ipc, and the modes they count in order.
 TABLE_COLUMNS = {
     "sat": (1, ("asp", "abs-asp", "lama", "abs-lama")),
     "opt": (6, ("asp", "abs-asp", "lmcut", "abs-lmcut")),
