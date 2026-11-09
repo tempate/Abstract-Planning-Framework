@@ -22,9 +22,9 @@ KIND_SOURCES = {
     "unsat": ("symmetries",),
     "sat-htg": ("symmetries",),
     "opt-htg": ("symmetries",),
+    # The unsat track's grown problems, which the scaled figure draws for the branch alone.
+    "scaled": ("symmetries",),
 }
-# The scaled figure draws the coverage of the unsat track's grown problems, for the branch alone.
-TRACKS = {"scaled": "unsat"}
 FIGURES = ("sat", "opt", "unsat", "htg", "scaled")
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
@@ -50,7 +50,9 @@ def main():
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
     if args.kind == "scaled":
-        _render(args.paper, [_scaled_panel(load_tracks(args.branch, args.kind, manifests)["scaled"])], Path(args.out))
+        _render(
+            args.paper, [_scaled_panel(load_tracks(args.branch, args.kind, manifests)["symmetries"])], Path(args.out)
+        )
         print(f"Wrote {args.out}")
         return
     panel = {"unsat": _unsat_panel, "htg": _htg_panel}.get(args.kind, _panel)
@@ -95,15 +97,12 @@ def load_tracks(revision, kind, manifests, sources=None):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
     if kind == "htg":
         return {track: load_tracks(revision, f"{track}-htg", manifests)["symmetries"] for track in ("sat", "opt")}
-    track = TRACKS.get(kind, kind)
-    if kind == "scaled":
-        sources = ("scaled",)
-    elif not sources:
+    if not sources:
         sources = KIND_SOURCES[kind]
     tracks = {}
     for source in sources:
-        text = _results_at(revision, track, source)
-        rows = select(list(csv.DictReader(io.StringIO(text))), track, source, manifests)
+        text = _results_at(revision, kind, source)
+        rows = select(list(csv.DictReader(io.StringIO(text))), kind, source, manifests)
         with tempfile.NamedTemporaryFile("w", suffix=".csv", newline="") as stream:
             writer = csv.DictWriter(stream, fieldnames=rows[0].keys())
             writer.writeheader()
@@ -116,6 +115,9 @@ def load_tracks(revision, kind, manifests, sources=None):
 def _results_at(revision, kind, source):
     if kind.endswith("-htg"):
         directories = (f"experiments/htg/{kind.removesuffix('-htg')}",)
+    elif kind == "scaled":
+        # The scaled problems keep their results inside the unsat track's directory.
+        directories = ("experiments/ipc/unsat/scaled", "experiments/unsat/scaled")
     else:
         # Revisions from before experiments/ipc/ keep the IPC tracks one level higher.
         directories = (f"experiments/ipc/{kind}/{source}", f"experiments/{kind}/{source}")
