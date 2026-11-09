@@ -1,6 +1,6 @@
 import unittest
 
-from experiments.figure import scaled_coverage, select
+from experiments.figure import load_tracks, scaled_coverage, select
 
 
 def _row(mode, problem="p01.pddl", rank=""):
@@ -64,3 +64,12 @@ class ScaledFigureTests(unittest.TestCase):
 
         self.assertEqual(scaled_coverage(problems, "ms"), [(2, 75.0), (50, 100.0)])
         self.assertEqual(scaled_coverage(problems, "abs-ms"), [(2, 75.0), (50, 0.0)])
+
+
+class LoadTracksTests(unittest.TestCase):
+    def test_the_scaled_track_loads_under_the_source_its_manifests_name(self):
+        # Its manifests name it scaled/symmetries, which is how compare and paper look it up.
+        tracks = load_tracks("HEAD", "scaled", [])
+
+        self.assertEqual(list(tracks), ["symmetries"])
+        self.assertTrue(tracks["symmetries"])
