@@ -1,4 +1,8 @@
-"""Write a PR's results into the paper's per-domain table and Figure 1, after checking its base reproduces them."""
+"""Write a PR's results into the paper's per-domain table and Figure 1, after checking its base reproduces them.
+
+Figure 1 lives in figures/results.pdf beside main.tex, rendered from the TikZ source figures/results.tex,
+which is where its coordinate sets get replaced.
+"""
 
 import argparse
 import json
@@ -7,7 +11,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 from experiments.compare import submitted_tracks
-from experiments.figure import BASELINES, DEFAULT_PAPER, cactus, load_tracks, scatter, solved
+from experiments.figure import BASELINES, DEFAULT_PAPER, cactus, load_tracks, render_pdf, scatter, solved
 
 # Where each track's columns start in tab:results, and the modes they count in order.
 TABLE_COLUMNS = {
@@ -21,22 +25,38 @@ COORDINATES = re.compile(r"\{(\([\d.]+,[\d.]+\)(?: \[\d\])?(?: \([\d.]+,[\d.]+\)
 
 
 def main():
-    args = _argument_parser().parse_args()
+    parser = _argument_parser()
+    args = parser.parse_args()
+    paper = Path(args.paper)
+    figures = paper.parent / "figures"
+    if args.render_only:
+        for source in sorted(figures.glob("*.tex")):
+            render_pdf(paper, source.read_text(), source.with_suffix(".pdf"))
+            print(f"Wrote {source.with_suffix('.pdf')}")
+        return
+    if not args.manifests:
+        parser.error("--manifests is required unless --render-only")
+
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
-    paper = Path(args.paper)
     tex = paper.read_text()
+    figure_source = figures / "results.tex"
+    figure = figure_source.read_text()
     for track in submitted_tracks(manifests):
         kind, source = track.split("/")
         base = load_tracks(args.base, kind, base_manifests, [source])[source]
         branch = load_tracks(args.branch, kind, manifests, [source])[source]
-        if _holds(tex, kind, branch):
+        if _holds(figure, kind, branch):
             print(f"{track}: the paper already holds the branch's results")
             continue
         tex, changed = update_table(tex, kind, source, domain_counts(base, kind), domain_counts(branch, kind))
-        tex, replaced = update_figure(tex, figure_sets(base, kind), figure_sets(branch, kind))
+        figure, replaced = update_figure(figure, figure_sets(base, kind), figure_sets(branch, kind))
         print(f"{track}: {', '.join(changed) or 'no table row'} changed, {replaced} figure sets replaced")
     paper.write_text(tex)
+    if figure != figure_source.read_text():
+        figure_source.write_text(figure)
+        render_pdf(paper, figure, figure_source.with_suffix(".pdf"))
+        print(f"Wrote {figure_source.with_suffix('.pdf')}")
 
 
 def domain_counts(problems, kind):
@@ -98,24 +118,21 @@ def figure_sets(problems, kind):
     return curves + [scatter(problems, solver, abstraction) for solver, abstraction in pairs]
 
 
-def update_figure(tex, base_sets, branch_sets):
-    """Replace each of the base's coordinate sets in fig:results with the branch's, ignoring old colour tags."""
-    start, end = tex.index(r"\begin{figure*}"), tex.index(r"\label{fig:results}")
-    figure = tex[start:end]
+def update_figure(figure, base_sets, branch_sets):
+    """Replace each of the base's coordinate sets in Figure 1's source with the branch's, ignoring old colour tags."""
     replaced = 0
     for old, new in zip(base_sets, branch_sets):
         matches = [match for match in COORDINATES.finditer(figure) if re.sub(r" \[\d\]", "", match.group(1)) == old]
         if len(matches) != 1:
-            raise SystemExit(f"The base's coordinate set appears {len(matches)} times in fig:results, not once")
+            raise SystemExit(f"The base's coordinate set appears {len(matches)} times in Figure 1, not once")
         if old != new:
             figure = figure[: matches[0].start()] + "{" + new + "}" + figure[matches[0].end() :]
             replaced += 1
-    return tex[:start] + figure + tex[end:], replaced
+    return figure, replaced
 
 
-def _holds(tex, kind, branch):
+def _holds(figure, kind, branch):
     # Results that went in before the merge leave nothing to write.
-    figure = tex[tex.index(r"\begin{figure*}") : tex.index(r"\label{fig:results}")]
     stored = {re.sub(r" \[\d\]", "", match.group(1)) for match in COORDINATES.finditer(figure)}
     return all(points in stored for points in figure_sets(branch, kind))
 
@@ -140,13 +157,14 @@ def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", default="origin/main~1", help="Revision whose results the paper holds now")
     parser.add_argument("--branch", default="origin/main", help="Revision whose results go into the paper")
-    parser.add_argument(
-        "--manifests", nargs="+", required=True, help="The branch's run manifests, which name its tracks"
-    )
+    parser.add_argument("--manifests", nargs="+", help="The branch's run manifests, which name its tracks")
     parser.add_argument(
         "--base-manifests", nargs="*", default=[], help="The base's run manifests, when it is a PR with its own runs"
     )
-    parser.add_argument("--paper", default=DEFAULT_PAPER, help="The paper's main.tex")
+    parser.add_argument("--paper", default=DEFAULT_PAPER, help="The paper's main.tex, beside its figures/ folder")
+    parser.add_argument(
+        "--render-only", action="store_true", help="Render every figures/*.tex to its PDF, after editing one by hand"
+    )
     return parser
 
 

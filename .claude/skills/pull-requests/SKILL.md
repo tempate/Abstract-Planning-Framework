@@ -111,7 +111,7 @@ For a stacked PR, pass `--base <the base branch> --base-label '#<n>'` and the ba
 own manifests as `--base-manifests`. The script needs the paper checked out next to
 the repository, or `--paper`, plus `pdflatex`, `pdfcrop` and `pdftoppm`. After
 changing it, check that the base half reproduces the coordinates in the paper's
-`main.tex` from the `main` commit the paper's figure came from.
+`figures/results.tex` from the `main` commit the paper's figure came from.
 
 Daniel uploads a figure by dragging it into the description, so leave an HTML comment
 where it goes:
@@ -240,14 +240,19 @@ the entries whose directories are gone.
 
 For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
 with the merged results. `experiments.paper` writes them into the touched columns of the
-per-domain table, `tab:results`, and the touched curves and runtime plots of Figure 1,
-`fig:results`. It first checks that the merge's parent reproduces every number it
-replaces, and it skips a track whose results the paper already holds:
+per-domain table, `tab:results`, and the touched curves and runtime plots of Figure 1.
+`main.tex` includes each figure as a PDF from `figures/`, beside its TikZ source, so the
+script patches `figures/results.tex` and renders `figures/results.pdf` from it. It first
+checks that the merge's parent reproduces every number it replaces, and it skips a track
+whose results the paper already holds:
 
 ```bash
 python -m experiments.paper --base origin/main~1 --branch origin/main \
   --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json
 ```
+
+After editing another figure's source by hand, such as `figures/scaled.tex`, render
+every PDF again with `python -m experiments.paper --render-only`.
 
 Fix any number in the prose that the change makes wrong by hand.
 

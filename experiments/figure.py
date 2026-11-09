@@ -316,13 +316,18 @@ def solve_time(row):
 
 def _render(paper, panels, out):
     """Typeset the panels side by side with the paper's preamble, then crop the page to a PNG."""
+    with tempfile.TemporaryDirectory() as directory:
+        pdf = Path(directory) / "figure.pdf"
+        render_pdf(paper, "\\noindent\\mbox{" + r"\hspace{2em}".join(panels) + "}", pdf, margins=8)
+        command = ["pdftoppm", "-png", "-r", "250", "-singlefile", "figure.pdf", "figure"]
+        subprocess.run(command, cwd=directory, check=True, capture_output=True)
+        shutil.copy(Path(directory) / "figure.png", out)
+
+
+def render_pdf(paper, body, out, margins=0):
+    """Typeset a body with the paper's preamble, then crop the page to a PDF."""
     preamble = Path(paper).read_text().split(r"\title{")[0]
-    document = (
-        preamble
-        + "\\pagestyle{empty}\n\\begin{document}\n\\noindent\\mbox{"
-        + r"\hspace{2em}".join(panels)
-        + "}\n\\end{document}\n"
-    )
+    document = preamble + "\\pagestyle{empty}\n\\begin{document}\n" + body + "\n\\end{document}\n"
     with tempfile.TemporaryDirectory() as directory:
         build = Path(directory)
         # The paper's style file has to sit next to the document that loads it.
@@ -331,12 +336,11 @@ def _render(paper, panels, out):
         (build / "figure.tex").write_text(document)
         commands = [
             ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "figure.tex"],
-            ["pdfcrop", "--margins", "8", "figure.pdf", "cropped.pdf"],
-            ["pdftoppm", "-png", "-r", "250", "-singlefile", "cropped.pdf", "figure"],
+            ["pdfcrop", "--margins", str(margins), "figure.pdf", "cropped.pdf"],
         ]
         for command in commands:
             subprocess.run(command, cwd=build, check=True, capture_output=True)
-        shutil.copy(build / "figure.png", out)
+        shutil.copy(build / "cropped.pdf", out)
 
 
 def _argument_parser():

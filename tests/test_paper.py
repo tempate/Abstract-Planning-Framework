@@ -28,9 +28,9 @@ class PaperTableTests(unittest.TestCase):
 
 class PaperFigureTests(unittest.TestCase):
     def test_a_set_matches_without_its_old_colour_tags(self):
-        tex = r"\begin{figure*} \runtimeplot{\LMcut}{(1.00,2.00) [0] (3.00,4.00) [4]} \label{fig:results}"
+        figure = r"\runtimeplot{\LMcut}{(1.00,2.00) [0] (3.00,4.00) [4]}"
 
-        tex, replaced = update_figure(tex, ["(1.00,2.00) (3.00,4.00)"], ["(1.00,5.00)"])
+        figure, replaced = update_figure(figure, ["(1.00,2.00) (3.00,4.00)"], ["(1.00,5.00)"])
 
-        self.assertIn(r"\runtimeplot{\LMcut}{(1.00,5.00)}", tex)
+        self.assertIn(r"\runtimeplot{\LMcut}{(1.00,5.00)}", figure)
         self.assertEqual(replaced, 1)
