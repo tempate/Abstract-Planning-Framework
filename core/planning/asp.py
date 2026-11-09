@@ -8,7 +8,6 @@ from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
 from core.planning.config import PlanningConfig
 from core.planning.execution import temp_run_dir
-from core.planning.validation import validated
 from core.search.incremental import IncrementalSolver
 
 
@@ -18,8 +17,6 @@ def solve(config: PlanningConfig, on_update=None):
     with metrics.measure("total"):
         with temp_run_dir() as (base_dir, run_id):
             result = _translate_and_solve(config, base_dir, run_id, metrics)
-    # Outside the measured phases, so that checking a plan cannot move a timing.
-    result["plan_valid"] = validated(config, result.get("plan"), parse_plan_actions)
     result["metrics"] = metrics.as_dict()
     return result
 

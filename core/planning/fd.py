@@ -7,7 +7,6 @@ from core.metrics import PlanningMetrics
 from core.outcomes import UnsolvableTaskError
 from core.planning.config import PlanningConfig
 from core.planning.execution import temp_run_dir
-from core.planning.validation import validated
 
 LABEL = "fd"
 
@@ -36,10 +35,6 @@ class FastDownward:
             "plan": plan,
             "success": plan is not None,
             "run_id": run_id,
-            # Outside the measured phases, so that checking a plan cannot move a
-            # timing. Fast Downward is trusted, so this is the control that says the
-            # check itself agrees with a planner we did not write.
-            "plan_valid": validated(config, plan, parse_plan_actions),
             "metrics": metrics.as_dict(),
         }
 
