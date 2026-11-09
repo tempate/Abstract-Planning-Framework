@@ -8,10 +8,9 @@ from core.search.incremental import IncrementalSolver, SolveResult
 class RelaxingSolver(IncrementalSolver):
     """An incremental solver that relaxes the assumptions it cannot satisfy."""
 
-    def search(self, symbols=(), on_attempt=None):
-        """Assume every symbol, give them up in the order given, then raise the horizon."""
-        assumptions = {symbol: True for symbol in symbols}
-        dropped = 0
+    def search(self, symbols=(), on_attempt=None, dropped=0):
+        """Assume every symbol but the first `dropped`, give the rest up in the order given, then raise the horizon."""
+        assumptions = {symbol: index >= dropped for index, symbol in enumerate(symbols)}
         attempts = 0
 
         while True:

@@ -11,9 +11,9 @@ def _keep(number):
 
 
 class RelaxingSolverTests(unittest.TestCase):
-    def _search(self, program, numbers, on_attempt=None):
+    def _search(self, program, numbers, on_attempt=None, dropped=0):
         solver = RelaxingSolver(AspProgram(program), init_horizon=0)
-        return solver.search([_keep(number) for number in numbers], on_attempt)
+        return solver.search([_keep(number) for number in numbers], on_attempt, dropped)
 
     def test_keeps_every_assumption_when_they_hold_together(self):
         result = self._search(
@@ -38,6 +38,22 @@ selected(fallback) :- not keep(2).
 #show selected/1.
 """,
             [2, 1],
+        )
+
+        self.assertEqual(result.plan, ["selected(fallback)"])
+        self.assertEqual(result.dropped, 1)
+
+    def test_starts_with_the_first_assumptions_already_given_up(self):
+        result = self._search(
+            """
+{ keep(1) }.
+{ keep(2) }.
+selected(full) :- keep(1), keep(2).
+selected(fallback) :- keep(1), not keep(2).
+#show selected/1.
+""",
+            [2, 1],
+            dropped=1,
         )
 
         self.assertEqual(result.plan, ["selected(fallback)"])
