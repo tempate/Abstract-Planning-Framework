@@ -8,9 +8,10 @@ from core.search.incremental import IncrementalSolver, SolveResult
 class RelaxingSolver(IncrementalSolver):
     """An incremental solver that relaxes the assumptions it cannot satisfy."""
 
-    def search(self, symbols=(), on_attempt=None, dropped=0):
-        """Assume every symbol but the first `dropped`, give the rest up in the order given, then raise the horizon."""
-        assumptions = {symbol: index >= dropped for index, symbol in enumerate(symbols)}
+    def search(self, symbols=(), on_attempt=None, hold=True):
+        """Assume every symbol if told to hold them, give them all up at once, then raise the horizon."""
+        assumptions = {symbol: hold for symbol in symbols}
+        dropped = 0 if hold else len(symbols)
         attempts = 0
 
         while True:
@@ -25,8 +26,8 @@ class RelaxingSolver(IncrementalSolver):
                 return SolveResult(plan, self.horizon, attempts, dropped)
 
             if dropped < len(symbols):
-                assumptions[symbols[dropped]] = False
-                dropped += 1
+                assumptions = {symbol: False for symbol in symbols}
+                dropped = len(symbols)
             else:
                 # Nothing constrains the search any more, so the only way left to
                 # satisfy the program is to give it another time step.

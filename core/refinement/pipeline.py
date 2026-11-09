@@ -79,7 +79,7 @@ def _concrete_asp(context):
 
 
 def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
-    """Refine the abstract plan as it is, then give it up step by step and search above its horizon."""
+    """Refine the abstract plan as it is, then give it up and search above its horizon."""
     asp = _concrete_asp(context)
 
     # Publish the counters before searching so an interrupted run still has them.
@@ -119,7 +119,7 @@ def _one_shot(context, asp, abstract_plan, abstract_horizon):
 
 
 def _fallback_solver(context, asp, abstract_plan, abstract_horizon):
-    """Load the program whose switches can give the abstract plan up step by step."""
+    """Load the program whose switches can give the abstract plan up."""
     gaps = not context.config.optimize
     if gaps:
         init_horizon = 2 * abstract_horizon + 1
@@ -134,14 +134,14 @@ def _fallback_solver(context, asp, abstract_plan, abstract_horizon):
 
 
 def _fallback(context, solver, abstract_plan, record_attempt):
-    """Give the abstract plan up step by step, from its end, and search above its horizon."""
+    """Give the abstract plan up, and search above its horizon."""
     gaps = not context.config.optimize
 
     def record_search(horizon, dropped, search_calls):
         record_attempt(horizon - solver.init_horizon, dropped, search_calls)
 
-    # Without gaps, holding every switch is the one-shot that already failed, so the first switch starts released.
-    result = solver.search(switches(abstract_plan, gaps), record_search, dropped=int(not gaps))
+    # Without gaps, holding every switch is the one-shot that already failed, so the switches start released.
+    result = solver.search(switches(abstract_plan, gaps), record_search, hold=gaps)
 
     record_search(result.horizon, result.dropped, result.attempts)
     return result.plan

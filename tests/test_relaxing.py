@@ -11,9 +11,9 @@ def _keep(number):
 
 
 class RelaxingSolverTests(unittest.TestCase):
-    def _search(self, program, numbers, on_attempt=None, dropped=0):
+    def _search(self, program, numbers, on_attempt=None, hold=True):
         solver = RelaxingSolver(AspProgram(program), init_horizon=0)
-        return solver.search([_keep(number) for number in numbers], on_attempt, dropped)
+        return solver.search([_keep(number) for number in numbers], on_attempt, hold)
 
     def test_keeps_every_assumption_when_they_hold_together(self):
         result = self._search(
@@ -28,35 +28,35 @@ selected(full).
         self.assertEqual(result.plan, ["selected(full)"])
         self.assertEqual(result.dropped, 0)
 
-    def test_gives_up_assumptions_in_the_order_they_are_given(self):
+    def test_gives_up_every_assumption_at_once(self):
         result = self._search(
             """
 { keep(1) }.
 { keep(2) }.
 :- keep(2).
-selected(fallback) :- not keep(2).
+selected(partial) :- keep(1).
+selected(none) :- not keep(1).
 #show selected/1.
 """,
             [2, 1],
         )
 
-        self.assertEqual(result.plan, ["selected(fallback)"])
-        self.assertEqual(result.dropped, 1)
+        self.assertEqual(result.plan, ["selected(none)"])
+        self.assertEqual(result.dropped, 2)
 
-    def test_starts_with_the_first_assumptions_already_given_up(self):
+    def test_can_start_with_every_assumption_given_up(self):
         result = self._search(
             """
 { keep(1) }.
-{ keep(2) }.
-selected(full) :- keep(1), keep(2).
-selected(fallback) :- keep(1), not keep(2).
+selected(full) :- keep(1).
+selected(none) :- not keep(1).
 #show selected/1.
 """,
-            [2, 1],
-            dropped=1,
+            [1],
+            hold=False,
         )
 
-        self.assertEqual(result.plan, ["selected(fallback)"])
+        self.assertEqual(result.plan, ["selected(none)"])
         self.assertEqual(result.dropped, 1)
 
     def test_raises_the_horizon_once_there_is_nothing_left_to_give_up(self):
