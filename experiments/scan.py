@@ -90,7 +90,7 @@ def main():
     track = TRACKS[args.track]
     source = args.track.split("/")[1]
     if args.submit:
-        _submit(args.track, track, args.domains)
+        _submit(args.track, track, args.domains, args.keep_classes)
         return
     if args.task is not None:
         _scan_task(args.track, track, args.task, source, args.timeout)
@@ -122,7 +122,7 @@ def main():
     print(f"Wrote what {len(scanned)} scanned problems have to {output}")
 
 
-def _submit(track_name, track, domains):
+def _submit(track_name, track, domains, keep_classes=False):
     """Submit one Slurm task per problem of the suite, each ranking the problem's classes."""
     suite = track.suite
     if domains:
@@ -133,6 +133,15 @@ def _submit(track_name, track, domains):
     tasks = sorted(_suite_problems(track.benchmarks_dir, suite))
     directory = _task_dir(track_name)
     directory.mkdir(parents=True, exist_ok=True)
+    if keep_classes:
+        # The kept classes become outcomes, so collecting writes them with the new ones.
+        logged = _read_log(track.classes_file.with_suffix(".log"))
+        kept = {name: outcome for name, outcome in logged.items() if outcome.startswith("[[")}
+        for name, outcome in kept.items():
+            result = directory / "outcomes" / f"{name}.tsv"
+            result.parent.mkdir(parents=True, exist_ok=True)
+            result.write_text(f"{name}\t{outcome}\n", encoding="utf-8")
+        tasks = [task for task in tasks if _name(task) not in kept]
     (directory / "tasks.txt").write_text("".join(f"{_name(task)}\n" for task in tasks), encoding="utf-8")
     task_command = f"{sys.executable} -m experiments.scan --track {track_name} --task $SLURM_ARRAY_TASK_ID"
     share = -(-len(tasks) // len(PARTITIONS))
@@ -289,6 +298,11 @@ def _argument_parser():
         "--submit", action="store_true", help="Scan on the cluster, one Slurm task per problem of the suite"
     )
     parser.add_argument("--domains", nargs="+", help="Submit only these domains of the track's suite")
+    parser.add_argument(
+        "--keep-classes",
+        action="store_true",
+        help="Submit only the problems the track's classes.log gives no class, keeping the classes it has",
+    )
     parser.add_argument("--task", type=int, help=argparse.SUPPRESS)
     parser.add_argument(
         "--collect", action="store_true", help="Write problems.txt and classes.txt from the submitted tasks"
