@@ -26,7 +26,6 @@ SUITE = [
     "genome-edit-distance-split",
     "gnad-et-al-aaai19-large-instances/agricola-large",
     "gnad-et-al-aaai19-large-instances/blocks-large",
-    "gnad-et-al-aaai19-large-instances/caldera-large",
     "gnad-et-al-aaai19-large-instances/depots-large",
     "gnad-et-al-aaai19-large-instances/satellite-large",
     "gnad-et-al-aaai19-large-instances/tpp-large",

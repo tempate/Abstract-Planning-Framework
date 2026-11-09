@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-10 17:24 — experiments/htg/opt/results.csv
+2026-11-11 09:30 — experiments/htg/opt/results.csv
 
-12 problems compared over abs-asp, abs-lmcut, lmcut; 456 dropped as unfinished
+5 problems compared over abs-asp, abs-lmcut, lmcut; 438 dropped as unfinished
 
 ## Coverage
 
 ```
 Metric                                 ASPᵅ       LMcutᵅ        LMcut
 ---------------------------------------------------------------------
-Plans found                        0 (0.0%)     0 (0.0%)     1 (8.3%)
-Timeouts                          9 (75.0%)    2 (16.7%)    2 (16.7%)
-Out of memory                     3 (25.0%)    3 (25.0%)    8 (66.7%)
-Others                             0 (0.0%)    7 (58.3%)     1 (8.3%)
-Total problems                           12           12           12
+Plans found                        0 (0.0%)     0 (0.0%)    1 (20.0%)
+Timeouts                          2 (40.0%)    2 (40.0%)    2 (40.0%)
+Out of memory                     3 (60.0%)    3 (60.0%)    2 (40.0%)
+Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)
+Total problems                            5            5            5
 ```
 
 ## Head to head, over the problems both solved
@@ -37,8 +37,8 @@ Total plan length                         0            0
 ```
 Killed during                          ASPᵅ       LMcutᵅ
 --------------------------------------------------------
-Abstract search                    9 (100%)     2 (100%)
-Total                                     9            2
+Abstract search                    2 (100%)     2 (100%)
+Total                                     2            2
 ```
 
 ## How the successes were solved
@@ -61,10 +61,9 @@ No success was solved with its abstract plan
 ## Plans found by domain
 
 ```
-Domain (problems)                 Size      ASPᵅ    LMcutᵅ     LMcut
---------------------------------------------------------------------
-gnad-et-al-aaai19-large-instances (7)caldera-large         0         0         0
-organic-synthesis-original (3)                   0         0         1
-pipesworld-tankage-nosplit (2)                   0         0         0
-Total (12)                                     0         0         1
+Domain (problems)                 ASPᵅ    LMcutᵅ     LMcut
+----------------------------------------------------------
+organic-synthesis-original (3)         0         0         1
+pipesworld-tankage-nosplit (2)         0         0         0
+Total (5)                            0         0         1
 ```
