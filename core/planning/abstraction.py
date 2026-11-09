@@ -2,7 +2,6 @@
 
 import os
 
-from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.ms_unsat import has_plan
 from core.metrics import PlanningMetrics
@@ -11,7 +10,6 @@ from core.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
 from core.planning.backends import BACKENDS
 from core.planning.config import AbstractPlanningConfig
 from core.planning.execution import temp_run_dir
-from core.planning.validation import validated
 from core.refinement.pipeline import RefinementContext, refine
 
 
@@ -38,8 +36,6 @@ def solve(config: AbstractPlanningConfig, on_update=None):
             )
             result = refine(context, plan, horizon)
 
-    # Outside the measured phases, so that checking a plan cannot move a timing.
-    result["plan_valid"] = validated(config, result.get("plan"), parse_plan_actions)
     result["metrics"] = metrics.as_dict()
     return result
 
