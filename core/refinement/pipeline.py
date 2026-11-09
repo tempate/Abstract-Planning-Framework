@@ -140,7 +140,8 @@ def _fallback(context, solver, abstract_plan, record_attempt):
     def record_search(horizon, dropped, search_calls):
         record_attempt(horizon - solver.init_horizon, dropped, search_calls)
 
-    result = solver.search(switches(abstract_plan, gaps), record_search)
+    # Without gaps, holding every switch is the one-shot that already failed, so the first switch starts released.
+    result = solver.search(switches(abstract_plan, gaps), record_search, dropped=int(not gaps))
 
     record_search(result.horizon, result.dropped, result.attempts)
     return result.plan
