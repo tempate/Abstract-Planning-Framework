@@ -127,13 +127,18 @@ def _finished_problems(results_file):
     value nobody recognizes is ignored instead of becoming a requirement no
     problem meets, which would empty the report rather than fail.
     """
-    rows = {}
     with Path(results_file).open(encoding="utf-8", newline="") as stream:
-        for row in csv.DictReader(stream):
-            # An abstract mode that ran several classes reports the one that performed best.
-            problem = rows.setdefault((row["domain"], row["problem"]), {})
-            if row["mode"] not in problem or _performance(row) > _performance(problem[row["mode"]]):
-                problem[row["mode"]] = row
+        return finished_problems(csv.DictReader(stream))
+
+
+def finished_problems(csv_rows):
+    """The same, over rows already read."""
+    rows = {}
+    for row in csv_rows:
+        # An abstract mode that ran several classes reports the one that performed best.
+        problem = rows.setdefault((row["domain"], row["problem"]), {})
+        if row["mode"] not in problem or _performance(row) > _performance(problem[row["mode"]]):
+            problem[row["mode"]] = row
 
     present = {mode for problem in rows.values() for mode in problem}
     modes = tuple(mode for mode in MODES if mode in present)
