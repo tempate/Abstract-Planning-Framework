@@ -8,7 +8,7 @@ import sys
 from dataclasses import dataclass
 
 from core.integrations.paths import NUMERIC_FAST_DOWNWARD_BIN, NUMERIC_FAST_DOWNWARD_SCRIPT
-from core.outcomes import IntegrationError
+from core.outcomes import IntegrationError, ResourceTimeoutError
 
 BUILD = "release64"
 DETECTION_SEARCH = "resource_detection()"
@@ -71,7 +71,7 @@ def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME
     except BaseException as error:
         _kill_process_group(process)
         if isinstance(error, subprocess.TimeoutExpired):
-            raise IntegrationError(f"Resource detection timed out after {timeout}s") from error
+            raise ResourceTimeoutError(f"Resource detection timed out after {timeout}s") from error
         raise
 
     if _SUMMARY.search(stdout) is None:

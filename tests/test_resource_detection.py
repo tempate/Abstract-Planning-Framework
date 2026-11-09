@@ -1,12 +1,15 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from core.integrations.numeric_fast_downward import (
+    detect_resources,
     parse_resources,
     read_sas_variables,
     varying_objects,
 )
+from core.outcomes import ResourceTimeoutError
 
 DETECTOR_OUTPUT = """we are here
 Detection time: 0.374387s
@@ -62,6 +65,19 @@ class SasReadingTests(unittest.TestCase):
 
         self.assertEqual(variables["var0"], ("Atom at(t0, l0)", "Atom at(t0, l1)"))
         self.assertEqual(variables["var1"], ("Atom fuel(t0, level0)",))
+
+
+class DetectionLimitTests(unittest.TestCase):
+    def test_running_out_of_time_is_its_own_outcome(self):
+        with tempfile.TemporaryDirectory() as directory:
+            stalling_driver = Path(directory, "driver.py")
+            stalling_driver.write_text("import time\ntime.sleep(60)\n", encoding="utf-8")
+            with (
+                patch("core.integrations.numeric_fast_downward.NUMERIC_FAST_DOWNWARD_BIN", str(stalling_driver)),
+                patch("core.integrations.numeric_fast_downward.NUMERIC_FAST_DOWNWARD_SCRIPT", str(stalling_driver)),
+                self.assertRaises(ResourceTimeoutError),
+            ):
+                detect_resources(directory, "domain.pddl", "problem.pddl", timeout=1)
 
 
 if __name__ == "__main__":

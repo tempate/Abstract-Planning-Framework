@@ -10,7 +10,7 @@ from core.integrations.unified_planning import parse_problem, read_problem
 from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
 from core.integrations.numeric_fast_downward import ResourceDetection, ResourceVariable
 from core.outcomes import NoResourcesError
-from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
+from core.outcomes import IntegrationError, OutOfMemoryError, SymmetryTimeoutError, UnsolvableTaskError
 from core.planning.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -227,6 +227,8 @@ class SymmetrySelectionTests(unittest.TestCase):
                 IntegrationError,
             ),
             (subprocess.TimeoutExpired("translate.py", 10), SymmetryTimeoutError),
+            (subprocess.CompletedProcess([], 20, stdout="", stderr=""), OutOfMemoryError),
+            (subprocess.CompletedProcess([], 1, stdout="", stderr="Traceback\nMemoryError"), OutOfMemoryError),
         )
         for outcome, error in outcomes:
             with self.subTest(error=error.__name__), tempfile.TemporaryDirectory() as directory:

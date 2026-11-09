@@ -59,11 +59,20 @@ class SymmetryTimeoutError(IntegrationError):
     label = "Symmetry timeout"
 
 
+class ResourceTimeoutError(IntegrationError):
+    """Raised when only the resource detection phase reaches its time limit."""
+
+    status = "resource_timeout"
+    exit_code = 7
+    label = "Resource timeout"
+
+
 STATUS_BY_EXIT_CODE = {
     0: "success",
     UnsolvableTaskError.exit_code: UnsolvableTaskError.status,
     IntegrationError.exit_code: IntegrationError.status,
     SymmetryTimeoutError.exit_code: SymmetryTimeoutError.status,
+    ResourceTimeoutError.exit_code: ResourceTimeoutError.status,
     NoSymmetriesError.exit_code: NoSymmetriesError.status,
     NoResourcesError.exit_code: NoResourcesError.status,
     OutOfMemoryError.exit_code: OutOfMemoryError.status,

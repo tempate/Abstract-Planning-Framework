@@ -8,7 +8,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from core.integrations.paths import PDDL_SYMMETRIES_TRANSLATOR
-from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError
+from core.outcomes import IntegrationError, OutOfMemoryError, SymmetryTimeoutError, UnsolvableTaskError
+
+# The exit code Fast Downward's translator, which PDDL Symmetries extends, gives when memory runs out.
+_TRANSLATE_OUT_OF_MEMORY = 20
 
 
 def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, translator_path=PDDL_SYMMETRIES_TRANSLATOR):
@@ -65,7 +68,10 @@ def _run_translator(command, time_limit):
         raise UnsolvableTaskError("PDDL Symmetries reports that the task has no relaxed solution")
     if result.returncode != 0:
         suffix = f":\n{diagnostics}" if diagnostics else ""
-        raise IntegrationError(f"PDDL Symmetries failed with exit code {result.returncode}{suffix}")
+        message = f"PDDL Symmetries failed with exit code {result.returncode}{suffix}"
+        if result.returncode == _TRANSLATE_OUT_OF_MEMORY or "MemoryError" in diagnostics:
+            raise OutOfMemoryError(message)
+        raise IntegrationError(message)
     return result.stdout
 
 

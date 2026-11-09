@@ -214,6 +214,7 @@ def _human_status(result):
         "no_symmetries": "no symmetries",
         "no_resources": "no resources",
         "symmetry_timeout": "symmetry timeout",
+        "resource_timeout": "resource timeout",
         "timed_out": "timed out",
         "running": "running",
         "missing": "missing",
