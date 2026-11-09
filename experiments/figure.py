@@ -10,7 +10,7 @@ import tempfile
 from collections import defaultdict
 from pathlib import Path
 
-from experiments.report import _finished_problems
+from experiments.report import finished_problems
 from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 
 SOURCES = {"symmetries": "Symmetries", "resources": "Resources"}
@@ -30,9 +30,16 @@ FIGURES = ("sat", "opt", "unsat", "htg", "scaled")
 UNSOLVED = 6000.0
 TIME_LIMIT = 1800
 TRACK_NAMES = {"sat": "Satisficing", "opt": "Optimal", "unsat": "Unsolvability"}
+# Each track's solvers with their labels, each drawn against its abstraction, the first with solid lines.
+PAIRS = {
+    "sat": (("lama", r"\LAMA", r"\LAMAa"), ("asp", r"\ASP", r"\ASPa")),
+    "opt": (("lmcut", r"\LMcut", r"\LMcuta"), ("asp", r"\ASP", r"\ASPa")),
+    "unsat": (("ms", r"\MS", r"\MSa"),),
+}
 # Lifts a cactus plot's source title over the legend that sits just above the plot.
 ABOVE_LEGEND = "title style={yshift=11pt}"
-BASELINES = {"sat": ("lama", r"\LAMA", r"\LAMAa"), "opt": ("lmcut", r"\LMcut", r"\LMcuta")}
+# A plot that carries its own legend, centred above it in rows of two.
+CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
 # Branches from before #135 still call Fast Downward's modes by their old names.
 OLD_NAMES = {
     "sat": {"fd": "lama", "abs-fd": "abs-lama"},
@@ -50,20 +57,17 @@ def main():
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
     if args.kind == "scaled":
-        _render(
-            args.paper, [_scaled_panel(load_tracks(args.branch, args.kind, manifests)["symmetries"])], Path(args.out)
-        )
-        print(f"Wrote {args.out}")
-        return
-    panel = _htg_panel if args.kind == "htg" else _panel
-    # A label like #134 would otherwise read as a macro parameter in LaTeX.
-    base_label = args.base_label.replace("#", r"\#")
-    if args.no_base:
-        panels = [panel("", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources))]
+        panels = [_scaled_plot(load_tracks(args.branch, args.kind, manifests)["symmetries"])]
+    elif args.no_base:
+        panels = [_panel("", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources))]
     else:
+        # A label like #134 would otherwise read as a macro parameter in LaTeX.
+        base_label = args.base_label.replace("#", r"\#")
         panels = [
-            panel(f"Before ({base_label})", args.kind, load_tracks(args.base, args.kind, base_manifests, args.sources)),
-            panel("After", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources)),
+            _panel(
+                f"Before ({base_label})", args.kind, load_tracks(args.base, args.kind, base_manifests, args.sources)
+            ),
+            _panel("After", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources)),
         ]
     _render(args.paper, panels, Path(args.out))
     print(f"Wrote {args.out}")
@@ -97,18 +101,10 @@ def load_tracks(revision, kind, manifests, sources=None):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
     if kind == "htg":
         return {track: load_tracks(revision, f"{track}-htg", manifests)["symmetries"] for track in ("sat", "opt")}
-    if not sources:
-        sources = KIND_SOURCES[kind]
     tracks = {}
-    for source in sources:
-        text = _results_at(revision, kind, source)
-        rows = select(list(csv.DictReader(io.StringIO(text))), kind, source, manifests)
-        with tempfile.NamedTemporaryFile("w", suffix=".csv", newline="") as stream:
-            writer = csv.DictWriter(stream, fieldnames=rows[0].keys())
-            writer.writeheader()
-            writer.writerows(rows)
-            stream.flush()
-            tracks[source] = _finished_problems(stream.name)[1]
+    for source in sources or KIND_SOURCES[kind]:
+        rows = csv.DictReader(io.StringIO(_results_at(revision, kind, source)))
+        tracks[source] = finished_problems(select(rows, kind, source, manifests))[1]
     return tracks
 
 
@@ -130,168 +126,123 @@ def _results_at(revision, kind, source):
     raise SystemExit(f"No {kind}/{source} results.csv at {revision}")
 
 
+def paper_figures(revision):
+    """The paper's figures at a revision, by the file name main.tex includes, each the body of a PDF."""
+    tracks = {kind: load_tracks(revision, kind, []) for kind in TRACK_NAMES}
+    htg = load_tracks(revision, "htg", [])
+    # Each PDF is as wide as the float main.tex includes it in, so it keeps the paper's sizes.
+    return {
+        "results": _minipage(r"\textwidth", _results_figure(tracks)),
+        "scaled": _minipage(r"\columnwidth", _scaled_plot(load_tracks(revision, "scaled", [])["symmetries"])),
+        "htg": _minipage(r"\columnwidth", _htg_figure(htg, PAPER_ROW_GAP)),
+    }
+
+
+# The paper sets its runtime plots a little further below the cactus plots than a PR's figure does.
+PAPER_ROW_GAP = "\n\n\\smallskip\n\n\\medskip\n"
+
+
+def _results_figure(tracks):
+    """Figure 1, every track's plots side by side, so each row joins the tracks' own rows."""
+    track_gap = "%\n\\hspace{0.1in}%\n\\hspace*{0.42in}%\n"
+    header = "%\n\\hspace{0.52in}%\n".join(_track_title(TRACK_NAMES[kind], len(tracks[kind])) for kind in tracks)
+    cactus_row = track_gap.join(_joined(_cactus_plots(kind, problems)) for kind, problems in tracks.items())
+    runtime_rows = []
+    for index in range(2):
+        groups = []
+        for kind, problems in tracks.items():
+            rows = _runtime_rows(kind, problems)
+            # The unsolvability track has no ASP row, so its place stays empty.
+            groups.append(_joined(rows[index]) if index < len(rows) else "\\hspace{\\plotsize}")
+        runtime_rows.append(_in_row(track_gap.join(groups)))
+    return (
+        _in_row(header)
+        + "\n\n\\vspace{0.4em}\n"
+        + _in_row(cactus_row)
+        + PAPER_ROW_GAP
+        + "\n\n\\smallskip\n".join(runtime_rows)
+    )
+
+
 def _panel(title, kind, tracks):
     """One track's half of a PR's figure, under a title."""
+    if kind == "htg":
+        return _titled(title, _htg_figure(tracks, "\n\n\\medskip\n"), 2)
     body = (
-        _track_header(TRACK_NAMES[kind], len(tracks))
-        + _row(_cactus_plots(kind, tracks))
+        _in_row(_track_title(TRACK_NAMES[kind], len(tracks)))
+        + "\n\n\\vspace{0.4em}\n"
+        + _in_row(_joined(_cactus_plots(kind, tracks)))
         + "\n\n\\medskip\n"
-        + "\n\n\\smallskip\n".join(_row(plots) for plots in _runtime_rows(kind, tracks))
+        + "\n\n\\smallskip\n".join(_in_row(_joined(plots)) for plots in _runtime_rows(kind, tracks))
     )
     return _titled(title, body, len(tracks))
 
 
+def _htg_figure(tracks, row_gap):
+    """Both hard-to-ground tracks, each with its baseline alone and its own legend."""
+    # Both plots label their own y axis, so they need more room between them than the paper's rows.
+    gap = "0.75in"
+    cactus_plots, runtimes = [], []
+    for track, problems in tracks.items():
+        baseline = PAIRS[track][0]
+        options = f"ylabel={{Problems solved}}, {CENTRED_LEGEND}"
+        cactus_plots.append(_cactus_plot(TRACK_NAMES[track], problems, (baseline,), options, legend=True))
+        runtimes.append(_runtime_plot(problems, baseline, labelled=True))
+    return _in_row(_joined(cactus_plots, gap)) + row_gap + _in_row(_joined(runtimes, gap))
+
+
 def _cactus_plots(kind, tracks):
-    """One track's problems solved over time, a plot per abstraction source."""
-    if kind == "unsat":
-        problems = tracks["symmetries"]
-        lines = [
-            rf"\addplot[conc, solid, thick, const plot, mark=none] coordinates {{{cactus(problems, 'ms')}}};",
-            r"\addlegendentry{\MS}",
-            rf"\addplot[abst, solid, thick, const plot, mark=none] coordinates {{{cactus(problems, 'abs-ms')}}};",
-            r"\addlegendentry{\MSa}",
-        ]
-        options = (
-            f"{ABOVE_LEGEND}, ylabel={{Problems proved}}, legend style={{overlay, at={{(0.5,1.04)}}, anchor=south}}"
-        )
-        return [_cactus_plot(SOURCES["symmetries"], options, lines)]
-
-    baseline, label, abstract_label = BASELINES[kind]
-    curves = (
-        (baseline, "conc, solid", label),
-        (f"abs-{baseline}", "abst, solid", abstract_label),
-        ("asp", "conc, dashed", r"\ASP"),
-        ("abs-asp", "abst, dashed", r"\ASPa"),
-    )
-    cactus_plots = []
-    last = list(tracks)[-1]
-    for source, problems in tracks.items():
-        lines = []
-        for mode, style, name in curves:
-            lines.append(rf"\addplot[{style}, thick, const plot, mark=none] coordinates {{{cactus(problems, mode)}}};")
-            # One legend above the plots, carried by the right one.
-            if source == last:
-                lines.append(rf"\addlegendentry{{{name}}}")
-        options = f"{ABOVE_LEGEND}, ylabel={{Problems solved}}"
+    """One track's problems solved over time, a plot per abstraction source, the right one carrying the legend."""
+    ylabel = "Problems proved" if kind == "unsat" else "Problems solved"
+    plots = []
+    for index, (source, problems) in enumerate(tracks.items()):
         if len(tracks) == 1:
-            # Alone, the plot is too narrow for one row, so the baselines sit above ASP.
-            options += ", legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
-        elif source == last:
-            options = f"{ABOVE_LEGEND}, ylabel={{}}, legend style={{overlay, at={{(-0.16,1.04)}}, anchor=south}}"
-        cactus_plots.append(_cactus_plot(SOURCES[source], options, lines))
-    return cactus_plots
+            options, legend = f"ylabel={{{ylabel}}}, {CENTRED_LEGEND}", True
+        elif index == 0:
+            options, legend = f"ylabel={{{ylabel}}}", False
+        else:
+            options, legend = "ylabel={}, legend style={overlay, at={(-0.16,1.04)}, anchor=south}", True
+        plots.append(_cactus_plot(SOURCES[source], problems, PAIRS[kind], options, legend))
+    return plots
 
 
-def _runtime_rows(kind, tracks):
-    """One track's runtime per problem, a row per solver and a plot per abstraction source in each."""
-    if kind == "unsat":
-        return [
-            [rf"\runtimeplot[ylabel={{\MSa{{}} time (s)}}]{{\MS}}{{{scatter(tracks['symmetries'], 'ms', 'abs-ms')}}}"]
-        ]
-    baseline, label, abstract_label = BASELINES[kind]
-    rows = []
-    for solver, solver_label, abstraction_label in ((baseline, label, abstract_label), ("asp", r"\ASP", r"\ASPa")):
-        plots = []
-        for index, problems in enumerate(tracks.values()):
-            # The cactus plots above name the sources, and only the left plot labels its y axis.
-            option = rf"ylabel={{{abstraction_label}{{}} time (s)}}" if index == 0 else "yticklabels={}"
-            plots.append(rf"\runtimeplot[{option}]{{{solver_label}}}{{{scatter(problems, solver, f'abs-{solver}')}}}")
-        rows.append(plots)
-    return rows
-
-
-def _cactus_plot(source_title, options, lines):
+def _cactus_plot(title, problems, pairs, options, legend):
+    lines = []
+    for (solver, label, abstract_label), dash in zip(pairs, ("solid", "dashed")):
+        for mode, color, name in ((solver, "conc", label), (f"abs-{solver}", "abst", abstract_label)):
+            lines.append(
+                rf"\addplot[{color}, {dash}, thick, const plot, mark=none] coordinates {{{cactus(problems, mode)}}};"
+            )
+            if legend:
+                lines.append(rf"\addlegendentry{{{name}}}")
     return (
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
-        + rf"\begin{{semilogxaxis}}[cactusplot, title={{\small {source_title}}}, {options}]"
+        + rf"\begin{{semilogxaxis}}[cactusplot, title={{\small {title}}}, {ABOVE_LEGEND}, {options}]"
         + "\n"
         + "\n".join(lines)
         + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
     )
 
 
-# Both htg plots label their own y axis, so they need more room between them than the paper's rows.
-HTG_GAP = "0.75in"
+def _runtime_rows(kind, tracks):
+    """One track's runtime per problem, a row per solver and a plot per abstraction source in each."""
+    # The cactus plots above name the sources, so only the left plot labels its y axis.
+    return [
+        [_runtime_plot(problems, pair, labelled=index == 0) for index, problems in enumerate(tracks.values())]
+        for pair in PAIRS[kind]
+    ]
 
 
-def _htg_panel(title, _kind, tracks):
-    return _titled(title, _htg_body(tracks, "\n\n\\medskip\n"), 2)
-
-
-def _htg_body(tracks, gap):
-    cactus_plots, runtimes = [], []
-    for track in ("sat", "opt"):
-        name = TRACK_NAMES[track]
-        baseline, label, abstract_label = BASELINES[track]
-        problems = tracks[track]
-        lines = [
-            rf"\addplot[conc, solid, thick, const plot, mark=none] coordinates {{{cactus(problems, baseline)}}};",
-            rf"\addlegendentry{{{label}}}",
-            rf"\addplot[abst, solid, thick, const plot, mark=none] coordinates {{{cactus(problems, 'abs-' + baseline)}}};",
-            rf"\addlegendentry{{{abstract_label}}}",
-        ]
-        # Each track has its own baseline, so each plot carries its own legend.
-        options = (
-            f"{ABOVE_LEGEND}, ylabel={{Problems solved}}, legend style={{overlay, at={{(0.5,1.04)}}, anchor=south}}"
-        )
-        cactus_plots.append(_cactus_plot(name, options, lines))
-        points = scatter(problems, baseline, f"abs-{baseline}")
-        runtimes.append(rf"\runtimeplot[ylabel={{{abstract_label}{{}} time (s)}}]{{{label}}}{{{points}}}")
-    return _row(cactus_plots, HTG_GAP) + gap + _row(runtimes, HTG_GAP)
-
-
-# The tracks of the paper's Figure 1, side by side, and the gap between two of them.
-PAPER_TRACKS = ("sat", "opt", "unsat")
-TRACK_GAP = "%\n\\hspace{0.1in}%\n\\hspace*{0.42in}%\n"
-# The paper sets its runtime plots a little further below the cactus plots than a PR's figure does.
-PAPER_ROW_GAP = "\n\n\\smallskip\n\n\\medskip\n"
-
-
-def paper_figures(revision):
-    """The paper's figures at a revision, by the file name main.tex includes, each the body of a PDF."""
-    tracks = {kind: load_tracks(revision, kind, []) for kind in PAPER_TRACKS}
-    scaled = load_tracks(revision, "scaled", [])["symmetries"]
-    return {
-        "results": _float(r"\textwidth", _results_body(tracks)),
-        "scaled": _float(r"\columnwidth", _scaled_panel(scaled)),
-        "htg": _float(r"\columnwidth", _htg_body(load_tracks(revision, "htg", []), PAPER_ROW_GAP)),
-    }
-
-
-def _results_body(tracks):
-    # Every track's plots in one row, so each row of the figure joins the tracks' own rows.
-    header = _in_row(
-        "%\n\\hspace{0.52in}%\n".join(_track_title(TRACK_NAMES[kind], len(tracks[kind])) for kind in PAPER_TRACKS)
-    )
-    cactus_row = _in_row(TRACK_GAP.join(_joined(_cactus_plots(kind, tracks[kind])) for kind in PAPER_TRACKS))
-    runtime_rows = []
-    for index in range(2):
-        groups = []
-        for kind in PAPER_TRACKS:
-            rows = _runtime_rows(kind, tracks[kind])
-            # The unsolvability track has no ASP row, so its place stays empty.
-            groups.append(_joined(rows[index]) if index < len(rows) else "\\hspace{\\plotsize}")
-        runtime_rows.append(_in_row(TRACK_GAP.join(groups)))
-    return header + "\n\n\\vspace{0.4em}\n" + cactus_row + PAPER_ROW_GAP + "\n\n\\smallskip\n".join(runtime_rows)
-
-
-def _float(width, body):
-    # As wide as the float main.tex includes it in, so the PDF keeps the paper's sizes.
-    return f"\\noindent\\begin{{minipage}}{{{width}}}\\centering\n{body}\n\\end{{minipage}}"
-
-
-def _track_header(name, columns):
-    return _in_row(_track_title(name, columns)) + "\n\n\\vspace{0.4em}\n"
+def _runtime_plot(problems, pair, labelled):
+    solver, label, abstract_label = pair
+    option = rf"ylabel={{{abstract_label}{{}} time (s)}}" if labelled else "yticklabels={}"
+    return rf"\runtimeplot[{option}]{{{label}}}{{{scatter(problems, solver, f'abs-{solver}')}}}"
 
 
 def _track_title(name, columns):
     # The track's name over its plots and the gaps between them, ruled like a table's cmidrule.
     width = f"\\dimexpr{columns}\\plotsize+{0.3 * (columns - 1):.1f}in\\relax"
     return rf"\parbox[b]{{{width}}}{{\centering\small {name}\\[-2pt]\rule{{\linewidth}}{{0.4pt}}}}"
-
-
-def _row(plots, gap="0.3in"):
-    return _in_row(_joined(plots, gap))
 
 
 def _joined(plots, gap="0.3in"):
@@ -314,6 +265,10 @@ def _titled(title, body, columns):
     )
 
 
+def _minipage(width, body):
+    return f"\\noindent\\begin{{minipage}}{{{width}}}\\centering\n{body}\n\\end{{minipage}}"
+
+
 SCALED_MODES = (("ms", "conc", "*", r"\MS"), ("abs-ms", "abst", "square*", r"\MSa"))
 
 
@@ -325,7 +280,7 @@ def scaled_coverage(problems, mode):
     return [(size, 100 * sum(proved) / len(proved)) for size, proved in sorted(by_size.items())]
 
 
-def _scaled_panel(problems):
+def _scaled_plot(problems):
     lines = []
     for mode, style, mark, name in SCALED_MODES:
         shares = " ".join(f"({size},{share:.2f})" for size, share in scaled_coverage(problems, mode))
@@ -373,11 +328,10 @@ def solve_time(row):
 def _render(paper, panels, out):
     """Typeset the panels side by side with the paper's preamble, then crop the page to a PNG."""
     with tempfile.TemporaryDirectory() as directory:
-        pdf = Path(directory) / "figure.pdf"
-        render_pdf(paper, "\\noindent\\mbox{" + r"\hspace{2em}".join(panels) + "}", pdf, margins=8)
+        render_pdf(paper, "\\noindent\\mbox{" + r"\hspace{2em}".join(panels) + "}", Path(directory, "figure.pdf"), 8)
         command = ["pdftoppm", "-png", "-r", "250", "-singlefile", "figure.pdf", "figure"]
         subprocess.run(command, cwd=directory, check=True, capture_output=True)
-        shutil.copy(Path(directory) / "figure.png", out)
+        shutil.copy(Path(directory, "figure.png"), out)
 
 
 def render_pdf(paper, body, out, margins=0):
@@ -385,18 +339,16 @@ def render_pdf(paper, body, out, margins=0):
     preamble = Path(paper).read_text().split(r"\title{")[0]
     document = preamble + "\\pagestyle{empty}\n\\begin{document}\n" + body + "\n\\end{document}\n"
     with tempfile.TemporaryDirectory() as directory:
-        build = Path(directory)
         # The paper's style file has to sit next to the document that loads it.
         for style in Path(paper).parent.glob("*.sty"):
-            shutil.copy(style, build)
-        (build / "figure.tex").write_text(document)
-        commands = [
+            shutil.copy(style, directory)
+        Path(directory, "figure.tex").write_text(document)
+        for command in (
             ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "figure.tex"],
             ["pdfcrop", "--margins", str(margins), "figure.pdf", "cropped.pdf"],
-        ]
-        for command in commands:
-            subprocess.run(command, cwd=build, check=True, capture_output=True)
-        shutil.copy(build / "cropped.pdf", out)
+        ):
+            subprocess.run(command, cwd=directory, check=True, capture_output=True)
+        shutil.copy(Path(directory, "cropped.pdf"), out)
 
 
 def _argument_parser():

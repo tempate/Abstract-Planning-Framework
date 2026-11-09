@@ -239,18 +239,13 @@ branch a worktree has checked out cannot be deleted, and `git worktree prune` cl
 the entries whose directories are gone.
 
 For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
-with the merged results. `experiments.paper` writes them into the touched columns of the
-per-domain table, `tab:results`, after checking that the merge's parent reproduces every
-number it replaces, and skips a track whose results the table already holds. It then draws
-the three figures again from the merged results, as the PDFs `main.tex` includes from
-`figures/`:
+with the merged results. `experiments.paper` writes `main`'s results into every column of
+the per-domain table, `tab:results`, and draws the three figures again as the PDFs
+`main.tex` includes from `figures/`:
 
 ```bash
-python -m experiments.paper --base origin/main~1 --branch origin/main \
-  --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json
+python -m experiments.paper
 ```
-
-Without `--manifests` it draws the figures alone.
 
 Fix any number in the prose that the change makes wrong by hand.
 
