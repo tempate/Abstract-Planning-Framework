@@ -10,7 +10,7 @@ from experiments import scan
 class ScanTests(unittest.TestCase):
     def test_a_later_submit_scans_the_problems_its_renumbered_tasks_hold(self):
         directory = Path(tempfile.mkdtemp())
-        track = SimpleNamespace(benchmarks_dir="benchmarks")
+        track = SimpleNamespace(benchmarks_dir="benchmarks", abstract_arguments=())
 
         def fake_scan(_benchmarks, domain_name, problem, *_):
             return f"{domain_name}/{problem}", f"[{problem}]"

@@ -14,11 +14,19 @@ from core.outcomes import IntegrationError, OutOfMemoryError, SymmetryTimeoutErr
 _TRANSLATE_OUT_OF_MEMORY = 20
 
 
-def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, translator_path=PDDL_SYMMETRIES_TRANSLATOR):
-    """Run PDDL Symmetries and return its non-trivial object classes."""
+def find_symmetric_object_sets(
+    domain_path, problem_path, time_limit=300, translator_path=PDDL_SYMMETRIES_TRANSLATOR, before_grounding=False
+):
+    """Run PDDL Symmetries and return its non-trivial object classes.
+
+    Before grounding, the classes come from the lifted task alone: a task too large
+    to ground still gets them, but an unreachable goal is no longer detected.
+    """
     if time_limit < 1:
         raise ValueError("PDDL Symmetries time limit must be positive")
     command = _translator_command(domain_path, problem_path, time_limit, translator_path)
+    if before_grounding:
+        command.append("--symmetries-before-grounding")
     return _parse_object_sets(_run_translator(command, time_limit))
 
 

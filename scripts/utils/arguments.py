@@ -30,6 +30,11 @@ def abstraction_arguments():
         "--symmetry-time-limit", type=positive_int, default=300, help="Symmetry discovery time limit in seconds"
     )
     parser.add_argument(
+        "--symmetries-before-grounding",
+        action="store_true",
+        help="Find the symmetries on the lifted task, without grounding it first",
+    )
+    parser.add_argument(
         "--abstraction-source",
         choices=ABSTRACTION_SOURCES,
         default=SYMMETRIES,
@@ -71,6 +76,7 @@ def abstract_planning_config(args):
         objects_to_abstract=args.objects_to_abstract,
         abstract_name=args.abstract_name,
         symmetry_time_limit=args.symmetry_time_limit,
+        symmetries_before_grounding=args.symmetries_before_grounding,
         abstraction_source=args.abstraction_source,
         class_rank=args.class_rank,
     )

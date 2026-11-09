@@ -51,12 +51,12 @@ import sys, tempfile
 from core.integrations.numeric_fast_downward import detect_resources
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 
-domain, problem, source = sys.argv[1:4]
+domain, problem, source, before_grounding = sys.argv[1:5]
 if source == "resources":
     with tempfile.TemporaryDirectory() as directory:
         classes = detect_resources(directory, domain, problem).resources
 else:
-    classes = find_symmetric_object_sets(domain, problem)
+    classes = find_symmetric_object_sets(domain, problem, before_grounding=before_grounding == "1")
 print(f"{len(classes)} classes" if classes else "none")
 """
 RANK = """
@@ -67,8 +67,10 @@ from core.integrations.unified_planning import read_problem, without_action_cost
 from core.metrics import PlanningMetrics
 from core.planning.config import AbstractPlanningConfig
 
-domain, problem, source = sys.argv[1:4]
-config = AbstractPlanningConfig(domain, problem, abstraction_source=source)
+domain, problem, source, before_grounding = sys.argv[1:5]
+config = AbstractPlanningConfig(
+    domain, problem, abstraction_source=source, symmetries_before_grounding=before_grounding == "1"
+)
 task = without_action_costs(read_problem(domain, problem))
 validate_supported_problem(task)
 classes = _candidate_classes(config, PlanningMetrics())
@@ -110,7 +112,7 @@ def main():
     print(f"Scanning {len(pending)} of {len(tasks)} problems; {len(tasks) - len(pending)} already in {log_file}")
 
     with ThreadPoolExecutor(max_workers=args.workers) as pool, open(log_file, "a", encoding="utf-8") as log:
-        scan = lambda task: _scan(track.benchmarks_dir, *task, script, source, args.timeout)
+        scan = lambda task: _scan(track.benchmarks_dir, *task, script, source, _before_grounding(track), args.timeout)
         for name, outcome in pool.map(scan, pending):
             log.write(f"{name}\t{outcome}\n")
             log.flush()
@@ -162,7 +164,7 @@ def _scan_task(track_name, track, index, source, timeout):
     if result.is_file():
         return
     domain_name, _, problem = task.rpartition("/")
-    name, outcome = _scan(track.benchmarks_dir, domain_name, problem, RANK, source, timeout)
+    name, outcome = _scan(track.benchmarks_dir, domain_name, problem, RANK, source, _before_grounding(track), timeout)
     result.parent.mkdir(parents=True, exist_ok=True)
     result.write_text(f"{name}\t{outcome}\n", encoding="utf-8")
 
@@ -224,9 +226,15 @@ def _name(task):
     return f"{domain_name}/{problem}"
 
 
-def _scan(benchmarks_dir, domain_name, problem, script, source, timeout):
+def _before_grounding(track):
+    # The scan must find the classes the runs will find, so it follows the track's arguments.
+    return "--symmetries-before-grounding" in track.abstract_arguments
+
+
+def _scan(benchmarks_dir, domain_name, problem, script, source, before_grounding, timeout):
     problem_path = Path(benchmarks_dir) / domain_name / problem
-    command = [sys.executable, "-c", script, str(find_domain(problem_path)), str(problem_path), source]
+    flag = "1" if before_grounding else "0"
+    command = [sys.executable, "-c", script, str(find_domain(problem_path)), str(problem_path), source, flag]
     limit_memory = lambda: resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
     try:
         completed = subprocess.run(
