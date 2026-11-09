@@ -407,6 +407,17 @@ class AbstractionTransformationTests(unittest.TestCase):
                 with self.assertRaisesRegex(AbstractionError, "disjunctive"):
                     _build_from_problem(problem, ["a", "b"])
 
+    def test_rejects_conditional_effects(self):
+        problem, item, a, b = _two_object_problem("conditional", "conditional_item")
+        marked = Fluent("marked", BoolType(), target=item)
+        problem.add_fluent(marked, default_initial_value=False)
+        mark = InstantaneousAction("mark")
+        mark.add_effect(marked(b), True, marked(a))
+        problem.add_action(mark)
+
+        with self.assertRaisesRegex(AbstractionError, "conditional effects"):
+            _build_from_problem(problem, ["a", "b"])
+
     def test_rewrites_conditions_goals_and_constraints(self):
         problem, item, a, b = _two_object_problem("expressions", "expression_item")
         marked = Fluent("marked", BoolType(), target=item)
@@ -417,7 +428,7 @@ class AbstractionTransformationTests(unittest.TestCase):
         variable = Variable("candidate", item)
         action = InstantaneousAction("act")
         action.add_precondition(marked(a))
-        action.add_effect(marked(variable), True, marked(b), forall=(variable,))
+        action.add_effect(marked(variable), True, forall=(variable,))
         problem.add_action(action)
         problem.add_goal(marked(b))
         problem.add_trajectory_constraint(Always(marked(a)))
@@ -428,7 +439,6 @@ class AbstractionTransformationTests(unittest.TestCase):
         copied_effect = copied_action.effects[0]
 
         self.assertEqual(copied_action.preconditions, [marked(abstract_object)])
-        self.assertEqual(copied_effect.condition, marked(abstract_object))
         self.assertEqual(len(copied_effect.forall), 1)
         self.assertEqual(result.problem.goals, [marked(abstract_object)])
         self.assertEqual(result.problem.trajectory_constraints[0].arg(0), marked(abstract_object))
