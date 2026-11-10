@@ -1,6 +1,7 @@
 """PDDL Symmetries subprocess integration."""
 
 import ast
+import os
 import re
 import subprocess
 import sys
@@ -59,9 +60,11 @@ def _run_translator(command, time_limit):
     """Run the translator in a scratch directory and return its standard output."""
     try:
         with TemporaryDirectory(prefix="pddl-symmetries-") as working_directory:
+            # The classes change with the string-hash seed, so a fixed seed makes them repeatable.
             result = subprocess.run(
                 command,
                 cwd=working_directory,
+                env={**os.environ, "PYTHONHASHSEED": "0"},
                 capture_output=True,
                 encoding="utf-8",
                 errors="replace",
