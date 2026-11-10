@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-09 13:25 — experiments/htg/opt/results.csv
+2026-11-10 10:07 — experiments/htg/opt/results.csv
 
 288 problems compared over abs-lmcut, lmcut
 
@@ -10,9 +10,9 @@
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
 Plans found                      86 (29.9%)   53 (18.4%)
-Timeouts                        177 (61.5%)  193 (67.0%)
-Out of memory                     18 (6.2%)   41 (14.2%)
-Others                             7 (2.4%)     1 (0.3%)
+Timeouts                        178 (61.8%)  193 (67.0%)
+Out of memory                     20 (6.9%)   41 (14.2%)
+Others                             4 (1.4%)     1 (0.3%)
 Total problems                          288          288
 ```
 
@@ -22,10 +22,10 @@ Total problems                          288          288
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
 Plans found by both                      53           53
-Faster                           27 (50.9%)   26 (49.1%)
+Faster                           29 (54.7%)   24 (45.3%)
 Found when the other did not             33            0
-Median runtime                      30.44 s      43.46 s
-Total runtime                    8,076.72 s  16,299.39 s
+Median runtime                      27.21 s      43.46 s
+Total runtime                    7,123.92 s  16,299.39 s
 Shorter plan                       0 (0.0%)     0 (0.0%)
 Same plan length                53 (100.0%)  53 (100.0%)
 Median plan length                        8            8
@@ -37,11 +37,10 @@ Total plan length                       382          382
 ```
 Killed during                        LMcutᵅ
 -------------------------------------------
-Abstract search                   120 (68%)
-Translating the task to ASP          1 (1%)
-Guided concrete search             38 (21%)
-Unguided concrete search           18 (10%)
-Total                                   177
+Abstract search                   120 (67%)
+Guided concrete search             39 (22%)
+Unguided concrete search           19 (11%)
+Total                                   178
 ```
 
 ## How the successes were solved
