@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-09 09:01 — experiments/ipc/unsat/symmetries/results.csv
+2026-11-10 14:53 — experiments/ipc/unsat/symmetries/results.csv
 
 111 problems compared over abs-ms, ms
 
@@ -9,11 +9,11 @@
 ```
 Verdict                                M&Sᵅ          M&S
 --------------------------------------------------------
-Unsolvable                       42 (37.8%)   49 (44.1%)
-Unknown                          13 (11.7%)     0 (0.0%)
-Timeouts                         13 (11.7%)     6 (5.4%)
-Out of memory                    43 (38.7%)   56 (50.5%)
-Others                             0 (0.0%)     0 (0.0%)
+Unsolvable                       45 (40.5%)   66 (59.5%)
+Unknown                          14 (12.6%)     0 (0.0%)
+Timeouts                         23 (20.7%)    10 (9.0%)
+Out of memory                    22 (19.8%)   31 (27.9%)
+Others                             7 (6.3%)     4 (3.6%)
 Total problems                          111          111
 ```
 
@@ -22,11 +22,11 @@ Total problems                          111          111
 ```
 Metric                                 M&Sᵅ          M&S
 --------------------------------------------------------
-Proved unsolvable by both                36           36
-Faster                            8 (22.2%)   28 (77.8%)
-Proved when the other did not             6           13
-Median runtime                      12.76 s       4.39 s
-Total runtime                    5,498.08 s   3,135.04 s
+Proved unsolvable by both                40           40
+Faster                           11 (27.5%)   29 (72.5%)
+Proved when the other did not             5           26
+Median runtime                      55.70 s       8.54 s
+Total runtime                    9,012.07 s   4,070.54 s
 ```
 
 ## Where the timeouts died
@@ -34,8 +34,8 @@ Total runtime                    5,498.08 s   3,135.04 s
 ```
 Killed during                          M&Sᵅ
 -------------------------------------------
-Abstract search                   13 (100%)
-Total                                    13
+Abstract search                   23 (100%)
+Total                                    23
 ```
 
 ## Proved unsolvable by domain
@@ -46,9 +46,9 @@ Domain (problems)                 M&Sᵅ       M&S
 bag-barman (13)                      0         0
 bag-gripper (11)                     0         7
 cave-diving (25)                     6         1
-document-transfer (20)               7        10
-over-nomystery (22)                 12        15
-over-rovers (19)                    16        15
+document-transfer (20)               8        19
+over-nomystery (22)                 12        20
+over-rovers (19)                    18        18
 pegsol-row5 (1)                      1         1
-Total (111)                         42        49
+Total (111)                         45        66
 ```
