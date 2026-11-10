@@ -1,8 +1,8 @@
 # Benchmark report
 
-2026-11-10 10:07 — experiments/htg/sat/results.csv
+2026-11-10 10:55 — experiments/htg/sat/results.csv
 
-288 problems compared over abs-lama, lama
+288 problems compared over abs-lama, lama; 180 dropped as unfinished
 
 ## Coverage
 

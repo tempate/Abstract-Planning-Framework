@@ -1,8 +1,8 @@
 # Benchmark report
 
-2026-11-10 10:07 — experiments/htg/opt/results.csv
+2026-11-10 10:55 — experiments/htg/opt/results.csv
 
-288 problems compared over abs-lmcut, lmcut
+288 problems compared over abs-lmcut, lmcut; 180 dropped as unfinished
 
 ## Coverage
 
