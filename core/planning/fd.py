@@ -4,7 +4,7 @@ from dataclasses import dataclass, replace
 
 from core.integrations.fast_downward import Search, find_plan, find_sas_plan, parse_plan_actions
 from core.metrics import PlanningMetrics
-from core.outcomes import UnsolvableTaskError
+from core.outcomes import SOLVABLE, UNSOLVABLE, UnsolvableTaskError
 from core.planning.config import PlanningConfig
 from core.planning.execution import temp_run_dir
 
@@ -34,6 +34,21 @@ class FastDownward:
             "configuration": config.as_dict(),
             "plan": plan,
             "success": plan is not None,
+            "run_id": run_id,
+            "metrics": metrics.as_dict(),
+        }
+
+    def check_solvability(self, config: PlanningConfig, on_update=None):
+        """Search the concrete task, which settles it either way."""
+        metrics = PlanningMetrics(on_update=on_update)
+        with metrics.measure("total"):
+            with temp_run_dir(LABEL) as (base_dir, run_id):
+                with metrics.measure("fd_search"):
+                    plan = find_plan(base_dir, config.domain_path, config.problem_path, LABEL, self.search)
+
+        return {
+            "configuration": config.as_dict(),
+            "verdict": SOLVABLE if plan is not None else UNSOLVABLE,
             "run_id": run_id,
             "metrics": metrics.as_dict(),
         }

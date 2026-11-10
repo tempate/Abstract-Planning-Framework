@@ -17,6 +17,7 @@ SOLVER_LABELS = {
     "lama": "LAMA",
     "lmcut": "LMcut",
     "ms": "M&S",
+    "oss": "OSS",
 }
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")

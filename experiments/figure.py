@@ -269,7 +269,11 @@ def _minipage(width, body):
     return f"\\noindent\\begin{{minipage}}{{{width}}}\\centering\n{body}\n\\end{{minipage}}"
 
 
-SCALED_MODES = (("ms", "conc", "*", r"\MS"), ("abs-ms", "abst", "square*", r"\MSa"))
+SCALED_MODES = (
+    ("ms", "conc", "*", r"\MS"),
+    ("abs-ms", "abst", "square*", r"\MSa"),
+    ("oss", "conc, dashed", "triangle*", "OSS"),
+)
 
 
 def scaled_coverage(problems, mode):
@@ -293,7 +297,7 @@ def _scaled_plot(problems):
         "ylabel={Problems proved (\\%)}, axis line style={black!50}, tick style={black!50}, "
         "xtick pos=bottom, ytick pos=left, tick label style={font=\\footnotesize}, label style={font=\\footnotesize}, "
         "legend style={font=\\footnotesize, draw=none, fill=none, at={(0.5,1.03)}, anchor=south, "
-        "/tikz/every even column/.append style={column sep=10pt}}, legend columns=2, legend cell align=left]\n"
+        "/tikz/every even column/.append style={column sep=10pt}}, legend columns=3, legend cell align=left]\n"
         + "\n".join(lines)
         + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
     )

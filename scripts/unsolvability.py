@@ -1,7 +1,8 @@
 """Decide one PDDL task with MS-unsat, directly or through its abstraction.
 
-The abstraction over-approximates, so the two modes answer different questions.
-``ms`` settles the task: solvable or unsolvable. ``abs-ms`` searches the
+The abstraction over-approximates, so the modes answer different questions.
+``ms`` settles the task: solvable or unsolvable. So does ``oss``, which runs blind
+A* with structural symmetry pruning instead of MS-unsat. ``abs-ms`` searches the
 abstraction instead, where no plan proves the concrete task unsolvable but a plan
 may exist only because of the relaxation, and is reported as unknown.
 """
@@ -27,8 +28,8 @@ def _report(result):
 
 def _compute(args):
     on_update = progress_callback()
-    if args.mode == "ms":
-        return BACKENDS["ms"].check_solvability(planning_config(args), on_update)
+    if args.mode in ("ms", "oss"):
+        return BACKENDS[args.mode].check_solvability(planning_config(args), on_update)
     if args.mode == "abs-ms":
         return abstraction.check_solvability(abstract_planning_config(args), on_update)
 
@@ -50,6 +51,12 @@ def _argument_parser():
         "ms",
         parents=[shared],
         help="Search the task itself",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
+        "oss",
+        parents=[shared],
+        help="Search the task itself with blind A*, pruning symmetric states",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(

@@ -13,6 +13,8 @@ PLASP_BIN = _project_path("lib", "plasp", "bin", "plasp")
 SEQUENTIAL_ENCODING = _project_path("core", "encodings", "sequential-incremental.lp")
 
 FAST_DOWNWARD_SCRIPT = _project_path("lib", "downward", "fast-downward.py")
+# Silvan Sievers' fork of Fast Downward, whose A* prunes states symmetric to ones it has seen.
+STRUCTURAL_SYMMETRIES_SCRIPT = _project_path("lib", "structural-symmetries", "fast-downward.py")
 
 PDDL_SYMMETRIES_TRANSLATOR = _project_path("lib", "pddl-symmetries", "src", "translate", "translate.py")
 

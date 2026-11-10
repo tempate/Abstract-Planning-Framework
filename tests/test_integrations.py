@@ -7,9 +7,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.integrations.clingo import parse_plan_actions
-from core.integrations.fast_downward import LAMA, find_plan, pddl_to_sas
+from core.integrations.fast_downward import BLIND_OSS, LAMA, find_plan, pddl_to_sas
 from core.integrations.ms_unsat import has_plan
-from core.integrations.paths import MS_UNSAT_SEARCH
+from core.integrations.paths import MS_UNSAT_SEARCH, STRUCTURAL_SYMMETRIES_SCRIPT
 from core.integrations.plasp import sas_to_asp
 from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
 from core.plan import PlanAction
@@ -194,6 +194,24 @@ class MsUnsatTests(unittest.TestCase):
         ):
             with self.subTest(problem=str(problem)), tempfile.TemporaryDirectory() as directory:
                 self.assertIs(has_plan(directory, domain, problem, "concrete"), found)
+
+
+class StructuralSymmetriesTests(unittest.TestCase):
+    @unittest.skipUnless(
+        RUN_INTEGRATION and Path(STRUCTURAL_SYMMETRIES_SCRIPT).parent.joinpath("builds", "release").exists(),
+        "set RUN_PLANNER_INTEGRATION=1 with the structural symmetries fork built",
+    )
+    def test_blind_search_with_symmetry_pruning_decides_real_tasks(self):
+        benchmarks = Path(__file__).resolve().parents[1] / "experiments" / "benchmarks"
+        unsolvable = benchmarks / "unsolve-ipc-2016" / "bag-gripper"
+        solvable = benchmarks / "downward-benchmarks" / "gripper"
+        for domain, problem, found in (
+            (unsolvable / "domain.pddl", unsolvable / "prob01.pddl", False),
+            (solvable / "domain.pddl", solvable / "prob01.pddl", True),
+        ):
+            with self.subTest(problem=str(problem)), tempfile.TemporaryDirectory() as directory:
+                plan = find_plan(directory, domain, problem, "concrete", BLIND_OSS)
+                self.assertIs(plan is not None, found)
 
 
 def _completed(returncode, stderr=""):

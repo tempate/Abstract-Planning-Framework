@@ -128,12 +128,13 @@ TRACKS = {
         modes=("abs-ms", "ms"),
     ),
     # Unsolvable problems whose symmetric class grows, to see how each mode scales with it.
+    # oss prunes symmetric states in the concrete search, so it shows what that buys without abstracting.
     "scaled/symmetries": Track(
         directory=Path(unsat.__file__).parent / "scaled",
         suite=scaled.SUITE,
         benchmarks_dir=BENCHMARKS / "scaled",
         driver="scripts.unsolvability",
-        modes=("abs-ms", "ms"),
+        modes=("abs-ms", "ms", "oss"),
     ),
 }
 DEFAULT_TRACK = "sat/symmetries"
