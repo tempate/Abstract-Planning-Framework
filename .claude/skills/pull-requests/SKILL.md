@@ -110,8 +110,8 @@ Pass `--sources resources` or `--sources symmetries` for a PR that changes one a
 For a stacked PR, pass `--base <the base branch> --base-label '#<n>'` and the base's
 own manifests as `--base-manifests`. The script needs the paper checked out next to
 the repository, or `--paper`, plus `pdflatex`, `pdfcrop` and `pdftoppm`. After
-changing it, check that the base half reproduces the coordinates in the paper's
-`main.tex` from the `main` commit the paper's figure came from.
+changing it, check that `experiments.paper` still draws the paper's PDFs in `figures/`
+pixel for pixel from the `main` commit they came from.
 
 Daniel uploads a figure by dragging it into the description, so leave an HTML comment
 where it goes:
@@ -239,14 +239,12 @@ branch a worktree has checked out cannot be deleted, and `git worktree prune` cl
 the entries whose directories are gone.
 
 For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
-with the merged results. `experiments.paper` writes them into the touched columns of the
-per-domain table, `tab:results`, and the touched curves and runtime plots of Figure 1,
-`fig:results`. It first checks that the merge's parent reproduces every number it
-replaces, and it skips a track whose results the paper already holds:
+with the merged results. `experiments.paper` writes `main`'s results into every column of
+the per-domain table, `tab:ipc`, and draws the three figures again as the PDFs
+`main.tex` includes from `figures/`:
 
 ```bash
-python -m experiments.paper --base origin/main~1 --branch origin/main \
-  --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json
+python -m experiments.paper
 ```
 
 Fix any number in the prose that the change makes wrong by hand.
