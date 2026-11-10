@@ -36,6 +36,8 @@ class AbstractPlanningConfig(PlanningConfig):
     objects_to_abstract: Sequence[str] | None = None
     abstract_name: str | None = None
     symmetry_time_limit: int = 300
+    # Find the symmetries on the lifted task, for tasks too large to ground.
+    symmetries_before_grounding: bool = False
     abstraction_source: str = SYMMETRIES
     class_rank: int = 0
 

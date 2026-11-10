@@ -101,7 +101,10 @@ def _candidate_classes(config, metrics):
 
     with metrics.measure("symmetry_discovery"):
         symmetry_classes = find_symmetric_object_sets(
-            config.domain_path, config.problem_path, config.symmetry_time_limit
+            config.domain_path,
+            config.problem_path,
+            config.symmetry_time_limit,
+            before_grounding=config.symmetries_before_grounding,
         )
     if not symmetry_classes:
         raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")

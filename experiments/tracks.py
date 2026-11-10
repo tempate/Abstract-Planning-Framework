@@ -16,6 +16,9 @@ from experiments.ipc.unsat.scaled import suite as scaled
 # does not own the PDDL, so that two tracks over one collection cannot drift
 # onto different revisions of it.
 BENCHMARKS = Path(__file__).parent / "benchmarks"
+# PDDL Symmetries grounds the task before it searches for symmetries, and the
+# hard-to-ground problems run out of memory there, so they skip the grounding.
+HTG_ARGUMENTS = ("--symmetries-before-grounding",)
 
 
 @dataclass(frozen=True)
@@ -91,6 +94,7 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "htg-domains",
         driver="scripts.planner",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
+        abstract_arguments=HTG_ARGUMENTS,
     ),
     # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
     "opt-htg/symmetries": Track(
@@ -99,6 +103,7 @@ TRACKS = {
         benchmarks_dir=BENCHMARKS / "htg-domains",
         driver="scripts.planner",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+        abstract_arguments=HTG_ARGUMENTS,
         optimizing_arguments=("--optimize",),
     ),
     # The optimal suite, refined without gaps so that every plan is optimal, with
