@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-10 10:55 — experiments/htg/sat/results.csv
+2026-11-10 11:32 — experiments/htg/sat/results.csv
 
-288 problems compared over abs-lama, lama; 180 dropped as unfinished
+299 problems compared over abs-lama, lama; 169 dropped as unfinished
 
 ## Coverage
 
 ```
 Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
-Plans found                     190 (66.0%)  209 (72.6%)
-Timeouts                         32 (11.1%)   38 (13.2%)
-Out of memory                    66 (22.9%)   41 (14.2%)
+Plans found                     198 (66.2%)  220 (73.6%)
+Timeouts                         32 (10.7%)   38 (12.7%)
+Out of memory                    69 (23.1%)   41 (13.7%)
 Others                             0 (0.0%)     0 (0.0%)
-Total problems                          288          288
+Total problems                          299          299
 ```
 
 ## Head to head, over the problems both solved
@@ -21,15 +21,15 @@ Total problems                          288          288
 ```
 Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
-Plans found by both                     182          182
-Faster                             8 (4.4%)  174 (95.6%)
-Found when the other did not              8           27
-Median runtime                      31.83 s      17.69 s
-Total runtime                   32,193.29 s  17,746.06 s
-Shorter plan                      11 (6.0%)   33 (18.1%)
-Same plan length                138 (75.8%)  138 (75.8%)
+Plans found by both                     190          190
+Faster                             8 (4.2%)  182 (95.8%)
+Found when the other did not              8           30
+Median runtime                      48.46 s      23.99 s
+Total runtime                   35,590.05 s  18,888.60 s
+Shorter plan                      11 (5.8%)   33 (17.4%)
+Same plan length                146 (76.8%)  146 (76.8%)
 Median plan length                     18.5           19
-Total plan length                     7,477        7,403
+Total plan length                     7,735        7,661
 ```
 
 ## Where the timeouts died
@@ -48,10 +48,10 @@ Total                                    32
 ```
 Solved by                             LAMAᵅ
 -------------------------------------------
-Refined directly                 190 (100%)
+Refined directly                 198 (100%)
 Refined, some actions off            0 (0%)
 Solved above the abstract plan       0 (0%)
-Total                                   190
+Total                                   198
 ```
 
 ## Deletes relaxed by the refined plans
@@ -59,12 +59,12 @@ Total                                   190
 ```
 Deletes relaxed                       LAMAᵅ
 -------------------------------------------
-None                                 7 (4%)
-1 to 4                            119 (63%)
+None                                11 (6%)
+1 to 4                            123 (62%)
 5 to 9                               0 (0%)
-10 to 19                           42 (22%)
-20 or more                         22 (12%)
-Total                                   190
+10 to 19                           42 (21%)
+20 or more                         22 (11%)
+Total                                   198
 ```
 
 ## Plans found by domain
@@ -92,14 +92,17 @@ gnad-et-al-aaai19-large-instances (93)agricola-large        11        18
                             depots-large         0         1
                             satellite-large         3         5
                              tpp-large         0         9
-logistics-large-simple (16)     goal-1         4         4
-                                goal-2         4         4
-                                goal-3         4         4
-                                goal-4         4         4
+logistics-large-simple (20)     goal-1         5         5
+                                goal-2         5         5
+                                goal-3         5         5
+                                goal-4         5         5
+organic-synthesis-MIT (2)                      0         2
 organic-synthesis-alkene (17)                  15        15
+organic-synthesis-original (1)                   0         1
 pipesworld-tankage-nosplit (17)                  13        15
-rovers-large-simple (6)         goal-4         3         3
-                                goal-6         2         2
-                                goal-8         1         1
-Total (288)                                  190       209
+rovers-large-simple (10)        goal-2         1         1
+                                goal-4         3         3
+                                goal-6         3         3
+                                goal-8         3         3
+Total (299)                                  198       220
 ```
