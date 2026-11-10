@@ -15,6 +15,7 @@ from core.planning.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GRIPPER = PROJECT_ROOT / "experiments" / "benchmarks" / "downward-benchmarks" / "gripper"
+ORGANIC_SYNTHESIS = PROJECT_ROOT / "experiments" / "benchmarks" / "htg-domains" / "organic-synthesis-original"
 
 SYMMETRY_DOMAIN = """
 (define (domain selection)
@@ -258,6 +259,18 @@ class RealSymmetryIntegrationTests(unittest.TestCase):
         # The goal names every ball, and the four of them still win over the two
         # grippers: collapsing them is what drops the abstract horizon.
         self.assertEqual(set(selected.objects), {"ball1", "ball2", "ball3", "ball4"})
+
+    def test_classes_do_not_depend_on_the_callers_hash_seed(self):
+        # Hash seeds 1 and 2 give prob04 different hydrogen classes when the translator inherits them.
+        found = []
+        for seed in ("1", "2"):
+            with patch.dict(os.environ, {"PYTHONHASHSEED": seed}):
+                found.append(
+                    find_symmetric_object_sets(
+                        ORGANIC_SYNTHESIS / "domain.pddl", ORGANIC_SYNTHESIS / "prob04.pddl", before_grounding=True
+                    )
+                )
+        self.assertEqual(found[0], found[1])
 
 
 if __name__ == "__main__":
