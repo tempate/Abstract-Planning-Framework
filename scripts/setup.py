@@ -5,6 +5,7 @@ import hashlib
 import io
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -28,15 +29,17 @@ STRUCTURAL_SYMMETRIES_BUILD = ROOT / "lib" / "structural-symmetries" / "builds" 
 STRUCTURAL_SYMMETRIES_BUILD_ENV = {"CMAKE_POLICY_VERSION_MINIMUM": "3.5", "CXXFLAGS": "-Wno-template-body"}
 MS_UNSAT_URL = (
     "https://github.com/AI-Planning/unsolve-ipc-2016/raw/"
-    "97214352c59130a2d7cfdae0e7d696df6e2ac203/planners/team4v1/source.tar.gz"
+    "97214352c59130a2d7cfdae0e7d696df6e2ac203/planners/team4v2/source.tar.gz"
 )
-MS_UNSAT_ARCHIVE_SHA256 = "009566c94327e3959e6c0cfc2b3627377cee351d974932969973c73628bd1356"
-MS_UNSAT_ARCHIVE_ROOT = "MS-unsat/src/"
+MS_UNSAT_ARCHIVE_SHA256 = "25e862da2b5fddf658bca01f09be7392278d9dfc1771f72805c2333adbb96857"
+MS_UNSAT_ARCHIVE_ROOT = "MS-unsat-irr/src/"
 # Only the translator's Python and the two statically linked binaries are
 # needed, so the sources the archive also ships are left out.
 MS_UNSAT_MEMBERS = ("translate/", "preprocess/preprocess", "search/downward-release")
 MS_UNSAT_DIR = ROOT / "lib" / "ms-unsat" / "src"
 MS_UNSAT_SEARCH = MS_UNSAT_DIR / "search" / "downward-release"
+# Names the archive an install came from, so a new pin replaces an older install.
+MS_UNSAT_STAMP = MS_UNSAT_DIR / "archive.sha256"
 
 # Each of these fails silently at run time rather than at setup time: a missing
 # pybliss kills every abstract run in symmetry discovery, a missing Fast
@@ -134,7 +137,7 @@ def _plasp_is_installed():
 def _install_ms_unsat():
     """Install MS-unsat from the pinned competition archive, checking its checksum."""
     print("== MS-unsat")
-    if MS_UNSAT_SEARCH.exists():
+    if MS_UNSAT_STAMP.is_file() and MS_UNSAT_STAMP.read_text().strip() == MS_UNSAT_ARCHIVE_SHA256:
         print(f"already installed at {MS_UNSAT_DIR}")
         return
 
@@ -144,6 +147,9 @@ def _install_ms_unsat():
     if digest != MS_UNSAT_ARCHIVE_SHA256:
         raise RuntimeError(f"MS-unsat archive checksum mismatch: expected {MS_UNSAT_ARCHIVE_SHA256}, received {digest}")
 
+    # rmtree refuses a symlink, so a shared install reached through one stays untouched.
+    if MS_UNSAT_DIR.exists():
+        shutil.rmtree(MS_UNSAT_DIR)
     with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as bundle:
         for member in bundle.getmembers():
             relative = member.name.removeprefix(MS_UNSAT_ARCHIVE_ROOT)
@@ -154,6 +160,7 @@ def _install_ms_unsat():
     # The translator predates Python 3.8, which removed time.clock.
     invariant_finder = MS_UNSAT_DIR / "translate" / "invariant_finder.py"
     invariant_finder.write_text(invariant_finder.read_text().replace("time.clock()", "time.process_time()"))
+    MS_UNSAT_STAMP.write_text(MS_UNSAT_ARCHIVE_SHA256 + "\n")
     print(f"installed MS-unsat at {MS_UNSAT_DIR}")
 
 

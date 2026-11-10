@@ -11,14 +11,21 @@ from core.outcomes import IntegrationError, OutOfMemoryError
 _SUCCESS = 0
 _SEARCH_UNSOLVABLE = 4
 _OUT_OF_MEMORY = (6, -9)
-# The configuration MS-unsat ran in the Unsolvability IPC 2016.
+# The configuration MS-unsat-irr ran in the Unsolvability IPC 2016. Two M&S passes
+# with simulation find the irrelevant operators, blind A* prunes them, and the
+# third builder is MS-unsat's own linear merge with perfect shrinking.
 _SEARCH_OPTIONS = (
     "--search",
-    "astar(merge_and_shrink(shrink_after_merge=true,"
-    "merge_strategy=merge_linear_criteria(criteria=[scc(reverse=False,complete_cg=True),goal],var_order=level),"
-    "shrink_strategy=shrink_composite(strategies=[shrink_own_labels(goal_shrinking=true),"
-    "shrink_bisimulation(max_states=infinity,greedy=false,threshold=1,aggregate_goals=true)]),"
-    "cost_type=3))",
+    "astar(blind(),prune=simulation(cost_type=3,pruning_dd=bdd,pruning_type=expansion,"
+    "abs=builder_composite(strategies=["
+    "builder_massim(merge_strategy=merge_dfp,shrink_strategy=none,forbid_lr=true,"
+    "limit_merge=50000,limit_transitions_merge=50000,incremental_pruning=true),"
+    "builder_massim(merge_strategy=merge_dfp,"
+    "shrink_strategy=shrink_bisimulation(max_states=infinity,greedy=false,threshold=1,aggregate_goals=true),"
+    "forbid_lr=false,limit_merge=50000,limit_transitions_merge=50000,incremental_pruning=true),"
+    "builder(limit_shrink=0,original_merge=true,limit_seconds=1800,limit_memory_kb=7000000,"
+    "limit_seconds_total=1800,"
+    "merge_strategy=merge_linear_criteria(criteria=[scc(reverse=False,complete_cg=True),goal],var_order=level))])))",
 )
 
 
