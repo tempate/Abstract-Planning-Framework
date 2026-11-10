@@ -1,12 +1,13 @@
 """Prepare and dispatch abstraction-based planning workflows."""
 
 import os
+from dataclasses import replace
 
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.ms_unsat import has_plan
 from core.metrics import PlanningMetrics
 from core.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
-from core.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
+from core.outcomes import SOLVABLE, UNSOLVABLE, UnsolvableTaskError
 from core.planning.backends import BACKENDS
 from core.planning.config import AbstractPlanningConfig
 from core.planning.execution import temp_run_dir
@@ -55,7 +56,7 @@ def _abstract(config, base_dir, metrics):
 
 
 def check_solvability(config: AbstractPlanningConfig, on_update=None):
-    """Search the abstraction, which can only settle the task one way.
+    """Search ever finer abstractions, then the task itself, until one settles it.
 
     The abstraction drops deletes and relaxes inequalities, so it
     over-approximates: no abstract plan means no concrete plan, but an abstract
@@ -66,13 +67,22 @@ def check_solvability(config: AbstractPlanningConfig, on_update=None):
         with temp_run_dir("abstract") as (base_dir, run_id):
             try:
                 abstract_problem = build_abstract_problem(config, metrics)
-                report_abstraction(abstract_problem, metrics)
+                found = _has_abstract_plan(abstract_problem, base_dir, metrics)
 
-                with metrics.measure("abstract_pddl_writing"):
-                    domain_path, problem_path, _ = write_abstract_problem(abstract_problem.problem, base_dir)
+                # An abstract plan may exist only because of the collapse, so
+                # collapse one object fewer and search again, down to a pair.
+                # The objects are symmetric, so which one stays out does not matter.
+                objects = abstract_problem.abstraction.objects
+                while found and len(objects) > 2:
+                    objects = objects[:-1]
+                    abstract_problem = build_abstract_problem(replace(config, objects_to_abstract=objects), metrics)
+                    found = _has_abstract_plan(abstract_problem, base_dir, metrics)
 
-                with metrics.measure("abstract_fd_search"):
-                    found = has_plan(base_dir, domain_path, problem_path, "abstract")
+                # Below a pair nothing is collapsed, so the last step searches
+                # the task itself, which settles it either way.
+                if found:
+                    with metrics.measure("fd_search"):
+                        found = has_plan(base_dir, config.domain_path, config.problem_path, "concrete")
             except UnsolvableTaskError:
                 # Symmetry discovery reads the concrete task, so proving it
                 # unsolvable there is the verdict, not a failure to reach one.
@@ -80,7 +90,17 @@ def check_solvability(config: AbstractPlanningConfig, on_update=None):
 
     return {
         "configuration": config.as_dict(),
-        "verdict": UNKNOWN if found else UNSOLVABLE,
+        "verdict": SOLVABLE if found else UNSOLVABLE,
         "run_id": run_id,
         "metrics": metrics.as_dict(),
     }
+
+
+def _has_abstract_plan(abstract_problem, base_dir, metrics):
+    report_abstraction(abstract_problem, metrics)
+
+    with metrics.measure("abstract_pddl_writing"):
+        domain_path, problem_path, _ = write_abstract_problem(abstract_problem.problem, base_dir)
+
+    with metrics.measure("abstract_fd_search"):
+        return has_plan(base_dir, domain_path, problem_path, "abstract")

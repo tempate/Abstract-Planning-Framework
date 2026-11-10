@@ -4,7 +4,6 @@
 # column of the collected CSV, so both modes spell them from here.
 SOLVABLE = "solvable"
 UNSOLVABLE = "unsolvable"
-UNKNOWN = "unknown"
 
 
 class PlanningOutcomeError(RuntimeError):

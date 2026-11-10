@@ -18,10 +18,10 @@ from core.planning.config import AbstractPlanningConfig, PlanningConfig
 from scripts.utils.arguments import positive_int
 
 
-def _generated_abstraction():
+def _generated_abstraction(objects=("a", "b")):
     return SimpleNamespace(
         problem=Mock(),
-        abstraction=Abstraction("item_abs", ("a", "b"), "item"),
+        abstraction=Abstraction("item_abs", objects, "item"),
         relaxed_deletes=(),
         relaxed_inequalities=(),
     )
@@ -62,15 +62,15 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
 
 
 @contextmanager
-def _stubbed_decision(found):
-    """Run the abstract decision pipeline against stubbed integrations."""
+def _stubbed_decision(found, objects=("a", "b")):
+    """Run the abstract decision pipeline against stubbed integrations, each search answering the next of found."""
     with (
         patch("core.planning.abstraction.temp_run_dir") as temp_run_dir,
         patch(
-            "core.planning.abstraction.build_abstract_problem", return_value=_generated_abstraction()
+            "core.planning.abstraction.build_abstract_problem", return_value=_generated_abstraction(objects)
         ) as build_abstract_problem,
         patch("core.planning.abstraction.write_abstract_problem", return_value=("domain.pddl", "problem.pddl", {})),
-        patch("core.planning.abstraction.has_plan", return_value=found),
+        patch("core.planning.abstraction.has_plan", side_effect=found),
     ):
         temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
         yield SimpleNamespace(build_abstract_problem=build_abstract_problem)
@@ -87,20 +87,23 @@ class DecisionTests(unittest.TestCase):
 
                 self.assertEqual(result["verdict"], verdict)
 
-    def test_an_abstract_plan_settles_nothing(self):
-        with _stubbed_decision(found=True):
-            result = abstraction.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+    def test_an_abstract_plan_leaves_finer_abstractions_and_then_the_task_to_settle_it(self):
+        # Three collapsed objects, then two, then the task itself.
+        for found, verdict in (([True, True, False], "unsolvable"), ([True, True, True], "solvable")):
+            with self.subTest(found=found):
+                with _stubbed_decision(found, objects=("a", "b", "c")):
+                    result = abstraction.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
-        self.assertEqual(result["verdict"], "unknown")
+                self.assertEqual(result["verdict"], verdict)
 
     def test_an_abstraction_with_no_plan_proves_the_task_unsolvable(self):
-        with _stubbed_decision(found=False):
+        with _stubbed_decision(found=[False]):
             result = abstraction.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unsolvable")
 
     def test_an_integration_proving_the_task_unsolvable_settles_it(self):
-        with _stubbed_decision(found=True) as stubs:
+        with _stubbed_decision(found=[]) as stubs:
             stubs.build_abstract_problem.side_effect = UnsolvableTaskError("no relaxed solution")
 
             result = abstraction.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))

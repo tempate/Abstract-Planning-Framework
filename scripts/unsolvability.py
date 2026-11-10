@@ -4,7 +4,8 @@ The abstraction over-approximates, so the modes answer different questions.
 ``ms`` settles the task: solvable or unsolvable. So does ``oss``, which runs blind
 A* with structural symmetry pruning instead of MS-unsat. ``abs-ms`` searches the
 abstraction instead, where no plan proves the concrete task unsolvable but a plan
-may exist only because of the relaxation, and is reported as unknown.
+may exist only because of the relaxation. Then it collapses one object fewer and
+searches again, ending at the task itself.
 """
 
 import argparse
