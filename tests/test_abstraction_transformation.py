@@ -9,10 +9,12 @@ from unified_planning.shortcuts import (
     Fluent,
     GT,
     InstantaneousAction,
+    Implies,
     IntType,
     MaximizeExpressionOnFinalState,
     MinimizeExpressionOnFinalState,
     MinimizeSequentialPlanLength,
+    Or,
     Problem,
     StartTiming,
     UserType,
@@ -393,6 +395,17 @@ class AbstractionTransformationTests(unittest.TestCase):
 
         with self.assertRaisesRegex(AbstractionError, "quality metric"):
             _build_from_problem(optimized, ["a", "b"])
+
+    def test_rejects_disjunctive_conditions(self):
+        for connective in (Or, Implies):
+            with self.subTest(connective=connective.__name__):
+                problem, item, a, b = _two_object_problem("disjunctive", "disjunctive_item")
+                marked = Fluent("marked", BoolType(), target=item)
+                problem.add_fluent(marked, default_initial_value=False)
+                problem.add_goal(connective(marked(a), marked(b)))
+
+                with self.assertRaisesRegex(AbstractionError, "disjunctive"):
+                    _build_from_problem(problem, ["a", "b"])
 
     def test_rewrites_conditions_goals_and_constraints(self):
         problem, item, a, b = _two_object_problem("expressions", "expression_item")

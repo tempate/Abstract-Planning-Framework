@@ -25,6 +25,9 @@ def validate_supported_problem(problem):
         (kind.has_events(), "events"),
         (kind.has_simulated_effects(), "simulated effects"),
         (kind.has_object_fluents(), "object-valued fluents"),
+        # The relaxations drop deletes and inequalities only under a
+        # conjunction, so a disjunction could hide one and lose plans.
+        (kind.has_disjunctive_conditions(), "disjunctive conditions"),
         (kind.has_oversubscription(), "oversubscription metrics"),
         (kind.has_temporal_oversubscription(), "temporal oversubscription metrics"),
     )
