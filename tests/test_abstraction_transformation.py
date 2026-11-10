@@ -208,10 +208,37 @@ class InequalityRelaxationTests(unittest.TestCase):
             substitution = {drive.parameters[1]: abstract_object, drive.parameters[2]: abstract_object}
             return not any(p.substitute(substitution).simplify().is_false() for p in drive.preconditions)
 
-        # The split leaves a variant whose destination stays concrete, which
-        # keeps the inequality; the variant that can take the abstract place drops it.
         drives = [action for action in result.problem.actions if action.name.startswith("drive")]
         self.assertTrue(any(survives(drive) for drive in drives))
+
+    def test_an_inequality_needs_no_split_to_relax_only_on_the_abstract_object(self):
+        domain = INEQUALITY_DOMAIN.replace(
+            "(linked ?a ?b - place))",
+            "(linked ?a ?b - place)\n    (compared))",
+        ).replace(
+            ":effect (and (at ?v ?to) (not (at ?v ?from)))))",
+            """:effect (and (at ?v ?to) (not (at ?v ?from))))
+  (:action compare
+    :parameters (?a ?b - place)
+    :precondition (not (= ?a ?b))
+    :effect (compared)))""",
+        )
+        source = parse_problem(domain, INEQUALITY_PROBLEM)
+
+        problem = _build_from_problem(source, ["hall", "study"]).problem
+
+        compares = [action for action in problem.actions if action.name.startswith("compare")]
+        self.assertEqual(len(compares), 1)
+        compare = compares[0]
+
+        def allowed(first, second):
+            binding = {compare.parameters[0]: problem.object(first), compare.parameters[1]: problem.object(second)}
+            conditions = [condition.substitute(binding) for condition in compare.preconditions]
+            return all(condition.substitute(problem.initial_values).simplify().is_true() for condition in conditions)
+
+        self.assertTrue(allowed("place_abs", "place_abs"))
+        self.assertTrue(allowed("place_abs", "attic"))
+        self.assertFalse(allowed("attic", "attic"))
 
     def test_keeps_an_inequality_over_a_type_that_is_not_collapsed(self):
         source = parse_problem(INEQUALITY_DOMAIN, INEQUALITY_PROBLEM)
