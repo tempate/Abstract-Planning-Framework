@@ -1178,36 +1178,48 @@ gnad-et-al-aaai19-large-instances/agricola-large/prob14-13-28.pddl	2	vegetable	2
 gnad-et-al-aaai19-large-instances/agricola-large/prob14-14-29.pddl	0	room	12	room10 room11 room12 room13 room14 room3 room4 room5 room6 room7 room8 room9
 gnad-et-al-aaai19-large-instances/agricola-large/prob14-14-29.pddl	1	animal	3	boar cattle sheep
 gnad-et-al-aaai19-large-instances/agricola-large/prob14-14-29.pddl	2	vegetable	2	carrot grain
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	0	observedshare	12	id_eashare id_ebshare id_ecshare id_edshare id_eeshare id_efshare id_egshare id_ehshare id_eishare id_ejshare id_ekshare id_elshare
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	1	observedfile	12	id_eyfile id_ezfile id_fafile id_fbfile id_fcfile id_fdfile id_fefile id_fffile id_fgfile id_fhfile id_fifile id_fjfile
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	2	property	3	pdest_host pshare_path psrc_host
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	3	property	2	pmicroseconds pseconds
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	4	property	2	ppassword puser
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	0	observedfile	12	id_dsfile id_dtfile id_dufile id_dvfile id_dwfile id_dxfile id_dyfile id_dzfile id_eafile id_ebfile id_ecfile id_edfile
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	1	observedshare	12	id_fcshare id_fdshare id_feshare id_ffshare id_fgshare id_fhshare id_fishare id_fjshare id_fkshare id_flshare id_fmshare id_fnshare
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	2	property	3	pdest_host pshare_path psrc_host
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	3	property	2	pmicroseconds pseconds
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	4	property	2	ppassword puser
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	0	observedfile	12	id_eafile id_ebfile id_ecfile id_edfile id_eefile id_effile id_egfile id_ehfile id_eifile id_ejfile id_ekfile id_elfile
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	1	observedshare	12	id_fkshare id_flshare id_fmshare id_fnshare id_foshare id_fpshare id_fqshare id_frshare id_fsshare id_ftshare id_fushare id_fvshare
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	2	property	3	pdest_host pshare_path psrc_host
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	3	property	2	pmicroseconds pseconds
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	4	property	2	ppassword puser
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	0	observedfile	12	id_gefile id_gffile id_ggfile id_ghfile id_gifile id_gjfile id_gkfile id_glfile id_gmfile id_gnfile id_gofile id_gpfile
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	1	observedshare	12	id_gqshare id_grshare id_gsshare id_gtshare id_gushare id_gvshare id_gwshare id_gxshare id_gyshare id_gzshare id_hashare id_hbshare
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	2	property	3	pdest_host pshare_path psrc_host
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	3	property	2	pmicroseconds pseconds
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	4	property	2	ppassword puser
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	0	observedfile	12	id_eifile id_ejfile id_ekfile id_elfile id_emfile id_enfile id_eofile id_epfile id_eqfile id_erfile id_esfile id_etfile
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	1	observedshare	12	id_fgshare id_fhshare id_fishare id_fjshare id_fkshare id_flshare id_fmshare id_fnshare id_foshare id_fpshare id_fqshare id_frshare
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	2	property	3	pdest_host pshare_path psrc_host
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	3	property	2	pmicroseconds pseconds
-gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	4	property	2	ppassword puser
-gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	0	observedshare	13	id_dvshare id_dwshare id_dxshare id_dyshare id_dzshare id_eashare id_ebshare id_ecshare id_edshare id_eeshare id_efshare id_egshare id_ehshare
-gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	1	observedfile	13	id_evfile id_ewfile id_exfile id_eyfile id_ezfile id_fafile id_fbfile id_fcfile id_fdfile id_fefile id_fffile id_fgfile id_fhfile
-gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	2	property	3	pdest_host pshare_path psrc_host
-gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	3	property	2	pmicroseconds pseconds
-gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	4	property	2	ppassword puser
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	0	property	15	parguments pcached_domain_creds pcached_local_creds pdc pdest pdns_domain_name pexe_path phostname plocal_user_admins pname premote_host psrc psrc_path pstart_time pstatus
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	1	observedschtask	12	id_doschtask id_dpschtask id_dqschtask id_drschtask id_dsschtask id_dtschtask id_duschtask id_dvschtask id_dwschtask id_dxschtask id_dyschtask id_dzschtask
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	2	observedshare	12	id_eashare id_ebshare id_ecshare id_edshare id_eeshare id_efshare id_egshare id_ehshare id_eishare id_ejshare id_ekshare id_elshare
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	3	observedfile	12	id_eyfile id_ezfile id_fafile id_fbfile id_fcfile id_fdfile id_fefile id_fffile id_fgfile id_fhfile id_fifile id_fjfile
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	4	property	3	pdest_host pshare_path psrc_host
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	5	property	2	pmicroseconds pseconds
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_1.pddl	6	property	2	ppassword puser
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	0	property	15	parguments pcached_domain_creds pcached_local_creds pdc pdest pdns_domain_name pexe_path phostname plocal_user_admins pname premote_host psrc psrc_path pstart_time pstatus
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	1	observedfile	12	id_dsfile id_dtfile id_dufile id_dvfile id_dwfile id_dxfile id_dyfile id_dzfile id_eafile id_ebfile id_ecfile id_edfile
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	2	observedschtask	12	id_eeschtask id_efschtask id_egschtask id_ehschtask id_eischtask id_ejschtask id_ekschtask id_elschtask id_emschtask id_enschtask id_eoschtask id_epschtask
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	3	observedshare	12	id_fcshare id_fdshare id_feshare id_ffshare id_fgshare id_fhshare id_fishare id_fjshare id_fkshare id_flshare id_fmshare id_fnshare
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	4	property	3	pdest_host pshare_path psrc_host
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	5	property	2	pmicroseconds pseconds
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_2.pddl	6	property	2	ppassword puser
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	0	property	15	parguments pcached_domain_creds pcached_local_creds pdc pdest pdns_domain_name pexe_path phostname plocal_user_admins pname premote_host psrc psrc_path pstart_time pstatus
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	1	observedfile	12	id_eafile id_ebfile id_ecfile id_edfile id_eefile id_effile id_egfile id_ehfile id_eifile id_ejfile id_ekfile id_elfile
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	2	observedschtask	12	id_eyschtask id_ezschtask id_faschtask id_fbschtask id_fcschtask id_fdschtask id_feschtask id_ffschtask id_fgschtask id_fhschtask id_fischtask id_fjschtask
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	3	observedshare	12	id_fkshare id_flshare id_fmshare id_fnshare id_foshare id_fpshare id_fqshare id_frshare id_fsshare id_ftshare id_fushare id_fvshare
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	4	property	3	pdest_host pshare_path psrc_host
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	5	property	2	pmicroseconds pseconds
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_3.pddl	6	property	2	ppassword puser
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	0	property	15	parguments pcached_domain_creds pcached_local_creds pdc pdest pdns_domain_name pexe_path phostname plocal_user_admins pname premote_host psrc psrc_path pstart_time pstatus
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	1	observedschtask	12	id_fsschtask id_ftschtask id_fuschtask id_fvschtask id_fwschtask id_fxschtask id_fyschtask id_fzschtask id_gaschtask id_gbschtask id_gcschtask id_gdschtask
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	2	observedfile	12	id_gefile id_gffile id_ggfile id_ghfile id_gifile id_gjfile id_gkfile id_glfile id_gmfile id_gnfile id_gofile id_gpfile
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	3	observedshare	12	id_gqshare id_grshare id_gsshare id_gtshare id_gushare id_gvshare id_gwshare id_gxshare id_gyshare id_gzshare id_hashare id_hbshare
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	4	property	3	pdest_host pshare_path psrc_host
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	5	property	2	pmicroseconds pseconds
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_4.pddl	6	property	2	ppassword puser
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	0	property	15	parguments pcached_domain_creds pcached_local_creds pdc pdest pdns_domain_name pexe_path phostname plocal_user_admins pname premote_host psrc psrc_path pstart_time pstatus
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	1	observedfile	12	id_eifile id_ejfile id_ekfile id_elfile id_emfile id_enfile id_eofile id_epfile id_eqfile id_erfile id_esfile id_etfile
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	2	observedshare	12	id_fgshare id_fhshare id_fishare id_fjshare id_fkshare id_flshare id_fmshare id_fnshare id_foshare id_fpshare id_fqshare id_frshare
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	3	observedschtask	12	id_fsschtask id_ftschtask id_fuschtask id_fvschtask id_fwschtask id_fxschtask id_fyschtask id_fzschtask id_gaschtask id_gbschtask id_gcschtask id_gdschtask
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	4	property	3	pdest_host pshare_path psrc_host
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	5	property	2	pmicroseconds pseconds
+gnad-et-al-aaai19-large-instances/caldera-large/12_hosts_trial_5.pddl	6	property	2	ppassword puser
+gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	0	property	15	parguments pcached_domain_creds pcached_local_creds pdc pdest pdns_domain_name pexe_path phostname plocal_user_admins pname premote_host psrc psrc_path pstart_time pstatus
+gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	1	observedshare	13	id_dvshare id_dwshare id_dxshare id_dyshare id_dzshare id_eashare id_ebshare id_ecshare id_edshare id_eeshare id_efshare id_egshare id_ehshare
+gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	2	observedfile	13	id_evfile id_ewfile id_exfile id_eyfile id_ezfile id_fafile id_fbfile id_fcfile id_fdfile id_fefile id_fffile id_fgfile id_fhfile
+gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	3	observedschtask	13	id_fischtask id_fjschtask id_fkschtask id_flschtask id_fmschtask id_fnschtask id_foschtask id_fpschtask id_fqschtask id_frschtask id_fsschtask id_ftschtask id_fuschtask
+gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	4	property	3	pdest_host pshare_path psrc_host
+gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	5	property	2	pmicroseconds pseconds
+gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_1.pddl	6	property	2	ppassword puser
 gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_2.pddl	0	property	15	parguments pcached_domain_creds pcached_local_creds pdc pdest pdns_domain_name pexe_path phostname plocal_user_admins pname premote_host psrc psrc_path pstart_time pstatus
 gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_2.pddl	1	observedfile	13	id_dzfile id_eafile id_ebfile id_ecfile id_edfile id_eefile id_effile id_egfile id_ehfile id_eifile id_ejfile id_ekfile id_elfile
 gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_2.pddl	2	observedshare	13	id_ezshare id_fashare id_fbshare id_fcshare id_fdshare id_feshare id_ffshare id_fgshare id_fhshare id_fishare id_fjshare id_fkshare id_flshare
@@ -1236,11 +1248,13 @@ gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_5.pddl	3	observed
 gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_5.pddl	4	property	3	pdest_host pshare_path psrc_host
 gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_5.pddl	5	property	2	pmicroseconds pseconds
 gnad-et-al-aaai19-large-instances/caldera-large/13_hosts_trial_5.pddl	6	property	2	ppassword puser
-gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	0	observedfile	14	id_eqfile id_erfile id_esfile id_etfile id_eufile id_evfile id_ewfile id_exfile id_eyfile id_ezfile id_fafile id_fbfile id_fcfile id_fdfile
-gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	1	observedshare	14	id_fsshare id_ftshare id_fushare id_fvshare id_fwshare id_fxshare id_fyshare id_fzshare id_gashare id_gbshare id_gcshare id_gdshare id_geshare id_gfshare
-gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	2	property	3	pdest_host pshare_path psrc_host
-gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	3	property	2	pmicroseconds pseconds
-gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	4	property	2	ppassword puser
+gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	0	property	15	parguments pcached_domain_creds pcached_local_creds pdc pdest pdns_domain_name pexe_path phostname plocal_user_admins pname premote_host psrc psrc_path pstart_time pstatus
+gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	1	observedschtask	14	id_ecschtask id_edschtask id_eeschtask id_efschtask id_egschtask id_ehschtask id_eischtask id_ejschtask id_ekschtask id_elschtask id_emschtask id_enschtask id_eoschtask id_epschtask
+gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	2	observedfile	14	id_eqfile id_erfile id_esfile id_etfile id_eufile id_evfile id_ewfile id_exfile id_eyfile id_ezfile id_fafile id_fbfile id_fcfile id_fdfile
+gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	3	observedshare	14	id_fsshare id_ftshare id_fushare id_fvshare id_fwshare id_fxshare id_fyshare id_fzshare id_gashare id_gbshare id_gcshare id_gdshare id_geshare id_gfshare
+gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	4	property	3	pdest_host pshare_path psrc_host
+gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	5	property	2	pmicroseconds pseconds
+gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_1.pddl	6	property	2	ppassword puser
 gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_2.pddl	0	property	15	parguments pcached_domain_creds pcached_local_creds pdc pdest pdns_domain_name pexe_path phostname plocal_user_admins pname premote_host psrc psrc_path pstart_time pstatus
 gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_2.pddl	1	observedfile	14	id_eufile id_evfile id_ewfile id_exfile id_eyfile id_ezfile id_fafile id_fbfile id_fcfile id_fdfile id_fefile id_fffile id_fgfile id_fhfile
 gnad-et-al-aaai19-large-instances/caldera-large/14_hosts_trial_2.pddl	2	observedschtask	14	id_fischtask id_fjschtask id_fkschtask id_flschtask id_fmschtask id_fnschtask id_foschtask id_fpschtask id_fqschtask id_frschtask id_fsschtask id_ftschtask id_fuschtask id_fvschtask
@@ -2707,8 +2721,8 @@ organic-synthesis-original/prob01.pddl	9	hydrogen	2	h31 h32
 organic-synthesis-original/prob01.pddl	10	hydrogen	2	h53 h54
 organic-synthesis-original/prob01.pddl	11	oxygen	2	o1 o2
 organic-synthesis-original/prob02.pddl	0	hydrogen	3	h6 h7 h8
-organic-synthesis-original/prob02.pddl	1	hydrogen	2	h14 h15
-organic-synthesis-original/prob02.pddl	2	hydrogen	2	h50 h51
+organic-synthesis-original/prob02.pddl	1	hydrogen	2	h12 h13
+organic-synthesis-original/prob02.pddl	2	hydrogen	2	h14 h15
 organic-synthesis-original/prob02.pddl	3	hydrogen	2	h52 h53
 organic-synthesis-original/prob02.pddl	4	oxygen	2	o2 o3
 organic-synthesis-original/prob03.pddl	0	bromine	3	br1 br2 br3
@@ -2722,12 +2736,13 @@ organic-synthesis-original/prob03.pddl	7	hydrogen	2	h29 h30
 organic-synthesis-original/prob03.pddl	8	oxygen	2	o5 o6
 organic-synthesis-original/prob04.pddl	0	hydrogen	3	h4 h5 h6
 organic-synthesis-original/prob04.pddl	1	hydrogen	2	h13 h14
-organic-synthesis-original/prob04.pddl	2	hydrogen	2	h50 h51
-organic-synthesis-original/prob04.pddl	3	hydrogen	2	h52 h53
-organic-synthesis-original/prob04.pddl	4	hydrogen	2	h56 h57
-organic-synthesis-original/prob04.pddl	5	hydrogen	2	h7 h8
-organic-synthesis-original/prob04.pddl	6	oxygen	2	o13 o14
-organic-synthesis-original/prob04.pddl	7	oxygen	2	o2 o3
+organic-synthesis-original/prob04.pddl	2	hydrogen	2	h16 h17
+organic-synthesis-original/prob04.pddl	3	hydrogen	2	h22 h23
+organic-synthesis-original/prob04.pddl	4	hydrogen	2	h52 h53
+organic-synthesis-original/prob04.pddl	5	hydrogen	2	h54 h55
+organic-synthesis-original/prob04.pddl	6	hydrogen	2	h7 h8
+organic-synthesis-original/prob04.pddl	7	oxygen	2	o13 o14
+organic-synthesis-original/prob04.pddl	8	oxygen	2	o2 o3
 organic-synthesis-original/prob05.pddl	0	hydrogen	3	h5 h6 h7
 organic-synthesis-original/prob05.pddl	1	hydrogen	2	h1 h2
 organic-synthesis-original/prob05.pddl	2	hydrogen	2	h51 h52
@@ -2815,15 +2830,14 @@ organic-synthesis-original/prob12.pddl	0	bromine	3	br1 br2 br3
 organic-synthesis-original/prob12.pddl	1	hydrogen	3	h10 h11 h9
 organic-synthesis-original/prob12.pddl	2	hydrogen	3	h6 h7 h8
 organic-synthesis-original/prob12.pddl	3	bromine	2	br10 br9
-organic-synthesis-original/prob12.pddl	4	bromine	2	br4 br5
-organic-synthesis-original/prob12.pddl	5	chlorine	2	cl1 cl2
-organic-synthesis-original/prob12.pddl	6	hydrogen	2	h1 h2
-organic-synthesis-original/prob12.pddl	7	hydrogen	2	h18 h19
-organic-synthesis-original/prob12.pddl	8	hydrogen	2	h34 h35
-organic-synthesis-original/prob12.pddl	9	hydrogen	2	h37 h38
-organic-synthesis-original/prob12.pddl	10	magnesium	2	mg1 mg2
-organic-synthesis-original/prob12.pddl	11	oxygen	2	o12 o13
-organic-synthesis-original/prob12.pddl	12	oxygen	2	o8 o9
+organic-synthesis-original/prob12.pddl	4	chlorine	2	cl1 cl2
+organic-synthesis-original/prob12.pddl	5	hydrogen	2	h1 h2
+organic-synthesis-original/prob12.pddl	6	hydrogen	2	h18 h19
+organic-synthesis-original/prob12.pddl	7	hydrogen	2	h34 h35
+organic-synthesis-original/prob12.pddl	8	hydrogen	2	h37 h38
+organic-synthesis-original/prob12.pddl	9	magnesium	2	mg1 mg2
+organic-synthesis-original/prob12.pddl	10	oxygen	2	o12 o13
+organic-synthesis-original/prob12.pddl	11	oxygen	2	o8 o9
 organic-synthesis-original/prob13.pddl	0	hydrogen	3	h1 h2 h3
 organic-synthesis-original/prob13.pddl	1	hydrogen	3	h10 h11 h9
 organic-synthesis-original/prob13.pddl	2	hydrogen	3	h100 h101 h102
@@ -2987,11 +3001,13 @@ pipesworld-tankage-nosplit/p10-net1-b14-g8-t50.pddl	7	tank-slot	2	ta2-1-rat-a ta
 pipesworld-tankage-nosplit/p10-net1-b14-g8-t50.pddl	8	tank-slot	2	ta3-1-oca1 ta3-2-oca1
 pipesworld-tankage-nosplit/p10-net1-b14-g8-t50.pddl	9	tank-slot	2	ta3-1-rat-a ta3-2-rat-a
 pipesworld-tankage-nosplit/p10-net1-b14-g8-t50.pddl	10	tank-slot	2	ta3-2-lco ta3-3-lco
-pipesworld-tankage-nosplit/p11-net2-b10-g2-t30.pddl	0	tank-slot	2	ta1-1-gasoleo ta1-2-gasoleo
+pipesworld-tankage-nosplit/p11-net2-b10-g2-t30.pddl	0	product	2	oc1b oca1
+pipesworld-tankage-nosplit/p11-net2-b10-g2-t30.pddl	1	tank-slot	2	ta1-1-gasoleo ta1-2-gasoleo
 pipesworld-tankage-nosplit/p12-net2-b10-g4-t60.pddl	0	tank-slot	3	ta2-2-gasoleo ta2-3-gasoleo ta2-4-gasoleo
 pipesworld-tankage-nosplit/p12-net2-b10-g4-t60.pddl	1	tank-slot	3	ta3-2-gasoleo ta3-3-gasoleo ta3-4-gasoleo
-pipesworld-tankage-nosplit/p12-net2-b10-g4-t60.pddl	2	tank-slot	2	ta1-1-gasoleo ta1-2-gasoleo
-pipesworld-tankage-nosplit/p12-net2-b10-g4-t60.pddl	3	tank-slot	2	ta1-3-gasoleo ta1-4-gasoleo
+pipesworld-tankage-nosplit/p12-net2-b10-g4-t60.pddl	2	product	2	oc1b oca1
+pipesworld-tankage-nosplit/p12-net2-b10-g4-t60.pddl	3	tank-slot	2	ta1-1-gasoleo ta1-2-gasoleo
+pipesworld-tankage-nosplit/p12-net2-b10-g4-t60.pddl	4	tank-slot	2	ta1-3-gasoleo ta1-4-gasoleo
 pipesworld-tankage-nosplit/p13-net2-b12-g3-t70.pddl	0	tank-slot	3	ta1-1-lco ta1-2-lco ta1-3-lco
 pipesworld-tankage-nosplit/p13-net2-b12-g3-t70.pddl	1	tank-slot	3	ta2-1-lco ta2-2-lco ta2-3-lco
 pipesworld-tankage-nosplit/p13-net2-b12-g3-t70.pddl	2	tank-slot	3	ta2-1-oca1 ta2-2-oca1 ta2-3-oca1
