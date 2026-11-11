@@ -263,11 +263,8 @@ organic-synthesis-alkene,p6.pddl,abs-lama,7
 organic-synthesis-alkene,p7.pddl,abs-lama,1
 organic-synthesis-alkene,p8.pddl,abs-lama,0
 organic-synthesis-alkene,p9.pddl,abs-lama,6
-organic-synthesis-original,prob02.pddl,abs-asp,0
 organic-synthesis-original,prob02.pddl,abs-lama,0
-organic-synthesis-original,prob04.pddl,abs-asp,0
 organic-synthesis-original,prob04.pddl,abs-lama,0
-organic-synthesis-original,prob12.pddl,abs-asp,1
 organic-synthesis-original,prob12.pddl,abs-lama,8
 pipesworld-tankage-nosplit,p03-net1-b8-g3-t80.pddl,abs-lama,1
 pipesworld-tankage-nosplit,p04-net1-b8-g5-t80.pddl,abs-lama,6
@@ -277,9 +274,7 @@ pipesworld-tankage-nosplit,p07-net1-b12-g5-t80.pddl,abs-lama,3
 pipesworld-tankage-nosplit,p08-net1-b12-g7-t80.pddl,abs-lama,7
 pipesworld-tankage-nosplit,p09-net1-b14-g6-t50.pddl,abs-lama,0
 pipesworld-tankage-nosplit,p10-net1-b14-g8-t50.pddl,abs-lama,4
-pipesworld-tankage-nosplit,p11-net2-b10-g2-t30.pddl,abs-asp,0
 pipesworld-tankage-nosplit,p11-net2-b10-g2-t30.pddl,abs-lama,0
-pipesworld-tankage-nosplit,p12-net2-b10-g4-t60.pddl,abs-asp,1
 pipesworld-tankage-nosplit,p12-net2-b10-g4-t60.pddl,abs-lama,0
 pipesworld-tankage-nosplit,p13-net2-b12-g3-t70.pddl,abs-lama,6
 pipesworld-tankage-nosplit,p14-net2-b12-g5-t30.pddl,abs-lama,0
