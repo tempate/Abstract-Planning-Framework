@@ -24,6 +24,9 @@ def validate_supported_problem(problem):
         (kind.has_processes(), "processes"),
         (kind.has_events(), "events"),
         (kind.has_simulated_effects(), "simulated effects"),
+        # A collapse can make a static condition fluent, and the relaxation never
+        # weighs a conditional delete against its condition.
+        (kind.has_conditional_effects(), "conditional effects"),
         (kind.has_object_fluents(), "object-valued fluents"),
         # The relaxations drop deletes and inequalities only under a
         # conjunction, so a disjunction could hide one and lose plans.

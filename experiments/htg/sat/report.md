@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-10 17:24 — experiments/htg/sat/results.csv
+2026-11-11 09:30 — experiments/htg/sat/results.csv
 
-12 problems compared over abs-asp, abs-lama, lama; 456 dropped as unfinished
+5 problems compared over abs-asp, abs-lama, lama; 438 dropped as unfinished
 
 ## Coverage
 
 ```
 Metric                                 ASPᵅ        LAMAᵅ         LAMA
 ---------------------------------------------------------------------
-Plans found                        0 (0.0%)    2 (16.7%)    4 (33.3%)
-Timeouts                          8 (66.7%)     1 (8.3%)     0 (0.0%)
-Out of memory                     4 (33.3%)    9 (75.0%)    8 (66.7%)
+Plans found                        0 (0.0%)    2 (40.0%)    3 (60.0%)
+Timeouts                          1 (20.0%)     0 (0.0%)     0 (0.0%)
+Out of memory                     4 (80.0%)    3 (60.0%)    2 (40.0%)
 Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)
-Total problems                           12           12           12
+Total problems                            5            5            5
 ```
 
 ## Head to head, over the problems both solved
@@ -23,7 +23,7 @@ Metric                                LAMAᵅ         LAMA
 --------------------------------------------------------
 Plans found by both                       2            2
 Faster                             0 (0.0%)   2 (100.0%)
-Found when the other did not              0            2
+Found when the other did not              0            1
 Median runtime                     448.37 s     214.74 s
 Total runtime                      896.74 s     429.48 s
 Shorter plan                       0 (0.0%)     0 (0.0%)
@@ -37,8 +37,8 @@ Total plan length                        61           61
 ```
 Killed during                          ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-Abstract search                    8 (100%)     1 (100%)
-Total                                     8            1
+Abstract search                    1 (100%)            0
+Total                                     1            0
 ```
 
 ## How the successes were solved
@@ -68,10 +68,9 @@ Total                                     0            2
 ## Plans found by domain
 
 ```
-Domain (problems)                 Size      ASPᵅ     LAMAᵅ      LAMA
---------------------------------------------------------------------
-gnad-et-al-aaai19-large-instances (7)caldera-large         0         0         1
-organic-synthesis-original (3)                   0         0         1
-pipesworld-tankage-nosplit (2)                   0         2         2
-Total (12)                                     0         2         4
+Domain (problems)                 ASPᵅ     LAMAᵅ      LAMA
+----------------------------------------------------------
+organic-synthesis-original (3)         0         0         1
+pipesworld-tankage-nosplit (2)         0         2         2
+Total (5)                            0         2         3
 ```
