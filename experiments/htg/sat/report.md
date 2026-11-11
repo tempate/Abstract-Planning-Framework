@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-11 09:42 — experiments/htg/sat/results.csv
+2026-11-11 11:42 — experiments/htg/sat/results.csv
 
 294 problems compared over abs-lama, lama; 149 dropped as unfinished
 
@@ -24,8 +24,8 @@ Metric                                LAMAᵅ         LAMA
 Plans found by both                     190          190
 Faster                             8 (4.2%)  182 (95.8%)
 Found when the other did not              8           29
-Median runtime                      48.46 s      23.99 s
-Total runtime                   35,569.57 s  18,888.60 s
+Median runtime                      49.21 s      23.99 s
+Total runtime                   35,414.45 s  18,888.60 s
 Shorter plan                      11 (5.8%)   33 (17.4%)
 Same plan length                146 (76.8%)  146 (76.8%)
 Median plan length                     18.5           19

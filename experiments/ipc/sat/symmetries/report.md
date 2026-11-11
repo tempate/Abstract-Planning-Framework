@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-09 09:01 — experiments/ipc/sat/symmetries/results.csv
+2026-11-11 09:20 — experiments/ipc/sat/symmetries/results.csv
 
 557 problems compared over asp, abs-asp, abs-lama, lama
 
@@ -22,10 +22,10 @@ Total problems                          557          557          557          5
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
 Plans found by both                     125          125          355          355
-Faster                           90 (72.0%)   35 (28.0%)    12 (3.4%)  343 (96.6%)
+Faster                           90 (72.0%)   35 (28.0%)    14 (3.9%)  341 (96.1%)
 Found when the other did not              3           20            3          152
-Median runtime                       8.35 s       9.34 s      11.97 s       3.84 s
-Total runtime                   13,780.32 s  14,212.42 s  21,133.13 s   6,142.87 s
+Median runtime                       8.35 s       9.42 s      11.97 s       3.84 s
+Total runtime                   13,780.32 s  14,023.54 s  21,135.87 s   6,142.87 s
 Shorter plan                     53 (42.4%)   15 (12.0%)   68 (19.2%)  160 (45.1%)
 Same plan length                 57 (45.6%)   57 (45.6%)  127 (35.8%)  127 (35.8%)
 Median plan length                       16           19           56           49

@@ -264,7 +264,7 @@ organic-synthesis-alkene,p7.pddl,abs-lmcut,5
 organic-synthesis-alkene,p8.pddl,abs-lmcut,4
 organic-synthesis-alkene,p9.pddl,abs-lmcut,5
 organic-synthesis-original,prob02.pddl,abs-lmcut,3
-organic-synthesis-original,prob04.pddl,abs-lmcut,3
+organic-synthesis-original,prob04.pddl,abs-lmcut,0
 organic-synthesis-original,prob12.pddl,abs-lmcut,2
 pipesworld-tankage-nosplit,p03-net1-b8-g3-t80.pddl,abs-lmcut,3
 pipesworld-tankage-nosplit,p04-net1-b8-g5-t80.pddl,abs-lmcut,2

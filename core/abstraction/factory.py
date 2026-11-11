@@ -64,7 +64,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
 
         # The class has to be chosen before the inequalities can be relaxed,
         # and they have to be relaxed before the collapse makes them false.
-        # Split before relaxing anything, so that both relaxations see which
+        # Split before relaxing any delete, so that the relaxation sees which
         # groundings of an action can take a collapsed object.
         problem = split_actions(problem, abstraction)
         problem, relaxed_inequalities = relax_inequalities(problem, abstraction)
