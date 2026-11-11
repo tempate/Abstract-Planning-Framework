@@ -6,13 +6,16 @@ from dataclasses import dataclass, replace
 from core.abstraction.factory import Abstraction
 from core.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.clingo import plan_length
-from core.integrations.fast_downward import pddl_to_sas
+from core.integrations.fast_downward import partial_pddl_to_sas, pddl_to_sas
+from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
 from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
+from core.outcomes import UnsolvableTaskError
 from core.planning.config import AbstractPlanningConfig
 from core.refinement.encoding import (
     add_concrete_objects,
     add_switches,
+    concrete_groundings,
     drop_action_choice,
     map_abstract_actions,
     make_steps_optional,
@@ -80,8 +83,6 @@ def _concrete_asp(context):
 
 def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
     """Refine the abstract plan as it is, then give it up step by step and search above its horizon."""
-    asp = _concrete_asp(context)
-
     # Publish the counters before searching so an interrupted run still has them.
     counters = {
         "increments": 0,
@@ -97,15 +98,47 @@ def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
         counters["concrete_solve_calls"] = search_calls + 1
         context.metrics.set_counters(counters)
 
-    with context.metrics.measure("guided_concrete_solving"):
-        record_attempt(0, 0, 0)
-        plan = _one_shot(context, asp, abstract_plan, abstract_horizon)
+    record_attempt(0, 0, 0)
+    if os.path.exists(PARTIAL_GROUNDING_TRANSLATOR):
+        plan = _partial_one_shot(context, abstract_plan, abstract_horizon)
         if plan is not None:
             return plan
+        asp = _concrete_asp(context)
+    else:
+        asp = _concrete_asp(context)
+        with context.metrics.measure("guided_concrete_solving"):
+            plan = _one_shot(context, asp, abstract_plan, abstract_horizon)
+        if plan is not None:
+            return plan
+
+    with context.metrics.measure("guided_concrete_solving"):
         solver = _fallback_solver(context, asp, abstract_plan, abstract_horizon)
         # Clingo holds its own copy of the program, so the text would only take memory from the search.
         del asp
         return _fallback(context, solver, abstract_plan, record_attempt)
+
+
+def _partial_one_shot(context, abstract_plan, abstract_horizon):
+    """The one-shot on a task grounded with only the actions the abstract plan may refine into."""
+    partial_dir = os.path.join(context.base_dir, "partial")
+    os.makedirs(partial_dir, exist_ok=True)
+    actions_path = os.path.join(partial_dir, "actions.txt")
+    with open(actions_path, "w", encoding="utf-8") as actions_file:
+        actions_file.write("\n".join(concrete_groundings(abstract_plan, context.abstraction)) + "\n")
+
+    config = context.config
+    try:
+        with context.metrics.measure("partial_fd"):
+            partial_sas = partial_pddl_to_sas(partial_dir, config.domain_path, config.problem_path, actions_path)
+    except UnsolvableTaskError:
+        # The listed actions cannot reach the goal even with deletes relaxed.
+        return None
+
+    with context.metrics.measure("partial_asp"):
+        partial_asp = sas_to_asp(partial_sas)
+
+    with context.metrics.measure("partial_one_shot"):
+        return _one_shot(context, partial_asp, abstract_plan, abstract_horizon)
 
 
 def _one_shot(context, asp, abstract_plan, abstract_horizon):

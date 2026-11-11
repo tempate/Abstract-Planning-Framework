@@ -5,6 +5,7 @@ from core.plan import PlanAction
 from core.refinement.encoding import (
     add_concrete_objects,
     add_switches,
+    concrete_groundings,
     drop_action_choice,
     make_steps_optional,
     map_abstract_actions,
@@ -101,6 +102,21 @@ action(action(("unrelated","x"))).
 
         self.assertEqual({len(model & groundings) for model in models}, {1})
         self.assertTrue(all('occurs(action(("unrelated","x")),1)' not in model for model in models))
+
+    def test_groundings_expand_only_the_collapsed_object(self):
+        abstract_plan = (PlanAction("move", ("item_abs", "room1", "item_abs"), 0), PlanAction("open", ("door",), 1))
+        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
+
+        self.assertEqual(
+            set(concrete_groundings(abstract_plan, abstraction)),
+            {
+                "(move item1 room1 item1)",
+                "(move item1 room1 item2)",
+                "(move item2 room1 item1)",
+                "(move item2 room1 item2)",
+                "(open door)",
+            },
+        )
 
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
