@@ -563,6 +563,34 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertTrue(deletes("shift"))
         self.assertFalse(deletes("shift--abs-1"))
 
+    def test_does_not_split_an_action_that_only_adds_facts_about_the_collapsed_objects(self):
+        domain = """
+(define (domain transit)
+  (:requirements :strips :typing)
+  (:types item place)
+  (:predicates
+    (at ?x - item ?p - place)
+    (tagged ?x - item))
+  (:action tag
+    :parameters (?x - item ?p - place)
+    :precondition (at ?x ?p)
+    :effect (tagged ?x)))
+"""
+        problem_text = """
+(define (problem transit-task)
+  (:domain transit)
+  (:objects item-a item-b item-c - item dock - place)
+  (:init (at item-a dock) (at item-b dock) (at item-c dock))
+  (:goal (and (tagged item-a) (tagged item-c))))
+"""
+        source = parse_problem(domain, problem_text)
+
+        result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
+
+        # An add holds for the collapsed object whichever object it stands for,
+        # so no copy of tag has anything to relax.
+        self.assertEqual([action.name for action in result.problem.actions], ["tag"])
+
     def test_relaxes_a_delete_that_names_a_collapsed_object_directly(self):
         domain = """
 (define (domain depot)
