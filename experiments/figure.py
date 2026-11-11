@@ -132,7 +132,8 @@ def paper_figures(revision):
     htg = load_tracks(revision, "htg", [])
     # Each PDF is as wide as the float main.tex includes it in, so it keeps the paper's sizes.
     return {
-        "ipc": _minipage(r"\textwidth", _ipc_figure(tracks)),
+        "ipc-asp": _minipage(r"\textwidth", _ipc_figure(tracks, {kind: PAIRS[kind][1:] for kind in ("sat", "opt")})),
+        "ipc-fd": _minipage(r"\textwidth", _ipc_figure(tracks, {kind: PAIRS[kind][:1] for kind in tracks})),
         "scaled": _minipage(r"\columnwidth", _scaled_plot(load_tracks(revision, "scaled", [])["symmetries"])),
         "htg": _minipage(r"\columnwidth", _htg_figure(htg, PAPER_ROW_GAP)),
     }
@@ -142,19 +143,14 @@ def paper_figures(revision):
 PAPER_ROW_GAP = "\n\n\\smallskip\n\n\\medskip\n"
 
 
-def _ipc_figure(tracks):
-    """Figure 1, every track's plots side by side, so each row joins the tracks' own rows."""
+def _ipc_figure(tracks, pairs):
+    """An IPC figure, each track's plots of its given solvers side by side, so each row joins the tracks' own rows."""
     track_gap = "%\n\\hspace{0.1in}%\n\\hspace*{0.42in}%\n"
-    header = "%\n\\hspace{0.52in}%\n".join(_track_title(TRACK_NAMES[kind], len(tracks[kind])) for kind in tracks)
-    cactus_row = track_gap.join(_joined(_cactus_plots(kind, problems)) for kind, problems in tracks.items())
-    runtime_rows = []
-    for index in range(2):
-        groups = []
-        for kind, problems in tracks.items():
-            rows = _runtime_rows(kind, problems)
-            # The unsolvability track has no ASP row, so its place stays empty.
-            groups.append(_joined(rows[index]) if index < len(rows) else "\\hspace{\\plotsize}")
-        runtime_rows.append(_in_row(track_gap.join(groups)))
+    header = "%\n\\hspace{0.52in}%\n".join(_track_title(TRACK_NAMES[kind], len(tracks[kind])) for kind in pairs)
+    cactus_row = track_gap.join(_joined(_cactus_plots(kind, tracks[kind], pairs[kind])) for kind in pairs)
+    # Every track draws one runtime row per solver, and each row joins the tracks' plots of that solver.
+    groups = [_runtime_rows(tracks[kind], pairs[kind]) for kind in pairs]
+    runtime_rows = [_in_row(track_gap.join(_joined(plots) for plots in row)) for row in zip(*groups)]
     return (
         _in_row(header)
         + "\n\n\\vspace{0.4em}\n"
@@ -171,9 +167,9 @@ def _panel(title, kind, tracks):
     body = (
         _in_row(_track_title(TRACK_NAMES[kind], len(tracks)))
         + "\n\n\\vspace{0.4em}\n"
-        + _in_row(_joined(_cactus_plots(kind, tracks)))
+        + _in_row(_joined(_cactus_plots(kind, tracks, PAIRS[kind])))
         + "\n\n\\medskip\n"
-        + "\n\n\\smallskip\n".join(_in_row(_joined(plots)) for plots in _runtime_rows(kind, tracks))
+        + "\n\n\\smallskip\n".join(_in_row(_joined(plots)) for plots in _runtime_rows(tracks, PAIRS[kind]))
     )
     return _titled(title, body, len(tracks))
 
@@ -191,7 +187,7 @@ def _htg_figure(tracks, row_gap):
     return _in_row(_joined(cactus_plots, gap)) + row_gap + _in_row(_joined(runtimes, gap))
 
 
-def _cactus_plots(kind, tracks):
+def _cactus_plots(kind, tracks, pairs):
     """One track's problems solved over time, a plot per abstraction source, the right one carrying the legend."""
     ylabel = "Problems proved" if kind == "unsat" else "Problems solved"
     plots = []
@@ -202,7 +198,7 @@ def _cactus_plots(kind, tracks):
             options, legend = f"ylabel={{{ylabel}}}", False
         else:
             options, legend = "ylabel={}, legend style={overlay, at={(-0.16,1.04)}, anchor=south}", True
-        plots.append(_cactus_plot(SOURCES[source], problems, PAIRS[kind], options, legend))
+        plots.append(_cactus_plot(SOURCES[source], problems, pairs, options, legend))
     return plots
 
 
@@ -224,12 +220,12 @@ def _cactus_plot(title, problems, pairs, options, legend):
     )
 
 
-def _runtime_rows(kind, tracks):
+def _runtime_rows(tracks, pairs):
     """One track's runtime per problem, a row per solver and a plot per abstraction source in each."""
     # The cactus plots above name the sources, so only the left plot labels its y axis.
     return [
         [_runtime_plot(problems, pair, labelled=index == 0) for index, problems in enumerate(tracks.values())]
-        for pair in PAIRS[kind]
+        for pair in pairs
     ]
 
 
