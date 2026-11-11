@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-09 09:01 — experiments/ipc/opt/symmetries/results.csv
+2026-11-11 09:20 — experiments/ipc/opt/symmetries/results.csv
 
 518 problems compared over asp, abs-asp, abs-lmcut, lmcut
 
@@ -22,10 +22,10 @@ Total problems                          518          518          518          5
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
 ----------------------------------------------------------------------------------
 Plans found by both                     121          121          129          129
-Faster                           98 (81.0%)   23 (19.0%)    12 (9.3%)  117 (90.7%)
+Faster                           98 (81.0%)   23 (19.0%)   13 (10.1%)  116 (89.9%)
 Found when the other did not              5            5            6           64
-Median runtime                       9.64 s      11.25 s       7.76 s       2.74 s
-Total runtime                   15,289.75 s  16,931.62 s  11,224.77 s   5,549.83 s
+Median runtime                       9.64 s      11.15 s       7.76 s       2.74 s
+Total runtime                   15,289.75 s  16,775.22 s  11,206.14 s   5,549.83 s
 Shorter plan                       0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
 Same plan length               121 (100.0%) 121 (100.0%) 129 (100.0%) 129 (100.0%)
 Median plan length                       12           12           14           14
