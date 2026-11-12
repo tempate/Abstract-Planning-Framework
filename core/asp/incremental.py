@@ -2,7 +2,7 @@
 
 import clingo
 
-from core.search.solver import Solver, SolveResult
+from core.asp.solver import Solver, SolveResult
 
 
 class IncrementalSolver(Solver):

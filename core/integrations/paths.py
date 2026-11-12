@@ -10,7 +10,7 @@ def _project_path(*parts):
 
 
 PLASP_BIN = _project_path("lib", "plasp", "bin", "plasp")
-SEQUENTIAL_ENCODING = _project_path("core", "encodings", "sequential-incremental.lp")
+SEQUENTIAL_ENCODING = _project_path("core", "asp", "sequential-incremental.lp")
 
 FAST_DOWNWARD_SCRIPT = _project_path("lib", "downward", "fast-downward.py")
 # Silvan Sievers' fork of Fast Downward, whose A* prunes states symmetric to ones it has seen.

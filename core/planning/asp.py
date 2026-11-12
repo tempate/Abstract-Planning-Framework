@@ -8,7 +8,7 @@ from core.integrations.plasp import sas_to_asp
 from core.utilities.metrics import PlanningMetrics
 from core.utilities.config import PlanningConfig
 from core.utilities.execution import temp_run_dir
-from core.search.incremental import IncrementalSolver
+from core.asp.incremental import IncrementalSolver
 
 
 def solve(config: PlanningConfig, on_update=None):

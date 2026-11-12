@@ -1,7 +1,7 @@
 import unittest
 
-from core.encodings.program import AspProgram
-from core.search.solver import Solver
+from core.asp.program import AspProgram
+from core.asp.solver import Solver
 
 
 class SolverTests(unittest.TestCase):

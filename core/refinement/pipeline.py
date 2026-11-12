@@ -20,7 +20,7 @@ from core.refinement.encoding import (
     map_abstract_actions,
     switches,
 )
-from core.search.incremental import IncrementalSolver
+from core.asp.incremental import IncrementalSolver
 
 
 @dataclass

@@ -1,7 +1,7 @@
 import unittest
 
-from core.search.incremental import IncrementalSolver
-from core.encodings.program import AspProgram
+from core.asp.incremental import IncrementalSolver
+from core.asp.program import AspProgram
 
 
 class IncrementalSolverTests(unittest.TestCase):
