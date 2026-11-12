@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-11 09:20 — experiments/ipc/opt/symmetries/results.csv
+2026-11-12 10:38 — experiments/ipc/opt/symmetries/results.csv
 
 518 problems compared over asp, abs-asp, abs-lmcut, lmcut
 
@@ -9,8 +9,8 @@
 ```
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
 ----------------------------------------------------------------------------------
-Plans found                     126 (24.3%)  126 (24.3%)  135 (26.1%)  193 (37.3%)
-Timeouts                        391 (75.5%)  391 (75.5%)  382 (73.7%)  324 (62.5%)
+Plans found                     126 (24.3%)  126 (24.3%)  134 (25.9%)  193 (37.3%)
+Timeouts                        391 (75.5%)  391 (75.5%)  383 (73.9%)  324 (62.5%)
 Out of memory                      1 (0.2%)     1 (0.2%)     0 (0.0%)     0 (0.0%)
 Others                             0 (0.0%)     0 (0.0%)     1 (0.2%)     1 (0.2%)
 Total problems                          518          518          518          518
@@ -21,15 +21,15 @@ Total problems                          518          518          518          5
 ```
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
 ----------------------------------------------------------------------------------
-Plans found by both                     121          121          129          129
-Faster                           98 (81.0%)   23 (19.0%)   13 (10.1%)  116 (89.9%)
-Found when the other did not              5            5            6           64
-Median runtime                       9.64 s      11.15 s       7.76 s       2.74 s
-Total runtime                   15,289.75 s  16,775.22 s  11,206.14 s   5,549.83 s
+Plans found by both                     121          121          128          128
+Faster                           98 (81.0%)   23 (19.0%)   14 (10.9%)  114 (89.1%)
+Found when the other did not              5            5            6           65
+Median runtime                       9.64 s      11.54 s       7.78 s       2.75 s
+Total runtime                   15,289.75 s  16,765.05 s   9,647.37 s   5,547.79 s
 Shorter plan                       0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
-Same plan length               121 (100.0%) 121 (100.0%) 129 (100.0%) 129 (100.0%)
+Same plan length               121 (100.0%) 121 (100.0%) 128 (100.0%) 128 (100.0%)
 Median plan length                       12           12           14           14
-Total plan length                     2,138        2,138        2,766        2,766
+Total plan length                     2,138        2,138        2,744        2,744
 ```
 
 ## Where the timeouts died
@@ -37,10 +37,10 @@ Total plan length                     2,138        2,138        2,766        2,7
 ```
 Killed during                          ASPᵅ       LMcutᵅ
 --------------------------------------------------------
-Abstract search                   343 (88%)    297 (78%)
-Guided concrete search              16 (4%)     74 (19%)
+Abstract search                   342 (87%)    296 (77%)
+Guided concrete search              17 (4%)     76 (20%)
 Unguided concrete search            32 (8%)      11 (3%)
-Total                                   391          382
+Total                                   391          383
 ```
 
 ## How the successes were solved
@@ -48,10 +48,10 @@ Total                                   391          382
 ```
 Solved by                              ASPᵅ       LMcutᵅ
 --------------------------------------------------------
-Refined directly                   79 (63%)     89 (66%)
-Refined, some actions off            5 (4%)       6 (4%)
+Refined directly                   76 (60%)     86 (64%)
+Refined, some actions off            8 (6%)       8 (6%)
 Solved above the abstract plan     42 (33%)     40 (30%)
-Total                                   126          135
+Total                                   126          134
 ```
 
 ## Deletes relaxed by the refined plans
@@ -60,11 +60,11 @@ Total                                   126          135
 Deletes relaxed                        ASPᵅ       LMcutᵅ
 --------------------------------------------------------
 None                               13 (15%)     23 (24%)
-1 to 4                             32 (38%)     35 (37%)
+1 to 4                             32 (38%)     34 (36%)
 5 to 9                             20 (24%)     15 (16%)
-10 to 19                             6 (7%)       8 (8%)
-20 or more                         13 (15%)     14 (15%)
-Total                                    84           95
+10 to 19                             7 (8%)      9 (10%)
+20 or more                         12 (14%)     13 (14%)
+Total                                    84           94
 ```
 
 ## Plans found by domain
@@ -84,7 +84,7 @@ elevators-opt11-strips (2)           0         0         0         2
 gripper (20)                         3         3         3         7
 hiking-opt14-strips (20)            11        13        13         9
 logistics00 (19)                     8         8        12        15
-logistics98 (31)                     1         0         2         4
+logistics98 (31)                     1         0         1         4
 miconic (11)                         1         1         1        11
 mprime (21)                         20        20        16        16
 mystery (16)                        10        10         8         8
@@ -105,5 +105,5 @@ visitall-opt11-strips (1)            1         1         1         1
 woodworking-opt08-strips (5)         0         0         0         1
 woodworking-opt11-strips (4)         0         0         0         1
 zenotravel (13)                      4         3         4         7
-Total (518)                        126       126       135       193
+Total (518)                        126       126       134       193
 ```

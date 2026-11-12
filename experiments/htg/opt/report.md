@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-11 11:42 — experiments/htg/opt/results.csv
+2026-11-12 10:38 — experiments/htg/opt/results.csv
 
 294 problems compared over abs-lmcut, lmcut; 149 dropped as unfinished
 
@@ -25,7 +25,7 @@ Plans found by both                      55           55
 Faster                           30 (54.5%)   25 (45.5%)
 Found when the other did not             36            3
 Median runtime                      32.36 s      43.88 s
-Total runtime                    7,875.56 s  17,320.39 s
+Total runtime                    7,946.91 s  17,320.39 s
 Shorter plan                       0 (0.0%)     0 (0.0%)
 Same plan length                55 (100.0%)  55 (100.0%)
 Median plan length                        8            8

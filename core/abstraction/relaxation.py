@@ -62,10 +62,11 @@ def _add_markers(problem, abstraction, collapsed):
 
 
 def _split_parameters(problem, action, collapsed, collapsed_type, static_fluents, true_facts):
-    """The parameters that reach an effect and can take both a collapsed object and another one."""
+    """The parameters that reach a delete and can take both a collapsed object and another one."""
     candidates = []
     for effect in action.effects:
-        candidates.extend(effect.fluent.args)
+        if effect.is_assignment() and effect.value.is_false() and effect.fluent.type.is_bool_type():
+            candidates.extend(effect.fluent.args)
 
     parameters = []
     for candidate in candidates:
