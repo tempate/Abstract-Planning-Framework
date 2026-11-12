@@ -124,7 +124,11 @@ def varying_objects(values):
     whose values mix predicates, or the ``new-axiom@`` variable the translator
     adds, which has no arguments at all -- yields nothing and is dropped.
     """
-    atoms = [fields for fields in (_atom_fields(value) for value in values) if fields is not None]
+    atoms = []
+    for value in values:
+        fields = _atom_fields(value)
+        if fields is not None:
+            atoms.append(fields)
     if len(atoms) < 2:
         return ()
 
