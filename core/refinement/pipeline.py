@@ -21,7 +21,6 @@ from core.refinement.encoding import (
     switches,
 )
 from core.search.incremental import IncrementalSolver
-from core.search.relaxing import RelaxingSolver
 
 
 @dataclass
@@ -155,7 +154,7 @@ def _fallback_solver(context, asp, abstract_plan, abstract_horizon):
 
     choices = map_abstract_actions(abstract_plan, context.abstraction, gaps)
     rules = [asp.rules, *add_concrete_objects(context.abstraction), *add_switches(choices)]
-    return RelaxingSolver(
+    return IncrementalSolver(
         asp=replace(asp, rules="\n".join(rules)), init_horizon=init_horizon, optimize=context.config.optimize
     )
 
