@@ -252,12 +252,17 @@ def relax_inequalities(problem, abstraction):
     if relaxed:
         relaxed_problem.add_fluent(distinct, default_initial_value=False)
 
-        side_types = {_type_of(side) for _, inequality in relaxed for side in inequality.arg(0).args}
-        objects = [
-            item
-            for item in relaxed_problem.all_objects
-            if any(item.type.is_subtype(side_type) for side_type in side_types)
-        ]
+        # The distinct facts cover every object a side of a relaxed inequality can take.
+        side_types = set()
+        for _, inequality in relaxed:
+            for side in inequality.arg(0).args:
+                side_types.add(_type_of(side))
+
+        objects = []
+        for item in relaxed_problem.all_objects:
+            if any(item.type.is_subtype(side_type) for side_type in side_types):
+                objects.append(item)
+
         for first, second in itertools.permutations(objects, 2):
             relaxed_problem.set_initial_value(distinct(first, second), True)
 
