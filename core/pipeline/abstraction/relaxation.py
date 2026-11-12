@@ -75,7 +75,7 @@ def _add_markers(problem, abstraction, collapsed):
     problem.add_fluent(kept_marker, default_initial_value=False)
 
     for item in problem.all_objects:
-        if item.type != root and not item.type.is_subtype(root):
+        if not item.type.is_subtype(root):
             continue
         marker = collapsed_marker if item in collapsed else kept_marker
         problem.set_initial_value(marker(item), True)
@@ -99,9 +99,7 @@ def _split_parameters(problem, action, reach):
         # A parameter that only ever takes collapsed objects, as when the class
         # is a whole type, relaxes in every grounding, so a split gains nothing.
         others = {
-            item
-            for item in problem.all_objects
-            if item not in reach.collapsed and (item.type == candidate.type or item.type.is_subtype(candidate.type))
+            item for item in problem.all_objects if item not in reach.collapsed and item.type.is_subtype(candidate.type)
         }
         if _can_bind(action, candidate, reach.collapsed, reach) and _can_bind(action, candidate, others, reach):
             parameters.append(candidate)
@@ -258,7 +256,7 @@ def relax_inequalities(problem, abstraction):
         objects = [
             item
             for item in relaxed_problem.all_objects
-            if any(item.type == side_type or item.type.is_subtype(side_type) for side_type in side_types)
+            if any(item.type.is_subtype(side_type) for side_type in side_types)
         ]
         for first, second in itertools.permutations(objects, 2):
             relaxed_problem.set_initial_value(distinct(first, second), True)
