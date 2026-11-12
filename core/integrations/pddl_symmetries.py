@@ -59,7 +59,7 @@ def _run_translator(command, time_limit):
     try:
         with TemporaryDirectory(prefix="pddl-symmetries-") as working_directory:
             # The classes change with the string-hash seed, so a fixed seed makes them repeatable.
-            result = subprocess.run(
+            completed = subprocess.run(
                 command,
                 cwd=working_directory,
                 env={**os.environ, "PYTHONHASHSEED": "0"},
@@ -72,11 +72,11 @@ def _run_translator(command, time_limit):
         raise SymmetryTimeoutError(f"PDDL Symmetries exceeded its {time_limit}-second limit") from error
     except OSError as error:
         raise IntegrationError(f"Could not run PDDL Symmetries: {error}") from error
-    if "No relaxed solution" in result.stdout + result.stderr:
+    if "No relaxed solution" in completed.stdout + completed.stderr:
         raise UnsolvableTaskError("PDDL Symmetries reports that the task has no relaxed solution")
-    if result.returncode != 0:
-        raise tool_failure("PDDL Symmetries", result, (_TRANSLATE_OUT_OF_MEMORY,))
-    return result.stdout
+    if completed.returncode != 0:
+        raise tool_failure("PDDL Symmetries", completed, (_TRANSLATE_OUT_OF_MEMORY,))
+    return completed.stdout
 
 
 def _parse_object_sets(stdout):

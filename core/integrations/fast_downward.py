@@ -82,13 +82,13 @@ def partial_pddl_to_sas(base_dir, domain_path, problem_path, actions_path):
 
 
 def _translate(command, label):
-    completed_process = subprocess.run(command, capture_output=True, text=True)
+    completed = subprocess.run(command, capture_output=True, text=True)
 
-    if completed_process.returncode == _TRANSLATE_UNSOLVABLE or _UNSOLVABLE_MARKER in completed_process.stdout:
+    if completed.returncode == _TRANSLATE_UNSOLVABLE or _UNSOLVABLE_MARKER in completed.stdout:
         raise UnsolvableTaskError(f"Fast Downward ({label}) proved the task unsolvable while translating")
 
-    if completed_process.returncode != _SUCCESS:
-        raise tool_failure(f"Fast Downward ({label})", completed_process, _OUT_OF_MEMORY)
+    if completed.returncode != _SUCCESS:
+        raise tool_failure(f"Fast Downward ({label})", completed, _OUT_OF_MEMORY)
 
 
 def find_pddl_plan(base_dir, domain_path, problem_path, label, search):
@@ -137,12 +137,12 @@ def parse_plan_actions(plan):
 
 
 def _find_plan(command, label, plan_path, unsolvable_exit_codes):
-    out = subprocess.run(command, capture_output=True, text=True)
+    completed = subprocess.run(command, capture_output=True, text=True)
 
-    if out.returncode in unsolvable_exit_codes:
+    if completed.returncode in unsolvable_exit_codes:
         return None
-    elif out.returncode != _SUCCESS:
-        raise tool_failure(f"Fast Downward ({label})", out, _OUT_OF_MEMORY)
+    elif completed.returncode != _SUCCESS:
+        raise tool_failure(f"Fast Downward ({label})", completed, _OUT_OF_MEMORY)
 
     return _read_plan(plan_path)
 
