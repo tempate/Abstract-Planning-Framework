@@ -13,7 +13,9 @@ from core.integrations.unified_planning import read_problem
 from core.utilities.outcomes import UnsolvableTaskError
 from core.pipeline.abstraction.factory import write_abstract_problem
 from core.utilities.metrics import PlanningMetrics
-from core.planners import asp, fd, ms
+from core.planners import fd
+from core.planners.asp import Asp
+from core.planners.ms import MsUnsat
 from core.pipeline import pipeline
 from core.utilities.config import AbstractPlanningConfig, PlanningConfig
 from scripts.utils.arguments import positive_int
@@ -84,7 +86,7 @@ class DecisionTests(unittest.TestCase):
             with self.subTest(found=found):
                 has_plan.return_value = found
 
-                result = ms.check_solvability(PlanningConfig("domain.pddl", "problem.pddl"))
+                result = MsUnsat().check_solvability(PlanningConfig("domain.pddl", "problem.pddl"))
 
                 self.assertEqual(result["verdict"], verdict)
 
@@ -182,7 +184,7 @@ class AspHorizonSearchTests(unittest.TestCase):
             patch("core.integrations.plasp.os.path.exists", return_value=True),
             patch("core.integrations.plasp.subprocess.run", return_value=plasp),
         ):
-            actions, horizon = asp.find_abstract_plan(
+            actions, horizon = Asp().find_abstract_plan(
                 PlanningConfig("domain.pddl", "problem.pddl"),
                 None,
                 "abstract.sas",
