@@ -10,7 +10,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from experiments.collect import collect
+from experiments.collect import collect, manifest_keys
 from experiments.report import best_classes
 from experiments.run import (
     ABSTRACTION_PREFIX,
@@ -118,16 +118,8 @@ def _not_submitted(tasks, manifests):
     """The tasks no earlier run's manifest lists, so that a second run adds to the first."""
     submitted = set()
     for manifest in manifests:
-        entries = json.loads(Path(manifest).read_text(encoding="utf-8"))["expected_results"]
-        for entry in entries:
-            submitted.add((entry["domain"], entry["problem"], entry["mode"], entry["class"]))
-
-    kept = []
-    for task in tasks:
-        mode, domain_name, _domain, problem, rank = task
-        if (domain_name, problem.name, mode, rank) not in submitted:
-            kept.append(task)
-    return kept
+        submitted |= manifest_keys(Path(manifest))
+    return [task for task in tasks if _task_key(task) not in submitted]
 
 
 def _track_name(args, parser):

@@ -10,6 +10,7 @@ import tempfile
 from collections import defaultdict
 from pathlib import Path
 
+from experiments.collect import result_key
 from experiments.report import finished_problems, solved
 from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 from experiments.tracks import TRACKS
@@ -65,15 +66,13 @@ def select(rows, kind, source, manifests):
         if manifest["track"] != f"{kind}/{source}":
             continue
         for entry in manifest["expected_results"]:
-            mode = entry["mode"]
-            if mode.startswith(ABSTRACTION_PREFIX):
-                submitted.add((mode, entry["domain"], entry["problem"], int(entry["class"] or 0)))
-    filtered_modes = {mode for mode, *_ in submitted}
+            if entry["mode"].startswith(ABSTRACTION_PREFIX):
+                submitted.add(result_key(entry))
+    filtered_modes = {mode for _domain, _problem, mode, _rank in submitted}
 
     selected = []
     for row in rows:
-        key = (row["mode"], row["domain"], row["problem"], int(row["class"] or 0))
-        if row["mode"] not in filtered_modes or key in submitted:
+        if row["mode"] not in filtered_modes or result_key(row) in submitted:
             selected.append(row)
     return selected
 
