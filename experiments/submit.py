@@ -10,7 +10,7 @@ import tempfile
 from datetime import datetime
 from pathlib import Path
 
-from experiments.collect import collect
+from experiments.collect import collect, manifest_keys
 from experiments.report import best_classes
 from experiments.run import (
     ABSTRACTION_PREFIX,
@@ -36,14 +36,18 @@ DEFAULT_SOURCE = DEFAULT_TRACK.split("/")[1]
 def main():
     parser = _argument_parser()
     args = parser.parse_args()
-    track_name = _track_name(args, parser)
-    missing = None
     if args.retry_missing:
+        # Exactly what the earlier run never got back, on its track and with the classes it submitted.
         track_name, missing = _missing_results(args.retry_missing)
-    track = TRACKS[track_name]
-    modes = args.modes or track.modes[:1]
-    if missing is not None:
         modes = sorted({mode for _domain, _problem, mode, _rank in missing})
+        domains = sorted({domain for domain, _problem, _mode, _rank in missing})
+        best = None
+    else:
+        track_name, missing = _track_name(args, parser), None
+        modes = args.modes or TRACKS[track_name].modes[:1]
+        domains = args.domains
+        best = best_classes(TRACKS[track_name].results_file) if args.classes == "best" else None
+    track = TRACKS[track_name]
     unknown = sorted(set(modes) - set(track.modes))
     if unknown:
         parser.error(f"{track_name} has no mode {', '.join(unknown)}; it runs {', '.join(track.modes)}")
@@ -53,11 +57,11 @@ def main():
             suite=track.suite,
             runnable=None if args.all_problems else track.runnable(),
             modes=modes,
-            domains=sorted({domain for domain, *_ in missing}) if missing is not None else args.domains,
+            domains=domains,
             problems=args.problems,
             class_counts=track.class_counts(),
             from_rank=args.from_rank,
-            best=best_classes(track.results_file) if args.classes == "best" and missing is None else None,
+            best=best,
         )
     )
     if missing is not None:
@@ -118,16 +122,8 @@ def _not_submitted(tasks, manifests):
     """The tasks no earlier run's manifest lists, so that a second run adds to the first."""
     submitted = set()
     for manifest in manifests:
-        entries = json.loads(Path(manifest).read_text(encoding="utf-8"))["expected_results"]
-        for entry in entries:
-            submitted.add((entry["domain"], entry["problem"], entry["mode"], entry["class"]))
-
-    kept = []
-    for task in tasks:
-        mode, domain_name, _domain, problem, rank = task
-        if (domain_name, problem.name, mode, rank) not in submitted:
-            kept.append(task)
-    return kept
+        submitted |= manifest_keys(Path(manifest))
+    return [task for task in tasks if _task_key(task) not in submitted]
 
 
 def _track_name(args, parser):
@@ -182,7 +178,6 @@ def _set_aside_results_dir(results_dir=RESULTS_DIR):
         else:
             results_dir.rmdir()
     results_dir.mkdir(parents=True)
-    return results_dir
 
 
 def _write_manifest(tasks, results_dir=RESULTS_DIR, track=DEFAULT_TRACK):
@@ -276,7 +271,7 @@ def _argument_parser():
     )
     parser.add_argument(
         "--abstraction-source",
-        choices=sorted({name.split("/")[1] for name in TRACKS if "/" in name}),
+        choices=sorted({name.split("/")[1] for name in TRACKS}),
         help=f"What the modes through an abstraction collapse, for sat only (default: {DEFAULT_SOURCE})",
     )
     return parser
@@ -369,7 +364,7 @@ def _benchmark_tasks(
                 continue
             if runnable is not None and (domain_name, problem.name) not in runnable:
                 continue
-            if problems is not None and not {problem.name, problem.stem} & set(problems):
+            if problems is not None and problem.name not in problems and problem.stem not in problems:
                 continue
             domain = find_domain(problem)
             for mode in modes:

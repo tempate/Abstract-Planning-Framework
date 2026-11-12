@@ -23,6 +23,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from experiments import slurm
 from experiments.run import RESULTS_DIR
 from experiments.tracks import TRACKS, find_domain, has_other_status, is_domain_file
 
@@ -35,7 +36,7 @@ TASK_MEMORY = "9G"
 # A little past TIMEOUT, so that the scan records a timeout before Slurm kills the task.
 TASK_MINUTES = 12
 # One CPU generation, so that every problem gets the same time limit.
-PARTITIONS = ("sunnycove",)
+PARTITION = "sunnycove"
 PROBLEMS_HEADER = """# Problems with a class to collapse.
 # Regenerate with:
 #   python -m experiments.scan --track {track}
@@ -132,7 +133,6 @@ def _submit(track_name, track, domains, keep_classes=False):
         suite = [domain_name for domain_name in suite if domain_name in domains]
     tasks = sorted(_suite_problems(track.benchmarks_dir, suite))
     directory = _task_dir(track_name)
-    directory.mkdir(parents=True, exist_ok=True)
     if keep_classes:
         # The kept classes become outcomes, so collecting writes them with the new ones.
         logged = _read_log(track.classes_file.with_suffix(".log"))
@@ -142,52 +142,37 @@ def _submit(track_name, track, domains, keep_classes=False):
             result.parent.mkdir(parents=True, exist_ok=True)
             result.write_text(f"{name}\t{outcome}\n", encoding="utf-8")
         tasks = [task for task in tasks if _name(task) not in kept]
-    (directory / "tasks.txt").write_text("".join(f"{_name(task)}\n" for task in tasks), encoding="utf-8")
-    task_command = f"{sys.executable} -m experiments.scan --track {track_name} --task $SLURM_ARRAY_TASK_ID"
-    share = -(-len(tasks) // len(PARTITIONS))
-    for number, partition in enumerate(PARTITIONS):
-        first, last = number * share, min(len(tasks), (number + 1) * share) - 1
-        if first > last:
-            continue
-        command = [
-            "sbatch",
-            f"--array={first}-{last}",
-            f"--partition={partition}",
-            "--cpus-per-task=1",
-            f"--mem={TASK_MEMORY}",
-            f"--time={TASK_MINUTES}",
-            f"--job-name=scan-{track_name.replace('/', '-')}",
-            f"--output={directory}/%a.out",
-            f"--wrap={task_command}",
-        ]
-        subprocess.run(command, cwd=RESULTS_DIR.parent, check=True)
+    slurm.submit(
+        directory,
+        [_name(task) for task in tasks],
+        f"{sys.executable} -m experiments.scan --track {track_name}",
+        f"scan-{track_name.replace('/', '-')}",
+        PARTITION,
+        TASK_MEMORY,
+        TASK_MINUTES,
+    )
     print(f"Submitted {len(tasks)} problems; collect with python -m experiments.scan --track {track_name} --collect")
 
 
 def _scan_task(track_name, track, index, source, timeout):
-    directory = _task_dir(track_name)
-    task = (directory / "tasks.txt").read_text(encoding="utf-8").splitlines()[index]
-    # Named after the problem, not the index, since a later submit renumbers the tasks.
-    result = directory / "outcomes" / f"{task}.tsv"
-    # Slurm requeues tasks, sometimes after they finished, and the outcome stands.
-    if result.is_file():
-        return
-    domain_name, _, problem = task.rpartition("/")
-    name, outcome = _scan(track.benchmarks_dir, domain_name, problem, RANK, source, _before_grounding(track), timeout)
-    result.parent.mkdir(parents=True, exist_ok=True)
-    result.write_text(f"{name}\t{outcome}\n", encoding="utf-8")
+    def rank(name):
+        domain_name, _, problem = name.rpartition("/")
+        _, outcome = _scan(track.benchmarks_dir, domain_name, problem, RANK, source, _before_grounding(track), timeout)
+        return outcome
+
+    slurm.run_task(_task_dir(track_name), index, rank)
 
 
 def _collect(track_name, track):
     """Write problems.txt and classes.txt from the outcomes of the submitted tasks."""
-    scanned = _task_outcomes(track_name)
+    scanned = slurm.outcomes(_task_dir(track_name))
     # A problem another track scanned over the same benchmarks has the same classes,
     # so a track whose suite overlaps another's submits only the problems it adds.
     suite = {_name(task) for task in _suite_problems(track.benchmarks_dir, track.suite)}
     source = track_name.split("/")[1]
     for other_name, other in TRACKS.items():
         if other.benchmarks_dir == track.benchmarks_dir and other_name.split("/")[1] == source:
-            for name, outcome in _task_outcomes(other_name).items():
+            for name, outcome in slurm.outcomes(_task_dir(other_name)).items():
                 if name in suite:
                     scanned.setdefault(name, outcome)
 
@@ -198,14 +183,6 @@ def _collect(track_name, track):
     log = "".join(f"{name}\t{outcome}\n" for name, outcome in sorted(scanned.items()))
     track.classes_file.with_suffix(".log").write_text(log, encoding="utf-8")
     print(f"Wrote what {len(scanned)} scanned problems have to {track.runnable_file} and {track.classes_file}")
-
-
-def _task_outcomes(track_name):
-    outcomes = {}
-    for result in sorted((_task_dir(track_name) / "outcomes").rglob("*.tsv")):
-        name, _, outcome = result.read_text(encoding="utf-8").strip().partition("\t")
-        outcomes[name] = outcome
-    return outcomes
 
 
 def _task_dir(track_name):
@@ -286,7 +263,7 @@ def _argument_parser():
     parser.add_argument(
         "--track",
         required=True,
-        choices=sorted(name for name in TRACKS if name.endswith(("/symmetries", "/resources"))),
+        choices=sorted(TRACKS),
         help="Track whose problems to scan",
     )
     parser.add_argument(

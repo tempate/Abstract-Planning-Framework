@@ -8,6 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from core.outcomes import SOLVABLE, UNKNOWN
 from experiments.run import ABSTRACTION_PREFIX, MODES, PROJECT_ROOT
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
@@ -62,11 +63,11 @@ def main():
     if verdict_run:
         sections = [_verdicts(problems, modes, labels)]
         if pairs:
-            sections.append(_verdict_head_to_head(problems, pairs, labels))
+            sections.append(_head_to_head(problems, pairs, VERDICT_COMPARISON, labels))
     else:
         sections = [_coverage(problems, modes, labels)]
         if pairs:
-            sections.append(_head_to_head(problems, pairs, labels))
+            sections.append(_head_to_head(problems, pairs, PLAN_COMPARISON, labels))
 
     # Only a mode through an abstraction has one to report on.
     if abstractions:
@@ -125,6 +126,12 @@ def _argument_parser():
 
 
 def _finished_problems(results_file):
+    """finished_problems, over the rows of a results file."""
+    with Path(results_file).open(encoding="utf-8", newline="") as stream:
+        return finished_problems(csv.DictReader(stream))
+
+
+def finished_problems(csv_rows):
     """Pair every mode the run holds, dropping problems any of them left unfinished.
 
     The modes come from the file rather than from a list here, so that a CSV
@@ -132,41 +139,38 @@ def _finished_problems(results_file):
     value nobody recognizes is ignored instead of becoming a requirement no
     problem meets, which would empty the report rather than fail.
     """
-    with Path(results_file).open(encoding="utf-8", newline="") as stream:
-        return finished_problems(csv.DictReader(stream))
-
-
-def finished_problems(csv_rows):
-    """The same, over rows already read."""
     rows = {}
-    for row in csv_rows:
-        # An abstract mode that ran several classes reports the one that performed best.
-        problem = rows.setdefault((row["domain"], row["problem"]), {})
-        if row["mode"] not in problem or _performance(row) > _performance(problem[row["mode"]]):
-            problem[row["mode"]] = row
+    for (domain, problem, mode), row in _best_rows(csv_rows).items():
+        rows.setdefault((domain, problem), {})[mode] = row
 
     present = {mode for problem in rows.values() for mode in problem}
     modes = tuple(mode for mode in MODES if mode in present)
-
-    problems = []
-    for problem in rows.values():
-        if any(mode not in problem or problem[mode]["status"] in UNFINISHED_STATUSES for mode in modes):
-            continue
-        problems.append(problem)
+    problems = [problem for problem in rows.values() if _finished(problem, modes)]
     return modes, problems, len(rows) - len(problems)
+
+
+def _finished(problem, modes):
+    for mode in modes:
+        if mode not in problem or problem[mode]["status"] in UNFINISHED_STATUSES:
+            return False
+    return True
 
 
 def best_classes(results_file):
     """The rank of the class each abstract mode did best with on each problem, as the report picks it."""
-    best = {}
     with Path(results_file).open(encoding="utf-8", newline="") as stream:
-        for row in csv.DictReader(stream):
-            if not row["mode"].startswith(ABSTRACTION_PREFIX):
-                continue
-            key = (row["domain"], row["problem"], row["mode"])
-            if key not in best or _performance(row) > _performance(best[key]):
-                best[key] = row
-    return {key: int(row.get("class") or 0) for key, row in best.items()}
+        abstract_rows = [row for row in csv.DictReader(stream) if row["mode"].startswith(ABSTRACTION_PREFIX)]
+    return {key: int(row.get("class") or 0) for key, row in _best_rows(abstract_rows).items()}
+
+
+def _best_rows(rows):
+    """Each mode's row on each problem, the class that performed best where it ran several."""
+    best = {}
+    for row in rows:
+        key = (row["domain"], row["problem"], row["mode"])
+        if key not in best or _performance(row) > _performance(best[key]):
+            best[key] = row
+    return best
 
 
 def _write_best_classes(results_file, best_file):
@@ -181,18 +185,27 @@ def _write_best_classes(results_file, best_file):
 def _performance(row):
     """Rank the classes one mode ran on a problem: finished, then solved and fastest, or failed and furthest along."""
     finished = row["status"] not in UNFINISHED_STATUSES
-    if row["status"] == "success" and row.get("verdict") != "unknown":
+    if solved(row):
         return (finished, True, -_runtime(row))
+    return (finished, False, _phase_position(row["last_completed_phase"]), _runtime(row))
+
+
+def _phase_position(phase):
+    """Where a phase falls in the abstraction pipelines; one nobody has placed yet goes last."""
     pipeline = list(KILLED_IN_PHASE)
-    completed = row["last_completed_phase"]
-    reached = pipeline.index(completed) if completed in pipeline else len(pipeline)
-    return (finished, False, reached, _runtime(row))
+    return pipeline.index(phase) if phase in pipeline else len(pipeline)
+
+
+def solved(row):
+    """Whether a mode did what its track asks: found a plan, or proved that none exists."""
+    # A verdict run that finds a plan, or an abstraction that leaves the verdict unknown, proves nothing.
+    return row["status"] == "success" and row.get("verdict") not in (SOLVABLE, UNKNOWN)
 
 
 def _is_verdict_run(problems):
     """Tell a run that decided solvability from one that searched for plans."""
-    for modes in problems:
-        for row in modes.values():
+    for problem in problems:
+        for row in problem.values():
             if row.get("verdict"):
                 return True
     return False
@@ -228,9 +241,9 @@ def _outcome_table(problems, modes, heading, rows, labels):
 
 def _verdict_counts(problems, modes, verdict):
     counts = {mode: 0 for mode in modes}
-    for modes in problems:
+    for problem in problems:
         for mode in counts:
-            if modes[mode]["verdict"] == verdict:
+            if problem[mode]["verdict"] == verdict:
                 counts[mode] += 1
     return counts
 
@@ -255,19 +268,11 @@ VERDICT_COMPARISON = {
 }
 
 
-def _head_to_head(problems, pairs, labels):
-    return _compare(problems, pairs, lambda row: row["status"] == "success", PLAN_COMPARISON, labels)
-
-
-def _verdict_head_to_head(problems, pairs, labels):
-    return _compare(problems, pairs, lambda row: row["verdict"] == "unsolvable", VERDICT_COMPARISON, labels)
-
-
-def _compare(problems, pairs, succeeded, metrics, labels):
-    """Compare each abstraction with its solver, side by side, on what both succeeded at."""
+def _head_to_head(problems, pairs, metrics, labels):
+    """Compare each abstraction with its solver, side by side, on what both solved."""
     columns = {}
     for abstraction, solver in pairs:
-        columns |= _compare_pair(problems, abstraction, solver, succeeded)
+        columns |= _compare_pair(problems, abstraction, solver)
 
     lines = _wide_header("Metric", columns, labels)
     for key, label in metrics.items():
@@ -275,12 +280,12 @@ def _compare(problems, pairs, succeeded, metrics, labels):
     return "Head to head, over the problems both solved", lines
 
 
-def _compare_pair(problems, abstraction, solver, succeeded):
+def _compare_pair(problems, abstraction, solver):
     """Pairwise rather than over every mode at once: intersecting all of them would
     drop the problems one solver missed out of the other pair's comparison, moving
     numbers for a reason that has nothing to do with either of them."""
     pair = (abstraction, solver)
-    both = [problem for problem in problems if all(succeeded(problem[mode]) for mode in pair)]
+    both = [problem for problem in problems if solved(problem[abstraction]) and solved(problem[solver])]
     shared = len(both)
 
     faster = {mode: 0 for mode in pair}
@@ -304,7 +309,7 @@ def _compare_pair(problems, abstraction, solver, succeeded):
         columns[mode] = {
             "shared": shared,
             "faster": _share(faster[mode], shared, 1),
-            "alone": sum(succeeded(problem[mode]) for problem in problems) - shared,
+            "alone": sum(solved(problem[mode]) for problem in problems) - shared,
             "median": _median(times),
             "total": _seconds(sum(times)),
             "shorter": _share(shorter[mode], len(measured), 1),
@@ -328,12 +333,11 @@ def _discarded_the_abstract_plan(row):
 
 def _timeout_phases(problems, abstractions, verdict_run, labels):
     killed_in = KILLED_IN_PHASE_DECIDING if verdict_run else KILLED_IN_PHASE
-    pipeline = list(KILLED_IN_PHASE)
     counts = {mode: {} for mode in abstractions}
     totals = {}
     positions = {}
     for mode in abstractions:
-        timeouts = [modes[mode] for modes in problems if modes[mode]["status"] == "timed out"]
+        timeouts = [problem[mode] for problem in problems if problem[mode]["status"] == "timed out"]
         totals[mode] = len(timeouts)
         for row in timeouts:
             completed = row["last_completed_phase"]
@@ -345,8 +349,7 @@ def _timeout_phases(problems, abstractions, verdict_run, labels):
                 phase = "Unguided concrete search"
             counts[mode][phase] = counts[mode].get(phase, 0) + 1
 
-            # A phase nobody has placed yet goes last rather than failing the report.
-            index = pipeline.index(completed) if completed in pipeline else len(pipeline)
+            index = _phase_position(completed)
             positions[phase] = min(positions.get(phase, (index, unguided)), (index, unguided))
 
     lines = _wide_header("Killed during", abstractions, labels)
@@ -360,7 +363,7 @@ def _refinement_outcomes(problems, abstractions, labels):
     counts = {mode: {"refined": 0, "switched": 0, "discarded": 0} for mode in abstractions}
     totals = {}
     for mode in abstractions:
-        successes = [modes[mode] for modes in problems if modes[mode]["status"] == "success"]
+        successes = [problem[mode] for problem in problems if problem[mode]["status"] == "success"]
         totals[mode] = len(successes)
         for row in successes:
             if int(row["increments"]) > 0:
@@ -386,13 +389,10 @@ def _relaxed_deletes(problems, abstractions, labels):
     title = "Deletes relaxed by the refined plans"
     used = {}
     for mode in abstractions:
-        successes = [modes[mode] for modes in problems if modes[mode]["status"] == "success"]
+        successes = [problem[mode] for problem in problems if problem[mode]["status"] == "success"]
         used[mode] = [row for row in successes if int(row["increments"]) == 0 and row.get("relaxed_deletes")]
 
     if not any(used.values()):
-        successes = [modes[mode] for modes in problems for mode in abstractions if modes[mode]["status"] == "success"]
-        if successes and not any(row.get("relaxed_deletes") for row in successes):
-            return title, ["This CSV predates the relaxed-deletes counter"]
         return title, ["No success was solved with its abstract plan"]
 
     counts = {mode: {bucket: 0 for bucket in RELAXED_DELETE_BUCKETS} for mode in abstractions}
@@ -408,10 +408,7 @@ def _relaxed_deletes(problems, abstractions, labels):
 
 
 def _by_domain(problems, modes, verdict_run, labels):
-    if verdict_run:
-        title, succeeded = "Proved unsolvable by domain", lambda row: row["verdict"] == "unsolvable"
-    else:
-        title, succeeded = "Plans found by domain", lambda row: row["status"] == "success"
+    title = "Proved unsolvable by domain" if verdict_run else "Plans found by domain"
 
     domains = {}
     # A scaled domain counts each base problem once across its sizes.
@@ -423,7 +420,7 @@ def _by_domain(problems, modes, verdict_run, labels):
         counts["problems"] += 1
         names.setdefault(domain.rpartition("/")[0] or domain, set()).add(row["problem"])
         for mode in modes:
-            counts[mode] += succeeded(problem[mode])
+            counts[mode] += solved(problem[mode])
 
     # The scaled track names its domains <domain>/size-N, and the size gets a column of its own.
     sized = any("/" in domain for domain in domains)

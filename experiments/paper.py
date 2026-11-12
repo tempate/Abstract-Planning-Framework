@@ -5,7 +5,8 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from experiments.figure import DEFAULT_PAPER, load_tracks, paper_figures, render_pdf, solved
+from experiments.figure import DEFAULT_PAPER, SOURCES, load_tracks, paper_figures, render_pdf
+from experiments.report import solved
 
 # Each track's table, where its columns start in it, and the modes they count in order.
 TABLE_COLUMNS = {
@@ -13,7 +14,6 @@ TABLE_COLUMNS = {
     "opt": ("tab:ipc", 6, ("asp", "abs-asp", "lmcut", "abs-lmcut")),
     "unsat": ("tab:unsat", 1, ("ms", "abs-ms")),
 }
-TABLE_SECTIONS = {"symmetries": "IPC Symmetries", "resources": "IPC Resources"}
 
 
 def main():
@@ -41,14 +41,18 @@ def domain_counts(problems, kind):
             row[index] += solved(problem[mode])
     # A domain from a single IPC edition goes without its year, such as agricola.
     editions = Counter(_without_year(name) for name in rows)
-    return {(_without_year(name) if editions[_without_year(name)] == 1 else name): row for name, row in rows.items()}
+    counts = {}
+    for name, row in rows.items():
+        short = _without_year(name)
+        counts[short if editions[short] == 1 else name] = row
+    return counts
 
 
 def update_table(tex, kind, source, counts):
     """Write one track's columns of one source's section, bolding the better mode of each pair."""
     label, first, modes = TABLE_COLUMNS[kind]
     table = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{label}}}"))
-    start = tex.index(rf"\emph{{{TABLE_SECTIONS[source]}}}", table)
+    start = tex.index(rf"\emph{{IPC {SOURCES[source]}}}", table)
     # The section runs to the next section's heading or the end of the table.
     end = re.compile(r"\\emph\{|\\bottomrule").search(tex, start + 1).start()
     lines = tex[start:end].split("\n")

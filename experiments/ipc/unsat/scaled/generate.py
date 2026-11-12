@@ -51,7 +51,8 @@ def scale_domain(domain, obj, copies):
     action_name = re.compile(rf"(\(:action\s+\S*?)(?<![^\s-]){re.escape(obj)}(?=\s)")
     pieces = []
     position = 0
-    for start in [match.start() for match in re.finditer(r"\(:action\b", domain)]:
+    for match in re.finditer(r"\(:action\b", domain):
+        start = match.start()
         end = _closing(domain, start)
         action = domain[start:end]
         pieces.append(domain[position:end])

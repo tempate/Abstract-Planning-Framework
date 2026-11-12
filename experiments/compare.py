@@ -5,7 +5,8 @@ import json
 import statistics
 from pathlib import Path
 
-from experiments.figure import load_tracks, solve_time, solved
+from experiments.figure import load_tracks, solve_time
+from experiments.report import solved
 
 LABELS = {"abs-asp": "ASPᵅ", "abs-lama": "LAMAᵅ", "abs-lmcut": "LMcutᵅ", "abs-ms": "M&Sᵅ"}
 

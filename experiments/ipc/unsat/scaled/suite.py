@@ -5,4 +5,4 @@ SIZES = (2, 3, 5, 10, 20, 50, 100, 200, 500, 1000)
 # with the class sizes their base problems start from beyond SIZES.
 DOMAINS = ("cave-diving", "document-transfer", "over-nomystery", "over-rovers")
 BASE_SIZES = (4, 6)
-SUITE = [f"{domain}/size-{size}" for domain in DOMAINS for size in sorted(set(SIZES) | set(BASE_SIZES))]
+SUITE = [f"{domain}/size-{size}" for domain in DOMAINS for size in sorted(SIZES + BASE_SIZES)]

@@ -54,17 +54,11 @@ def collect(*results_dirs):
                 continue
 
             if result.get("mode") in MODES:
-                key = (
-                    result["domain"],
-                    result["problem"],
-                    result["mode"],
-                    class_rank(result["mode"], result.get("class")),
-                )
-                results[key] = result
+                results[result_key(result)] = result
 
         manifest = results_dir / MANIFEST_NAME
         if manifest.is_file():
-            keys.update(_manifest_keys(manifest))
+            keys.update(manifest_keys(manifest))
 
     keys.update(results)
 
@@ -72,23 +66,17 @@ def collect(*results_dirs):
     for domain, problem, mode, rank in sorted(keys):
         result = results.get((domain, problem, mode, rank))
         values = _missing_values() if result is None else _values(result)
-        rows.append({"domain": domain, "problem": problem, "mode": mode, "class": rank, **values})
+        rows.append({**values, "domain": domain, "problem": problem, "mode": mode, "class": rank})
     return rows
 
 
-def _manifest_keys(manifest):
+def manifest_keys(manifest):
     entries = json.loads(manifest.read_text(encoding="utf-8"))["expected_results"]
-    keys = set()
-    for entry in entries:
-        mode = entry["mode"]
-        if mode in MODES:
-            rank = class_rank(mode, entry.get("class"))
-            keys.add((entry["domain"], entry["problem"], mode, rank))
-    return keys
+    return {result_key(entry) for entry in entries if entry["mode"] in MODES}
 
 
 def _missing_values():
-    return {field: "" for field in FIELDS[5:]} | {"status": "missing"}
+    return dict.fromkeys(FIELDS, "") | {"status": "missing"}
 
 
 def _values(result):
@@ -109,7 +97,7 @@ def _values(result):
     }
 
 
-def _metrics(output, progress=None):
+def _metrics(output, progress):
     """Read the metrics the planner printed, or, when it printed none, the last it reported."""
     metrics = {
         "durations": _metric_group(output, DURATION_LABELS, float),
@@ -131,7 +119,7 @@ def _metric_group(output, labels, conversion):
     return values
 
 
-def _abstraction_values(output, abstraction=None):
+def _abstraction_values(output, abstraction):
     """Read the collapsed class from the metrics, or from the line the planner prints when it selects it."""
     if abstraction:
         return {
@@ -165,7 +153,7 @@ def _error_message(result):
     return lines[-1] if lines else ""
 
 
-def _key(row):
+def result_key(row):
     return (row["domain"], row["problem"], row["mode"], class_rank(row["mode"], row.get("class")))
 
 
@@ -178,22 +166,21 @@ def _preserved_rows(collected, csv_file):
     with csv_file.open(encoding="utf-8", newline="") as stream:
         rows = list(csv.DictReader(stream))
 
-    rerun = {_key(row) for row in collected}
+    rerun = {result_key(row) for row in collected}
     # A run that re-ran a class the CSV holds ran newer code on that problem, so
     # the classes it skipped measure code that no longer exists. A run that only
     # adds classes, as --from-rank does, leaves the earlier ones alone, and so
     # does a job that never reported.
-    finished = {_key(row) for row in collected if row["status"] != "missing"}
-    replaced = {key[:3] for key in finished & {_key(row) for row in rows}}
+    finished = {result_key(row) for row in collected if row["status"] != "missing"}
+    replaced = {key[:3] for key in finished & {result_key(row) for row in rows}}
 
     preserved = []
     for row in rows:
-        if _key(row) in rerun or _key(row)[:3] in replaced:
+        key = result_key(row)
+        if key in rerun or key[:3] in replaced:
             continue
-        kept = {}
-        for field in FIELDS:
-            kept[field] = row.get(field, "")
-        kept["class"] = _key(row)[3]
+        kept = {field: row.get(field, "") for field in FIELDS}
+        kept["class"] = key[3]
         preserved.append(kept)
     return preserved
 
@@ -204,7 +191,7 @@ def main(results_dirs=RESULTS_DIR, csv_file=None):
     csv_file = csv_file or _track_results_file(results_dirs)
     collected = collect(*results_dirs)
     preserved = _preserved_rows(collected, csv_file)
-    rows = sorted(collected + preserved, key=_key)
+    rows = sorted(collected + preserved, key=result_key)
     csv_file = Path(csv_file)
     csv_file.parent.mkdir(parents=True, exist_ok=True)
     with csv_file.open("w", encoding="utf-8", newline="") as stream:
