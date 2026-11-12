@@ -17,6 +17,7 @@ import tempfile
 from pathlib import Path
 
 from core.integrations.paths import FAST_DOWNWARD_SCRIPT
+from experiments import slurm
 from experiments.run import ABSTRACTION_PREFIX, RESULTS_DIR
 from experiments.tracks import TRACKS, find_domain
 
@@ -52,41 +53,26 @@ def main():
 def _submit(track_name):
     """Submit one Slurm task per problem that no concrete mode solves."""
     tasks = sorted(_unsolved(track_name))
-    directory = _task_dir(track_name)
-    directory.mkdir(parents=True, exist_ok=True)
-    (directory / "tasks.txt").write_text(
-        "".join(f"{domain}/{problem}\n" for domain, problem in tasks), encoding="utf-8"
+    slurm.submit(
+        _task_dir(track_name),
+        [f"{domain}/{problem}" for domain, problem in tasks],
+        f"{sys.executable} -m experiments.grounding --track {track_name}",
+        f"grounding-{track_name.split('/')[0]}",
+        PARTITION,
+        TASK_MEMORY,
+        TASK_MINUTES,
     )
-    task_command = f"{sys.executable} -m experiments.grounding --track {track_name} --task $SLURM_ARRAY_TASK_ID"
-    command = [
-        "sbatch",
-        f"--array=0-{len(tasks) - 1}",
-        f"--partition={PARTITION}",
-        "--cpus-per-task=1",
-        f"--mem={TASK_MEMORY}",
-        f"--time={TASK_MINUTES}",
-        f"--job-name=grounding-{track_name.split('/')[0]}",
-        f"--output={directory}/%a.out",
-        f"--wrap={task_command}",
-    ]
-    subprocess.run(command, cwd=RESULTS_DIR.parent, check=True)
     print(
         f"Submitted {len(tasks)} problems; collect with python -m experiments.grounding --track {track_name} --collect"
     )
 
 
 def _ground_task(track_name, index):
-    directory = _task_dir(track_name)
-    name = (directory / "tasks.txt").read_text(encoding="utf-8").splitlines()[index]
-    # Named after the problem, not the index, since a later submit renumbers the tasks.
-    result = directory / "outcomes" / f"{name}.tsv"
-    # Slurm requeues tasks, sometimes after they finished, and the outcome stands.
-    if result.is_file():
-        return
-    domain_name, _, problem = name.rpartition("/")
-    outcome = _ground(TRACKS[track_name].benchmarks_dir / domain_name, problem)
-    result.parent.mkdir(parents=True, exist_ok=True)
-    result.write_text(f"{name}\t{outcome}\n", encoding="utf-8")
+    def ground(name):
+        domain_name, _, problem = name.rpartition("/")
+        return _ground(TRACKS[track_name].benchmarks_dir / domain_name, problem)
+
+    slurm.run_task(_task_dir(track_name), index, ground)
 
 
 def _ground(directory, problem):
@@ -120,10 +106,7 @@ def _ground(directory, problem):
 
 def _collect(track_name):
     """Write the problems that did not ground, from the outcomes of the submitted tasks."""
-    outcomes = {}
-    for result in sorted((_task_dir(track_name) / "outcomes").rglob("*.tsv")):
-        name, _, outcome = result.read_text(encoding="utf-8").strip().partition("\t")
-        outcomes[name] = outcome
+    outcomes = slurm.outcomes(_task_dir(track_name))
     missing = {f"{domain}/{problem}" for domain, problem in _unsolved(track_name)} - set(outcomes)
     if missing:
         raise SystemExit(f"{len(missing)} problems have no outcome yet, such as {sorted(missing)[0]}")
