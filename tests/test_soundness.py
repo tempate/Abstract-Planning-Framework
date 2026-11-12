@@ -177,7 +177,7 @@ class RefinementTests(unittest.TestCase):
             light = build_abstract_problem(config).abstraction.name
         plan = tuple(PlanAction("switch-on", (light,), step) for step in range(1, steps + 1))
         with (
-            patch.object(type(PLANNERS["lama"]), "find_abstract_plan", return_value=(plan, steps)),
+            patch.object(type(PLANNERS["lama"]), "plan_sas", return_value=plan),
             redirect_stdout(StringIO()),
         ):
             result = pipeline.solve(config)

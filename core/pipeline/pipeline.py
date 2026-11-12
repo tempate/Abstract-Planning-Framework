@@ -9,6 +9,7 @@ from core.utilities.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
 from core.planners.registry import PLANNERS
 from core.utilities.config import AbstractPlanningConfig
 from core.utilities.execution import planning_run
+from core.utilities.plan import one_action_per_step
 from core.pipeline.refinement.pipeline import RefinementContext, refine
 
 
@@ -16,8 +17,15 @@ def solve(config: AbstractPlanningConfig, on_update=None):
     """Abstract one concrete task, plan it with the config's planner, and refine that plan with ASP."""
     with planning_run("abstract", on_update) as run:
         problem, abstract_sas, renamings = _abstract(config, run.base_dir, run.metrics)
-        planner = PLANNERS[config.planner]
-        abstract_plan, horizon = planner.find_abstract_plan(config, run.base_dir, abstract_sas, run.metrics)
+        actions = PLANNERS[config.planner].plan_sas(config, run.base_dir, abstract_sas, run.metrics)
+        # The abstraction over-approximates, so an abstract task without a plan
+        # proves the concrete one has none either.
+        if actions is None:
+            raise UnsolvableTaskError("The abstract task has no plan")
+        # A doubling horizon leaves empty steps and Fast Downward counts from 0,
+        # while the refinement maps one abstract action onto each step from 1.
+        abstract_plan = one_action_per_step(actions)
+        run.metrics.set_counter("abstract_plan_length", len(abstract_plan))
         context = RefinementContext(
             config=config,
             abstraction=problem.abstraction,
@@ -25,7 +33,7 @@ def solve(config: AbstractPlanningConfig, on_update=None):
             base_dir=run.base_dir,
             renamings=renamings,
         )
-        plan = refine(context, abstract_plan, horizon)
+        plan = refine(context, abstract_plan, len(abstract_plan))
 
     return run.plan_result(config, plan)
 

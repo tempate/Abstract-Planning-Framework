@@ -18,6 +18,7 @@ from core.planners.asp import Asp
 from core.planners.ms import MsUnsat
 from core.pipeline import pipeline
 from core.utilities.config import AbstractPlanningConfig, PlanningConfig
+from core.utilities.plan import one_action_per_step
 from scripts.utils.arguments import positive_int
 
 
@@ -45,13 +46,12 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
 
     @patch("core.planners.fd.find_sas_plan", return_value=None)
     def test_an_abstract_task_without_a_plan_proves_the_concrete_one_unsolvable(self, _find_sas_plan):
-        with self.assertRaises(UnsolvableTaskError):
-            fd.FastDownward(LAMA).find_abstract_plan(
-                PlanningConfig("domain.pddl", "problem.pddl"),
-                "run-dir",
-                "abstract.sas",
-                PlanningMetrics(),
-            )
+        abstraction = SimpleNamespace(abstraction=None)
+        with (
+            patch("core.pipeline.pipeline._abstract", return_value=(abstraction, "abstract.sas", {})),
+            self.assertRaises(UnsolvableTaskError),
+        ):
+            pipeline.solve(AbstractPlanningConfig("domain.pddl", "problem.pddl", planner="lama"))
 
     @patch("core.planners.fd.find_plan")
     def test_an_unsolvable_task_is_not_a_plan(self, find_plan):
@@ -172,7 +172,7 @@ postcondition(action(("advance", "s3")), effect(unconditional), variable(x), val
 
 
 class AspHorizonSearchTests(unittest.TestCase):
-    def test_exponential_search_finds_a_plan_shorter_than_its_horizon_and_closes_the_empty_steps(self):
+    def test_exponential_search_finds_a_plan_shorter_than_its_horizon(self):
         plasp = subprocess.CompletedProcess([], 0, stdout=COUNTER_TASK, stderr="")
 
         def stop_past_the_plan(_event, metrics):
@@ -184,7 +184,7 @@ class AspHorizonSearchTests(unittest.TestCase):
             patch("core.integrations.plasp.os.path.exists", return_value=True),
             patch("core.integrations.plasp.subprocess.run", return_value=plasp),
         ):
-            actions, horizon = Asp().find_abstract_plan(
+            actions = Asp().plan_sas(
                 PlanningConfig("domain.pddl", "problem.pddl"),
                 None,
                 "abstract.sas",
@@ -192,8 +192,8 @@ class AspHorizonSearchTests(unittest.TestCase):
             )
 
         self.assertEqual([action.args for action in actions], [("s1",), ("s2",), ("s3",)])
-        self.assertEqual([action.time_step for action in actions], [1, 2, 3])
-        self.assertEqual(horizon, 3)
+        # The steps the doubling horizon left empty close up, one action per step.
+        self.assertEqual([action.time_step for action in one_action_per_step(actions)], [1, 2, 3])
 
 
 if __name__ == "__main__":

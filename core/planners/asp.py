@@ -5,12 +5,11 @@ from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.utilities.config import PlanningConfig
 from core.utilities.execution import planning_run
-from core.utilities.plan import one_action_per_step
 from core.asp.solver import Solver
 
 
 class Asp:
-    """ASP planning a concrete task, or the abstract task for a refinement to follow."""
+    """ASP planning a PDDL task, or one already translated to SAS."""
 
     def solve(self, config: PlanningConfig, on_update=None):
         """Translate and solve one concrete PDDL planning problem."""
@@ -23,22 +22,20 @@ class Asp:
 
         return run.plan_result(config, plan)
 
-    def find_abstract_plan(self, config, _base_dir, abstract_sas, metrics):
-        """Search for an abstract plan."""
+    def plan_sas(self, config, _base_dir, sas_file, metrics):
+        """Search a translated task for a plan, raising the horizon until one exists."""
         with metrics.measure("abstract_asp"):
-            abstract_asp = sas_to_asp(abstract_sas, config.optimize)
+            program = sas_to_asp(sas_file, config.optimize)
 
         def record_attempt(horizon, _dropped, solve_calls):
             metrics.set_counters({"abstract_plan_length": horizon, "abstract_solve_calls": solve_calls})
 
         with metrics.measure("abstract_solving"):
-            solver = Solver(abstract_asp, optimize=config.optimize)
+            solver = Solver(program, optimize=config.optimize)
             solve_result = solver.search(on_attempt=record_attempt)
 
-        # An exponential horizon can leave steps empty, which closing them up removes.
-        actions = one_action_per_step(parse_plan_actions(solve_result.plan))
-        metrics.set_counters({"abstract_plan_length": len(actions), "abstract_solve_calls": solve_result.attempts})
-        return actions, len(actions)
+        metrics.set_counter("abstract_solve_calls", solve_result.attempts)
+        return parse_plan_actions(solve_result.plan)
 
 
 def _search(asp, config, metrics):
