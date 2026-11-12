@@ -88,8 +88,9 @@ def _parse_object_sets(stdout):
         classes = ast.literal_eval(match.group(1))
     except (SyntaxError, ValueError) as error:
         raise IntegrationError("PDDL Symmetries returned malformed object sets") from error
-    if not isinstance(classes, list) or not all(
-        isinstance(group, list) and all(isinstance(item, str) for item in group) for group in classes
-    ):
-        raise IntegrationError("PDDL Symmetries returned an invalid object-set value")
+    if not isinstance(classes, list):
+        raise IntegrationError(f"PDDL Symmetries returned object sets that are not a list: {classes!r}")
+    for group in classes:
+        if not isinstance(group, list) or not all(isinstance(item, str) for item in group):
+            raise IntegrationError(f"PDDL Symmetries returned an invalid object set: {group!r}")
     return classes
