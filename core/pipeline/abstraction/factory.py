@@ -169,16 +169,9 @@ def _create_abstraction(problem, object_names, abstract_name):
     if abstract_name is None:
         abstract_name = f"{objects_to_collapse[0].type.name}_abs"
 
-    reserved_names = set()
-    for item in problem.actions:
-        reserved_names.add(item.name.casefold())
-    for item in problem.fluents:
-        reserved_names.add(item.name.casefold())
-    for item in problem.user_types:
-        reserved_names.add(item.name.casefold())
-    for item in problem.all_objects:
-        if item not in objects_to_collapse:
-            reserved_names.add(item.name.casefold())
+    # The abstract object cannot share a name with anything the task keeps.
+    reserved_names = {item.name.casefold() for item in (*problem.actions, *problem.fluents, *problem.user_types)}
+    reserved_names |= {item.name.casefold() for item in problem.all_objects if item not in objects_to_collapse}
 
     if abstract_name.casefold() in reserved_names:
         raise AbstractionError(f"Abstract object name is already used: {abstract_name}")
