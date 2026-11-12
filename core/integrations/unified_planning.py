@@ -105,7 +105,7 @@ class _InequalityKeeper(NegativeFluentRemover):
     # objects, which Fast Downward's translator expands into a copy of the
     # action per pair. Leave it negated.
     def walk_not(self, expression, args, **kwargs):
-        if args[0].is_equals() and args[0].arg(0).type.is_user_type():
+        if _is_object_inequality(args[0]):
             return self._env.expression_manager.Not(args[0])
         return super().walk_not(expression, args, **kwargs)
 
@@ -125,12 +125,16 @@ def negates_a_fluent(problem):
 
 def _negates_a_fluent(expression):
     if expression.is_not():
-        negated = expression.arg(0)
-        return not (negated.is_equals() and negated.arg(0).type.is_user_type())
+        return not _is_object_inequality(expression.arg(0))
     for argument in expression.args:
         if _negates_a_fluent(argument):
             return True
     return False
+
+
+def _is_object_inequality(negated):
+    """Whether what a negation negates is an equality between objects, which makes it an inequality."""
+    return negated.is_equals() and negated.arg(0).type.is_user_type()
 
 
 def to_positive_normal_form(problem):
