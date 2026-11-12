@@ -16,27 +16,13 @@ def solve(config: PlanningConfig, on_update=None):
     metrics = PlanningMetrics(on_update=on_update)
     with metrics.measure("total"):
         with temp_run_dir() as (base_dir, run_id):
-            result = _translate_and_solve(config, base_dir, run_id, metrics)
+            with metrics.measure("concrete_fd"):
+                sas_file = pddl_to_sas(base_dir, config.domain_path, config.problem_path, "concrete")
+            with metrics.measure("concrete_asp"):
+                asp = sas_to_asp(sas_file, config.optimize)
+            result = _search(asp, config, run_id, metrics)
     result["metrics"] = metrics.as_dict()
     return result
-
-
-def _translate_and_solve(config, base_dir, run_id, metrics):
-    sas_file = _to_sas(base_dir, config, metrics)
-    asp = _to_asp(sas_file, config, metrics)
-    return _search(asp, config, run_id, metrics)
-
-
-def _to_sas(base_dir, config, metrics):
-    """Translate the task and return its SAS file."""
-    with metrics.measure("concrete_fd"):
-        return pddl_to_sas(base_dir, config.domain_path, config.problem_path, "concrete")
-
-
-def _to_asp(sas_file, config, metrics):
-    """Translate the SAS file into its ASP program."""
-    with metrics.measure("concrete_asp"):
-        return sas_to_asp(sas_file, config.optimize)
 
 
 def _search(asp, config, run_id, metrics):
