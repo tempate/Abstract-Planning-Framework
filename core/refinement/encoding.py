@@ -8,11 +8,6 @@ import clingo
 from core.encodings.rules import AT_MOST_ONE_ACTION, EXACTLY_ONE_ACTION
 
 
-def make_steps_optional(asp):
-    """Let every step stay empty unless its switch holds an abstract action there."""
-    return asp.replace(f"{EXACTLY_ONE_ACTION}.", f"{AT_MOST_ONE_ACTION}.")
-
-
 def drop_action_choice(asp):
     """Remove the choice of any action at every step, leaving each step to the abstract plan."""
     # EXACTLY_ONE_ACTION ends in AT_MOST_ONE_ACTION, so it goes first.

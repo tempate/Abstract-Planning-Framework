@@ -18,7 +18,6 @@ from core.refinement.encoding import (
     concrete_groundings,
     drop_action_choice,
     map_abstract_actions,
-    make_steps_optional,
     switches,
 )
 from core.search.incremental import IncrementalSolver
@@ -73,12 +72,7 @@ def _concrete_asp(context):
         concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
 
     with context.metrics.measure("concrete_asp"):
-        concrete_asp = sas_to_asp(concrete_sas)
-
-    if not context.config.optimize:
-        concrete_asp = replace(concrete_asp, rules=make_steps_optional(concrete_asp.rules))
-
-    return concrete_asp
+        return sas_to_asp(concrete_sas, config.optimize)
 
 
 def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
