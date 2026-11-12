@@ -61,10 +61,11 @@ def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME
     )
     try:
         stdout, stderr = process.communicate(timeout=timeout)
-    except BaseException as error:
+    except subprocess.TimeoutExpired as error:
         _kill_process_group(process)
-        if isinstance(error, subprocess.TimeoutExpired):
-            raise ResourceTimeoutError(f"Resource detection timed out after {timeout}s") from error
+        raise ResourceTimeoutError(f"Resource detection timed out after {timeout}s") from error
+    except BaseException:
+        _kill_process_group(process)
         raise
 
     if _SUMMARY.search(stdout) is None:
