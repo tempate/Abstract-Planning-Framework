@@ -30,13 +30,6 @@ class ResourceVariable:
     objects: tuple[str, ...]
 
 
-@dataclass(frozen=True)
-class ResourceDetection:
-    """The resource variables of one task."""
-
-    resources: tuple[ResourceVariable, ...]
-
-
 def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME_LIMIT):
     """Return the resource variables of one PDDL task, widest first, and the objects it grounds."""
     if not os.path.exists(NUMERIC_FAST_DOWNWARD_BIN):
@@ -79,8 +72,7 @@ def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME
         raise IntegrationError(f"Resource detection reported nothing:\n{diagnostics}")
 
     sas_path = os.path.join(base_dir, "output.sas")
-    resources = parse_resources(stdout, read_sas_variables(sas_path))
-    return ResourceDetection(resources)
+    return parse_resources(stdout, read_sas_variables(sas_path))
 
 
 def _kill_process_group(process):

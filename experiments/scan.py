@@ -55,7 +55,7 @@ from core.integrations.pddl_symmetries import find_symmetric_object_sets
 domain, problem, source, before_grounding = sys.argv[1:5]
 if source == "resources":
     with tempfile.TemporaryDirectory() as directory:
-        classes = detect_resources(directory, domain, problem).resources
+        classes = detect_resources(directory, domain, problem)
 else:
     classes = find_symmetric_object_sets(domain, problem, before_grounding=before_grounding == "1")
 print(f"{len(classes)} classes" if classes else "none")

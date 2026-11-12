@@ -13,7 +13,7 @@ from core.pipeline.abstraction.factory import (
     _select_abstraction,
     build_abstract_problem,
 )
-from core.integrations.numeric_fast_downward import ResourceDetection, ResourceVariable
+from core.integrations.numeric_fast_downward import ResourceVariable
 from core.utilities.outcomes import NoResourcesError
 from core.utilities.outcomes import IntegrationError, OutOfMemoryError, SymmetryTimeoutError, UnsolvableTaskError
 from core.utilities.config import AbstractPlanningConfig
@@ -165,7 +165,7 @@ class SymmetrySelectionTests(unittest.TestCase):
     def test_rejects_tasks_without_a_resource_as_having_no_resources(self):
         with (
             patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.pipeline.abstraction.factory.detect_resources", return_value=ResourceDetection(())),
+            patch("core.pipeline.abstraction.factory.detect_resources", return_value=()),
         ):
             with self.assertRaises(NoResourcesError):
                 build_abstract_problem(
@@ -174,10 +174,10 @@ class SymmetrySelectionTests(unittest.TestCase):
 
     def test_a_resource_collapses_only_the_objects_the_detector_names(self):
         # vehicle-c and vehicle-d share the resource's type, but the resource never takes them.
-        detection = ResourceDetection((ResourceVariable("var0", ("vehicle-a", "vehicle-b")),))
+        resources = (ResourceVariable("var0", ("vehicle-a", "vehicle-b")),)
         with (
             patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.pipeline.abstraction.factory.detect_resources", return_value=detection),
+            patch("core.pipeline.abstraction.factory.detect_resources", return_value=resources),
         ):
             result = build_abstract_problem(
                 AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source="resources")

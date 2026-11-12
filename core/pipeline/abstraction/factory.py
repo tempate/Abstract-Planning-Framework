@@ -94,10 +94,10 @@ def _candidate_classes(config, metrics):
     if config.abstraction_source == RESOURCES:
         with metrics.measure("resource_detection"):
             with tempfile.TemporaryDirectory(prefix="apf-resources-") as directory:
-                detection = detect_resources(directory, config.domain_path, config.problem_path)
-        if not detection.resources:
+                resources = detect_resources(directory, config.domain_path, config.problem_path)
+        if not resources:
             raise NoResourcesError("Resource detection found no abstractable object classes")
-        return [resource.objects for resource in detection.resources]
+        return [resource.objects for resource in resources]
 
     with metrics.measure("symmetry_discovery"):
         symmetry_classes = find_symmetric_object_sets(
