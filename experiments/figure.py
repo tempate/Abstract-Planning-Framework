@@ -12,19 +12,9 @@ from pathlib import Path
 
 from experiments.report import finished_problems, solved
 from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
+from experiments.tracks import TRACKS
 
 SOURCES = {"symmetries": "Symmetries", "resources": "Resources"}
-# The unsolvability track collapses symmetric objects only.
-# The hard-to-ground tracks collapse symmetric objects only, and the htg figure draws both of them.
-KIND_SOURCES = {
-    "sat": tuple(SOURCES),
-    "opt": tuple(SOURCES),
-    "unsat": ("symmetries",),
-    "sat-htg": ("symmetries",),
-    "opt-htg": ("symmetries",),
-    # The unsat track's grown problems, which the scaled figure draws for the branch alone.
-    "scaled": ("symmetries",),
-}
 FIGURES = ("sat", "opt", "unsat", "htg", "scaled")
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
@@ -40,12 +30,6 @@ PAIRS = {
 ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
-# Branches from before #135 still call Fast Downward's modes by their old names.
-OLD_NAMES = {
-    "sat": {"fd": "lama", "abs-fd": "abs-lama"},
-    "opt": {"fd-lmcut": "lmcut", "abs-fd": "abs-lmcut"},
-    "unsat": {"fd": "ms", "abs-fd": "abs-ms"},
-}
 DEFAULT_PAPER = PROJECT_ROOT.parent / "paper" / "planpilot_abstractions" / "icaps27" / "main.tex"
 
 
@@ -74,23 +58,20 @@ def main():
 
 
 def select(rows, kind, source, manifests):
-    """Rename old modes, and keep only the abstract rows this track's manifests submitted, for the modes they submitted."""
-    # The HTG tracks came after #135, so they never used the old names.
-    renames = OLD_NAMES.get(kind, {})
+    """Keep only the abstract rows this track's manifests submitted, for the modes they submitted."""
     submitted = set()
     for manifest in manifests:
         # A manifest speaks for its own track only, which may have run other classes.
         if manifest["track"] != f"{kind}/{source}":
             continue
         for entry in manifest["expected_results"]:
-            mode = renames.get(entry["mode"], entry["mode"])
+            mode = entry["mode"]
             if mode.startswith(ABSTRACTION_PREFIX):
                 submitted.add((mode, entry["domain"], entry["problem"], int(entry["class"] or 0)))
     filtered_modes = {mode for mode, *_ in submitted}
 
     selected = []
     for row in rows:
-        row = row | {"mode": renames.get(row["mode"], row["mode"])}
         key = (row["mode"], row["domain"], row["problem"], int(row["class"] or 0))
         if row["mode"] not in filtered_modes or key in submitted:
             selected.append(row)
@@ -102,28 +83,30 @@ def load_tracks(revision, kind, manifests, sources=None):
     if kind == "htg":
         return {track: load_tracks(revision, f"{track}-htg", manifests)["symmetries"] for track in ("sat", "opt")}
     tracks = {}
-    for source in sources or KIND_SOURCES[kind]:
+    for source in sources or _sources(kind):
         rows = csv.DictReader(io.StringIO(_results_at(revision, kind, source)))
         tracks[source] = finished_problems(select(rows, kind, source, manifests))[1]
     return tracks
 
 
+def _sources(kind):
+    """What the tracks of a kind abstract, such as symmetries and resources for sat."""
+    sources = []
+    for name in TRACKS:
+        track_kind, _, source = name.partition("/")
+        if track_kind == kind:
+            sources.append(source)
+    return sources
+
+
 def _results_at(revision, kind, source):
-    if kind.endswith("-htg"):
-        directories = (f"experiments/htg/{kind.removesuffix('-htg')}",)
-    elif kind == "scaled":
-        # The scaled problems keep their results inside the unsat track's directory.
-        directories = ("experiments/ipc/unsat/scaled", "experiments/unsat/scaled")
-    else:
-        # Revisions from before experiments/ipc/ keep the IPC tracks one level higher.
-        directories = (f"experiments/ipc/{kind}/{source}", f"experiments/{kind}/{source}")
-    for directory in directories:
-        shown = subprocess.run(
-            ["git", "-C", PROJECT_ROOT, "show", f"{revision}:{directory}/results.csv"], capture_output=True, text=True
-        )
-        if shown.returncode == 0:
-            return shown.stdout
-    raise SystemExit(f"No {kind}/{source} results.csv at {revision}")
+    results_file = TRACKS[f"{kind}/{source}"].results_file.relative_to(PROJECT_ROOT)
+    shown = subprocess.run(
+        ["git", "-C", PROJECT_ROOT, "show", f"{revision}:{results_file}"], capture_output=True, text=True
+    )
+    if shown.returncode != 0:
+        raise SystemExit(f"No {kind}/{source} results.csv at {revision}")
+    return shown.stdout
 
 
 def paper_figures(revision):

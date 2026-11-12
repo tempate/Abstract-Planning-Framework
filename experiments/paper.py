@@ -5,7 +5,7 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from experiments.figure import DEFAULT_PAPER, load_tracks, paper_figures, render_pdf
+from experiments.figure import DEFAULT_PAPER, SOURCES, load_tracks, paper_figures, render_pdf
 from experiments.report import solved
 
 # Each track's table, where its columns start in it, and the modes they count in order.
@@ -14,7 +14,6 @@ TABLE_COLUMNS = {
     "opt": ("tab:ipc", 6, ("asp", "abs-asp", "lmcut", "abs-lmcut")),
     "unsat": ("tab:unsat", 1, ("ms", "abs-ms")),
 }
-TABLE_SECTIONS = {"symmetries": "IPC Symmetries", "resources": "IPC Resources"}
 
 
 def main():
@@ -49,7 +48,7 @@ def update_table(tex, kind, source, counts):
     """Write one track's columns of one source's section, bolding the better mode of each pair."""
     label, first, modes = TABLE_COLUMNS[kind]
     table = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{label}}}"))
-    start = tex.index(rf"\emph{{{TABLE_SECTIONS[source]}}}", table)
+    start = tex.index(rf"\emph{{IPC {SOURCES[source]}}}", table)
     # The section runs to the next section's heading or the end of the table.
     end = re.compile(r"\\emph\{|\\bottomrule").search(tex, start + 1).start()
     lines = tex[start:end].split("\n")

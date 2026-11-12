@@ -31,14 +31,6 @@ class FigureSelectionTests(unittest.TestCase):
             {("abs-asp", "1"), ("abs-lama", "0"), ("asp", "")},
         )
 
-    def test_old_mode_names_read_as_the_new_ones(self):
-        rows = [_row("fd-lmcut"), _row("abs-fd", rank="2")]
-        manifests = [_manifest("opt/symmetries", ("abs-fd", "p01.pddl", 2))]
-
-        selected = select(rows, "opt", "symmetries", manifests)
-
-        self.assertEqual({row["mode"] for row in selected}, {"lmcut", "abs-lmcut"})
-
 
 class ScaledFigureTests(unittest.TestCase):
     def test_coverage_is_the_share_proved_of_each_size(self):
