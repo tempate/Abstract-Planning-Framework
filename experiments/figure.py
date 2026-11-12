@@ -150,7 +150,12 @@ def _runtime_figure(rows):
             problems = tracks.get(kind)
             if problems and solver in problems[0]:
                 # The row's first drawn plot carries its tick labels, even after an empty slot.
-                options = ylabel if not plots else "yticklabels={}" if ticked else ""
+                if not plots:
+                    options = ylabel
+                elif ticked:
+                    options = "yticklabels={}"
+                else:
+                    options = ""
                 ticked = True
                 plots[kind, solver] = rf"\runtimeplot[{options}]{{X}}{{{scatter(problems, solver, f'abs-{solver}')}}}"
             else:

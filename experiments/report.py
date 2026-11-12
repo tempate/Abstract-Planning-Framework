@@ -126,6 +126,12 @@ def _argument_parser():
 
 
 def _finished_problems(results_file):
+    """finished_problems, over the rows of a results file."""
+    with Path(results_file).open(encoding="utf-8", newline="") as stream:
+        return finished_problems(csv.DictReader(stream))
+
+
+def finished_problems(csv_rows):
     """Pair every mode the run holds, dropping problems any of them left unfinished.
 
     The modes come from the file rather than from a list here, so that a CSV
@@ -133,41 +139,38 @@ def _finished_problems(results_file):
     value nobody recognizes is ignored instead of becoming a requirement no
     problem meets, which would empty the report rather than fail.
     """
-    with Path(results_file).open(encoding="utf-8", newline="") as stream:
-        return finished_problems(csv.DictReader(stream))
-
-
-def finished_problems(csv_rows):
-    """The same, over rows already read."""
     rows = {}
-    for row in csv_rows:
-        # An abstract mode that ran several classes reports the one that performed best.
-        problem = rows.setdefault((row["domain"], row["problem"]), {})
-        if row["mode"] not in problem or _performance(row) > _performance(problem[row["mode"]]):
-            problem[row["mode"]] = row
+    for (domain, problem, mode), row in _best_rows(csv_rows).items():
+        rows.setdefault((domain, problem), {})[mode] = row
 
     present = {mode for problem in rows.values() for mode in problem}
     modes = tuple(mode for mode in MODES if mode in present)
-
-    problems = []
-    for problem in rows.values():
-        if any(mode not in problem or problem[mode]["status"] in UNFINISHED_STATUSES for mode in modes):
-            continue
-        problems.append(problem)
+    problems = [problem for problem in rows.values() if _finished(problem, modes)]
     return modes, problems, len(rows) - len(problems)
+
+
+def _finished(problem, modes):
+    for mode in modes:
+        if mode not in problem or problem[mode]["status"] in UNFINISHED_STATUSES:
+            return False
+    return True
 
 
 def best_classes(results_file):
     """The rank of the class each abstract mode did best with on each problem, as the report picks it."""
-    best = {}
     with Path(results_file).open(encoding="utf-8", newline="") as stream:
-        for row in csv.DictReader(stream):
-            if not row["mode"].startswith(ABSTRACTION_PREFIX):
-                continue
-            key = (row["domain"], row["problem"], row["mode"])
-            if key not in best or _performance(row) > _performance(best[key]):
-                best[key] = row
-    return {key: int(row.get("class") or 0) for key, row in best.items()}
+        abstract_rows = [row for row in csv.DictReader(stream) if row["mode"].startswith(ABSTRACTION_PREFIX)]
+    return {key: int(row.get("class") or 0) for key, row in _best_rows(abstract_rows).items()}
+
+
+def _best_rows(rows):
+    """Each mode's row on each problem, the class that performed best where it ran several."""
+    best = {}
+    for row in rows:
+        key = (row["domain"], row["problem"], row["mode"])
+        if key not in best or _performance(row) > _performance(best[key]):
+            best[key] = row
+    return best
 
 
 def _write_best_classes(results_file, best_file):
@@ -184,10 +187,13 @@ def _performance(row):
     finished = row["status"] not in UNFINISHED_STATUSES
     if solved(row):
         return (finished, True, -_runtime(row))
+    return (finished, False, _phase_position(row["last_completed_phase"]), _runtime(row))
+
+
+def _phase_position(phase):
+    """Where a phase falls in the abstraction pipelines; one nobody has placed yet goes last."""
     pipeline = list(KILLED_IN_PHASE)
-    completed = row["last_completed_phase"]
-    reached = pipeline.index(completed) if completed in pipeline else len(pipeline)
-    return (finished, False, reached, _runtime(row))
+    return pipeline.index(phase) if phase in pipeline else len(pipeline)
 
 
 def solved(row):
@@ -198,8 +204,8 @@ def solved(row):
 
 def _is_verdict_run(problems):
     """Tell a run that decided solvability from one that searched for plans."""
-    for modes in problems:
-        for row in modes.values():
+    for problem in problems:
+        for row in problem.values():
             if row.get("verdict"):
                 return True
     return False
@@ -235,9 +241,9 @@ def _outcome_table(problems, modes, heading, rows, labels):
 
 def _verdict_counts(problems, modes, verdict):
     counts = {mode: 0 for mode in modes}
-    for modes in problems:
+    for problem in problems:
         for mode in counts:
-            if modes[mode]["verdict"] == verdict:
+            if problem[mode]["verdict"] == verdict:
                 counts[mode] += 1
     return counts
 
@@ -327,12 +333,11 @@ def _discarded_the_abstract_plan(row):
 
 def _timeout_phases(problems, abstractions, verdict_run, labels):
     killed_in = KILLED_IN_PHASE_DECIDING if verdict_run else KILLED_IN_PHASE
-    pipeline = list(KILLED_IN_PHASE)
     counts = {mode: {} for mode in abstractions}
     totals = {}
     positions = {}
     for mode in abstractions:
-        timeouts = [modes[mode] for modes in problems if modes[mode]["status"] == "timed out"]
+        timeouts = [problem[mode] for problem in problems if problem[mode]["status"] == "timed out"]
         totals[mode] = len(timeouts)
         for row in timeouts:
             completed = row["last_completed_phase"]
@@ -344,8 +349,7 @@ def _timeout_phases(problems, abstractions, verdict_run, labels):
                 phase = "Unguided concrete search"
             counts[mode][phase] = counts[mode].get(phase, 0) + 1
 
-            # A phase nobody has placed yet goes last rather than failing the report.
-            index = pipeline.index(completed) if completed in pipeline else len(pipeline)
+            index = _phase_position(completed)
             positions[phase] = min(positions.get(phase, (index, unguided)), (index, unguided))
 
     lines = _wide_header("Killed during", abstractions, labels)
@@ -359,7 +363,7 @@ def _refinement_outcomes(problems, abstractions, labels):
     counts = {mode: {"refined": 0, "switched": 0, "discarded": 0} for mode in abstractions}
     totals = {}
     for mode in abstractions:
-        successes = [modes[mode] for modes in problems if modes[mode]["status"] == "success"]
+        successes = [problem[mode] for problem in problems if problem[mode]["status"] == "success"]
         totals[mode] = len(successes)
         for row in successes:
             if int(row["increments"]) > 0:
@@ -385,13 +389,10 @@ def _relaxed_deletes(problems, abstractions, labels):
     title = "Deletes relaxed by the refined plans"
     used = {}
     for mode in abstractions:
-        successes = [modes[mode] for modes in problems if modes[mode]["status"] == "success"]
+        successes = [problem[mode] for problem in problems if problem[mode]["status"] == "success"]
         used[mode] = [row for row in successes if int(row["increments"]) == 0 and row.get("relaxed_deletes")]
 
     if not any(used.values()):
-        successes = [modes[mode] for modes in problems for mode in abstractions if modes[mode]["status"] == "success"]
-        if successes and not any(row.get("relaxed_deletes") for row in successes):
-            return title, ["This CSV predates the relaxed-deletes counter"]
         return title, ["No success was solved with its abstract plan"]
 
     counts = {mode: {bucket: 0 for bucket in RELAXED_DELETE_BUCKETS} for mode in abstractions}

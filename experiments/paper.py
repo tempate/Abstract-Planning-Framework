@@ -41,7 +41,11 @@ def domain_counts(problems, kind):
             row[index] += solved(problem[mode])
     # A domain from a single IPC edition goes without its year, such as agricola.
     editions = Counter(_without_year(name) for name in rows)
-    return {(_without_year(name) if editions[_without_year(name)] == 1 else name): row for name, row in rows.items()}
+    counts = {}
+    for name, row in rows.items():
+        short = _without_year(name)
+        counts[short if editions[short] == 1 else name] = row
+    return counts
 
 
 def update_table(tex, kind, source, counts):
