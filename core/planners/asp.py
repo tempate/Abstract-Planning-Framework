@@ -16,34 +16,22 @@ class Asp:
         with planning_run("concrete", on_update) as run:
             with run.metrics.measure("concrete_fd"):
                 sas_file = pddl_to_sas(run.base_dir, config.domain_path, config.problem_path, "concrete")
-
-            with run.metrics.measure("concrete_asp"):
-                asp = sas_to_asp(sas_file, config.optimize)
-
-            def record_attempt(_horizon, _dropped, solve_calls):
-                run.metrics.set_counter("concrete_solve_calls", solve_calls)
-
-            with run.metrics.measure("guided_concrete_solving"):
-                solver = Solver(asp, optimize=config.optimize)
-                solve_result = solver.search(on_attempt=record_attempt)
-
-            run.metrics.set_counter("concrete_solve_calls", solve_result.attempts)
-            plan = parse_plan_actions(solve_result.plan)
+            plan = self.plan_sas(config, run.base_dir, sas_file, run.metrics.prefixed("concrete_"))
             run.metrics.set_counter("plan_length", len(plan))
 
         return run.plan_result(config, plan)
 
     def plan_sas(self, config, _base_dir, sas_file, metrics):
         """Search a translated task for a plan, raising the horizon until one exists."""
-        with metrics.measure("abstract_asp"):
+        with metrics.measure("asp"):
             program = sas_to_asp(sas_file, config.optimize)
 
         def record_attempt(horizon, _dropped, solve_calls):
-            metrics.set_counters({"abstract_plan_length": horizon, "abstract_solve_calls": solve_calls})
+            metrics.set_counters({"horizon": horizon, "solve_calls": solve_calls})
 
-        with metrics.measure("abstract_solving"):
+        with metrics.measure("solving"):
             solver = Solver(program, optimize=config.optimize)
             solve_result = solver.search(on_attempt=record_attempt)
 
-        metrics.set_counter("abstract_solve_calls", solve_result.attempts)
+        metrics.set_counter("solve_calls", solve_result.attempts)
         return parse_plan_actions(solve_result.plan)

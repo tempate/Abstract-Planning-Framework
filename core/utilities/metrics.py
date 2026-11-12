@@ -17,6 +17,7 @@ DURATION_LABELS = {
     "abstract_fd": "Abstract Fast Downward",
     "fd_search": "Fast Downward search",
     "concrete_asp": "Concrete SAS-to-ASP",
+    "concrete_solving": "Concrete plan solving",
     "abstract_asp": "Abstract SAS-to-ASP",
     "abstract_solving": "Abstract plan solving",
     "abstract_fd_search": "Abstract Fast Downward search",
@@ -34,6 +35,8 @@ COUNTER_LABELS = {
     "relaxed_inequalities": "Relaxed inequalities",
     "decrements": "Refinement decrements",
     "increments": "Horizon increments",
+    "abstract_horizon": "Abstract horizon",
+    "concrete_horizon": "Concrete horizon",
     "abstract_plan_length": "Abstract plan length",
     "plan_length": "Plan length",
     "abstract_solve_calls": "Abstract solver calls",
@@ -86,6 +89,10 @@ class PlanningMetrics:
         self.counters.update(values)
         self._report({"kind": "counters_updated", "counters": sorted(values)})
 
+    def prefixed(self, prefix: str) -> "PrefixedMetrics":
+        """These metrics under names that start with the prefix, such as abstract_."""
+        return PrefixedMetrics(self, prefix)
+
     def set_abstraction(self, objects, object_type: str) -> None:
         """Record the collapsed object class."""
         self.abstraction = {"objects": sorted(objects), "object_type": object_type}
@@ -103,3 +110,20 @@ class PlanningMetrics:
     def _report(self, event: dict) -> None:
         if self.on_update is not None:
             self.on_update(event, self.as_dict())
+
+
+@dataclass(frozen=True)
+class PrefixedMetrics:
+    """A planner's metrics as its caller names them, so one run can hold two searches apart."""
+
+    metrics: PlanningMetrics
+    prefix: str
+
+    def measure(self, name: str):
+        return self.metrics.measure(self.prefix + name)
+
+    def set_counter(self, name: str, value: int) -> None:
+        self.metrics.set_counter(self.prefix + name, value)
+
+    def set_counters(self, values: dict[str, int]) -> None:
+        self.metrics.set_counters({self.prefix + name: value for name, value in values.items()})

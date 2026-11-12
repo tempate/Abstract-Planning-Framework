@@ -17,7 +17,8 @@ def solve(config: AbstractPlanningConfig, on_update=None):
     """Abstract one concrete task, plan it with the config's planner, and refine that plan with ASP."""
     with planning_run("abstract", on_update) as run:
         problem, abstract_sas, renamings = _abstract(config, run.base_dir, run.metrics)
-        actions = PLANNERS[config.planner].plan_sas(config, run.base_dir, abstract_sas, run.metrics)
+        planner = PLANNERS[config.planner]
+        actions = planner.plan_sas(config, run.base_dir, abstract_sas, run.metrics.prefixed("abstract_"))
         # The abstraction over-approximates, so an abstract task without a plan
         # proves the concrete one has none either.
         if actions is None:

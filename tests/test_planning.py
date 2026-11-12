@@ -177,7 +177,7 @@ class AspHorizonSearchTests(unittest.TestCase):
 
         def stop_past_the_plan(_event, metrics):
             # Without empty steps no horizon past 3 holds a plan, and the search would never end.
-            if metrics["counters"].get("abstract_plan_length", 0) > 4:
+            if metrics["counters"].get("abstract_horizon", 0) > 4:
                 raise AssertionError("the search passed the first horizon holding the plan")
 
         with (
@@ -188,7 +188,7 @@ class AspHorizonSearchTests(unittest.TestCase):
                 PlanningConfig("domain.pddl", "problem.pddl"),
                 None,
                 "abstract.sas",
-                PlanningMetrics(on_update=stop_past_the_plan),
+                PlanningMetrics(on_update=stop_past_the_plan).prefixed("abstract_"),
             )
 
         self.assertEqual([action.args for action in actions], [("s1",), ("s2",), ("s3",)])

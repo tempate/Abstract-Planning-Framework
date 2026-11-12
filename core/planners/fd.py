@@ -41,6 +41,6 @@ class FastDownward:
 
     def plan_sas(self, _config, base_dir, sas_file, metrics):
         """Search a translated task for a plan, or None when it has none."""
-        with metrics.measure("abstract_fd_search"):
-            plan = find_sas_plan(base_dir, sas_file, "abstract", self.search)
+        with metrics.measure("fd_search"):
+            plan = find_sas_plan(base_dir, sas_file, LABEL, self.search)
         return None if plan is None else parse_plan_actions(plan)
