@@ -98,10 +98,14 @@ def _split_parameters(problem, action, reach):
 
         # A parameter that only ever takes collapsed objects, as when the class
         # is a whole type, relaxes in every grounding, so a split gains nothing.
-        others = {
-            item for item in problem.all_objects if item not in reach.collapsed and item.type.is_subtype(candidate.type)
-        }
-        if _can_bind(action, candidate, reach.collapsed, reach) and _can_bind(action, candidate, others, reach):
+        others = set()
+        for item in problem.all_objects:
+            if item not in reach.collapsed and item.type.is_subtype(candidate.type):
+                others.add(item)
+
+        can_take_collapsed = _can_bind(action, candidate, reach.collapsed, reach)
+        can_take_other = _can_bind(action, candidate, others, reach)
+        if can_take_collapsed and can_take_other:
             parameters.append(candidate)
 
     return parameters
