@@ -59,13 +59,10 @@ def update_table(tex, kind, source, counts):
         if len(cells) < first + width or cells[first].strip() == "--":
             continue
         name = cells[0].strip()
-        if name == "Total":
-            row = [sum(row[i] for row in counts.values()) for i in range(width)]
-        elif name in counts:
-            row = counts[name]
-        else:
+        if name not in counts:
             raise SystemExit(f"No {kind} {source} results for the paper's row {name}")
-        written = [str(row[0]), *_bold_pairs(row[1:], bold=name != "Total")]
+        row = counts[name]
+        written = [str(row[0]), *_bold_pairs(row[1:])]
         if written != [cell.strip() for cell in cells[first : first + width]]:
             changed.append(name)
         cells[first : first + width] = [f" {cell} " for cell in written]
@@ -73,11 +70,11 @@ def update_table(tex, kind, source, counts):
     return tex[:start] + "\n".join(lines) + tex[end:], changed
 
 
-def _bold_pairs(counts, bold):
+def _bold_pairs(counts):
     cells = []
     for concrete, abstract in zip(counts[::2], counts[1::2]):
-        cells.append(f"\\textbf{{{concrete}}}" if bold and concrete > abstract else str(concrete))
-        cells.append(f"\\textbf{{{abstract}}}" if bold and abstract > concrete else str(abstract))
+        cells.append(f"\\textbf{{{concrete}}}" if concrete > abstract else str(concrete))
+        cells.append(f"\\textbf{{{abstract}}}" if abstract > concrete else str(abstract))
     return cells
 
 
