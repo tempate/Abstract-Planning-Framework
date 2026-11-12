@@ -55,10 +55,11 @@ def split_actions(problem, abstraction):
 
         for index, takes_collapsed in enumerate(itertools.product((False, True), repeat=len(parameters))):
             name = f"{action.name}{SPLIT_SEPARATOR}{index}" if any(takes_collapsed) else action.name
-            markers = [
-                (collapsed_marker if is_collapsed else kept_marker)(parameter)
-                for parameter, is_collapsed in zip(parameters, takes_collapsed)
-            ]
+            markers = []
+            for parameter, is_collapsed in zip(parameters, takes_collapsed):
+                marker = collapsed_marker if is_collapsed else kept_marker
+                markers.append(marker(parameter))
+
             split_problem.add_action(_with_preconditions(action, name, markers))
 
     return split_problem
