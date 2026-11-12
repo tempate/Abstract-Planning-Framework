@@ -5,9 +5,8 @@ from dataclasses import replace
 from core.integrations.clingo import parse_plan_actions, plan_length
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
-from core.utilities.metrics import PlanningMetrics
 from core.utilities.config import PlanningConfig
-from core.utilities.execution import temp_run_dir
+from core.utilities.execution import planning_run
 from core.asp.solver import Solver
 
 
@@ -16,22 +15,14 @@ class Asp:
 
     def solve(self, config: PlanningConfig, on_update=None):
         """Translate and solve one concrete PDDL planning problem."""
-        metrics = PlanningMetrics(on_update=on_update)
-        with metrics.measure("total"):
-            with temp_run_dir() as (base_dir, run_id):
-                with metrics.measure("concrete_fd"):
-                    sas_file = pddl_to_sas(base_dir, config.domain_path, config.problem_path, "concrete")
-                with metrics.measure("concrete_asp"):
-                    asp = sas_to_asp(sas_file, config.optimize)
-                plan = _search(asp, config, metrics)
+        with planning_run("concrete", on_update) as run:
+            with run.metrics.measure("concrete_fd"):
+                sas_file = pddl_to_sas(run.base_dir, config.domain_path, config.problem_path, "concrete")
+            with run.metrics.measure("concrete_asp"):
+                asp = sas_to_asp(sas_file, config.optimize)
+            plan = _search(asp, config, run.metrics)
 
-        return {
-            "configuration": config.as_dict(),
-            "plan": plan,
-            "success": plan is not None,
-            "run_id": run_id,
-            "metrics": metrics.as_dict(),
-        }
+        return run.plan_result(config, plan)
 
     def find_abstract_plan(self, config, _base_dir, abstract_sas, metrics):
         """Search for an abstract plan."""

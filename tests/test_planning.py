@@ -68,7 +68,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
 def _stubbed_decision(found):
     """Run the abstract decision pipeline against stubbed integrations."""
     with (
-        patch("core.pipeline.pipeline.temp_run_dir") as temp_run_dir,
+        patch("core.utilities.execution.temp_run_dir") as temp_run_dir,
         patch(
             "core.pipeline.pipeline.build_abstract_problem", return_value=_generated_abstraction()
         ) as build_abstract_problem,

@@ -3,10 +3,9 @@
 from dataclasses import dataclass, replace
 
 from core.integrations.fast_downward import Search, find_plan, find_sas_plan, parse_plan_actions
-from core.utilities.metrics import PlanningMetrics
 from core.utilities.outcomes import SOLVABLE, UNSOLVABLE, UnsolvableTaskError
 from core.utilities.config import PlanningConfig
-from core.utilities.execution import temp_run_dir
+from core.utilities.execution import planning_run
 
 LABEL = "fd"
 
@@ -19,39 +18,24 @@ class FastDownward:
 
     def solve(self, config: PlanningConfig, on_update=None):
         """Search one PDDL task, reporting it like our own pipelines."""
-        metrics = PlanningMetrics(on_update=on_update)
-        with metrics.measure("total"):
-            with temp_run_dir(LABEL) as (base_dir, run_id):
-                with metrics.measure("fd_search"):
-                    plan = find_plan(base_dir, config.domain_path, config.problem_path, LABEL, self.search)
+        with planning_run(LABEL, on_update) as run:
+            with run.metrics.measure("fd_search"):
+                plan = find_plan(run.base_dir, config.domain_path, config.problem_path, LABEL, self.search)
 
-                # An already satisfied goal gives an empty plan, which is a solved
-                # task rather than a failure, so the length is set on any plan.
-                if plan is not None:
-                    metrics.set_counter("plan_length", len(plan))
+            # An already satisfied goal gives an empty plan, which is a solved
+            # task rather than a failure, so the length is set on any plan.
+            if plan is not None:
+                run.metrics.set_counter("plan_length", len(plan))
 
-        return {
-            "configuration": config.as_dict(),
-            "plan": plan,
-            "success": plan is not None,
-            "run_id": run_id,
-            "metrics": metrics.as_dict(),
-        }
+        return run.plan_result(config, plan)
 
     def check_solvability(self, config: PlanningConfig, on_update=None):
         """Search the concrete task, which settles it either way."""
-        metrics = PlanningMetrics(on_update=on_update)
-        with metrics.measure("total"):
-            with temp_run_dir(LABEL) as (base_dir, run_id):
-                with metrics.measure("fd_search"):
-                    plan = find_plan(base_dir, config.domain_path, config.problem_path, LABEL, self.search)
+        with planning_run(LABEL, on_update) as run:
+            with run.metrics.measure("fd_search"):
+                plan = find_plan(run.base_dir, config.domain_path, config.problem_path, LABEL, self.search)
 
-        return {
-            "configuration": config.as_dict(),
-            "verdict": SOLVABLE if plan is not None else UNSOLVABLE,
-            "run_id": run_id,
-            "metrics": metrics.as_dict(),
-        }
+        return run.verdict_result(config, SOLVABLE if plan is not None else UNSOLVABLE)
 
     def find_abstract_plan(self, _config, base_dir, abstract_sas, metrics):
         """Search the abstract task, returning its actions and its horizon."""
