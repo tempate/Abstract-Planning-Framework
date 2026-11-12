@@ -15,7 +15,8 @@ from experiments.ipc.unsat.scaled import suite as scaled
 # The benchmark collections. A track says which of their problems it runs; it
 # does not own the PDDL, so that two tracks over one collection cannot drift
 # onto different revisions of it.
-BENCHMARKS = Path(__file__).parent / "benchmarks"
+EXPERIMENTS = Path(__file__).parent
+BENCHMARKS = EXPERIMENTS / "benchmarks"
 # PDDL Symmetries grounds the task before it searches for symmetries, and the
 # hard-to-ground problems run out of memory there, so they skip the grounding.
 HTG_ARGUMENTS = ("--symmetries-before-grounding",)
@@ -71,7 +72,7 @@ class Track:
 # Keyed by the question a track asks, then, for sat, by what it abstracts to answer it.
 TRACKS = {
     "sat/symmetries": Track(
-        directory=Path(sat.__file__).parent / "symmetries",
+        directory=EXPERIMENTS / "ipc" / "sat" / "symmetries",
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
@@ -80,7 +81,7 @@ TRACKS = {
     # The same suite, restricted to the problems numeric-fast-downward finds a
     # resource for, and planned from that resource's objects.
     "sat/resources": Track(
-        directory=Path(sat.__file__).parent / "resources",
+        directory=EXPERIMENTS / "ipc" / "sat" / "resources",
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
@@ -89,7 +90,7 @@ TRACKS = {
     ),
     # The hard-to-ground benchmarks, refined with the full grounding like sat/symmetries.
     "sat-htg/symmetries": Track(
-        directory=Path(htg.__file__).parent,
+        directory=EXPERIMENTS / "htg" / "sat",
         suite=htg.SUITE,
         benchmarks_dir=BENCHMARKS / "htg-domains",
         driver="scripts.planner",
@@ -98,7 +99,7 @@ TRACKS = {
     ),
     # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
     "opt-htg/symmetries": Track(
-        directory=Path(htg_opt.__file__).parent,
+        directory=EXPERIMENTS / "htg" / "opt",
         suite=htg_opt.SUITE,
         benchmarks_dir=BENCHMARKS / "htg-domains",
         driver="scripts.planner",
@@ -109,7 +110,7 @@ TRACKS = {
     # The optimal suite, refined without gaps so that every plan is optimal, with
     # abs-lmcut searching the abstract task optimally like its lmcut baseline.
     "opt/symmetries": Track(
-        directory=Path(opt.__file__).parent / "symmetries",
+        directory=EXPERIMENTS / "ipc" / "opt" / "symmetries",
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
@@ -117,7 +118,7 @@ TRACKS = {
         optimizing_arguments=("--optimize",),
     ),
     "opt/resources": Track(
-        directory=Path(opt.__file__).parent / "resources",
+        directory=EXPERIMENTS / "ipc" / "opt" / "resources",
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         driver="scripts.planner",
@@ -126,7 +127,7 @@ TRACKS = {
         optimizing_arguments=("--optimize",),
     ),
     "unsat/symmetries": Track(
-        directory=Path(unsat.__file__).parent / "symmetries",
+        directory=EXPERIMENTS / "ipc" / "unsat" / "symmetries",
         suite=unsat.SUITE,
         benchmarks_dir=BENCHMARKS / "unsolve-ipc-2016",
         driver="scripts.unsolvability",
@@ -135,7 +136,7 @@ TRACKS = {
     # Unsolvable problems whose symmetric class grows, to see how each mode scales with it.
     # oss prunes symmetric states in the concrete search, so it shows what that buys without abstracting.
     "scaled/symmetries": Track(
-        directory=Path(unsat.__file__).parent / "scaled",
+        directory=EXPERIMENTS / "ipc" / "unsat" / "scaled",
         suite=scaled.SUITE,
         benchmarks_dir=BENCHMARKS / "scaled",
         driver="scripts.unsolvability",

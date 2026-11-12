@@ -35,7 +35,7 @@ def main():
         args.problem,
         timeout=args.timeout,
         track=args.track,
-        class_rank=args.class_rank,
+        rank=args.class_rank,
     )
     print(f"{args.domain_name}/{args.problem.name}: {args.mode} {_human_status(result)}", flush=True)
 
@@ -72,47 +72,36 @@ def _argument_parser():
     return parser
 
 
-def _run_task(
-    mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK, class_rank=0
-):
+def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK, rank=0):
     abstract = mode.startswith(ABSTRACTION_PREFIX)
-    name = f"{mode}-{class_rank}" if abstract else mode
+    name = f"{mode}-{rank}" if abstract else mode
     result_file = Path(results_dir) / domain_name / problem.stem / f"{name}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
-    started_at = datetime.now(timezone.utc).isoformat()
+    identity = {
+        "mode": mode,
+        **({"class": rank} if abstract else {}),
+        "track": track,
+        "domain": domain_name,
+        "problem": problem.name,
+        "started_at": datetime.now(timezone.utc).isoformat(),
+    }
     initial = {
         "status": "running",
         "return_code": None,
         "timed_out": False,
         "wall_time_seconds": 0.0,
         "output": "",
-        "mode": mode,
-        **({"class": class_rank} if abstract else {}),
-        "track": track,
-        "domain": domain_name,
-        "problem": problem.name,
-        "started_at": started_at,
+        **identity,
         "progress": {"last_completed_phase": None, "last_update": None, "metrics": {}},
     }
     _write_result(result_file, initial)
 
     environment = os.environ.copy()
     environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
-    command = _planner_command(domain, problem, mode, track, class_rank)
+    command = _planner_command(domain, problem, mode, track, rank)
     result = _run_pipeline(command, timeout, environment)
     progress = _read_progress(result_file)
-    result.update(
-        {
-            "mode": mode,
-            **({"class": class_rank} if abstract else {}),
-            "track": track,
-            "domain": domain_name,
-            "problem": problem.name,
-            "started_at": started_at,
-            "finished_at": datetime.now(timezone.utc).isoformat(),
-            "progress": progress,
-        }
-    )
+    result.update({**identity, "finished_at": datetime.now(timezone.utc).isoformat(), "progress": progress})
 
     _write_result(result_file, result)
     return result
@@ -133,7 +122,6 @@ def _read_progress(result_file):
 
 def _run_pipeline(command, timeout, environment=None):
     started = time.perf_counter()
-    interrupted = False
     # Its own session, so that the timeout can take down everything the planner
     # spawned. Killing the process we started leaves Fast Downward, its
     # translator, plasp and symmetry discovery holding the CPU they were given.
@@ -149,24 +137,22 @@ def _run_pipeline(command, timeout, environment=None):
     try:
         output = process.communicate(timeout=timeout)[0] or ""
         return_code = process.returncode
-        timed_out = False
+        status = _machine_status(return_code)
     except subprocess.TimeoutExpired:
-        return_code = None
         output = _kill_process_group(process)
-        timed_out = True
+        return_code = None
+        status = "timed_out"
     except KeyboardInterrupt:
         # runsolver enforces its memory limit by sending SIGINT. Uncaught it
         # escapes before the result is written, leaving the "running" stub while
         # Slurm still records the job COMPLETED.
         output = _kill_process_group(process)
         return_code = None
-        timed_out = False
-        interrupted = True
-    status = _machine_status(return_code, timed_out, interrupted)
+        status = "interrupted"
     result = {
         "status": status,
         "return_code": return_code,
-        "timed_out": timed_out,
+        "timed_out": status == "timed_out",
         "wall_time_seconds": time.perf_counter() - started,
         "output": output,
     }
@@ -186,21 +172,17 @@ def _kill_process_group(process):
     return process.communicate()[0] or ""
 
 
-def _machine_status(return_code, timed_out, interrupted=False):
-    if interrupted:
-        return "interrupted"
-    if timed_out:
-        return "timed_out"
-    if return_code is not None and return_code < 0:
+def _machine_status(return_code):
+    if return_code < 0:
         return "killed"
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
-def _planner_command(domain, problem, mode, track=DEFAULT_TRACK, class_rank=0):
+def _planner_command(domain, problem, mode, track, rank):
     command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
     if mode.startswith(ABSTRACTION_PREFIX):
         command.extend(TRACKS[track].abstract_arguments)
-        command.extend(["--class-rank", str(class_rank)])
+        command.extend(["--class-rank", str(rank)])
     if mode in OPTIMIZING_MODES:
         command.extend(TRACKS[track].optimizing_arguments)
     return command

@@ -66,7 +66,7 @@ def collect(*results_dirs):
     for domain, problem, mode, rank in sorted(keys):
         result = results.get((domain, problem, mode, rank))
         values = _missing_values() if result is None else _values(result)
-        rows.append({"domain": domain, "problem": problem, "mode": mode, "class": rank, **values})
+        rows.append({**values, "domain": domain, "problem": problem, "mode": mode, "class": rank})
     return rows
 
 
@@ -76,7 +76,7 @@ def manifest_keys(manifest):
 
 
 def _missing_values():
-    return {field: "" for field in FIELDS[5:]} | {"status": "missing"}
+    return dict.fromkeys(FIELDS, "") | {"status": "missing"}
 
 
 def _values(result):
@@ -97,7 +97,7 @@ def _values(result):
     }
 
 
-def _metrics(output, progress=None):
+def _metrics(output, progress):
     """Read the metrics the planner printed, or, when it printed none, the last it reported."""
     metrics = {
         "durations": _metric_group(output, DURATION_LABELS, float),
@@ -119,7 +119,7 @@ def _metric_group(output, labels, conversion):
     return values
 
 
-def _abstraction_values(output, abstraction=None):
+def _abstraction_values(output, abstraction):
     """Read the collapsed class from the metrics, or from the line the planner prints when it selects it."""
     if abstraction:
         return {

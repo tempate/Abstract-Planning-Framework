@@ -263,7 +263,7 @@ def _argument_parser():
     parser.add_argument(
         "--track",
         required=True,
-        choices=sorted(name for name in TRACKS if name.endswith(("/symmetries", "/resources"))),
+        choices=sorted(TRACKS),
         help="Track whose problems to scan",
     )
     parser.add_argument(
