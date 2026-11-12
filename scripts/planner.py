@@ -3,7 +3,7 @@
 import argparse
 
 from core.pipeline import pipeline
-from core.baselines.backends import BACKENDS
+from core.planners.registry import PLANNERS
 
 from .utils.arguments import (
     abstract_planning_config,
@@ -29,7 +29,7 @@ def _compute(args):
     on_update = progress_callback()
     if args.mode.startswith("abs-"):
         return pipeline.solve(abstract_planning_config(args), on_update)
-    return BACKENDS[args.mode].solve(planning_config(args), on_update)
+    return PLANNERS[args.mode].solve(planning_config(args), on_update)
 
 
 def print_planning_result(result):

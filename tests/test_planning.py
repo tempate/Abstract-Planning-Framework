@@ -13,7 +13,7 @@ from core.integrations.unified_planning import read_problem
 from core.utilities.outcomes import UnsolvableTaskError
 from core.pipeline.abstraction.factory import write_abstract_problem
 from core.utilities.metrics import PlanningMetrics
-from core.baselines import asp, fd, ms
+from core.planners import asp, fd, ms
 from core.pipeline import pipeline
 from core.utilities.config import AbstractPlanningConfig, PlanningConfig
 from scripts.utils.arguments import positive_int
@@ -29,7 +29,7 @@ def _generated_abstraction():
 
 
 class BaselinePlanningOrchestrationTests(unittest.TestCase):
-    @patch("core.baselines.fd.find_plan")
+    @patch("core.planners.fd.find_plan")
     def test_the_plan_length_is_reported_rather_than_counted_from_the_output(self, find_plan):
         find_plan.return_value = ["(walk a b)", "(drive b c)"]
         config = PlanningConfig("domain.pddl", "problem.pddl")
@@ -41,7 +41,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
         # The plan carries no occurs/2 atoms for the collector to count.
         self.assertEqual(result["metrics"]["counters"]["plan_length"], 2)
 
-    @patch("core.baselines.fd.find_sas_plan", return_value=None)
+    @patch("core.planners.fd.find_sas_plan", return_value=None)
     def test_an_abstract_task_without_a_plan_proves_the_concrete_one_unsolvable(self, _find_sas_plan):
         with self.assertRaises(UnsolvableTaskError):
             fd.FastDownward(LAMA).find_abstract_plan(
@@ -51,7 +51,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
                 PlanningMetrics(),
             )
 
-    @patch("core.baselines.fd.find_plan")
+    @patch("core.planners.fd.find_plan")
     def test_an_unsolvable_task_is_not_a_plan(self, find_plan):
         find_plan.return_value = None
 
@@ -78,7 +78,7 @@ def _stubbed_decision(found):
 
 
 class DecisionTests(unittest.TestCase):
-    @patch("core.baselines.ms.has_plan")
+    @patch("core.planners.ms.has_plan")
     def test_searching_the_task_itself_settles_it(self, has_plan):
         for found, verdict in ((True, "solvable"), (False, "unsolvable")):
             with self.subTest(found=found):

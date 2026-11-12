@@ -1,10 +1,10 @@
 """The planner each mode names, without its abs- prefix."""
 
 from core.integrations.fast_downward import BLIND_OSS, LAMA, LMCUT
-from core.baselines import asp, ms
-from core.baselines.fd import FastDownward
+from core.planners import asp, ms
+from core.planners.fd import FastDownward
 
-BACKENDS = {
+PLANNERS = {
     "asp": asp,
     "lama": FastDownward(LAMA),
     "lmcut": FastDownward(LMCUT),

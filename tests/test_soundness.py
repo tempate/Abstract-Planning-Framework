@@ -17,7 +17,7 @@ from core.integrations.clingo import parse_plan_actions
 from core.integrations.unified_planning import parse_problem
 from core.utilities.plan import PlanAction
 from core.pipeline import pipeline
-from core.baselines.backends import BACKENDS
+from core.planners.registry import PLANNERS
 from core.utilities.config import AbstractPlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
@@ -177,7 +177,7 @@ class RefinementTests(unittest.TestCase):
             light = build_abstract_problem(config).abstraction.name
         plan = tuple(PlanAction("switch-on", (light,), step) for step in range(1, steps + 1))
         with (
-            patch.object(type(BACKENDS["lama"]), "find_abstract_plan", return_value=(plan, steps)),
+            patch.object(type(PLANNERS["lama"]), "find_abstract_plan", return_value=(plan, steps)),
             redirect_stdout(StringIO()),
         ):
             result = pipeline.solve(config)

@@ -7,7 +7,7 @@ from core.integrations.ms_unsat import has_plan
 from core.utilities.metrics import PlanningMetrics
 from core.pipeline.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
 from core.utilities.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
-from core.baselines.backends import BACKENDS
+from core.planners.registry import PLANNERS
 from core.utilities.config import AbstractPlanningConfig
 from core.utilities.execution import temp_run_dir
 from core.pipeline.refinement.pipeline import RefinementContext, refine
@@ -20,8 +20,8 @@ def solve(config: AbstractPlanningConfig, on_update=None):
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
             problem, abstract_sas, renamings = _abstract(config, base_dir, metrics)
-            backend = BACKENDS[config.planner]
-            abstract_plan, horizon = backend.find_abstract_plan(config, base_dir, abstract_sas, metrics)
+            planner = PLANNERS[config.planner]
+            abstract_plan, horizon = planner.find_abstract_plan(config, base_dir, abstract_sas, metrics)
             context = RefinementContext(
                 config=config,
                 abstraction=problem.abstraction,
