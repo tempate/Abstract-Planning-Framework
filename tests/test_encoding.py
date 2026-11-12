@@ -11,8 +11,7 @@ from core.pipeline.refinement.encoding import (
     switches,
 )
 from core.asp.solver import Solver
-from core.asp.program import AspProgram
-from core.asp.rules import make_steps_optional
+from core.asp.program import AspProgram, make_steps_optional
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
 

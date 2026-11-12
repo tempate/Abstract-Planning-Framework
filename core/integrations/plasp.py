@@ -3,10 +3,9 @@
 import os
 import subprocess
 
-from core.asp.rules import make_steps_optional
 from core.integrations.paths import PLASP_BIN, SEQUENTIAL_ENCODING
 from core.utilities.outcomes import IntegrationError
-from core.asp.program import AspProgram
+from core.asp.program import AspProgram, make_steps_optional
 
 
 def sas_to_asp(sas_path, optimize=True):
