@@ -29,7 +29,6 @@ class RefinementContext:
 
     config: AbstractPlanningConfig
     abstraction: Abstraction
-    run_id: str
     metrics: PlanningMetrics
     base_dir: str
     # Written name to original, for what the writer renamed in the abstract task.
@@ -42,13 +41,7 @@ def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     plan = _solve_concrete_plan(context, abstract_plan, abstract_horizon)
     if plan is not None:
         context.metrics.set_counter("plan_length", plan_length(plan))
-
-    return {
-        "configuration": context.config.as_dict(),
-        "plan": plan,
-        "success": plan is not None,
-        "run_id": context.run_id,
-    }
+    return plan
 
 
 def _with_original_names(abstract_plan, renamings):

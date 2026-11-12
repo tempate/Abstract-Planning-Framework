@@ -19,25 +19,25 @@ def solve(config: AbstractPlanningConfig, on_update=None):
 
     with metrics.measure("total"):
         with temp_run_dir("abstract") as (base_dir, run_id):
-            # Create the abstraction
             problem, abstract_sas, renamings = _abstract(config, base_dir, metrics)
-
-            # Find a plan for the abstraction
-            plan, horizon = BACKENDS[config.planner].find_abstract_plan(config, base_dir, abstract_sas, metrics)
-
-            # Refine the plan
+            backend = BACKENDS[config.planner]
+            abstract_plan, horizon = backend.find_abstract_plan(config, base_dir, abstract_sas, metrics)
             context = RefinementContext(
                 config=config,
                 abstraction=problem.abstraction,
-                run_id=run_id,
                 metrics=metrics,
                 base_dir=base_dir,
                 renamings=renamings,
             )
-            result = refine(context, plan, horizon)
+            plan = refine(context, abstract_plan, horizon)
 
-    result["metrics"] = metrics.as_dict()
-    return result
+    return {
+        "configuration": config.as_dict(),
+        "plan": plan,
+        "success": plan is not None,
+        "run_id": run_id,
+        "metrics": metrics.as_dict(),
+    }
 
 
 def _abstract(config, base_dir, metrics):

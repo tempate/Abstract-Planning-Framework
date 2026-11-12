@@ -20,12 +20,18 @@ def solve(config: PlanningConfig, on_update=None):
                 sas_file = pddl_to_sas(base_dir, config.domain_path, config.problem_path, "concrete")
             with metrics.measure("concrete_asp"):
                 asp = sas_to_asp(sas_file, config.optimize)
-            result = _search(asp, config, run_id, metrics)
-    result["metrics"] = metrics.as_dict()
-    return result
+            plan = _search(asp, config, metrics)
+
+    return {
+        "configuration": config.as_dict(),
+        "plan": plan,
+        "success": plan is not None,
+        "run_id": run_id,
+        "metrics": metrics.as_dict(),
+    }
 
 
-def _search(asp, config, run_id, metrics):
+def _search(asp, config, metrics):
     """Solve the program, raising the horizon until a plan is found."""
 
     def record_attempt(_horizon, _dropped, solve_calls):
@@ -38,13 +44,7 @@ def _search(asp, config, run_id, metrics):
     metrics.set_counter("concrete_solve_calls", solve_result.attempts)
     if solve_result.plan is not None:
         metrics.set_counter("plan_length", plan_length(solve_result.plan))
-
-    return {
-        "configuration": config.as_dict(),
-        "plan": solve_result.plan,
-        "success": solve_result.plan is not None,
-        "run_id": run_id,
-    }
+    return solve_result.plan
 
 
 def find_abstract_plan(config, _base_dir, abstract_sas, metrics):
