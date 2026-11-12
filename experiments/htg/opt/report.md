@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-12 10:04 — experiments/htg/opt/results.csv
+2026-11-12 10:42 — experiments/htg/opt/results.csv
 
-294 problems compared over abs-lmcut, lmcut; 149 dropped as unfinished
+329 problems compared over abs-lmcut, lmcut; 114 dropped as unfinished
 
 ## Coverage
 
 ```
 Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
-Plans found                      91 (31.0%)   58 (19.7%)
-Timeouts                        180 (61.2%)  199 (67.7%)
-Out of memory                     23 (7.8%)   37 (12.6%)
+Plans found                     116 (35.3%)   58 (17.6%)
+Timeouts                        193 (58.7%)  199 (60.5%)
+Out of memory                     20 (6.1%)   72 (21.9%)
 Others                             0 (0.0%)     0 (0.0%)
-Total problems                          294          294
+Total problems                          329          329
 ```
 
 ## Head to head, over the problems both solved
@@ -23,7 +23,7 @@ Metric                               LMcutᵅ        LMcut
 --------------------------------------------------------
 Plans found by both                      55           55
 Faster                           39 (70.9%)   16 (29.1%)
-Found when the other did not             36            3
+Found when the other did not             61            3
 Median runtime                      10.52 s      43.88 s
 Total runtime                    3,530.87 s  17,320.39 s
 Shorter plan                       0 (0.0%)     0 (0.0%)
@@ -37,10 +37,10 @@ Total plan length                       397          397
 ```
 Killed during                        LMcutᵅ
 -------------------------------------------
-Abstract search                   123 (68%)
-Guided concrete search             38 (21%)
-Unguided concrete search           19 (11%)
-Total                                   180
+Abstract search                   136 (70%)
+Guided concrete search             38 (20%)
+Unguided concrete search           19 (10%)
+Total                                   193
 ```
 
 ## How the successes were solved
@@ -48,10 +48,10 @@ Total                                   180
 ```
 Solved by                            LMcutᵅ
 -------------------------------------------
-Refined directly                   81 (89%)
+Refined directly                  106 (91%)
 Refined, some actions off            0 (0%)
-Solved above the abstract plan     10 (11%)
-Total                                    91
+Solved above the abstract plan      10 (9%)
+Total                                   116
 ```
 
 ## Deletes relaxed by the refined plans
@@ -60,11 +60,11 @@ Total                                    91
 Deletes relaxed                      LMcutᵅ
 -------------------------------------------
 None                                 1 (1%)
-1 to 4                             38 (47%)
+1 to 4                             42 (40%)
 5 to 9                               0 (0%)
-10 to 19                           27 (33%)
-20 or more                         15 (19%)
-Total                                    81
+10 to 19                           47 (44%)
+20 or more                         16 (15%)
+Total                                   106
 ```
 
 ## Plans found by domain
@@ -72,10 +72,10 @@ Total                                    81
 ```
 Domain (problems)                 Size    LMcutᵅ     LMcut
 ----------------------------------------------------------
-blocksworld-large-simple (24)    goal-2         5         3
-                                goal-3         5         3
-                                goal-4         5         3
-                                goal-5         5         3
+blocksworld-large-simple (40)    goal-2        10         3
+                                goal-3        10         3
+                                goal-4        10         3
+                                goal-5        10         3
 childsnack-contents (44)    parsize1-cham3        12         5
                             parsize1-cham5         7         0
                             parsize1-cham7         0         0
@@ -87,21 +87,22 @@ childsnack-contents (44)    parsize1-cham3        12         5
                             parsize3-cham7         0         0
                             parsize4-cham3         0         0
                             parsize4-cham5         0         0
+                            parsize4-cham7         0         0
 gnad-et-al-aaai19-large-instances (86)agricola-large         0         0
                             depots-large         0         0
                             satellite-large         0         0
                              tpp-large         0         0
-logistics-large-simple (20)     goal-1         5         5
-                                goal-2         5         3
-                                goal-3         5         2
-                                goal-4         5         1
+logistics-large-simple (24)     goal-1         6         5
+                                goal-2         6         3
+                                goal-3         6         2
+                                goal-4         6         1
 organic-synthesis-MIT (2)                      0         2
-organic-synthesis-alkene (17)                  15        15
+organic-synthesis-alkene (18)                  16        15
 organic-synthesis-original (3)                   0         1
 pipesworld-tankage-nosplit (17)                   7         6
 rovers-large-simple (10)        goal-2         1         1
                                 goal-4         2         2
                                 goal-6         0         0
                                 goal-8         0         0
-Total (294)                                   91        58
+Total (329)                                  116        58
 ```
