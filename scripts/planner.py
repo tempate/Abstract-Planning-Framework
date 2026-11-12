@@ -29,7 +29,7 @@ def _compute(args):
     on_update = progress_callback()
     if args.mode.startswith("abs-"):
         return pipeline.solve(abstract_planning_config(args), on_update)
-    return PLANNERS[args.mode].solve(planning_config(args), on_update)
+    return PLANNERS[args.mode](planning_config(args)).solve(on_update)
 
 
 def print_planning_result(result):

@@ -16,7 +16,7 @@ from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.unified_planning import parse_problem
 from core.utilities.plan import PlanAction
 from core.pipeline import pipeline
-from core.planners.registry import PLANNERS
+from core.planners.fd import FastDownward
 from core.utilities.config import AbstractPlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
@@ -176,7 +176,7 @@ class RefinementTests(unittest.TestCase):
             light = build_abstract_problem(config).abstraction.name
         plan = tuple(PlanAction("switch-on", (light,), step) for step in range(1, steps + 1))
         with (
-            patch.object(type(PLANNERS["lama"]), "plan_sas", return_value=plan),
+            patch.object(FastDownward, "plan_sas", return_value=plan),
             redirect_stdout(StringIO()),
         ):
             result = pipeline.solve(config)

@@ -37,7 +37,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
         find_pddl_plan.return_value = ["(walk a b)", "(drive b c)"]
         config = PlanningConfig("domain.pddl", "problem.pddl")
 
-        result = fd.FastDownward(LAMA).solve(config)
+        result = fd.FastDownward(LAMA, config).solve()
 
         self.assertTrue(result["success"])
         self.assertEqual(result["configuration"], config.as_dict())
@@ -57,7 +57,7 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
     def test_an_unsolvable_task_is_not_a_plan(self, find_pddl_plan):
         find_pddl_plan.return_value = None
 
-        result = fd.FastDownward(LAMA).solve(PlanningConfig("domain.pddl", "problem.pddl"))
+        result = fd.FastDownward(LAMA, PlanningConfig("domain.pddl", "problem.pddl")).solve()
 
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
@@ -86,7 +86,7 @@ class DecisionTests(unittest.TestCase):
             with self.subTest(found=found):
                 has_plan.return_value = found
 
-                result = MsUnsat().check_solvability(PlanningConfig("domain.pddl", "problem.pddl"))
+                result = MsUnsat(PlanningConfig("domain.pddl", "problem.pddl")).check_solvability()
 
                 self.assertEqual(result["verdict"], verdict)
 
@@ -184,11 +184,8 @@ class AspHorizonSearchTests(unittest.TestCase):
             patch("core.integrations.plasp.os.path.exists", return_value=True),
             patch("core.integrations.plasp.subprocess.run", return_value=plasp),
         ):
-            actions = Asp().plan_sas(
-                PlanningConfig("domain.pddl", "problem.pddl"),
-                None,
-                "abstract.sas",
-                PlanningMetrics(on_update=stop_past_the_plan).prefixed("abstract_"),
+            actions = Asp(PlanningConfig("domain.pddl", "problem.pddl")).plan_sas(
+                "abstract.sas", PlanningMetrics(on_update=stop_past_the_plan).prefixed("abstract_")
             )
 
         self.assertEqual([action.args for action in actions], [("s1",), ("s2",), ("s3",)])

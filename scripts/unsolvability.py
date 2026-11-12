@@ -29,7 +29,7 @@ def _report(result):
 def _compute(args):
     on_update = progress_callback()
     if args.mode in ("ms", "oss"):
-        return PLANNERS[args.mode].check_solvability(planning_config(args), on_update)
+        return PLANNERS[args.mode](planning_config(args)).check_solvability(on_update)
     if args.mode == "abs-ms":
         return pipeline.check_solvability(abstract_planning_config(args), on_update)
 
