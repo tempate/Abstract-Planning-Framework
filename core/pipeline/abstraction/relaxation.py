@@ -2,6 +2,7 @@
 
 import itertools
 from collections import OrderedDict
+from dataclasses import dataclass
 
 from unified_planning.model import Fluent, InstantaneousAction
 
@@ -10,6 +11,22 @@ from core.integrations.unified_planning import add_effect_like
 # A split action keeps the name it came from, so the refinement can still find
 # it in the concrete task, and carries the separator to mark what it is.
 SPLIT_SEPARATOR = "--abs-"
+
+
+@dataclass(frozen=True)
+class _Reach:
+    """The collapsed class, and the static facts that decide which objects an action's variables can take."""
+
+    collapsed: frozenset
+    collapsed_type: object
+    static_fluents: set
+    true_facts: list
+
+
+def _reach(problem, abstraction):
+    collapsed = frozenset(problem.object(name) for name in abstraction.objects)
+    true_facts = [fluent for fluent, value in problem.explicit_initial_values.items() if value.is_true()]
+    return _Reach(collapsed, _collapsed_type(problem, abstraction), problem.get_static_fluents(), true_facts)
 
 
 def split_actions(problem, abstraction):
@@ -21,20 +38,17 @@ def split_actions(problem, abstraction):
     collapsed object, so the relaxation that follows reaches only the groundings
     that need it.
     """
-    collapsed = _collapsed_objects(problem, abstraction)
-    collapsed_type = _collapsed_type(problem, abstraction)
-    static_fluents = problem.get_static_fluents()
-    true_facts = [fluent for fluent, value in problem.explicit_initial_values.items() if value.is_true()]
+    reach = _reach(problem, abstraction)
 
     split_problem = problem.clone()
-    collapsed_marker, kept_marker = _add_markers(split_problem, abstraction, collapsed)
+    collapsed_marker, kept_marker = _add_markers(split_problem, abstraction, reach.collapsed)
 
     split_problem.clear_actions()
     for action in problem.actions:
         if SPLIT_SEPARATOR in action.name:
             raise ValueError(f"Action name already holds the split separator: {action.name}")
 
-        parameters = _split_parameters(problem, action, collapsed, collapsed_type, static_fluents, true_facts)
+        parameters = _split_parameters(problem, action, reach)
         if not parameters:
             split_problem.add_action(action)
             continue
@@ -69,7 +83,7 @@ def _add_markers(problem, abstraction, collapsed):
     return collapsed_marker, kept_marker
 
 
-def _split_parameters(problem, action, collapsed, collapsed_type, static_fluents, true_facts):
+def _split_parameters(problem, action, reach):
     """The parameters that reach an effect and can take both a collapsed object and another one."""
     candidates = []
     for effect in action.effects:
@@ -79,7 +93,7 @@ def _split_parameters(problem, action, collapsed, collapsed_type, static_fluents
     for candidate in candidates:
         if not candidate.is_parameter_exp() or candidate in parameters:
             continue
-        if not _is_variable_of(candidate, collapsed_type):
+        if not _is_variable_of(candidate, reach.collapsed_type):
             continue
 
         # A parameter that only ever takes collapsed objects, as when the class
@@ -87,11 +101,9 @@ def _split_parameters(problem, action, collapsed, collapsed_type, static_fluents
         others = {
             item
             for item in problem.all_objects
-            if item not in collapsed and (item.type == candidate.type or item.type.is_subtype(candidate.type))
+            if item not in reach.collapsed and (item.type == candidate.type or item.type.is_subtype(candidate.type))
         }
-        if _can_bind(action, candidate, collapsed, static_fluents, true_facts) and _can_bind(
-            action, candidate, others, static_fluents, true_facts
-        ):
+        if _can_bind(action, candidate, reach.collapsed, reach) and _can_bind(action, candidate, others, reach):
             parameters.append(candidate)
 
     return parameters
@@ -116,21 +128,18 @@ def find_relaxable_deletes(problem, abstraction):
 
     Returns them as (action name, effect) pairs.
     """
-    collapsed = _collapsed_objects(problem, abstraction)
-    collapsed_type = _collapsed_type(problem, abstraction)
-    static_fluents = problem.get_static_fluents()
-    true_facts = [fluent for fluent, value in problem.explicit_initial_values.items() if value.is_true()]
+    reach = _reach(problem, abstraction)
 
     relaxable = []
     for action in problem.actions:
         for effect in action.effects:
-            if _deletes_a_collapsed_fact(action, effect, collapsed, collapsed_type, static_fluents, true_facts):
+            if _deletes_a_collapsed_fact(action, effect, reach):
                 relaxable.append((action.name, effect))
 
     return tuple(relaxable)
 
 
-def _deletes_a_collapsed_fact(action, effect, collapsed, collapsed_type, static_fluents, true_facts):
+def _deletes_a_collapsed_fact(action, effect, reach):
     is_delete = (
         effect.is_assignment()
         and effect.value.is_false()
@@ -141,28 +150,28 @@ def _deletes_a_collapsed_fact(action, effect, collapsed, collapsed_type, static_
         return False
 
     for argument in effect.fluent.args:
-        if argument.is_object_exp() and argument.object() in collapsed:
+        if argument.is_object_exp() and argument.object() in reach.collapsed:
             # The delete names a collapsed object outright, so it always applies.
             return True
 
     # A single argument that can bind a collapsed object is enough to make the
     # delete remove a fact the other collapsed objects may still support.
     for argument in effect.fluent.args:
-        if not _is_variable_of(argument, collapsed_type):
+        if not _is_variable_of(argument, reach.collapsed_type):
             continue
-        if _can_bind(action, argument, collapsed, static_fluents, true_facts):
+        if _can_bind(action, argument, reach.collapsed, reach):
             return True
 
     return False
 
 
-def _can_bind(action, variable, collapsed, static_fluents, true_facts):
-    """Whether the action's static preconditions still let the variable take a collapsed object."""
-    candidates = set(collapsed)
+def _can_bind(action, variable, objects, reach):
+    """Whether the action's static preconditions still let the variable take one of the objects."""
+    candidates = set(objects)
     for atom in _conjuncts(action.preconditions):
-        is_static_on_variable = atom.is_fluent_exp() and atom.fluent() in static_fluents and variable in atom.args
+        is_static_on_variable = atom.is_fluent_exp() and atom.fluent() in reach.static_fluents and variable in atom.args
         if is_static_on_variable:
-            candidates &= _objects_satisfying(atom, variable, true_facts)
+            candidates &= _objects_satisfying(atom, variable, reach.true_facts)
 
     return bool(candidates)
 
@@ -219,15 +228,12 @@ def relax_inequalities(problem, abstraction):
     objects still have to differ. Returns the relaxed problem and the
     (action name, inequality) pairs it replaced.
     """
-    collapsed = _collapsed_objects(problem, abstraction)
-    collapsed_type = _collapsed_type(problem, abstraction)
-    static_fluents = problem.get_static_fluents()
-    true_facts = [fluent for fluent, value in problem.explicit_initial_values.items() if value.is_true()]
+    reach = _reach(problem, abstraction)
 
     def can_be_collapsed(action, side):
         if side.is_object_exp():
-            return side.object() in collapsed
-        return _is_variable_of(side, collapsed_type) and _can_bind(action, side, collapsed, static_fluents, true_facts)
+            return side.object() in reach.collapsed
+        return _is_variable_of(side, reach.collapsed_type) and _can_bind(action, side, reach.collapsed, reach)
 
     relaxed_problem = problem.clone()
 
@@ -297,10 +303,6 @@ def _is_variable_of(expression, collapsed_type):
         return False
 
     return collapsed_type.is_subtype(variable.type)
-
-
-def _collapsed_objects(problem, abstraction):
-    return frozenset(problem.object(name) for name in abstraction.objects)
 
 
 def _root_type(problem, abstraction):
