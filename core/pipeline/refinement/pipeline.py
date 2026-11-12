@@ -20,7 +20,7 @@ from core.pipeline.refinement.encoding import (
     map_abstract_actions,
     switches,
 )
-from core.asp.incremental import IncrementalSolver
+from core.asp.solver import Solver
 
 
 @dataclass
@@ -137,7 +137,7 @@ def _one_shot(context, asp, abstract_plan, abstract_horizon):
     """Refine the abstract plan as it is, in one solve at its horizon."""
     choices = map_abstract_actions(abstract_plan, context.abstraction, gaps=False)
     rules = [drop_action_choice(asp.rules), *add_concrete_objects(context.abstraction), *choices.values()]
-    solver = IncrementalSolver(
+    solver = Solver(
         asp=replace(asp, rules="\n".join(rules)), init_horizon=abstract_horizon, optimize=context.config.optimize
     )
     return solver.solve()
@@ -153,9 +153,7 @@ def _fallback_solver(context, asp, abstract_plan, abstract_horizon):
 
     choices = map_abstract_actions(abstract_plan, context.abstraction, gaps)
     rules = [asp.rules, *add_concrete_objects(context.abstraction), *add_switches(choices)]
-    return IncrementalSolver(
-        asp=replace(asp, rules="\n".join(rules)), init_horizon=init_horizon, optimize=context.config.optimize
-    )
+    return Solver(asp=replace(asp, rules="\n".join(rules)), init_horizon=init_horizon, optimize=context.config.optimize)
 
 
 def _fallback(context, solver, abstract_plan, record_attempt):

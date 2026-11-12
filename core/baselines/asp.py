@@ -8,7 +8,7 @@ from core.integrations.plasp import sas_to_asp
 from core.utilities.metrics import PlanningMetrics
 from core.utilities.config import PlanningConfig
 from core.utilities.execution import temp_run_dir
-from core.asp.incremental import IncrementalSolver
+from core.asp.solver import Solver
 
 
 def solve(config: PlanningConfig, on_update=None):
@@ -38,7 +38,7 @@ def _search(asp, config, metrics):
         metrics.set_counter("concrete_solve_calls", solve_calls)
 
     with metrics.measure("guided_concrete_solving"):
-        solver = IncrementalSolver(asp, optimize=config.optimize)
+        solver = Solver(asp, optimize=config.optimize)
         solve_result = solver.search(on_attempt=record_attempt)
 
     metrics.set_counter("concrete_solve_calls", solve_result.attempts)
@@ -56,7 +56,7 @@ def find_abstract_plan(config, _base_dir, abstract_sas, metrics):
         metrics.set_counters({"abstract_plan_length": horizon, "abstract_solve_calls": solve_calls})
 
     with metrics.measure("abstract_solving"):
-        solver = IncrementalSolver(abstract_asp, optimize=config.optimize)
+        solver = Solver(abstract_asp, optimize=config.optimize)
         solve_result = solver.search(on_attempt=record_attempt)
 
     # An exponential horizon can leave steps empty. Closing them up keeps an abstract action on
