@@ -2,8 +2,8 @@ import unittest
 
 import clingo
 
-from core.search.incremental import IncrementalSolver
-from core.encodings.program import AspProgram
+from core.asp.solver import Solver
+from core.asp.program import AspProgram
 
 
 def _keep(number):
@@ -12,7 +12,7 @@ def _keep(number):
 
 class RelaxingSolverTests(unittest.TestCase):
     def _search(self, program, numbers, on_attempt=None, dropped=0):
-        solver = IncrementalSolver(AspProgram(program), init_horizon=0)
+        solver = Solver(AspProgram(program), init_horizon=0)
         return solver.search([_keep(number) for number in numbers], on_attempt, dropped)
 
     def test_keeps_every_assumption_when_they_hold_together(self):

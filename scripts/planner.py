@@ -2,8 +2,8 @@
 
 import argparse
 
-from core.planning import abstraction
-from core.planning.backends import BACKENDS
+from core.pipeline import pipeline
+from core.planners.registry import PLANNERS
 
 from .utils.arguments import (
     abstract_planning_config,
@@ -27,9 +27,10 @@ def _report(result):
 
 def _compute(args):
     on_update = progress_callback()
+
     if args.mode.startswith("abs-"):
-        return abstraction.solve(abstract_planning_config(args), on_update)
-    return BACKENDS[args.mode].solve(planning_config(args), on_update)
+        return pipeline.solve(abstract_planning_config(args), on_update)
+    return PLANNERS[args.mode](planning_config(args)).solve(on_update)
 
 
 def print_planning_result(result):
@@ -40,22 +41,13 @@ def print_planning_result(result):
     length = result["metrics"]["counters"].get("plan_length")
     if result["plan"] is not None:
         print(f"Plan length: {length}")
+
     print_metrics(result["metrics"])
 
     if result["plan"] is not None:
         print(f"\nPlan ({length} actions):")
-        for action in _ordered_actions(result["plan"]):
-            print(" ", action)
-
-
-def _ordered_actions(plan):
-    """Order a plan for reading: our own by time step, an external one as given."""
-    occurrences = [atom for atom in plan if atom.startswith("occurs(")]
-    return sorted(occurrences, key=_time_step) if occurrences else plan
-
-
-def _time_step(atom):
-    return int(str(atom).split(",")[-1].rstrip(")"))
+        for action in result["plan"]:
+            print(f"  {action.time_step}: ({' '.join((action.name, *action.args))})")
 
 
 def _argument_parser():

@@ -30,6 +30,7 @@ def scale(problem, obj, copies):
 
     objects_start = problem.index("(:objects")
     init_start = problem.index("(:init")
+
     # The object's own entry in the objects section gains the copies right after it.
     # A domain constant has no entry here, and scale_domain declares its copies.
     objects = mentions.sub(lambda match: " ".join([match.group(0)] + names), problem[objects_start:init_start], count=1)
@@ -41,6 +42,7 @@ def scale_domain(domain, obj, copies):
     """The domain text with the copies of `obj` declared and given its actions, when it names `obj`."""
     names = _names(obj, copies)
     mentions = _mentions(obj)
+
     if "(:constants" in domain:
         start = domain.index("(:constants")
         end = _closing(domain, start)
@@ -51,6 +53,7 @@ def scale_domain(domain, obj, copies):
     action_name = re.compile(rf"(\(:action\s+\S*?)(?<![^\s-]){re.escape(obj)}(?=\s)")
     pieces = []
     position = 0
+
     for match in re.finditer(r"\(:action\b", domain):
         start = match.start()
         end = _closing(domain, start)
@@ -63,6 +66,7 @@ def scale_domain(domain, obj, copies):
                     copy = re.sub(r"\(:action\s+(\S+)", rf"(:action \1-{name}", action, count=1)
                 pieces.append("\n  " + mentions.sub(name, copy))
         position = end
+
     pieces.append(domain[position:])
     return "".join(pieces)
 
@@ -85,6 +89,7 @@ def _closing(text, start):
             depth -= 1
             if depth == 0:
                 return index + 1
+
     raise ValueError(f"Unbalanced parentheses from position {start}")
 
 
@@ -105,13 +110,16 @@ def main():
     domain = find_domain(args.problem)
     base = args.problem.read_text()
     base_domain = domain.read_text()
+
     # The base problem sits at its own class size, and the larger sizes grow from it.
     sizes = [args.class_size] + [size for size in args.sizes if size > args.class_size]
     for size in sizes:
         directory = args.out / args.problem.parent.name / f"size-{size}"
         directory.mkdir(parents=True, exist_ok=True)
+
         copies = size - args.class_size
         (directory / domain.name).write_text(scale_domain(base_domain, args.object, copies))
+
         path = directory / args.problem.name
         path.write_text(scale(base, args.object, copies))
         print(path)

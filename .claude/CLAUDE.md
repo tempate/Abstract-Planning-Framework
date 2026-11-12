@@ -5,7 +5,7 @@ Only `.venv` has `unified_planning`, so run them with the venv active, or spell
 out `.venv/bin/python`.
 Integration tests need `RUN_PLANNER_INTEGRATION=1`.
 
-Before calling a change to `core/abstraction` behavior-preserving, run
+Before calling a change to `core/pipeline/abstraction` behavior-preserving, run
 `python -m scripts.compare_abstractions main`; it compares the abstract task of
 each domain's first problem against that commit. The tests cannot show this.
 

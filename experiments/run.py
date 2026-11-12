@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from core.outcomes import STATUS_BY_EXIT_CODE
+from core.utilities.outcomes import STATUS_BY_EXIT_CODE
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 from scripts.utils.arguments import positive_int
 
@@ -37,6 +37,7 @@ def main():
         track=args.track,
         rank=args.class_rank,
     )
+
     print(f"{args.domain_name}/{args.problem.name}: {args.mode} {_human_status(result)}", flush=True)
 
 
@@ -77,6 +78,7 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
     name = f"{mode}-{rank}" if abstract else mode
     result_file = Path(results_dir) / domain_name / problem.stem / f"{name}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
+
     identity = {
         "mode": mode,
         **({"class": rank} if abstract else {}),
@@ -94,12 +96,14 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
         **identity,
         "progress": {"last_completed_phase": None, "last_update": None, "metrics": {}},
     }
+
     _write_result(result_file, initial)
 
     environment = os.environ.copy()
     environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
     command = _planner_command(domain, problem, mode, track, rank)
     result = _run_pipeline(command, timeout, environment)
+
     progress = _read_progress(result_file)
     result.update({**identity, "finished_at": datetime.now(timezone.utc).isoformat(), "progress": progress})
 
@@ -122,6 +126,7 @@ def _read_progress(result_file):
 
 def _run_pipeline(command, timeout, environment=None):
     started = time.perf_counter()
+
     # Its own session, so that the timeout can take down everything the planner
     # spawned. Killing the process we started leaves Fast Downward, its
     # translator, plasp and symmetry discovery holding the CPU they were given.
@@ -134,6 +139,7 @@ def _run_pipeline(command, timeout, environment=None):
         env=environment,
         start_new_session=True,
     )
+
     try:
         output = process.communicate(timeout=timeout)[0] or ""
         return_code = process.returncode
@@ -149,6 +155,7 @@ def _run_pipeline(command, timeout, environment=None):
         output = _kill_process_group(process)
         return_code = None
         status = "interrupted"
+
     result = {
         "status": status,
         "return_code": return_code,
@@ -158,6 +165,7 @@ def _run_pipeline(command, timeout, environment=None):
     }
     if status == "killed":
         result["signal"] = -return_code
+
     return result
 
 
@@ -180,11 +188,13 @@ def _machine_status(return_code):
 
 def _planner_command(domain, problem, mode, track, rank):
     command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
+
     if mode.startswith(ABSTRACTION_PREFIX):
         command.extend(TRACKS[track].abstract_arguments)
         command.extend(["--class-rank", str(rank)])
     if mode in OPTIMIZING_MODES:
         command.extend(TRACKS[track].optimizing_arguments)
+
     return command
 
 
@@ -203,6 +213,7 @@ def _human_status(result):
         "interrupted": "interrupted",
         "out_of_memory": "out of memory",
     }
+
     if status in labels:
         return labels[status]
     if status == "killed":

@@ -5,7 +5,7 @@ import json
 
 import clingo
 
-from core.encodings.rules import AT_MOST_ONE_ACTION, EXACTLY_ONE_ACTION
+from core.asp.program import AT_MOST_ONE_ACTION, EXACTLY_ONE_ACTION
 
 
 def drop_action_choice(asp):
@@ -46,6 +46,7 @@ def concrete_groundings(abstract_plan, abstraction):
                 options.append(abstraction.objects)
             else:
                 options.append((arg,))
+
         for args in itertools.product(*options):
             groundings.add(f"({' '.join((action.name, *args))})".lower())
 

@@ -1,7 +1,7 @@
 import unittest
 
-from core.search.incremental import IncrementalSolver
-from core.encodings.program import AspProgram
+from core.asp.solver import Solver
+from core.asp.program import AspProgram
 
 
 class IncrementalSolverTests(unittest.TestCase):
@@ -13,7 +13,7 @@ step(0).
 #program step(t).
 step(t).
 """
-        plan = IncrementalSolver(AspProgram(program), init_horizon=3).solve()
+        plan = Solver(AspProgram(program), init_horizon=3).solve()
 
         self.assertEqual(set(plan), {"step(0)", "step(1)", "step(2)", "step(3)"})
 
@@ -27,7 +27,7 @@ ready.
 :- query(t), not ready.
 """
 
-        result = IncrementalSolver(AspProgram(program)).search()
+        result = Solver(AspProgram(program)).search()
 
         self.assertEqual(result.plan, ["ready"])
         self.assertEqual(result.horizon, 0)
@@ -46,7 +46,7 @@ reached(t).
 """
         attempts = []
 
-        result = IncrementalSolver(AspProgram(program), init_horizon=2).search(
+        result = Solver(AspProgram(program), init_horizon=2).search(
             on_attempt=lambda horizon, _dropped, calls: attempts.append((horizon, calls))
         )
 
@@ -66,7 +66,7 @@ reached(t).
 #external query(t).
 :- query(t), t < 2.
 """
-        solver = IncrementalSolver(AspProgram(program), init_horizon=1)
+        solver = Solver(AspProgram(program), init_horizon=1)
         control = solver.control
 
         self.assertIsNone(solver.solve())
@@ -90,7 +90,7 @@ reached(t).
 """
         horizons = []
 
-        result = IncrementalSolver(AspProgram(program), optimize=False).search(
+        result = Solver(AspProgram(program), optimize=False).search(
             on_attempt=lambda horizon, _dropped, _calls: horizons.append(horizon)
         )
 
@@ -110,7 +110,7 @@ reached(t).
 """
         horizons = []
 
-        result = IncrementalSolver(AspProgram(program), init_horizon=3, optimize=False).search(
+        result = Solver(AspProgram(program), init_horizon=3, optimize=False).search(
             on_attempt=lambda horizon, _dropped, _calls: horizons.append(horizon)
         )
 

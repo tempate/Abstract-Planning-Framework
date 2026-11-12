@@ -5,7 +5,7 @@ import os
 from functools import partial
 from pathlib import Path
 
-from core.metrics import COUNTER_LABELS, DURATION_LABELS
+from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
 
 
 def progress_callback():
@@ -20,10 +20,12 @@ def update_result_progress(result_file, event, metrics):
     try:
         result = json.loads(result_file.read_text(encoding="utf-8"))
         progress = result["progress"]
+
         if event["kind"] == "phase_completed":
             progress["last_completed_phase"] = event["phase"]
         progress["last_update"] = event
         progress["metrics"] = metrics
+
         temporary = result_file.with_suffix(".tmp")
         temporary.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
         temporary.replace(result_file)

@@ -1,8 +1,8 @@
 import unittest
 from types import SimpleNamespace
 
-from core.plan import PlanAction
-from core.refinement.encoding import (
+from core.utilities.plan import PlanAction
+from core.pipeline.refinement.encoding import (
     add_concrete_objects,
     add_switches,
     concrete_groundings,
@@ -10,9 +10,8 @@ from core.refinement.encoding import (
     map_abstract_actions,
     switches,
 )
-from core.search.incremental import IncrementalSolver
-from core.encodings.program import AspProgram
-from core.encodings.rules import make_steps_optional
+from core.asp.solver import Solver
+from core.asp.program import AspProgram, make_steps_optional
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
 
@@ -30,7 +29,7 @@ action(action(("inspect","item1"))).
 :- occurs(Action, t), occurs(Action, T), T < t.
 #program base.
 """ + mapping
-        solver = IncrementalSolver(AspProgram(program), init_horizon=2 * 2 + 1)
+        solver = Solver(AspProgram(program), init_horizon=2 * 2 + 1)
         first, second = sorted(switches(abstract_plan))
 
         self.assertIsNone(solver.solve([(first, True), (second, True)]))
@@ -142,7 +141,7 @@ action(action(("move","item1"))).
 switch(2).
 """ + mapping
 
-        result = IncrementalSolver(AspProgram(program), init_horizon=2).control.solve()
+        result = Solver(AspProgram(program), init_horizon=2).control.solve()
 
         self.assertTrue(result.unsatisfiable)
 
@@ -153,7 +152,7 @@ switch(2).
         self.assertEqual([str(switch) for switch in switches(abstract_plan)], ["switch(10)", "switch(2)"])
 
     def _models(self, program, horizon):
-        control = IncrementalSolver(AspProgram(program), horizon).control
+        control = Solver(AspProgram(program), horizon).control
         control.configuration.solve.models = 0
         models = []
         with control.solve(yield_=True) as handle:

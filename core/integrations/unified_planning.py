@@ -68,8 +68,10 @@ def write_problem(problem: Problem):
             # The writer drops an action whose precondition is false, so it has no written name.
             # No plan can use that action, so it needs no entry here.
             continue
+
         if written != item.name:
             renamings[written] = item.name
+
     return PddlText(domain, problem_text, renamings)
 
 
@@ -92,6 +94,7 @@ def _with_explicit_initial_state(problem):
                 continue
             for expression in get_all_fluent_exp(view, fluent):
                 values.setdefault(expression, default)
+
         return values
 
     view = copy.copy(problem)
@@ -105,7 +108,7 @@ class _InequalityKeeper(NegativeFluentRemover):
     # objects, which Fast Downward's translator expands into a copy of the
     # action per pair. Leave it negated.
     def walk_not(self, expression, args, **kwargs):
-        if args[0].is_equals() and args[0].arg(0).type.is_user_type():
+        if _is_object_inequality(args[0]):
             return self._env.expression_manager.Not(args[0])
         return super().walk_not(expression, args, **kwargs)
 
@@ -125,12 +128,16 @@ def negates_a_fluent(problem):
 
 def _negates_a_fluent(expression):
     if expression.is_not():
-        negated = expression.arg(0)
-        return not (negated.is_equals() and negated.arg(0).type.is_user_type())
+        return not _is_object_inequality(expression.arg(0))
     for argument in expression.args:
         if _negates_a_fluent(argument):
             return True
     return False
+
+
+def _is_object_inequality(negated):
+    """Whether what a negation negates is an equality between objects, which makes it an inequality."""
+    return negated.is_equals() and negated.arg(0).type.is_user_type()
 
 
 def to_positive_normal_form(problem):
@@ -141,6 +148,7 @@ def to_positive_normal_form(problem):
     condition and lose plans the concrete task has.
     """
     get_environment().credits_stream = None
+
     try:
         # Selected by name, not by problem kind: the kind lookup refuses a task
         # over features the translation never touches, such as the undefined
@@ -180,11 +188,13 @@ def without_action_costs(problem):
             fluent = effect.fluent.fluent()
             if fluent.type.is_bool_type() or fluent.arity > 0:
                 kept.append(effect)
+
         if len(kept) == len(action.effects):
             continue
         action.clear_effects()
         for effect in kept:
             add_effect_like(action, effect, effect.fluent, effect.value, effect.condition)
+
     return stripped
 
 

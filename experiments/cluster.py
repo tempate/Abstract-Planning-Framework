@@ -56,4 +56,5 @@ def queued_jobs(host, name=None, states=None):
     selector = f" --name={shlex.quote(name)}" if name else ""
     if states:
         selector += f" --states={states}"
+
     return int(ssh(host, f'squeue -u "$USER"{selector} -h | wc -l', check=True).stdout.strip())

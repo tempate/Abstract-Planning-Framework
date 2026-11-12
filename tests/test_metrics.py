@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from core.metrics import PlanningMetrics
+from core.utilities.metrics import PlanningMetrics
 
 
 class PlanningMetricsTests(unittest.TestCase):

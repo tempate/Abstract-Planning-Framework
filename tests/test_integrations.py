@@ -7,12 +7,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.integrations.clingo import parse_plan_actions
-from core.integrations.fast_downward import BLIND_OSS, LAMA, find_plan, pddl_to_sas
+from core.integrations.fast_downward import BLIND_OSS, LAMA, find_pddl_plan, pddl_to_sas
 from core.integrations.ms_unsat import has_plan
 from core.integrations.paths import MS_UNSAT_SEARCH, STRUCTURAL_SYMMETRIES_SCRIPT
 from core.integrations.plasp import sas_to_asp
-from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
-from core.plan import PlanAction
+from core.utilities.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
+from core.utilities.plan import PlanAction
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
 
@@ -89,7 +89,7 @@ class FastDownwardHelperTests(unittest.TestCase):
         run.return_value = subprocess.CompletedProcess(args=[], returncode=10, stdout="", stderr="")
 
         with tempfile.TemporaryDirectory() as directory:
-            find_plan(directory, "domain.pddl", "problem.pddl", "label", LAMA)
+            find_pddl_plan(directory, "domain.pddl", "problem.pddl", "label", LAMA)
 
             command = run.call_args.args[0]
             written = [command[i + 1] for i, part in enumerate(command) if part in ("--sas-file", "--plan-file")]
@@ -108,7 +108,7 @@ class FastDownwardHelperTests(unittest.TestCase):
         run.side_effect = write_plan
 
         with tempfile.TemporaryDirectory() as directory:
-            plan = find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
+            plan = find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
 
         # The trailing cost comment is not an action.
         self.assertEqual(plan, ["(walk a b)", "(drive b c)"])
@@ -123,7 +123,7 @@ class FastDownwardHelperTests(unittest.TestCase):
         run.side_effect = write_plan
 
         with tempfile.TemporaryDirectory() as directory:
-            self.assertEqual(find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA), [])
+            self.assertEqual(find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA), [])
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_running_out_of_memory_is_told_apart_from_other_failures(self, run):
@@ -133,7 +133,7 @@ class FastDownwardHelperTests(unittest.TestCase):
                 run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr="")
                 with tempfile.TemporaryDirectory() as directory:
                     with self.assertRaises(OutOfMemoryError):
-                        find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
+                        find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_a_memory_error_the_driver_crashes_on_is_out_of_memory(self, run):
@@ -142,7 +142,7 @@ class FastDownwardHelperTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(OutOfMemoryError):
-                find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
+                find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
 
     @patch("core.integrations.fast_downward.subprocess.run")
     def test_both_unsolvable_exit_codes_mean_no_plan(self, run):
@@ -151,7 +151,7 @@ class FastDownwardHelperTests(unittest.TestCase):
                 run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr="")
 
                 with tempfile.TemporaryDirectory() as directory:
-                    self.assertIsNone(find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA))
+                    self.assertIsNone(find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA))
 
 
 class MsUnsatTests(unittest.TestCase):
@@ -219,7 +219,7 @@ class StructuralSymmetriesTests(unittest.TestCase):
             (solvable / "domain.pddl", solvable / "prob01.pddl", True),
         ):
             with self.subTest(problem=str(problem)), tempfile.TemporaryDirectory() as directory:
-                plan = find_plan(directory, domain, problem, "concrete", BLIND_OSS)
+                plan = find_pddl_plan(directory, domain, problem, "concrete", BLIND_OSS)
                 self.assertIs(plan is not None, found)
 
 

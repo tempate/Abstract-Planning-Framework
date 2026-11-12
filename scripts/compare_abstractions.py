@@ -3,7 +3,7 @@
 For the first problem of each plan-track domain, collapse its largest same-type
 object set with both versions of the code and compare the abstract task and the
 relaxed-delete and inequality counts. It is the check that a change to
-core/abstraction preserves behavior, which the tests alone cannot show. A class
+core/pipeline/abstraction preserves behavior, which the tests alone cannot show. A class
 chosen this way is not the one PDDL Symmetries would pick, and some are rejected;
 a problem both versions reject says nothing either way.
 """
@@ -25,9 +25,9 @@ TIMEOUT = 120
 # versions of the code provide.
 DESCRIBE = """
 import collections, hashlib, json, sys
-from core.abstraction.factory import build_abstract_problem
 from core.integrations.unified_planning import read_problem, without_action_costs
-from core.planning.config import AbstractPlanningConfig
+from core.pipeline.abstraction.factory import build_abstract_problem
+from core.utilities.config import AbstractPlanningConfig
 
 domain, problem = sys.argv[1:3]
 objects_by_type = collections.defaultdict(list)
@@ -66,6 +66,7 @@ print(json.dumps({
 def main():
     args = _argument_parser().parse_args()
     problems = _first_problem_of_each_domain(args.domains)
+
     with tempfile.TemporaryDirectory(prefix="apf-compare-") as directory:
         reference = Path(directory) / "reference"
         subprocess.run(["git", "worktree", "add", "--detach", "-q", str(reference), args.ref], check=True)
@@ -80,6 +81,7 @@ def main():
         counts[outcome] = counts.get(outcome, 0) + 1
         if detail:
             print(f"{domain}: {outcome}, {detail}")
+
     print(", ".join(f"{count} {outcome}" for outcome, count in sorted(counts.items())))
     return 0 if set(counts) <= {"identical", "rejected by both"} else 1
 
@@ -98,16 +100,19 @@ def _first_problem_of_each_domain(domains=None):
     for domain, problem in sorted(track.runnable()):
         if domains is None or domain in domains:
             first.setdefault(domain, problem)
+
     tasks = []
     for domain, problem in first.items():
         path = track.benchmarks_dir / domain / problem
         tasks.append((domain, find_domain(path), path))
+
     return tasks
 
 
 def _compare(reference, domain_name, domain, problem):
     before = _describe(reference, domain, problem)
     after = _describe(PROJECT_ROOT, domain, problem)
+
     if "timeout" in (before, after):
         return domain_name, ("timed out", None)
     if "rejected" in before and "rejected" in after:
@@ -121,12 +126,14 @@ def _describe(checkout, domain, problem):
     """How the code in that checkout abstracts one problem."""
     command = [sys.executable, "-c", DESCRIBE, str(domain), str(problem)]
     environment = {"PYTHONPATH": str(checkout), "PATH": ""}
+
     try:
         completed = subprocess.run(
             command, cwd=checkout, env=environment, capture_output=True, text=True, timeout=TIMEOUT
         )
     except subprocess.TimeoutExpired:
         return "timeout"
+
     lines = completed.stdout.strip().splitlines()
     if completed.returncode != 0 or not lines:
         return {"rejected": completed.stderr.strip().splitlines()[-1:]}

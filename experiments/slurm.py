@@ -9,8 +9,10 @@ def submit(directory, names, task_command, job_name, partition, memory, minutes)
     """Write the problem names and submit one array task per name, which task_command reads by its index."""
     directory.mkdir(parents=True, exist_ok=True)
     (directory / "tasks.txt").write_text("".join(f"{name}\n" for name in names), encoding="utf-8")
+
     if not names:
         return
+
     command = [
         "sbatch",
         f"--array=0-{len(names) - 1}",
@@ -30,9 +32,11 @@ def run_task(directory, index, find_outcome):
     name = (directory / "tasks.txt").read_text(encoding="utf-8").splitlines()[index]
     # Named after the problem, not the index, since a later submit renumbers the tasks.
     result = directory / "outcomes" / f"{name}.tsv"
+
     # Slurm requeues tasks, sometimes after they finished, and the outcome stands.
     if result.is_file():
         return
+
     outcome = find_outcome(name)
     result.parent.mkdir(parents=True, exist_ok=True)
     result.write_text(f"{name}\t{outcome}\n", encoding="utf-8")
@@ -44,4 +48,5 @@ def outcomes(directory):
     for result in sorted((directory / "outcomes").rglob("*.tsv")):
         name, _, outcome = result.read_text(encoding="utf-8").strip().partition("\t")
         found[name] = outcome
+
     return found

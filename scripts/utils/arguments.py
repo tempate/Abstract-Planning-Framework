@@ -2,7 +2,7 @@
 
 import argparse
 
-from core.planning.config import ABSTRACTION_SOURCES, SYMMETRIES, AbstractPlanningConfig, PlanningConfig
+from core.utilities.config import ABSTRACTION_SOURCES, SYMMETRIES, AbstractPlanningConfig, PlanningConfig
 
 
 def positive_int(value):

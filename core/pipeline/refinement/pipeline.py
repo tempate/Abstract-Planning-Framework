@@ -3,16 +3,16 @@
 import os
 from dataclasses import dataclass, replace
 
-from core.abstraction.factory import Abstraction
-from core.abstraction.relaxation import SPLIT_SEPARATOR
-from core.integrations.clingo import plan_length
+from core.pipeline.abstraction.factory import Abstraction
+from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
+from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import partial_pddl_to_sas, pddl_to_sas
 from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
 from core.integrations.plasp import sas_to_asp
-from core.metrics import PlanningMetrics
-from core.outcomes import IntegrationError, UnsolvableTaskError
-from core.planning.config import AbstractPlanningConfig
-from core.refinement.encoding import (
+from core.utilities.metrics import PlanningMetrics
+from core.utilities.outcomes import IntegrationError, UnsolvableTaskError
+from core.utilities.config import AbstractPlanningConfig
+from core.pipeline.refinement.encoding import (
     add_concrete_objects,
     add_switches,
     concrete_groundings,
@@ -20,7 +20,7 @@ from core.refinement.encoding import (
     map_abstract_actions,
     switches,
 )
-from core.search.incremental import IncrementalSolver
+from core.asp.solver import Solver
 
 
 @dataclass
@@ -29,7 +29,6 @@ class RefinementContext:
 
     config: AbstractPlanningConfig
     abstraction: Abstraction
-    run_id: str
     metrics: PlanningMetrics
     base_dir: str
     # Written name to original, for what the writer renamed in the abstract task.
@@ -39,16 +38,14 @@ class RefinementContext:
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Ground the concrete task, then use an abstract plan to guide its search."""
     abstract_plan = _with_original_names(abstract_plan, context.renamings)
-    plan = _solve_concrete_plan(context, abstract_plan, abstract_horizon)
-    if plan is not None:
-        context.metrics.set_counter("plan_length", plan_length(plan))
 
-    return {
-        "configuration": context.config.as_dict(),
-        "plan": plan,
-        "success": plan is not None,
-        "run_id": context.run_id,
-    }
+    atoms = _solve_concrete_plan(context, abstract_plan, abstract_horizon)
+    if atoms is None:
+        return None
+
+    plan = parse_plan_actions(atoms)
+    context.metrics.set_counter("plan_length", len(plan))
+    return plan
 
 
 def _with_original_names(abstract_plan, renamings):
@@ -66,6 +63,7 @@ def _with_original_names(abstract_plan, renamings):
 def _concrete_asp(context):
     """Ground the concrete task and translate it into the ASP program the refinement searches."""
     config = context.config
+
     with context.metrics.measure("concrete_fd"):
         concrete_dir = os.path.join(context.base_dir, "concrete")
         concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
@@ -92,13 +90,16 @@ def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
         context.metrics.set_counters(counters)
 
     record_attempt(0, 0, 0)
+
     if os.path.exists(PARTIAL_GROUNDING_TRANSLATOR):
         plan = _partial_one_shot(context, abstract_plan, abstract_horizon)
         if plan is not None:
             return plan
+
         asp = _concrete_asp(context)
     else:
         asp = _concrete_asp(context)
+
         with context.metrics.measure("guided_concrete_solving"):
             plan = _one_shot(context, asp, abstract_plan, abstract_horizon)
         if plan is not None:
@@ -106,6 +107,7 @@ def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
 
     with context.metrics.measure("guided_concrete_solving"):
         solver = _fallback_solver(context, asp, abstract_plan, abstract_horizon)
+
         # Clingo holds its own copy of the program, so the text would only take memory from the search.
         del asp
         return _fallback(context, solver, abstract_plan, record_attempt)
@@ -115,11 +117,13 @@ def _partial_one_shot(context, abstract_plan, abstract_horizon):
     """The one-shot on a task grounded with only the actions the abstract plan may refine into."""
     partial_dir = os.path.join(context.base_dir, "partial")
     os.makedirs(partial_dir, exist_ok=True)
+
     actions_path = os.path.join(partial_dir, "actions.txt")
     with open(actions_path, "w", encoding="utf-8") as actions_file:
         actions_file.write("\n".join(concrete_groundings(abstract_plan, context.abstraction)) + "\n")
 
     config = context.config
+
     try:
         with context.metrics.measure("partial_fd"):
             partial_sas = partial_pddl_to_sas(partial_dir, config.domain_path, config.problem_path, actions_path)
@@ -144,7 +148,8 @@ def _one_shot(context, asp, abstract_plan, abstract_horizon):
     """Refine the abstract plan as it is, in one solve at its horizon."""
     choices = map_abstract_actions(abstract_plan, context.abstraction, gaps=False)
     rules = [drop_action_choice(asp.rules), *add_concrete_objects(context.abstraction), *choices.values()]
-    solver = IncrementalSolver(
+
+    solver = Solver(
         asp=replace(asp, rules="\n".join(rules)), init_horizon=abstract_horizon, optimize=context.config.optimize
     )
     return solver.solve()
@@ -160,9 +165,7 @@ def _fallback_solver(context, asp, abstract_plan, abstract_horizon):
 
     choices = map_abstract_actions(abstract_plan, context.abstraction, gaps)
     rules = [asp.rules, *add_concrete_objects(context.abstraction), *add_switches(choices)]
-    return IncrementalSolver(
-        asp=replace(asp, rules="\n".join(rules)), init_horizon=init_horizon, optimize=context.config.optimize
-    )
+    return Solver(asp=replace(asp, rules="\n".join(rules)), init_horizon=init_horizon, optimize=context.config.optimize)
 
 
 def _fallback(context, solver, abstract_plan, record_attempt):

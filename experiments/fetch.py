@@ -16,25 +16,30 @@ def main():
     remote_dir = args.remote_dir or default_remote_dir(current_branch())
     name = run_name(args.host, remote_dir)
     pending = queued_jobs(args.host, name)
+
     if pending and not args.force:
         whose = name or "this user"
         print(f"{pending} job(s) of {whose} still on the queue; the run is unfinished. Pass --force to pull anyway.")
         return
+
     # A fresh directory each time, since rsync merges into whatever a previous
     # pull left there and collect would read that too.
     into = args.into or tempfile.mkdtemp(prefix="apf-results-")
     _pull(args.host, remote_dir, into, args.dry_run)
     if args.dry_run:
         return
+
     # A manifest written before it recorded the commit leaves only the remote checkout to ask.
     commit = _manifest_commit(into) or remote_head(args.host, remote_dir)
     print(f"The run was produced by {commit[:9]} on {args.host}, pulled into {into}")
+
     if not _checkout_holds(commit) and not args.force:
         print(
             f"This checkout differs from {commit[:9]} in more than results, so it does not hold the code "
             "that produced them. Check out that commit, or pass --force."
         )
         return
+
     collect(into, args.csv)
 
 
@@ -70,6 +75,7 @@ def _checkout_holds(commit):
     if completed.returncode != 0:
         # A commit this clone does not have.
         return False
+
     return all(Path(name).name in RESULT_FILES for name in completed.stdout.splitlines())
 
 
@@ -79,6 +85,7 @@ def _pull(host, remote_dir, into, dry_run):
         command.append("--dry-run")
     command.append(f"{host}:{remote_dir}")
     command.append(f"{into}/")
+
     subprocess.run(command, check=True)
 
 

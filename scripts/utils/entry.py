@@ -3,14 +3,15 @@
 import sys
 import traceback
 
-from core.abstraction.collapse import AbstractionError
+from core.pipeline.abstraction.collapse import AbstractionError
 from core.integrations.unified_planning import PddlError
-from core.outcomes import PlanningOutcomeError
+from core.utilities.outcomes import PlanningOutcomeError
 
 
 def run(parser, compute, report):
     """Parse the arguments and compute, returning the exit code the benchmark runner reads the outcome from."""
     args = parser.parse_args()
+
     try:
         print("Starting")
         result = compute(args)
@@ -24,4 +25,5 @@ def run(parser, compute, report):
         print(f"Error: {error!r}")
         traceback.print_exc(file=sys.stdout)
         return PlanningOutcomeError.exit_code
+
     return report(result)

@@ -36,15 +36,18 @@ def validate_supported_problem(problem):
         (kind.has_oversubscription(), "oversubscription metrics"),
         (kind.has_temporal_oversubscription(), "temporal oversubscription metrics"),
     )
+
     for present, label in checks:
         if present:
             raise AbstractionError(f"Unsupported PDDL feature: {label}")
+
     if len(problem.quality_metrics) > 1:
         raise AbstractionError("Unsupported PDDL feature: multiple quality metrics")
     if problem.quality_metrics and not isinstance(
         problem.quality_metrics[0], (MinimizeActionCosts, MinimizeExpressionOnFinalState, MinimizeSequentialPlanLength)
     ):
         raise AbstractionError(f"Unsupported quality metric: {type(problem.quality_metrics[0]).__name__}")
+
     if any(not isinstance(action, InstantaneousAction) for action in problem.actions):
         raise AbstractionError("Unsupported PDDL feature: non-instantaneous actions")
 
@@ -56,6 +59,7 @@ def collapse_objects(problem, abstraction, relaxable_deletes):
     collapsed_problem = Problem(
         problem.name, environment=problem.environment, initial_defaults=problem.initial_defaults
     )
+
     abstract_object = Object(abstraction.name, objects_to_collapse[0].type, problem.environment)
     object_substitutions = {item: abstract_object for item in objects_to_collapse}
 
@@ -64,6 +68,7 @@ def collapse_objects(problem, abstraction, relaxable_deletes):
 
     for fluent in problem.fluents:
         collapsed_problem.add_fluent(fluent, default_initial_value=problem.fluents_defaults.get(fluent))
+
     for item in problem.all_objects:
         if item not in objects_to_collapse:
             collapsed_problem.add_object(item)
@@ -73,6 +78,7 @@ def collapse_objects(problem, abstraction, relaxable_deletes):
     _copy_initial_values(problem, collapsed_problem, rewrite)
     _copy_goals_and_constraints(problem, collapsed_problem, rewrite)
     _copy_quality_metric(problem, collapsed_problem)
+
     return collapsed_problem, relaxed_deletes
 
 
@@ -81,11 +87,13 @@ def _copy_actions(problem, collapsed_problem, rewrite, deletes_to_relax):
     for action in problem.actions:
         collapsed_action, action_relaxed_deletes = _copy_action(action, rewrite, deletes_to_relax)
         relaxed_deletes.extend(action_relaxed_deletes)
+
         # An action with no effect left changes nothing, and the writer gives it
         # no :effect, which Fast Downward's parser rejects.
         if not collapsed_action.effects:
             continue
         collapsed_problem.add_action(collapsed_action)
+
     return tuple(relaxed_deletes)
 
 
@@ -106,6 +114,7 @@ def _copy_action(action, rewrite, deletes_to_relax):
         value = rewrite(effect.value)
         condition = rewrite(effect.condition)
         add_effect_like(collapsed_action, effect, fluent, value, condition)
+
     return collapsed_action, relaxed_deletes
 
 
@@ -113,10 +122,12 @@ def _copy_initial_values(problem, collapsed_problem, rewrite):
     # A number nothing reads, such as what priced an action before the costs
     # were dropped, cannot change a plan, and two objects rarely agree on it.
     unread = {fluent for fluent in problem.get_unused_fluents() if not fluent.type.is_bool_type()}
+
     collapsed_initial_values = {}
     for fluent, value in problem.explicit_initial_values.items():
         if fluent.fluent() in unread:
             continue
+
         collapsed_fluent = rewrite(fluent)
         collapsed_value = rewrite(value)
         existing_value = collapsed_initial_values.get(collapsed_fluent)
@@ -130,6 +141,7 @@ def _copy_initial_values(problem, collapsed_problem, rewrite):
             # so this is the common case, not an edge.
             collapsed_value = problem.environment.expression_manager.TRUE()
         collapsed_initial_values[collapsed_fluent] = collapsed_value
+
     for fluent, value in collapsed_initial_values.items():
         collapsed_problem.set_initial_value(fluent, value)
 
@@ -141,6 +153,7 @@ def _copy_goals_and_constraints(problem, collapsed_problem, rewrite):
         if collapsed_goal not in collapsed_goals:
             collapsed_problem.add_goal(collapsed_goal)
             collapsed_goals.add(collapsed_goal)
+
     for constraint in problem.trajectory_constraints:
         collapsed_problem.add_trajectory_constraint(rewrite(constraint))
 

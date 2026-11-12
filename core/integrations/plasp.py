@@ -3,10 +3,9 @@
 import os
 import subprocess
 
-from core.encodings.rules import make_steps_optional
 from core.integrations.paths import PLASP_BIN, SEQUENTIAL_ENCODING
-from core.outcomes import IntegrationError
-from core.encodings.program import AspProgram
+from core.utilities.outcomes import IntegrationError
+from core.asp.program import AspProgram, make_steps_optional
 
 
 def sas_to_asp(sas_path, optimize=True):
@@ -27,9 +26,9 @@ def _translate(sas_path):
         raise FileNotFoundError(f"plasp binary not found: {PLASP_BIN}; run `python -m scripts.setup`")
 
     command = [PLASP_BIN, "translate", sas_path]
-    completed_process = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    completed = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-    if completed_process.returncode != 0:
-        raise IntegrationError(f"plasp failed:\n{completed_process.stderr}")
+    if completed.returncode != 0:
+        raise IntegrationError(f"plasp failed:\n{completed.stderr}")
 
-    return completed_process.stdout
+    return completed.stdout

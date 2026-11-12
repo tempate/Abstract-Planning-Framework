@@ -54,14 +54,17 @@ def main():
             "squeue -u \"$USER\" -h -r -o '%j|%T'; echo ---; "
             f'sacct -u "$USER" -S now-{args.days}days -X -n -P -o JobName,State,ExitCode,WorkDir'
         )
+
         completed = ssh(args.host, command, check=True)
         queue, accounting = completed.stdout.split("---\n", 1)
         _report_runs(summarize_runs(queue, accounting))
         return
+
     remote_dir = args.remote_dir or default_remote_dir(current_branch())
     name = run_name(args.host, remote_dir)
     pending = queued_jobs(args.host, name)
     running = queued_jobs(args.host, name, states="RUNNING")
+
     summary = _remote_summary(args.host, remote_dir)
     _report(name or remote_dir, pending, running, summary)
 
@@ -90,9 +93,11 @@ def _report(run, pending, running, summary):
     counts = summary["counts"]
     written = sum(counts.values())
     expected = summary["expected"]
+
     print(f"{run}: {pending} job(s) on the queue, {written} of {expected or '?'} results written")
     for status, count in sorted(counts.items(), key=lambda item: (-item[1], item[0])):
         print(f"  {status:<24} {count}")
+
     # A job writes its result only once it starts, so a result still saying
     # running with no running job behind it belongs to a job killed before it
     # could write the outcome. A queued job has no result yet to compare.
@@ -105,10 +110,12 @@ def summarize_runs(queue, accounting):
     """Each run's checkout and its jobs by state, from squeue's and sacct's output."""
     checkouts = {}
     counts = defaultdict(Counter)
+
     for line in queue.splitlines():
         name, state = line.split("|")
         if state in ("PENDING", "RUNNING"):
             counts[name][state.lower()] += 1
+
     for line in accounting.splitlines():
         name, state, exit_code, workdir = line.split("|")
         match = re.search(r"/apf/([^/]+)/runs", workdir)
@@ -121,6 +128,7 @@ def summarize_runs(queue, accounting):
             counts[name]["skipped"] += 1
         elif state in ENDED:
             counts[name][ENDED[state]] += 1
+
     return {name: (checkouts.get(name, "?"), counts[name]) for name in sorted(counts, reverse=True)}
 
 

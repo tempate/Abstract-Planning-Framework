@@ -51,11 +51,13 @@ class Track:
         """How many classes each problem can collapse, as classes.txt lists them, or None without one."""
         if not self.classes_file.is_file():
             return None
+
         counts = Counter()
         for line in self.classes_file.read_text(encoding="utf-8").splitlines():
             if line.strip() and not line.startswith("#"):
                 domain, _, problem = line.split("\t")[0].rpartition("/")
                 counts[(domain, problem)] += 1
+
         return counts
 
     def runnable(self):
@@ -66,6 +68,7 @@ class Track:
             if line and not line.startswith("#"):
                 domain, _, problem = line.rpartition("/")
                 problems.add((domain, problem))
+
         return frozenset(problems)
 
 
@@ -174,6 +177,7 @@ def find_domain(problem):
         f"domain_{problem.name}",
         f"domain-{problem.name}",
     ]
+
     if "prob" in problem.stem:
         # unsolve-ipc-2016 names the pair after each other: probNN.pddl with
         # domNN.pddl, and likewise satprobNN and unknownprobNN. Guarded, or a
@@ -183,8 +187,10 @@ def find_domain(problem):
         # probNN with a single symbol changed, so it belongs to the same domNN.
         # Last, or diagnosis and cave-diving would take domNN over their satdomNN.
         candidates.append(f"dom{problem.stem.partition('prob')[2]}{problem.suffix}")
+
     for name in candidates:
         domain = problem.parent / name
         if domain.is_file():
             return domain
+
     raise FileNotFoundError(f"No domain file found for {problem}")

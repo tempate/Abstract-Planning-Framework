@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 from core.integrations.paths import MS_UNSAT_PREPROCESSOR, MS_UNSAT_SEARCH, MS_UNSAT_TRANSLATOR
-from core.outcomes import tool_failure
+from core.utilities.outcomes import tool_failure
 
 # MS-unsat's exit codes, from utilities.h of its Fast Downward.
 _SUCCESS = 0
@@ -26,24 +26,22 @@ def has_plan(base_dir, domain_path, problem_path, label):
     """Translate, preprocess and search one PDDL task, reporting only whether it has a plan."""
     os.makedirs(base_dir, exist_ok=True)
 
-    command = [sys.executable, MS_UNSAT_TRANSLATOR, os.path.abspath(domain_path), os.path.abspath(problem_path)]
-    out = _run(command, base_dir)
-    if out.returncode != _SUCCESS:
-        raise tool_failure(f"MS-unsat ({label})", out, _OUT_OF_MEMORY)
+    translate = [sys.executable, MS_UNSAT_TRANSLATOR, os.path.abspath(domain_path), os.path.abspath(problem_path)]
+    _run(translate, base_dir, os.devnull, label)
 
-    out = _run([MS_UNSAT_PREPROCESSOR], base_dir, stdin="output.sas")
-    if out.returncode != _SUCCESS:
-        raise tool_failure(f"MS-unsat ({label})", out, _OUT_OF_MEMORY)
+    _run([MS_UNSAT_PREPROCESSOR], base_dir, os.path.join(base_dir, "output.sas"), label)
 
-    out = _run([MS_UNSAT_SEARCH, *_SEARCH_OPTIONS], base_dir, stdin="output")
-    if out.returncode == _SEARCH_UNSOLVABLE:
-        return False
-    elif out.returncode != _SUCCESS:
-        raise tool_failure(f"MS-unsat ({label})", out, _OUT_OF_MEMORY)
-
-    return True
+    search = [MS_UNSAT_SEARCH, *_SEARCH_OPTIONS]
+    completed = _run(search, base_dir, os.path.join(base_dir, "output"), label, accepted=(_SEARCH_UNSOLVABLE,))
+    return completed.returncode != _SEARCH_UNSOLVABLE
 
 
-def _run(command, base_dir, stdin=os.devnull):
-    with open(os.path.join(base_dir, stdin), encoding="utf-8") as stdin_file:
-        return subprocess.run(command, cwd=base_dir, stdin=stdin_file, capture_output=True, text=True)
+def _run(command, base_dir, stdin_path, label, accepted=()):
+    """Run one stage of MS-unsat, raising unless it succeeds or ends with an accepted exit code."""
+    with open(stdin_path, encoding="utf-8") as stdin_file:
+        completed = subprocess.run(command, cwd=base_dir, stdin=stdin_file, capture_output=True, text=True)
+
+    if completed.returncode != _SUCCESS and completed.returncode not in accepted:
+        raise tool_failure(f"MS-unsat ({label})", completed, _OUT_OF_MEMORY)
+
+    return completed

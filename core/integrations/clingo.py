@@ -2,8 +2,8 @@
 
 import clingo
 
-from core.outcomes import IntegrationError
-from core.plan import PlanAction
+from core.utilities.outcomes import IntegrationError
+from core.utilities.plan import PlanAction
 
 
 def parse_plan_actions(atoms):
@@ -15,11 +15,6 @@ def parse_plan_actions(atoms):
             actions.append(action)
 
     return tuple(sorted(actions, key=lambda action: action.time_step))
-
-
-def plan_length(atoms):
-    """Count the actions in a plan, which gaps leave below the horizon."""
-    return len(parse_plan_actions(atoms))
 
 
 def _plan_action(symbol):
@@ -35,6 +30,7 @@ def _plan_action(symbol):
     fields = _action_fields(action.arguments[0]) if _is_function(action, "action", 1) else None
     if fields is None or time_step.type != clingo.SymbolType.Number:
         raise IntegrationError(f"Clingo returned a plan step this parser cannot read: {symbol}")
+
     return PlanAction(fields[0], fields[1:], time_step.number)
 
 
@@ -50,6 +46,7 @@ def _action_fields(payload):
         if item.type != clingo.SymbolType.String:
             return None
         fields.append(item.string)
+
     return tuple(fields)
 
 

@@ -22,8 +22,8 @@ from unified_planning.shortcuts import (
 )
 
 from core.integrations.unified_planning import parse_problem, write_problem
-from core.abstraction.factory import AbstractionError, build_abstract_problem
-from core.planning.config import AbstractPlanningConfig
+from core.pipeline.abstraction.factory import AbstractionError, build_abstract_problem
+from core.utilities.config import AbstractPlanningConfig
 
 ABSTRACTION_DOMAIN = """
 (define (domain inventory)
@@ -109,7 +109,7 @@ def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
     config = AbstractPlanningConfig(
         "domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract, abstract_name=abstract_name
     )
-    with patch("core.abstraction.factory.read_problem", return_value=problem):
+    with patch("core.pipeline.abstraction.factory.read_problem", return_value=problem):
         return build_abstract_problem(config)
 
 

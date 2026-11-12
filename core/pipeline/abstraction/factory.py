@@ -1,4 +1,4 @@
-"""Build planning abstractions from PDDL Symmetries classes."""
+"""Build planning abstractions from the object classes PDDL Symmetries or resource detection finds."""
 
 import tempfile
 from dataclasses import dataclass
@@ -6,8 +6,8 @@ from pathlib import Path
 
 from unified_planning.model import Problem
 
-from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
-from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities, split_actions
+from core.pipeline.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
+from core.pipeline.abstraction.relaxation import find_relaxable_deletes, relax_inequalities, split_actions
 from core.integrations.numeric_fast_downward import detect_resources
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import (
@@ -17,9 +17,9 @@ from core.integrations.unified_planning import (
     without_action_costs,
     write_problem,
 )
-from core.metrics import PlanningMetrics
-from core.outcomes import NoResourcesError, NoSymmetriesError
-from core.planning.config import RESOURCES, AbstractPlanningConfig
+from core.utilities.metrics import PlanningMetrics
+from core.utilities.outcomes import NoResourcesError, NoSymmetriesError
+from core.utilities.config import RESOURCES, AbstractPlanningConfig
 
 __all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "NoSymmetriesError", "build_abstract_problem"]
 
@@ -42,6 +42,7 @@ class AbstractionResult:
 def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
     """Read one concrete task, select an object class, and abstract it."""
     metrics = metrics or PlanningMetrics()
+
     with metrics.measure("problem_reading"):
         problem = read_problem(config.domain_path, config.problem_path)
 
@@ -53,15 +54,9 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     # collapse, which would otherwise merge the values that price actions.
     problem = without_action_costs(problem)
 
-    if config.objects_to_abstract is None:
-        candidate_classes = _candidate_classes(config, metrics)
+    abstraction = _choose_abstraction(problem, config, metrics)
 
     with metrics.measure("abstraction"):
-        if config.objects_to_abstract is None:
-            abstraction = _select_abstraction(problem, candidate_classes, config.abstract_name, config.class_rank)
-        else:
-            abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
-
         # The class has to be chosen before the inequalities can be relaxed,
         # and they have to be relaxed before the collapse makes them false.
         # Split before relaxing any delete, so that the relaxation sees which
@@ -81,6 +76,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     with metrics.measure("abstraction"):
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
+
     return AbstractionResult(
         abstraction=abstraction,
         problem=collapsed_problem,
@@ -89,15 +85,27 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     )
 
 
+def _choose_abstraction(problem, config, metrics):
+    """The class the config names, or else the candidate at the config's rank."""
+    if config.objects_to_abstract is not None:
+        with metrics.measure("abstraction"):
+            return _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
+
+    candidate_classes = _candidate_classes(config, metrics)
+    with metrics.measure("abstraction"):
+        return _select_abstraction(problem, candidate_classes, config.abstract_name, config.class_rank)
+
+
 def _candidate_classes(config, metrics):
     """Find the object classes this run may collapse, from the source it was given."""
     if config.abstraction_source == RESOURCES:
         with metrics.measure("resource_detection"):
             with tempfile.TemporaryDirectory(prefix="apf-resources-") as directory:
-                detection = detect_resources(directory, config.domain_path, config.problem_path)
-        if not detection.resources:
+                resources = detect_resources(directory, config.domain_path, config.problem_path)
+
+        if not resources:
             raise NoResourcesError("Resource detection found no abstractable object classes")
-        return [resource.objects for resource in detection.resources]
+        return [resource.objects for resource in resources]
 
     with metrics.measure("symmetry_discovery"):
         symmetry_classes = find_symmetric_object_sets(
@@ -106,12 +114,13 @@ def _candidate_classes(config, metrics):
             config.symmetry_time_limit,
             before_grounding=config.symmetries_before_grounding,
         )
+
     if not symmetry_classes:
         raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")
     return symmetry_classes
 
 
-def _select_abstraction(problem, symmetry_classes, abstract_name=None, rank=0):
+def _select_abstraction(problem, candidate_classes, abstract_name=None, rank=0):
     """Select the candidate class at this rank, largest first.
 
     Collapsing more objects is what lowers the abstract horizon, so size alone decides.
@@ -121,11 +130,11 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None, rank=0):
 
     # PDDL Symmetries prints its classes in a varying order, so sort them by name
     # first. Two resources can share their objects, so drop repeated classes.
-    ordered_classes = sorted({tuple(sorted(symmetry_class)) for symmetry_class in symmetry_classes})
+    ordered_classes = sorted({tuple(sorted(candidate_class)) for candidate_class in candidate_classes})
 
-    for symmetry_class in ordered_classes:
+    for candidate_class in ordered_classes:
         try:
-            abstractions.append(_create_abstraction(problem, symmetry_class, abstract_name))
+            abstractions.append(_create_abstraction(problem, candidate_class, abstract_name))
         except AbstractionError as error:
             # One unusable class does not make the others unusable, so keep the
             # reason for the case where none of them works.
@@ -143,13 +152,15 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None, rank=0):
 def _create_abstraction(problem, object_names, abstract_name):
     objects_by_name = {item.name.casefold(): item for item in problem.all_objects}
 
-    object_names = _normalize_object_names(object_names)
+    # Lowercase, without repeats, and in order.
+    object_names = sorted({str(name).casefold() for name in object_names})
     if len(object_names) < 2:
         raise AbstractionError("At least two distinct objects must be selected")
 
     unknown_names = [name for name in object_names if name not in objects_by_name]
     if unknown_names:
         raise AbstractionError(f"Unknown problem objects: {', '.join(unknown_names)}")
+
     objects_to_collapse = tuple(objects_by_name[name] for name in object_names)
 
     if len({item.type for item in objects_to_collapse}) != 1:
@@ -158,16 +169,10 @@ def _create_abstraction(problem, object_names, abstract_name):
     if abstract_name is None:
         abstract_name = f"{objects_to_collapse[0].type.name}_abs"
 
-    reserved_names = set()
-    for item in problem.actions:
-        reserved_names.add(item.name.casefold())
-    for item in problem.fluents:
-        reserved_names.add(item.name.casefold())
-    for item in problem.user_types:
-        reserved_names.add(item.name.casefold())
-    for item in problem.all_objects:
-        if item not in objects_to_collapse:
-            reserved_names.add(item.name.casefold())
+    # The abstract object cannot share a name with anything the task keeps.
+    reserved_names = {item.name.casefold() for item in (*problem.actions, *problem.fluents, *problem.user_types)}
+    reserved_names |= {item.name.casefold() for item in problem.all_objects if item not in objects_to_collapse}
+
     if abstract_name.casefold() in reserved_names:
         raise AbstractionError(f"Abstract object name is already used: {abstract_name}")
 
@@ -176,11 +181,6 @@ def _create_abstraction(problem, object_names, abstract_name):
         objects=tuple(item.name for item in objects_to_collapse),
         object_type=objects_to_collapse[0].type.name,
     )
-
-
-def _normalize_object_names(object_names):
-    """Normalize object names to lowercase, remove duplicates, and order them."""
-    return sorted({str(name).casefold() for name in object_names})
 
 
 def report_abstraction(abstract_problem, metrics):
@@ -198,6 +198,7 @@ def report_abstraction(abstract_problem, metrics):
             "relaxed_inequalities": len(abstract_problem.relaxed_inequalities),
         }
     )
+
     print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
 
 

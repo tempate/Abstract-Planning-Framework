@@ -8,7 +8,7 @@ import sys
 from dataclasses import dataclass
 
 from core.integrations.paths import NUMERIC_FAST_DOWNWARD_BIN, NUMERIC_FAST_DOWNWARD_SCRIPT
-from core.outcomes import IntegrationError, ResourceTimeoutError
+from core.utilities.outcomes import IntegrationError, ResourceTimeoutError
 
 BUILD = "release64"
 DETECTION_SEARCH = "resource_detection()"
@@ -30,13 +30,6 @@ class ResourceVariable:
     objects: tuple[str, ...]
 
 
-@dataclass(frozen=True)
-class ResourceDetection:
-    """The resource variables of one task."""
-
-    resources: tuple[ResourceVariable, ...]
-
-
 def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME_LIMIT):
     """Return the resource variables of one PDDL task, widest first, and the objects it grounds."""
     if not os.path.exists(NUMERIC_FAST_DOWNWARD_BIN):
@@ -46,6 +39,7 @@ def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME
         )
 
     os.makedirs(base_dir, exist_ok=True)
+
     # The engine writes output.sas and four PDDL files under fixed names in the
     # working directory, so it gets a directory of its own -- which is why the
     # task has to be named absolutely, the caller's relative paths being
@@ -68,10 +62,11 @@ def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME
     )
     try:
         stdout, stderr = process.communicate(timeout=timeout)
-    except BaseException as error:
+    except subprocess.TimeoutExpired as error:
         _kill_process_group(process)
-        if isinstance(error, subprocess.TimeoutExpired):
-            raise ResourceTimeoutError(f"Resource detection timed out after {timeout}s") from error
+        raise ResourceTimeoutError(f"Resource detection timed out after {timeout}s") from error
+    except BaseException:
+        _kill_process_group(process)
         raise
 
     if _SUMMARY.search(stdout) is None:
@@ -79,8 +74,7 @@ def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME
         raise IntegrationError(f"Resource detection reported nothing:\n{diagnostics}")
 
     sas_path = os.path.join(base_dir, "output.sas")
-    resources = parse_resources(stdout, read_sas_variables(sas_path))
-    return ResourceDetection(resources)
+    return parse_resources(stdout, read_sas_variables(sas_path))
 
 
 def _kill_process_group(process):
@@ -115,10 +109,12 @@ def read_sas_variables(sas_path):
         if lines[index] != "begin_variable":
             index += 1
             continue
+
         name = lines[index + 1]
         count = int(lines[index + 3])
         variables[name] = tuple(lines[index + 4 : index + 4 + count])
         index += 4 + count
+
     return variables
 
 
@@ -131,7 +127,12 @@ def varying_objects(values):
     whose values mix predicates, or the ``new-axiom@`` variable the translator
     adds, which has no arguments at all -- yields nothing and is dropped.
     """
-    atoms = [fields for fields in (_atom_fields(value) for value in values) if fields is not None]
+    atoms = []
+    for value in values:
+        fields = _atom_fields(value)
+        if fields is not None:
+            atoms.append(fields)
+
     if len(atoms) < 2:
         return ()
 
@@ -145,6 +146,7 @@ def varying_objects(values):
         column = {arguments[position] for _, arguments in atoms}
         if len(column) > 1:
             objects |= column
+
     return tuple(sorted(objects))
 
 

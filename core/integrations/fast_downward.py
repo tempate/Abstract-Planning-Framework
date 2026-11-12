@@ -6,8 +6,8 @@ import sys
 from dataclasses import dataclass
 
 from core.integrations.paths import FAST_DOWNWARD_SCRIPT, PARTIAL_GROUNDING_TRANSLATOR, STRUCTURAL_SYMMETRIES_SCRIPT
-from core.outcomes import UnsolvableTaskError, tool_failure
-from core.plan import PlanAction
+from core.utilities.outcomes import UnsolvableTaskError, tool_failure
+from core.utilities.plan import PlanAction
 
 # Fast Downward's exit codes, documented at
 # https://www.fast-downward.org/latest/documentation/exit-codes/.
@@ -57,6 +57,7 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
         os.fspath(domain_path),
         os.fspath(problem_path),
     ]
+
     _translate(command, label)
     return sas_path
 
@@ -77,21 +78,22 @@ def partial_pddl_to_sas(base_dir, domain_path, problem_path, actions_path):
         "--actions-file",
         os.fspath(actions_path),
     ]
+
     _translate(command, "partial")
     return sas_path
 
 
 def _translate(command, label):
-    completed_process = subprocess.run(command, capture_output=True, text=True)
+    completed = subprocess.run(command, capture_output=True, text=True)
 
-    if completed_process.returncode == _TRANSLATE_UNSOLVABLE or _UNSOLVABLE_MARKER in completed_process.stdout:
+    if completed.returncode == _TRANSLATE_UNSOLVABLE or _UNSOLVABLE_MARKER in completed.stdout:
         raise UnsolvableTaskError(f"Fast Downward ({label}) proved the task unsolvable while translating")
 
-    if completed_process.returncode != _SUCCESS:
-        raise tool_failure(f"Fast Downward ({label})", completed_process, _OUT_OF_MEMORY)
+    if completed.returncode != _SUCCESS:
+        raise tool_failure(f"Fast Downward ({label})", completed, _OUT_OF_MEMORY)
 
 
-def find_plan(base_dir, domain_path, problem_path, label, search):
+def find_pddl_plan(base_dir, domain_path, problem_path, label, search):
     """Translate and search one PDDL task, returning its plan or None."""
     os.makedirs(base_dir, exist_ok=True)
     plan_path = os.path.join(base_dir, f"{label}.plan")
@@ -108,6 +110,7 @@ def find_plan(base_dir, domain_path, problem_path, label, search):
         os.fspath(problem_path),
         *search.options,
     ]
+
     return _find_plan(command, label, plan_path, search.unsolvable_exit_codes)
 
 
@@ -123,26 +126,28 @@ def find_sas_plan(base_dir, sas_path, label, search):
         sas_path,
         *search.options,
     ]
+
     return _find_plan(command, label, plan_path, search.unsolvable_exit_codes)
 
 
 def parse_plan_actions(plan):
-    """Convert the lines of a plan file into chronological plan actions."""
+    """Convert the lines of a plan file into chronological plan actions, from step 1."""
     actions = []
-    for time_step, line in enumerate(plan):
+    for time_step, line in enumerate(plan, 1):
         name, *args = line.strip().strip("()").split()
         action = PlanAction(name=name, args=tuple(args), time_step=time_step)
         actions.append(action)
+
     return tuple(actions)
 
 
 def _find_plan(command, label, plan_path, unsolvable_exit_codes):
-    out = subprocess.run(command, capture_output=True, text=True)
+    completed = subprocess.run(command, capture_output=True, text=True)
 
-    if out.returncode in unsolvable_exit_codes:
+    if completed.returncode in unsolvable_exit_codes:
         return None
-    elif out.returncode != _SUCCESS:
-        raise tool_failure(f"Fast Downward ({label})", out, _OUT_OF_MEMORY)
+    elif completed.returncode != _SUCCESS:
+        raise tool_failure(f"Fast Downward ({label})", completed, _OUT_OF_MEMORY)
 
     return _read_plan(plan_path)
 
@@ -155,4 +160,5 @@ def _read_plan(plan_path):
             line = line.strip()
             if line and not line.startswith(";"):
                 plan.append(line)
+
         return plan

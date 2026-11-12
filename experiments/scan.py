@@ -55,18 +55,18 @@ from core.integrations.pddl_symmetries import find_symmetric_object_sets
 domain, problem, source, before_grounding = sys.argv[1:5]
 if source == "resources":
     with tempfile.TemporaryDirectory() as directory:
-        classes = detect_resources(directory, domain, problem).resources
+        classes = detect_resources(directory, domain, problem)
 else:
     classes = find_symmetric_object_sets(domain, problem, before_grounding=before_grounding == "1")
 print(f"{len(classes)} classes" if classes else "none")
 """
 RANK = """
 import json, sys
-from core.abstraction.collapse import validate_supported_problem
-from core.abstraction.factory import AbstractionError, _candidate_classes, _select_abstraction
+from core.pipeline.abstraction.collapse import validate_supported_problem
+from core.pipeline.abstraction.factory import AbstractionError, _candidate_classes, _select_abstraction
 from core.integrations.unified_planning import read_problem, without_action_costs
-from core.metrics import PlanningMetrics
-from core.planning.config import AbstractPlanningConfig
+from core.utilities.metrics import PlanningMetrics
+from core.utilities.config import AbstractPlanningConfig
 
 domain, problem, source, before_grounding = sys.argv[1:5]
 config = AbstractPlanningConfig(
@@ -90,6 +90,7 @@ def main():
     args = _argument_parser().parse_args()
     track = TRACKS[args.track]
     source = args.track.split("/")[1]
+
     if args.submit:
         _submit(args.track, track, args.domains, args.keep_classes)
         return
@@ -131,8 +132,10 @@ def _submit(track_name, track, domains, keep_classes=False):
         if unknown:
             raise SystemExit(f"Not in this track's suite: {', '.join(unknown)}")
         suite = [domain_name for domain_name in suite if domain_name in domains]
+
     tasks = sorted(_suite_problems(track.benchmarks_dir, suite))
     directory = _task_dir(track_name)
+
     if keep_classes:
         # The kept classes become outcomes, so collecting writes them with the new ones.
         logged = _read_log(track.classes_file.with_suffix(".log"))
@@ -141,7 +144,9 @@ def _submit(track_name, track, domains, keep_classes=False):
             result = directory / "outcomes" / f"{name}.tsv"
             result.parent.mkdir(parents=True, exist_ok=True)
             result.write_text(f"{name}\t{outcome}\n", encoding="utf-8")
+
         tasks = [task for task in tasks if _name(task) not in kept]
+
     slurm.submit(
         directory,
         [_name(task) for task in tasks],
@@ -166,6 +171,7 @@ def _scan_task(track_name, track, index, source, timeout):
 def _collect(track_name, track):
     """Write problems.txt and classes.txt from the outcomes of the submitted tasks."""
     scanned = slurm.outcomes(_task_dir(track_name))
+
     # A problem another track scanned over the same benchmarks has the same classes,
     # so a track whose suite overlaps another's submits only the problems it adds.
     suite = {_name(task) for task in _suite_problems(track.benchmarks_dir, track.suite)}
@@ -180,6 +186,7 @@ def _collect(track_name, track):
     found = {name: "none" if outcome == "[]" else outcome for name, outcome in scanned.items()}
     _write_problems(track.runnable_file, found, track_name)
     _write_classes(track.classes_file, scanned, track_name)
+
     log = "".join(f"{name}\t{outcome}\n" for name, outcome in sorted(scanned.items()))
     track.classes_file.with_suffix(".log").write_text(log, encoding="utf-8")
     print(f"Wrote what {len(scanned)} scanned problems have to {track.runnable_file} and {track.classes_file}")
@@ -200,6 +207,7 @@ def _suite_problems(benchmarks_dir, suite):
 def _read_log(path):
     if not path.is_file():
         return {}
+
     scanned = {}
     for line in path.read_text(encoding="utf-8").splitlines():
         name, _, outcome = line.partition("\t")
@@ -222,6 +230,7 @@ def _scan(benchmarks_dir, domain_name, problem, script, source, before_grounding
     flag = "1" if before_grounding else "0"
     command = [sys.executable, "-c", script, str(find_domain(problem_path)), str(problem_path), source, flag]
     limit_memory = lambda: resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
+
     try:
         completed = subprocess.run(
             command, capture_output=True, text=True, timeout=timeout, preexec_fn=limit_memory, check=False
@@ -235,6 +244,7 @@ def _scan(benchmarks_dir, domain_name, problem, script, source, before_grounding
         else:
             error = completed.stderr.strip().splitlines() or [f"exit code {completed.returncode}"]
             outcome = f"failed: {error[-1]}"
+
     name = _name((domain_name, problem))
     print(f"  {name}: {outcome[:120]}", flush=True)
     return name, outcome
@@ -255,6 +265,7 @@ def _write_classes(path, scanned, track):
             continue
         for rank, (object_type, objects) in enumerate(json.loads(scanned[name])):
             lines.append(f"{name}\t{rank}\t{object_type}\t{len(objects)}\t{' '.join(objects)}\n")
+
     path.write_text(CLASSES_HEADER.format(track=track) + "".join(lines), encoding="utf-8")
 
 

@@ -62,6 +62,7 @@ def _submit(track_name):
         TASK_MEMORY,
         TASK_MINUTES,
     )
+
     print(
         f"Submitted {len(tasks)} problems; collect with python -m experiments.grounding --track {track_name} --collect"
     )
@@ -92,13 +93,17 @@ def _ground(directory, problem):
             str(find_domain(problem_path)),
             str(problem_path),
         ]
+
         completed = subprocess.run(command, capture_output=True, text=True, check=False)
+
     output = completed.stdout + completed.stderr
     if completed.returncode in _GROUNDED:
         return "grounded"
+
     # The driver can crash on its own report of a MemoryError, which leaves exit code 1.
     if completed.returncode == _OUT_OF_MEMORY or "MemoryError" in output:
         return "out of memory"
+
     if completed.returncode == _OUT_OF_TIME:
         return "out of time"
     return f"failed: exit code {completed.returncode}"
@@ -108,8 +113,10 @@ def _collect(track_name):
     """Write the problems that did not ground, from the outcomes of the submitted tasks."""
     outcomes = slurm.outcomes(_task_dir(track_name))
     missing = {f"{domain}/{problem}" for domain, problem in _unsolved(track_name)} - set(outcomes)
+
     if missing:
         raise SystemExit(f"{len(missing)} problems have no outcome yet, such as {sorted(missing)[0]}")
+
     failed = sorted(name for name, outcome in outcomes.items() if outcome != "grounded")
     header = HEADER.format(
         memory=MEMORY_LIMIT.replace("G", " GB"), time=TIME_LIMIT.replace("m", " minutes"), track=track_name
@@ -128,6 +135,7 @@ def _unsolved(track_name):
                 for row in csv.DictReader(results):
                     if not row["mode"].startswith(ABSTRACTION_PREFIX) and row["status"] == "success":
                         solved.add((row["domain"], row["problem"]))
+
     return problems - solved
 
 

@@ -7,14 +7,18 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from core.abstraction.factory import Abstraction, build_abstract_problem
+from core.pipeline.abstraction.factory import Abstraction, build_abstract_problem
 from core.integrations.fast_downward import LAMA
 from core.integrations.unified_planning import read_problem
-from core.outcomes import UnsolvableTaskError
-from core.abstraction.factory import write_abstract_problem
-from core.metrics import PlanningMetrics
-from core.planning import abstraction, asp, fd, ms
-from core.planning.config import AbstractPlanningConfig, PlanningConfig
+from core.utilities.outcomes import UnsolvableTaskError
+from core.pipeline.abstraction.factory import write_abstract_problem
+from core.utilities.metrics import PlanningMetrics
+from core.planners import fd
+from core.planners.asp import Asp
+from core.planners.ms import MsUnsat
+from core.pipeline import pipeline
+from core.utilities.config import AbstractPlanningConfig, PlanningConfig
+from core.utilities.plan import one_action_per_step
 from scripts.utils.arguments import positive_int
 
 
@@ -28,33 +32,32 @@ def _generated_abstraction():
 
 
 class BaselinePlanningOrchestrationTests(unittest.TestCase):
-    @patch("core.planning.fd.find_plan")
-    def test_the_plan_length_is_reported_rather_than_counted_from_the_output(self, find_plan):
-        find_plan.return_value = ["(walk a b)", "(drive b c)"]
+    @patch("core.planners.fd.find_pddl_plan")
+    def test_the_plan_length_is_reported_rather_than_counted_from_the_output(self, find_pddl_plan):
+        find_pddl_plan.return_value = ["(walk a b)", "(drive b c)"]
         config = PlanningConfig("domain.pddl", "problem.pddl")
 
-        result = fd.FastDownward(LAMA).solve(config)
+        result = fd.FastDownward(LAMA, config).solve()
 
         self.assertTrue(result["success"])
         self.assertEqual(result["configuration"], config.as_dict())
         # The plan carries no occurs/2 atoms for the collector to count.
         self.assertEqual(result["metrics"]["counters"]["plan_length"], 2)
 
-    @patch("core.planning.fd.find_sas_plan", return_value=None)
+    @patch("core.planners.fd.find_sas_plan", return_value=None)
     def test_an_abstract_task_without_a_plan_proves_the_concrete_one_unsolvable(self, _find_sas_plan):
-        with self.assertRaises(UnsolvableTaskError):
-            fd.FastDownward(LAMA).find_abstract_plan(
-                PlanningConfig("domain.pddl", "problem.pddl"),
-                "run-dir",
-                "abstract.sas",
-                PlanningMetrics(),
-            )
+        abstraction = SimpleNamespace(abstraction=None)
+        with (
+            patch("core.pipeline.pipeline._abstract", return_value=(abstraction, "abstract.sas", {})),
+            self.assertRaises(UnsolvableTaskError),
+        ):
+            pipeline.solve(AbstractPlanningConfig("domain.pddl", "problem.pddl", planner="lama"))
 
-    @patch("core.planning.fd.find_plan")
-    def test_an_unsolvable_task_is_not_a_plan(self, find_plan):
-        find_plan.return_value = None
+    @patch("core.planners.fd.find_pddl_plan")
+    def test_an_unsolvable_task_is_not_a_plan(self, find_pddl_plan):
+        find_pddl_plan.return_value = None
 
-        result = fd.FastDownward(LAMA).solve(PlanningConfig("domain.pddl", "problem.pddl"))
+        result = fd.FastDownward(LAMA, PlanningConfig("domain.pddl", "problem.pddl")).solve()
 
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
@@ -65,37 +68,37 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
 def _stubbed_decision(found):
     """Run the abstract decision pipeline against stubbed integrations."""
     with (
-        patch("core.planning.abstraction.temp_run_dir") as temp_run_dir,
+        patch("core.utilities.execution.temp_run_dir") as temp_run_dir,
         patch(
-            "core.planning.abstraction.build_abstract_problem", return_value=_generated_abstraction()
+            "core.pipeline.pipeline.build_abstract_problem", return_value=_generated_abstraction()
         ) as build_abstract_problem,
-        patch("core.planning.abstraction.write_abstract_problem", return_value=("domain.pddl", "problem.pddl", {})),
-        patch("core.planning.abstraction.has_plan", return_value=found),
+        patch("core.pipeline.pipeline.write_abstract_problem", return_value=("domain.pddl", "problem.pddl", {})),
+        patch("core.pipeline.pipeline.has_plan", return_value=found),
     ):
         temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
         yield SimpleNamespace(build_abstract_problem=build_abstract_problem)
 
 
 class DecisionTests(unittest.TestCase):
-    @patch("core.planning.ms.has_plan")
+    @patch("core.planners.ms.has_plan")
     def test_searching_the_task_itself_settles_it(self, has_plan):
         for found, verdict in ((True, "solvable"), (False, "unsolvable")):
             with self.subTest(found=found):
                 has_plan.return_value = found
 
-                result = ms.check_solvability(PlanningConfig("domain.pddl", "problem.pddl"))
+                result = MsUnsat(PlanningConfig("domain.pddl", "problem.pddl")).check_solvability()
 
                 self.assertEqual(result["verdict"], verdict)
 
     def test_an_abstract_plan_settles_nothing(self):
         with _stubbed_decision(found=True):
-            result = abstraction.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            result = pipeline.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unknown")
 
     def test_an_abstraction_with_no_plan_proves_the_task_unsolvable(self):
         with _stubbed_decision(found=False):
-            result = abstraction.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            result = pipeline.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unsolvable")
 
@@ -103,7 +106,7 @@ class DecisionTests(unittest.TestCase):
         with _stubbed_decision(found=True) as stubs:
             stubs.build_abstract_problem.side_effect = UnsolvableTaskError("no relaxed solution")
 
-            result = abstraction.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            result = pipeline.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unsolvable")
 
@@ -169,28 +172,25 @@ postcondition(action(("advance", "s3")), effect(unconditional), variable(x), val
 
 
 class AspHorizonSearchTests(unittest.TestCase):
-    def test_exponential_search_finds_a_plan_shorter_than_its_horizon_and_closes_the_empty_steps(self):
+    def test_exponential_search_finds_a_plan_shorter_than_its_horizon(self):
         plasp = subprocess.CompletedProcess([], 0, stdout=COUNTER_TASK, stderr="")
 
         def stop_past_the_plan(_event, metrics):
             # Without empty steps no horizon past 3 holds a plan, and the search would never end.
-            if metrics["counters"].get("abstract_plan_length", 0) > 4:
+            if metrics["counters"].get("abstract_horizon", 0) > 4:
                 raise AssertionError("the search passed the first horizon holding the plan")
 
         with (
             patch("core.integrations.plasp.os.path.exists", return_value=True),
             patch("core.integrations.plasp.subprocess.run", return_value=plasp),
         ):
-            actions, horizon = asp.find_abstract_plan(
-                PlanningConfig("domain.pddl", "problem.pddl"),
-                None,
-                "abstract.sas",
-                PlanningMetrics(on_update=stop_past_the_plan),
+            actions = Asp(PlanningConfig("domain.pddl", "problem.pddl")).plan_sas(
+                "abstract.sas", PlanningMetrics(on_update=stop_past_the_plan).prefixed("abstract_")
             )
 
         self.assertEqual([action.args for action in actions], [("s1",), ("s2",), ("s3",)])
-        self.assertEqual([action.time_step for action in actions], [1, 2, 3])
-        self.assertEqual(horizon, 3)
+        # The steps the doubling horizon left empty close up, one action per step.
+        self.assertEqual([action.time_step for action in one_action_per_step(actions)], [1, 2, 3])
 
 
 if __name__ == "__main__":

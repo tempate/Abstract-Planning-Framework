@@ -9,15 +9,13 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from core.integrations.paths import PDDL_SYMMETRIES_TRANSLATOR
-from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError, tool_failure
+from core.utilities.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError, tool_failure
 
 # The exit code Fast Downward's translator, which PDDL Symmetries extends, gives when memory runs out.
 _TRANSLATE_OUT_OF_MEMORY = 20
 
 
-def find_symmetric_object_sets(
-    domain_path, problem_path, time_limit=300, translator_path=PDDL_SYMMETRIES_TRANSLATOR, before_grounding=False
-):
+def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, before_grounding=False):
     """Run PDDL Symmetries and return its non-trivial object classes.
 
     Before grounding, the classes come from the lifted task alone: a task too large
@@ -25,17 +23,20 @@ def find_symmetric_object_sets(
     """
     if time_limit < 1:
         raise ValueError("PDDL Symmetries time limit must be positive")
-    command = _translator_command(domain_path, problem_path, time_limit, translator_path)
+
+    command = _translator_command(domain_path, problem_path, time_limit)
     if before_grounding:
         command.append("--symmetries-before-grounding")
+
     return _parse_object_sets(_run_translator(command, time_limit))
 
 
-def _translator_command(domain_path, problem_path, time_limit, translator_path):
+def _translator_command(domain_path, problem_path, time_limit):
     """Build the translator invocation, checking that every input exists."""
-    translator = Path(translator_path).resolve()
+    translator = Path(PDDL_SYMMETRIES_TRANSLATOR).resolve()
     if not translator.is_file():
         raise IntegrationError("PDDL Symmetries is not initialized. Run 'git submodule update --init --recursive'.")
+
     domain = Path(domain_path).resolve()
     problem = Path(problem_path).resolve()
     for label, path in (("domain", domain), ("problem", problem)):
@@ -61,7 +62,7 @@ def _run_translator(command, time_limit):
     try:
         with TemporaryDirectory(prefix="pddl-symmetries-") as working_directory:
             # The classes change with the string-hash seed, so a fixed seed makes them repeatable.
-            result = subprocess.run(
+            completed = subprocess.run(
                 command,
                 cwd=working_directory,
                 env={**os.environ, "PYTHONHASHSEED": "0"},
@@ -74,11 +75,12 @@ def _run_translator(command, time_limit):
         raise SymmetryTimeoutError(f"PDDL Symmetries exceeded its {time_limit}-second limit") from error
     except OSError as error:
         raise IntegrationError(f"Could not run PDDL Symmetries: {error}") from error
-    if "No relaxed solution" in result.stdout + result.stderr:
+    if "No relaxed solution" in completed.stdout + completed.stderr:
         raise UnsolvableTaskError("PDDL Symmetries reports that the task has no relaxed solution")
-    if result.returncode != 0:
-        raise tool_failure("PDDL Symmetries", result, (_TRANSLATE_OUT_OF_MEMORY,))
-    return result.stdout
+    if completed.returncode != 0:
+        raise tool_failure("PDDL Symmetries", completed, (_TRANSLATE_OUT_OF_MEMORY,))
+
+    return completed.stdout
 
 
 def _parse_object_sets(stdout):
@@ -86,12 +88,16 @@ def _parse_object_sets(stdout):
     match = re.search(r"^\s*Non-trivial symmetric object sets:\s*(.+)$", stdout, flags=re.MULTILINE)
     if not match:
         raise IntegrationError("PDDL Symmetries did not report symmetric object sets")
+
     try:
         classes = ast.literal_eval(match.group(1))
     except (SyntaxError, ValueError) as error:
         raise IntegrationError("PDDL Symmetries returned malformed object sets") from error
-    if not isinstance(classes, list) or not all(
-        isinstance(group, list) and all(isinstance(item, str) for item in group) for group in classes
-    ):
-        raise IntegrationError("PDDL Symmetries returned an invalid object-set value")
+
+    if not isinstance(classes, list):
+        raise IntegrationError(f"PDDL Symmetries returned object sets that are not a list: {classes!r}")
+    for group in classes:
+        if not isinstance(group, list) or not all(isinstance(item, str) for item in group):
+            raise IntegrationError(f"PDDL Symmetries returned an invalid object set: {group!r}")
+
     return classes

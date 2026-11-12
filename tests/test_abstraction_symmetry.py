@@ -7,11 +7,16 @@ from unittest.mock import patch
 
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
-from core.integrations.numeric_fast_downward import ResourceDetection, ResourceVariable
-from core.outcomes import NoResourcesError
-from core.outcomes import IntegrationError, OutOfMemoryError, SymmetryTimeoutError, UnsolvableTaskError
-from core.planning.config import AbstractPlanningConfig
+from core.pipeline.abstraction.factory import (
+    AbstractionError,
+    NoSymmetriesError,
+    _select_abstraction,
+    build_abstract_problem,
+)
+from core.integrations.numeric_fast_downward import ResourceVariable
+from core.utilities.outcomes import NoResourcesError
+from core.utilities.outcomes import IntegrationError, OutOfMemoryError, SymmetryTimeoutError, UnsolvableTaskError
+from core.utilities.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GRIPPER = PROJECT_ROOT / "experiments" / "benchmarks" / "downward-benchmarks" / "gripper"
@@ -139,8 +144,8 @@ class SymmetrySelectionTests(unittest.TestCase):
             ["vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"],
         ]
         with (
-            patch("core.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.abstraction.factory.find_symmetric_object_sets", return_value=classes),
+            patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
+            patch("core.pipeline.abstraction.factory.find_symmetric_object_sets", return_value=classes),
         ):
             result = build_abstract_problem(
                 AbstractPlanningConfig("domain.pddl", "problem.pddl", abstract_name="pooled-vehicles")
@@ -151,16 +156,16 @@ class SymmetrySelectionTests(unittest.TestCase):
 
     def test_rejects_tasks_without_a_pddl_symmetries_object_class(self):
         with (
-            patch("core.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.abstraction.factory.find_symmetric_object_sets", return_value=[]),
+            patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
+            patch("core.pipeline.abstraction.factory.find_symmetric_object_sets", return_value=[]),
         ):
             with self.assertRaises(NoSymmetriesError):
                 build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
     def test_rejects_tasks_without_a_resource_as_having_no_resources(self):
         with (
-            patch("core.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.abstraction.factory.detect_resources", return_value=ResourceDetection(())),
+            patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
+            patch("core.pipeline.abstraction.factory.detect_resources", return_value=()),
         ):
             with self.assertRaises(NoResourcesError):
                 build_abstract_problem(
@@ -169,10 +174,10 @@ class SymmetrySelectionTests(unittest.TestCase):
 
     def test_a_resource_collapses_only_the_objects_the_detector_names(self):
         # vehicle-c and vehicle-d share the resource's type, but the resource never takes them.
-        detection = ResourceDetection((ResourceVariable("var0", ("vehicle-a", "vehicle-b")),))
+        resources = (ResourceVariable("var0", ("vehicle-a", "vehicle-b")),)
         with (
-            patch("core.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.abstraction.factory.detect_resources", return_value=detection),
+            patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
+            patch("core.pipeline.abstraction.factory.detect_resources", return_value=resources),
         ):
             result = build_abstract_problem(
                 AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source="resources")

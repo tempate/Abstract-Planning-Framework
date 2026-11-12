@@ -1,18 +1,41 @@
-"""Incremental horizon search over an ASP planning program."""
+"""The Clingo control over an ASP planning program, and the incremental horizon search over it."""
 
+from dataclasses import dataclass
 import clingo
 
-from core.search.solver import Solver, SolveResult
+THREADS = 1
 
 
-class IncrementalSolver(Solver):
+@dataclass(frozen=True)
+class SolveResult:
+    plan: list[str]
+    horizon: int
+    attempts: int = 0
+    dropped: int = 0  # assumptions given up before the program became satisfiable
+
+
+class Solver:
     """One Clingo control whose horizon can be raised without regrounding, and whose assumptions can be given up."""
 
     def __init__(self, asp, init_horizon=0, optimize=True):
+        """Create the control, load the program, and ground it up to the initial horizon."""
         if init_horizon < 0:
             raise ValueError("Horizon must be nonnegative")
 
-        super().__init__(asp)
+        self.control = clingo.Control(["-t", str(THREADS), "--warn=none"])
+        self.control.configuration.solve.models = 1
+
+        # Parsing the facts as program text takes about 18 times their size, 3 GB for
+        # 146 MB of blocksworld; one term per fact through the backend takes a sixth of that.
+        with self.control.backend() as backend:
+            for line in asp.facts.splitlines():
+                line = line.strip()
+                if line and not line.startswith("%"):
+                    backend.add_rule([backend.add_atom(clingo.parse_term(line.removesuffix(".")))])
+
+        self.control.add("base", [], asp.rules)
+        self.control.ground([("base", [])])
+
         self.init_horizon = init_horizon
         self.optimize = optimize
 
@@ -21,6 +44,13 @@ class IncrementalSolver(Solver):
 
         self._ground_steps(0, init_horizon)
         self._add_goal()
+
+    def solve(self, assumptions=()):
+        """Return the shown atoms of a model, or None when there is none."""
+        with self.control.solve(yield_=True, assumptions=assumptions) as handle:
+            for model in handle:
+                return [str(atom) for atom in model.symbols(shown=True)]
+        return None
 
     def search(self, symbols=(), on_attempt=None, dropped=0):
         """Assume every symbol but the first `dropped`, give the rest up in the order given, then raise the horizon."""

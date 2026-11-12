@@ -36,6 +36,7 @@ DEFAULT_SOURCE = DEFAULT_TRACK.split("/")[1]
 def main():
     parser = _argument_parser()
     args = parser.parse_args()
+
     if args.retry_missing:
         # Exactly what the earlier run never got back, on its track and with the classes it submitted.
         track_name, missing = _missing_results(args.retry_missing)
@@ -47,10 +48,12 @@ def main():
         modes = args.modes or TRACKS[track_name].modes[:1]
         domains = args.domains
         best = best_classes(TRACKS[track_name].results_file) if args.classes == "best" else None
+
     track = TRACKS[track_name]
     unknown = sorted(set(modes) - set(track.modes))
     if unknown:
         parser.error(f"{track_name} has no mode {', '.join(unknown)}; it runs {', '.join(track.modes)}")
+
     tasks = list(
         _benchmark_tasks(
             benchmarks_dir=track.benchmarks_dir,
@@ -64,19 +67,23 @@ def main():
             best=best,
         )
     )
+
     if missing is not None:
         tasks = _only(tasks, missing)
     if args.skip_manifests:
         tasks = _not_submitted(tasks, args.skip_manifests)
+
     _check_worktree_is_built()
     if not tasks:
         raise SystemExit(
             f"No problems found under {track.benchmarks_dir}. "
             "A worktree made without new-worktree.sh leaves the benchmark submodule empty."
         )
+
     if not args.dry_run:
         _set_aside_results_dir()
         _write_manifest(tasks, track=track_name)
+
     with tempfile.TemporaryDirectory(prefix="apf-copperbench-") as definition_dir:
         config_file = _write_copperbench_config(
             tasks,
@@ -87,9 +94,11 @@ def main():
             partition=args.partition,
             track=track_name,
         )
+
         if args.dry_run:
             _report_run(tasks, config_file, definition_dir)
             return
+
         print(f"Submitting {len(tasks)} cluster jobs (one per mode, benchmark problem and class)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
 
@@ -99,6 +108,7 @@ def _missing_results(results_dir):
     manifest = json.loads((Path(results_dir) / MANIFEST_NAME).read_text(encoding="utf-8"))
     rows = collect(results_dir)
     missing = {(row["domain"], row["problem"], row["mode"], row["class"]) for row in rows if row["status"] == "missing"}
+
     if not missing:
         raise SystemExit(f"{results_dir} holds every result its manifest expected")
     return manifest["track"], missing
@@ -123,6 +133,7 @@ def _not_submitted(tasks, manifests):
     submitted = set()
     for manifest in manifests:
         submitted |= manifest_keys(Path(manifest))
+
     return [task for task in tasks if _task_key(task) not in submitted]
 
 
@@ -138,6 +149,7 @@ def _report_run(tasks, config_file, definition_dir):
     """Print what a submission would send, so a submit-side change can be checked for free."""
     definition_dir = Path(definition_dir)
     instances = (definition_dir / "instances.txt").read_text(encoding="utf-8").splitlines()
+
     print(f"Would submit {len(tasks)} cluster jobs (one per mode, benchmark problem and class)")
     print(config_file.read_text(encoding="utf-8").strip())
     print((definition_dir / "configs.txt").read_text(encoding="utf-8").strip())
@@ -156,6 +168,7 @@ def _check_worktree_is_built(project_root=PROJECT_ROOT):
         relative = path.relative_to(SETUP_ROOT)
         if not (Path(project_root) / relative).exists():
             missing.append(f"  {name} ({relative})")
+
     if missing:
         raise SystemExit("Nothing to run with; this worktree is missing:\n" + "\n".join(missing))
 
@@ -177,6 +190,7 @@ def _set_aside_results_dir(results_dir=RESULTS_DIR):
             print(f"Kept the previous results in {kept}")
         else:
             results_dir.rmdir()
+
     results_dir.mkdir(parents=True)
 
 
@@ -186,6 +200,7 @@ def _write_manifest(tasks, results_dir=RESULTS_DIR, track=DEFAULT_TRACK):
         {"domain": domain_name, "problem": problem.name, "mode": mode, "class": rank}
         for mode, domain_name, _domain, problem, rank in tasks
     ]
+
     manifest = {"version": 1, "track": track, "commit": _head_commit(), "expected_results": expected_results}
     path = Path(results_dir) / MANIFEST_NAME
     path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
@@ -357,6 +372,7 @@ def _benchmark_tasks(
         if unknown:
             raise SystemExit(f"Not in this track's suite: {', '.join(unknown)}")
         suite = [domain_name for domain_name in suite if domain_name in set(domains)]
+
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
@@ -366,11 +382,13 @@ def _benchmark_tasks(
                 continue
             if problems is not None and problem.name not in problems and problem.stem not in problems:
                 continue
+
             domain = find_domain(problem)
             for mode in modes:
                 if not mode.startswith(ABSTRACTION_PREFIX):
                     yield mode, domain_name, domain, problem, None
                     continue
+
                 count = 1 if class_counts is None else class_counts.get((domain_name, problem.name), 1)
                 ranks = range(from_rank, count)
                 if best is not None and (domain_name, problem.name, mode) in best:

@@ -11,14 +11,13 @@ from unified_planning.engines.results import ValidationResultStatus
 from unified_planning.plans import ActionInstance, SequentialPlan
 from unified_planning.shortcuts import SequentialSimulator
 
-from core.abstraction.factory import build_abstract_problem
-from core.abstraction.relaxation import SPLIT_SEPARATOR
-from core.integrations.clingo import parse_plan_actions
+from core.pipeline.abstraction.factory import build_abstract_problem
+from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.unified_planning import parse_problem
-from core.plan import PlanAction
-from core.planning import abstraction
-from core.planning.backends import BACKENDS
-from core.planning.config import AbstractPlanningConfig
+from core.utilities.plan import PlanAction
+from core.pipeline import pipeline
+from core.planners.fd import FastDownward
+from core.utilities.config import AbstractPlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
 
@@ -130,8 +129,8 @@ class SoundnessTests(unittest.TestCase):
             for planner in ("asp", "lama"):
                 with self.subTest(objects=objects, planner=planner):
                     with redirect_stdout(StringIO()):
-                        result = abstraction.solve(self._config(objects, planner))
-                    steps = [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
+                        result = pipeline.solve(self._config(objects, planner))
+                    steps = [(action.name, *action.args) for action in result["plan"]]
 
                     self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
 
@@ -177,11 +176,11 @@ class RefinementTests(unittest.TestCase):
             light = build_abstract_problem(config).abstraction.name
         plan = tuple(PlanAction("switch-on", (light,), step) for step in range(1, steps + 1))
         with (
-            patch.object(type(BACKENDS["lama"]), "find_abstract_plan", return_value=(plan, steps)),
+            patch.object(FastDownward, "plan_sas", return_value=plan),
             redirect_stdout(StringIO()),
         ):
-            result = abstraction.solve(config)
-        return [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
+            result = pipeline.solve(config)
+        return [(action.name, *action.args) for action in result["plan"]]
 
     @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
     def test_a_plan_that_refines_as_it_is_solves_the_concrete_task(self):
