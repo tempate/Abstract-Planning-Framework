@@ -5,7 +5,8 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from experiments.figure import DEFAULT_PAPER, load_tracks, paper_figures, render_pdf, solved
+from experiments.figure import DEFAULT_PAPER, load_tracks, paper_figures, render_pdf
+from experiments.report import solved
 
 # Each track's table, where its columns start in it, and the modes they count in order.
 TABLE_COLUMNS = {

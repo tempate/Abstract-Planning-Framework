@@ -26,6 +26,7 @@ from experiments.run import (
 import experiments.report
 import experiments.submit
 from experiments.report import (
+    PLAN_COMPARISON,
     SOLVER_LABELS,
     _by_domain,
     _coverage,
@@ -827,7 +828,7 @@ class ReportTests(unittest.TestCase):
             }
         ]
 
-        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], _labels(["abs-asp"]))
+        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], PLAN_COMPARISON, _labels(["abs-asp"]))
 
         median = next(line for line in lines if line.startswith("Median runtime"))
         self.assertNotIn(" s", median)
@@ -878,7 +879,7 @@ class ReportTests(unittest.TestCase):
         ]
 
         pairs = [("abs-asp", "asp"), ("abs-lama", "lama")]
-        _title, lines = _head_to_head(problems, pairs, _labels(["abs-asp", "abs-lama"]))
+        _title, lines = _head_to_head(problems, pairs, PLAN_COMPARISON, _labels(["abs-asp", "abs-lama"]))
 
         shared = next(line for line in lines if line.startswith("Plans found by both"))
         self.assertEqual(re.findall(r"\d+", shared), ["2", "2", "1", "1"])
@@ -900,7 +901,7 @@ class ReportTests(unittest.TestCase):
             {"abs-asp": solved(5), "asp": {"status": "timed out", "wall_time_seconds": "1800.0"}},
         ]
 
-        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], _labels(["abs-asp"]))
+        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], PLAN_COMPARISON, _labels(["abs-asp"]))
 
         shorter = next(line for line in lines if line.startswith("Shorter plan"))
         total = next(line for line in lines if line.startswith("Total plan length"))

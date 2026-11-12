@@ -10,7 +10,7 @@ import tempfile
 from collections import defaultdict
 from pathlib import Path
 
-from experiments.report import finished_problems
+from experiments.report import finished_problems, solved
 from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 
 SOURCES = {"symmetries": "Symmetries", "resources": "Resources"}
@@ -355,11 +355,6 @@ def scatter(problems, solver, abstraction):
             continue
         points.append(f"({x or UNSOLVED:.2f},{y or UNSOLVED:.2f})")
     return " ".join(points)
-
-
-def solved(row):
-    # An abstraction that finds a plan leaves an unsolvability verdict unknown, which proves nothing.
-    return row["status"] == "success" and row.get("verdict") != "unknown"
 
 
 def solve_time(row):

@@ -8,6 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from core.outcomes import SOLVABLE, UNKNOWN
 from experiments.run import ABSTRACTION_PREFIX, MODES, PROJECT_ROOT
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
@@ -62,11 +63,11 @@ def main():
     if verdict_run:
         sections = [_verdicts(problems, modes, labels)]
         if pairs:
-            sections.append(_verdict_head_to_head(problems, pairs, labels))
+            sections.append(_head_to_head(problems, pairs, VERDICT_COMPARISON, labels))
     else:
         sections = [_coverage(problems, modes, labels)]
         if pairs:
-            sections.append(_head_to_head(problems, pairs, labels))
+            sections.append(_head_to_head(problems, pairs, PLAN_COMPARISON, labels))
 
     # Only a mode through an abstraction has one to report on.
     if abstractions:
@@ -181,12 +182,18 @@ def _write_best_classes(results_file, best_file):
 def _performance(row):
     """Rank the classes one mode ran on a problem: finished, then solved and fastest, or failed and furthest along."""
     finished = row["status"] not in UNFINISHED_STATUSES
-    if row["status"] == "success" and row.get("verdict") != "unknown":
+    if solved(row):
         return (finished, True, -_runtime(row))
     pipeline = list(KILLED_IN_PHASE)
     completed = row["last_completed_phase"]
     reached = pipeline.index(completed) if completed in pipeline else len(pipeline)
     return (finished, False, reached, _runtime(row))
+
+
+def solved(row):
+    """Whether a mode did what its track asks: found a plan, or proved that none exists."""
+    # A verdict run that finds a plan, or an abstraction that leaves the verdict unknown, proves nothing.
+    return row["status"] == "success" and row.get("verdict") not in (SOLVABLE, UNKNOWN)
 
 
 def _is_verdict_run(problems):
@@ -255,19 +262,11 @@ VERDICT_COMPARISON = {
 }
 
 
-def _head_to_head(problems, pairs, labels):
-    return _compare(problems, pairs, lambda row: row["status"] == "success", PLAN_COMPARISON, labels)
-
-
-def _verdict_head_to_head(problems, pairs, labels):
-    return _compare(problems, pairs, lambda row: row["verdict"] == "unsolvable", VERDICT_COMPARISON, labels)
-
-
-def _compare(problems, pairs, succeeded, metrics, labels):
-    """Compare each abstraction with its solver, side by side, on what both succeeded at."""
+def _head_to_head(problems, pairs, metrics, labels):
+    """Compare each abstraction with its solver, side by side, on what both solved."""
     columns = {}
     for abstraction, solver in pairs:
-        columns |= _compare_pair(problems, abstraction, solver, succeeded)
+        columns |= _compare_pair(problems, abstraction, solver)
 
     lines = _wide_header("Metric", columns, labels)
     for key, label in metrics.items():
@@ -275,12 +274,12 @@ def _compare(problems, pairs, succeeded, metrics, labels):
     return "Head to head, over the problems both solved", lines
 
 
-def _compare_pair(problems, abstraction, solver, succeeded):
+def _compare_pair(problems, abstraction, solver):
     """Pairwise rather than over every mode at once: intersecting all of them would
     drop the problems one solver missed out of the other pair's comparison, moving
     numbers for a reason that has nothing to do with either of them."""
     pair = (abstraction, solver)
-    both = [problem for problem in problems if all(succeeded(problem[mode]) for mode in pair)]
+    both = [problem for problem in problems if solved(problem[abstraction]) and solved(problem[solver])]
     shared = len(both)
 
     faster = {mode: 0 for mode in pair}
@@ -304,7 +303,7 @@ def _compare_pair(problems, abstraction, solver, succeeded):
         columns[mode] = {
             "shared": shared,
             "faster": _share(faster[mode], shared, 1),
-            "alone": sum(succeeded(problem[mode]) for problem in problems) - shared,
+            "alone": sum(solved(problem[mode]) for problem in problems) - shared,
             "median": _median(times),
             "total": _seconds(sum(times)),
             "shorter": _share(shorter[mode], len(measured), 1),
@@ -408,10 +407,7 @@ def _relaxed_deletes(problems, abstractions, labels):
 
 
 def _by_domain(problems, modes, verdict_run, labels):
-    if verdict_run:
-        title, succeeded = "Proved unsolvable by domain", lambda row: row["verdict"] == "unsolvable"
-    else:
-        title, succeeded = "Plans found by domain", lambda row: row["status"] == "success"
+    title = "Proved unsolvable by domain" if verdict_run else "Plans found by domain"
 
     domains = {}
     # A scaled domain counts each base problem once across its sizes.
@@ -423,7 +419,7 @@ def _by_domain(problems, modes, verdict_run, labels):
         counts["problems"] += 1
         names.setdefault(domain.rpartition("/")[0] or domain, set()).add(row["problem"])
         for mode in modes:
-            counts[mode] += succeeded(problem[mode])
+            counts[mode] += solved(problem[mode])
 
     # The scaled track names its domains <domain>/size-N, and the size gets a column of its own.
     sized = any("/" in domain for domain in domains)
