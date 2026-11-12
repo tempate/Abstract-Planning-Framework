@@ -32,9 +32,9 @@ def _generated_abstraction():
 
 
 class BaselinePlanningOrchestrationTests(unittest.TestCase):
-    @patch("core.planners.fd.find_plan")
-    def test_the_plan_length_is_reported_rather_than_counted_from_the_output(self, find_plan):
-        find_plan.return_value = ["(walk a b)", "(drive b c)"]
+    @patch("core.planners.fd.find_pddl_plan")
+    def test_the_plan_length_is_reported_rather_than_counted_from_the_output(self, find_pddl_plan):
+        find_pddl_plan.return_value = ["(walk a b)", "(drive b c)"]
         config = PlanningConfig("domain.pddl", "problem.pddl")
 
         result = fd.FastDownward(LAMA).solve(config)
@@ -53,9 +53,9 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
         ):
             pipeline.solve(AbstractPlanningConfig("domain.pddl", "problem.pddl", planner="lama"))
 
-    @patch("core.planners.fd.find_plan")
-    def test_an_unsolvable_task_is_not_a_plan(self, find_plan):
-        find_plan.return_value = None
+    @patch("core.planners.fd.find_pddl_plan")
+    def test_an_unsolvable_task_is_not_a_plan(self, find_pddl_plan):
+        find_pddl_plan.return_value = None
 
         result = fd.FastDownward(LAMA).solve(PlanningConfig("domain.pddl", "problem.pddl"))
 

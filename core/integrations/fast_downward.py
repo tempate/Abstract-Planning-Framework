@@ -91,7 +91,7 @@ def _translate(command, label):
         raise tool_failure(f"Fast Downward ({label})", completed_process, _OUT_OF_MEMORY)
 
 
-def find_plan(base_dir, domain_path, problem_path, label, search):
+def find_pddl_plan(base_dir, domain_path, problem_path, label, search):
     """Translate and search one PDDL task, returning its plan or None."""
     os.makedirs(base_dir, exist_ok=True)
     plan_path = os.path.join(base_dir, f"{label}.plan")
