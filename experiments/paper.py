@@ -13,7 +13,7 @@ TABLE_COLUMNS = {
     "opt": (6, ("asp", "abs-asp", "lmcut", "abs-lmcut")),
     "unsat": (11, ("ms", "abs-ms")),
 }
-TABLE_SECTIONS = {"symmetries": "Symmetric objects", "resources": "Resource levels"}
+TABLE_SECTIONS = {"symmetries": "Symmetries", "resources": "Resources"}
 
 
 def main():

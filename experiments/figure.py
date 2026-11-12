@@ -128,35 +128,68 @@ def _results_at(revision, kind, source):
 
 def paper_figures(revision):
     """The paper's figures at a revision, by the file name main.tex includes, each the body of a PDF."""
-    tracks = {kind: load_tracks(revision, kind, []) for kind in TRACK_NAMES}
-    htg = load_tracks(revision, "htg", [])
+    ipc = {kind: load_tracks(revision, kind, []) for kind in TRACK_NAMES}
+    rows = [
+        ("HTG Symmetries", load_tracks(revision, "htg", [])),
+        *(
+            (f"IPC {name}", {kind: ipc[kind][source] for kind in TRACK_NAMES if source in ipc[kind]})
+            for source, name in SOURCES.items()
+        ),
+    ]
     # Each PDF is as wide as the float main.tex includes it in, so it keeps the paper's sizes.
     return {
-        "ipc-asp": _minipage(r"\textwidth", _ipc_figure(tracks, {kind: PAIRS[kind][1:] for kind in ("sat", "opt")})),
-        "ipc-fd": _minipage(r"\textwidth", _ipc_figure(tracks, {kind: PAIRS[kind][:1] for kind in tracks})),
-        "scaled": _minipage(r"\columnwidth", _scaled_plot(load_tracks(revision, "scaled", [])["symmetries"])),
-        "htg": _minipage(r"\columnwidth", _htg_figure(htg, PAPER_ROW_GAP)),
+        "runtimes": _minipage(r"\textwidth", _runtime_figure(rows)),
+        "unsat": _runtime_plot(ipc["unsat"]["symmetries"], PAIRS["unsat"][0], labelled=True),
+        # The paper sets the scaled plot beside the unsat runtime plot, at the same height.
+        "scaled": _scaled_plot(load_tracks(revision, "scaled", [])["symmetries"], SCALED_BESIDE_RUNTIME),
     }
 
 
-# The paper sets its runtime plots a little further below the cactus plots than a PR's figure does.
-PAPER_ROW_GAP = "\n\n\\smallskip\n\n\\medskip\n"
+def _runtime_figure(rows):
+    """The paper's runtime figure as Table 1 lays it out, a row per benchmark set and a column per track's solver."""
+    # The unsolvability track has a single plot, so it sits in the figure of the scalability plot instead.
+    kinds = ("sat", "opt")
+    plot_gap = "%\n\\hspace{0.3in}%\n"
+    track_gap = "%\n\\hspace{0.4in}%\n"
+    # Room on the left for the y label, which names the row's benchmark set over its axis.
+    margin = "\\hspace*{0.6in}"
+    titles = track_gap.join(_track_title(TRACK_NAMES[kind], len(PAIRS[kind])) for kind in kinds)
+    # Table 1 puts ASP before the Fast Downward planner.
+    columns = [(kind, solver) for kind in kinds for solver, _, _ in reversed(PAIRS[kind])]
+    labels = track_gap.join(
+        plot_gap.join(rf"\parbox{{\plotsize}}{{\centering\small {label}}}" for _, label, _ in reversed(PAIRS[kind]))
+        for kind in kinds
+    )
+    lines = [margin + titles + "\\\\[-0.4em]\n" + margin + labels]
+    for name, tracks in rows:
+        ylabel = rf"ylabel={{{name}\\X$^\alpha$ time (s)}}, ylabel style={{align=center}}"
+        plots, ticked = {}, False
+        for kind, solver in columns:
+            problems = tracks.get(kind)
+            if problems and solver in problems[0]:
+                # The row's first drawn plot carries its tick labels, even after an empty slot.
+                options = ylabel if not plots else "yticklabels={}" if ticked else ""
+                ticked = True
+                plots[kind, solver] = rf"\runtimeplot[{options}]{{X}}{{{scatter(problems, solver, f'abs-{solver}')}}}"
+            else:
+                # A set the solver never ran leaves its slot empty, but the row still needs its y label.
+                plots[kind, solver] = _blank_plot(ylabel) if not plots else r"\hspace{\plotsize}"
+        cells = track_gap.join(
+            plot_gap.join(plots[kind, solver] for solver, _, _ in reversed(PAIRS[kind])) for kind in kinds
+        )
+        lines.append(margin + cells)
+    return "\\begin{tabular}{@{}l@{}}\n" + "\\\\[0.6em]\n".join(lines) + "\n\\end{tabular}"
 
 
-def _ipc_figure(tracks, pairs):
-    """An IPC figure, each track's plots of its given solvers side by side, so each row joins the tracks' own rows."""
-    track_gap = "%\n\\hspace{0.1in}%\n\\hspace*{0.42in}%\n"
-    header = "%\n\\hspace{0.52in}%\n".join(_track_title(TRACK_NAMES[kind], len(tracks[kind])) for kind in pairs)
-    cactus_row = track_gap.join(_joined(_cactus_plots(kind, tracks[kind], pairs[kind])) for kind in pairs)
-    # Every track draws one runtime row per solver, and each row joins the tracks' plots of that solver.
-    groups = [_runtime_rows(tracks[kind], pairs[kind]) for kind in pairs]
-    runtime_rows = [_in_row(track_gap.join(_joined(plots) for plots in row)) for row in zip(*groups)]
+def _blank_plot(options):
+    # An invisible axis of a runtime plot's size, so a y label lines up with the other rows'.
+    hidden = (
+        "axis line style={draw=none}, tick style={draw=none}, tick label style={opacity=0}, xlabel style={opacity=0}"
+    )
     return (
-        _in_row(header)
-        + "\n\n\\vspace{0.4em}\n"
-        + _in_row(cactus_row)
-        + PAPER_ROW_GAP
-        + "\n\n\\smallskip\n".join(runtime_rows)
+        "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
+        + rf"\begin{{loglogaxis}}[bordered, xlabel={{X time (s)}}, {options}, {hidden}]"
+        + "\n\\addplot[draw=none] coordinates {(1,1)};\n\\end{loglogaxis}\n\\end{tikzpicture}"
     )
 
 
@@ -265,6 +298,12 @@ def _minipage(width, body):
     return f"\\noindent\\begin{{minipage}}{{{width}}}\\centering\n{body}\n\\end{{minipage}}"
 
 
+# Beside the unsat runtime plot, the legend moves inside, into the band between the M&S curves and the OSS
+# curve, so the axis can take the width a legend above it would need.
+SCALED_BESIDE_RUNTIME = (
+    r"width=1.25in, height=\plotsize, legend columns=1, "
+    r"legend style={at={(0.22,0.27)}, anchor=south west, row sep=-2pt}"
+)
 SCALED_MODES = (
     ("ms", "conc", "*", r"\MS"),
     ("abs-ms", "abst", "square*", r"\MSa"),
@@ -280,7 +319,7 @@ def scaled_coverage(problems, mode):
     return [(size, 100 * sum(proved) / len(proved)) for size, proved in sorted(by_size.items())]
 
 
-def _scaled_plot(problems):
+def _scaled_plot(problems, options=""):
     lines = []
     for mode, style, mark, name in SCALED_MODES:
         shares = " ".join(f"({size},{share:.2f})" for size, share in scaled_coverage(problems, mode))
@@ -288,12 +327,14 @@ def _scaled_plot(problems):
         lines.append(rf"\addlegendentry{{{name}}}")
     return (
         "\\begin{tikzpicture}\n\\begin{semilogxaxis}[scale only axis, width=0.8\\columnwidth, "
-        "height=0.5\\columnwidth, xmin=1.8, xmax=1150, xtick={2,10,100,1000}, xticklabels={2,10,100,1000}, "
-        "ymin=0, ymax=105, ytick={0,25,50,75,100}, minor tick length=0pt, xlabel={Size of the symmetric class}, "
+        "height=0.5\\columnwidth, xmin=1.8, xmax=1150, xtick={2,10,100,1000}, xticklabels={2,$10^1$,$10^2$,$10^3$}, "
+        "ymin=0, ymax=105, ytick={0,25,50,75,100}, minor tick length=0pt, xlabel={Size of $K$}, "
         "ylabel={Problems proved (\\%)}, axis line style={black!50}, tick style={black!50}, "
         "xtick pos=bottom, ytick pos=left, tick label style={font=\\footnotesize}, label style={font=\\footnotesize}, "
         "legend style={font=\\footnotesize, draw=none, fill=none, at={(0.5,1.03)}, anchor=south, "
-        "/tikz/every even column/.append style={column sep=10pt}}, legend columns=3, legend cell align=left]\n"
+        "/tikz/every even column/.append style={column sep=10pt}}, legend columns=3, legend cell align=left, "
+        + options
+        + "]\n"
         + "\n".join(lines)
         + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
     )
