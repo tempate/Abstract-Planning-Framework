@@ -10,7 +10,7 @@ from core.integrations.fast_downward import partial_pddl_to_sas, pddl_to_sas
 from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
 from core.integrations.plasp import sas_to_asp
 from core.metrics import PlanningMetrics
-from core.outcomes import UnsolvableTaskError
+from core.outcomes import IntegrationError, UnsolvableTaskError
 from core.planning.config import AbstractPlanningConfig
 from core.refinement.encoding import (
     add_concrete_objects,
@@ -125,6 +125,12 @@ def _partial_one_shot(context, abstract_plan, abstract_horizon):
             partial_sas = partial_pddl_to_sas(partial_dir, config.domain_path, config.problem_path, actions_path)
     except UnsolvableTaskError:
         # The listed actions cannot reach the goal even with deletes relaxed.
+        return None
+    except IntegrationError as error:
+        # The partial grounder cannot read a line without arguments, which an empty abstract
+        # plan or an action without parameters writes. The full grounding needs no list.
+        reason = str(error).splitlines()[0]
+        print(f"Grounding the whole task, since the partial grounding failed: {reason}", flush=True)
         return None
 
     with context.metrics.measure("partial_asp"):
