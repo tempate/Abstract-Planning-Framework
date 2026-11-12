@@ -152,7 +152,8 @@ def _select_abstraction(problem, candidate_classes, abstract_name=None, rank=0):
 def _create_abstraction(problem, object_names, abstract_name):
     objects_by_name = {item.name.casefold(): item for item in problem.all_objects}
 
-    object_names = _normalize_object_names(object_names)
+    # Lowercase, without repeats, and in order.
+    object_names = sorted({str(name).casefold() for name in object_names})
     if len(object_names) < 2:
         raise AbstractionError("At least two distinct objects must be selected")
 
@@ -187,11 +188,6 @@ def _create_abstraction(problem, object_names, abstract_name):
         objects=tuple(item.name for item in objects_to_collapse),
         object_type=objects_to_collapse[0].type.name,
     )
-
-
-def _normalize_object_names(object_names):
-    """Normalize object names to lowercase, remove duplicates, and order them."""
-    return sorted({str(name).casefold() for name in object_names})
 
 
 def report_abstraction(abstract_problem, metrics):
