@@ -1,4 +1,4 @@
-"""Build planning abstractions from PDDL Symmetries classes."""
+"""Build planning abstractions from the object classes PDDL Symmetries or resource detection finds."""
 
 import tempfile
 from dataclasses import dataclass
@@ -120,7 +120,7 @@ def _candidate_classes(config, metrics):
     return symmetry_classes
 
 
-def _select_abstraction(problem, symmetry_classes, abstract_name=None, rank=0):
+def _select_abstraction(problem, candidate_classes, abstract_name=None, rank=0):
     """Select the candidate class at this rank, largest first.
 
     Collapsing more objects is what lowers the abstract horizon, so size alone decides.
@@ -130,11 +130,11 @@ def _select_abstraction(problem, symmetry_classes, abstract_name=None, rank=0):
 
     # PDDL Symmetries prints its classes in a varying order, so sort them by name
     # first. Two resources can share their objects, so drop repeated classes.
-    ordered_classes = sorted({tuple(sorted(symmetry_class)) for symmetry_class in symmetry_classes})
+    ordered_classes = sorted({tuple(sorted(candidate_class)) for candidate_class in candidate_classes})
 
-    for symmetry_class in ordered_classes:
+    for candidate_class in ordered_classes:
         try:
-            abstractions.append(_create_abstraction(problem, symmetry_class, abstract_name))
+            abstractions.append(_create_abstraction(problem, candidate_class, abstract_name))
         except AbstractionError as error:
             # One unusable class does not make the others unusable, so keep the
             # reason for the case where none of them works.
