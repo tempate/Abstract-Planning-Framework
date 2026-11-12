@@ -15,9 +15,7 @@ from core.utilities.outcomes import IntegrationError, SymmetryTimeoutError, Unso
 _TRANSLATE_OUT_OF_MEMORY = 20
 
 
-def find_symmetric_object_sets(
-    domain_path, problem_path, time_limit=300, translator_path=PDDL_SYMMETRIES_TRANSLATOR, before_grounding=False
-):
+def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, before_grounding=False):
     """Run PDDL Symmetries and return its non-trivial object classes.
 
     Before grounding, the classes come from the lifted task alone: a task too large
@@ -25,15 +23,15 @@ def find_symmetric_object_sets(
     """
     if time_limit < 1:
         raise ValueError("PDDL Symmetries time limit must be positive")
-    command = _translator_command(domain_path, problem_path, time_limit, translator_path)
+    command = _translator_command(domain_path, problem_path, time_limit)
     if before_grounding:
         command.append("--symmetries-before-grounding")
     return _parse_object_sets(_run_translator(command, time_limit))
 
 
-def _translator_command(domain_path, problem_path, time_limit, translator_path):
+def _translator_command(domain_path, problem_path, time_limit):
     """Build the translator invocation, checking that every input exists."""
-    translator = Path(translator_path).resolve()
+    translator = Path(PDDL_SYMMETRIES_TRANSLATOR).resolve()
     if not translator.is_file():
         raise IntegrationError("PDDL Symmetries is not initialized. Run 'git submodule update --init --recursive'.")
     domain = Path(domain_path).resolve()
