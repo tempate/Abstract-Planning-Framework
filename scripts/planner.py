@@ -27,6 +27,7 @@ def _report(result):
 
 def _compute(args):
     on_update = progress_callback()
+
     if args.mode.startswith("abs-"):
         return pipeline.solve(abstract_planning_config(args), on_update)
     return PLANNERS[args.mode](planning_config(args)).solve(on_update)
@@ -40,6 +41,7 @@ def print_planning_result(result):
     length = result["metrics"]["counters"].get("plan_length")
     if result["plan"] is not None:
         print(f"Plan length: {length}")
+
     print_metrics(result["metrics"])
 
     if result["plan"] is not None:

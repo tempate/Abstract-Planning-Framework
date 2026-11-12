@@ -77,14 +77,17 @@ def main():
                 _refinement_outcomes(problems, abstractions, labels),
                 _relaxed_deletes(problems, abstractions, labels),
             ]
+
     sections.append(_by_domain(problems, modes, verdict_run, labels))
 
     summary = _summary(modes, problems, dropped)
     reports_file = Path(args.results).parent / "report.md"
+
     _print_report(sections)
     _write_report(sections, args.results, reports_file, summary)
     print(f"\n{summary}")
     print(f"Wrote this report to {_relative(reports_file)}")
+
     if abstractions:
         best_file = Path(args.results).parent / "best_classes.csv"
         _write_best_classes(args.results, best_file)
@@ -306,6 +309,7 @@ def _compare_pair(problems, abstraction, solver):
     for mode in sorted(pair, key=MODES.index):
         times = [_runtime(problem[mode]) for problem in both]
         lengths = [_plan_length(problem[mode]) for problem in measured]
+
         columns[mode] = {
             "shared": shared,
             "faster": _share(faster[mode], shared, 1),
@@ -317,6 +321,7 @@ def _compare_pair(problems, abstraction, solver):
             "median_length": f"{statistics.median(lengths):g}" if lengths else "n/a",
             "total_length": f"{sum(lengths):,}",
         }
+
     return columns
 
 
@@ -336,17 +341,21 @@ def _timeout_phases(problems, abstractions, verdict_run, labels):
     counts = {mode: {} for mode in abstractions}
     totals = {}
     positions = {}
+
     for mode in abstractions:
         timeouts = [problem[mode] for problem in problems if problem[mode]["status"] == "timed out"]
         totals[mode] = len(timeouts)
+
         for row in timeouts:
             completed = row["last_completed_phase"]
             phase = killed_in.get(completed, completed)
+
             # The extended search is no longer a phase of its own. A guided search that
             # has switched off every abstract action is what used to enter it.
             unguided = phase == "Guided concrete search" and _discarded_the_abstract_plan(row)
             if unguided:
                 phase = "Unguided concrete search"
+
             counts[mode][phase] = counts[mode].get(phase, 0) + 1
 
             index = _phase_position(completed)
@@ -362,6 +371,7 @@ def _timeout_phases(problems, abstractions, verdict_run, labels):
 def _refinement_outcomes(problems, abstractions, labels):
     counts = {mode: {"refined": 0, "switched": 0, "discarded": 0} for mode in abstractions}
     totals = {}
+
     for mode in abstractions:
         successes = [problem[mode] for problem in problems if problem[mode]["status"] == "success"]
         totals[mode] = len(successes)
@@ -378,6 +388,7 @@ def _refinement_outcomes(problems, abstractions, labels):
         ("switched", "Refined, some actions off"),
         ("discarded", "Solved above the abstract plan"),
     )
+
     lines = _wide_header("Solved by", abstractions, labels)
     for key, label in outcomes:
         lines.append(_wide(label, [_share(counts[mode][key], totals[mode], 0) for mode in abstractions]))
@@ -388,6 +399,7 @@ def _refinement_outcomes(problems, abstractions, labels):
 def _relaxed_deletes(problems, abstractions, labels):
     title = "Deletes relaxed by the refined plans"
     used = {}
+
     for mode in abstractions:
         successes = [problem[mode] for problem in problems if problem[mode]["status"] == "success"]
         used[mode] = [row for row in successes if int(row["increments"]) == 0 and row.get("relaxed_deletes")]
@@ -413,6 +425,7 @@ def _by_domain(problems, modes, verdict_run, labels):
     domains = {}
     # A scaled domain counts each base problem once across its sizes.
     names = {}
+
     for problem in problems:
         row = next(iter(problem.values()))
         domain = row["domain"]
@@ -426,16 +439,19 @@ def _by_domain(problems, modes, verdict_run, labels):
     sized = any("/" in domain for domain in domains)
     header = _compact("Domain (problems)", [*(["Size"] if sized else []), *(labels[mode] for mode in modes)])
     lines = [header, "-" * len(header)]
+
     # Numbers sort by value, so that over-nomystery/size-10 follows over-nomystery/size-2.
     previous = None
     for domain in sorted(domains, key=_numbers_by_value):
         counts = domains[domain]
         name, _, size = domain.rpartition("/") if "/" in domain else (domain, "", "")
         sizes = [size.removeprefix("size-")] if sized else []
+
         # Only the first size of a domain names it.
         label = f"{name} ({len(names[name])})" if name != previous else ""
         previous = name
         lines.append(_compact(label, [*sizes, *(counts[mode] for mode in modes)]))
+
     problems = sum(counts["problems"] for counts in domains.values())
     totals = [sum(counts[mode] for counts in domains.values()) for mode in modes]
     lines.append(_compact(f"Total ({problems})", [*([""] if sized else []), *totals]))
@@ -470,6 +486,7 @@ def _out_of_memory(problems, modes):
     interrupted = _status_counts(problems, modes, "interrupted")
     killed = _status_counts(problems, modes, "killed (signal 9)")
     reported = _status_counts(problems, modes, "out of memory")
+
     counts = {}
     for mode in interrupted:
         counts[mode] = interrupted[mode] + killed[mode] + reported[mode]
@@ -536,6 +553,7 @@ def _write_report(sections, results_file, reports_file, summary):
     report = ["# Benchmark report", "", stamp, "", summary, ""]
     for title, lines in sections:
         report += [f"## {title}", "", "```", *lines, "```", ""]
+
     Path(reports_file).write_text("\n".join(report), encoding="utf-8")
 
 

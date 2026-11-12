@@ -30,6 +30,7 @@ def _plan_action(symbol):
     fields = _action_fields(action.arguments[0]) if _is_function(action, "action", 1) else None
     if fields is None or time_step.type != clingo.SymbolType.Number:
         raise IntegrationError(f"Clingo returned a plan step this parser cannot read: {symbol}")
+
     return PlanAction(fields[0], fields[1:], time_step.number)
 
 
@@ -45,6 +46,7 @@ def _action_fields(payload):
         if item.type != clingo.SymbolType.String:
             return None
         fields.append(item.string)
+
     return tuple(fields)
 
 

@@ -17,6 +17,7 @@ def temp_run_dir(dir_name="concrete"):
     """Yield an isolated planner directory and delete it after the run."""
     run_dir = mkdtemp(prefix=f"{dir_name}-")
     keep = False
+
     try:
         yield run_dir, Path(run_dir).name
     except BaseException:

@@ -20,11 +20,13 @@ def main():
     args = _argument_parser().parse_args()
     paper = Path(args.paper)
     tex = paper.read_text()
+
     for kind in TABLE_COLUMNS:
         for source, problems in load_tracks(args.revision, kind, []).items():
             tex, changed = update_table(tex, kind, source, domain_counts(problems, kind))
             print(f"{kind}/{source}: {', '.join(changed) or 'no table row'} changed")
     paper.write_text(tex)
+
     for name, body in paper_figures(args.revision).items():
         render_pdf(paper, body, paper.parent / "figures" / f"{name}.pdf")
         print(f"Wrote figures/{name}.pdf")
@@ -34,17 +36,20 @@ def domain_counts(problems, kind):
     """Each domain's row of the table for one track, problems first, under the name the paper gives it."""
     modes = TABLE_COLUMNS[kind][2]
     rows = defaultdict(lambda: [0] * (len(modes) + 1))
+
     for problem in problems:
         row = rows[_short(next(iter(problem.values()))["domain"])]
         row[0] += 1
         for index, mode in enumerate(modes, 1):
             row[index] += solved(problem[mode])
+
     # A domain from a single IPC edition goes without its year, such as agricola.
     editions = Counter(_without_year(name) for name in rows)
     counts = {}
     for name, row in rows.items():
         short = _without_year(name)
         counts[short if editions[short] == 1 else name] = row
+
     return counts
 
 
@@ -56,21 +61,26 @@ def update_table(tex, kind, source, counts):
     # The section runs to the next section's heading or the end of the table.
     end = re.compile(r"\\emph\{|\\bottomrule").search(tex, start + 1).start()
     lines = tex[start:end].split("\n")
+
     width = len(modes) + 1
     changed = []
     for index, line in enumerate(lines):
         cells = line.rstrip().removesuffix("\\\\").split("&")
         if len(cells) < first + width or cells[first].strip() == "--":
             continue
+
         name = cells[0].strip()
         if name not in counts:
             raise SystemExit(f"No {kind} {source} results for the paper's row {name}")
+
         row = counts[name]
         written = [str(row[0]), *_bold_pairs(row[1:])]
         if written != [cell.strip() for cell in cells[first : first + width]]:
             changed.append(name)
+
         cells[first : first + width] = [f" {cell} " for cell in written]
         lines[index] = "&".join(cells).rstrip() + " \\\\"
+
     return tex[:start] + "\n".join(lines) + tex[end:], changed
 
 

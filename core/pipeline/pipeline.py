@@ -17,16 +17,20 @@ def solve(config: AbstractPlanningConfig, on_update=None):
     """Abstract one concrete task, plan it with the config's planner, and refine that plan with ASP."""
     with planning_run("abstract", on_update) as run:
         problem, abstract_sas, renamings = _abstract(config, run.base_dir, run.metrics)
+
         planner = PLANNERS[config.planner](config)
         actions = planner.plan_sas(abstract_sas, run.metrics.prefixed("abstract_"))
+
         # The abstraction over-approximates, so an abstract task without a plan
         # proves the concrete one has none either.
         if actions is None:
             raise UnsolvableTaskError("The abstract task has no plan")
+
         # A doubling horizon leaves empty steps, while the refinement maps one
         # abstract action onto each step from 1.
         abstract_plan = one_action_per_step(actions)
         run.metrics.set_counter("abstract_plan_length", len(abstract_plan))
+
         context = RefinementContext(
             config=config,
             abstraction=problem.abstraction,

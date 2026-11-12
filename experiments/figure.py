@@ -37,10 +37,13 @@ DEFAULT_PAPER = PROJECT_ROOT.parent / "paper" / "planpilot_abstractions" / "icap
 def main():
     parser = _argument_parser()
     args = parser.parse_args()
+
     if args.sources and args.kind not in ("sat", "opt"):
         parser.error("--sources applies to the sat and opt figures only")
+
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
+
     if args.kind == "scaled":
         panels = [_scaled_plot(load_tracks(args.branch, args.kind, manifests)["symmetries"])]
     elif args.no_base:
@@ -54,6 +57,7 @@ def main():
             ),
             _panel("After", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources)),
         ]
+
     _render(args.paper, panels, Path(args.out))
     print(f"Wrote {args.out}")
 
@@ -81,6 +85,7 @@ def load_tracks(revision, kind, manifests, sources=None):
     """Each abstraction source's finished problems at a revision, as the report pairs them."""
     if kind == "htg":
         return {track: load_tracks(revision, f"{track}-htg", manifests)["symmetries"] for track in ("sat", "opt")}
+
     tracks = {}
     for source in sources or _sources(kind):
         rows = csv.DictReader(io.StringIO(_results_at(revision, kind, source)))
@@ -100,9 +105,11 @@ def _sources(kind):
 
 def _results_at(revision, kind, source):
     results_file = TRACKS[f"{kind}/{source}"].results_file.relative_to(PROJECT_ROOT)
+
     shown = subprocess.run(
         ["git", "-C", PROJECT_ROOT, "show", f"{revision}:{results_file}"], capture_output=True, text=True
     )
+
     if shown.returncode != 0:
         raise SystemExit(f"No {kind}/{source} results.csv at {revision}")
     return shown.stdout
@@ -118,6 +125,7 @@ def paper_figures(revision):
             for source, name in SOURCES.items()
         ),
     ]
+
     # Each PDF is as wide as the float main.tex includes it in, so it keeps the paper's sizes.
     return {
         "runtimes": _minipage(r"\textwidth", _runtime_figure(rows)),
@@ -133,19 +141,23 @@ def _runtime_figure(rows):
     kinds = ("sat", "opt")
     plot_gap = "%\n\\hspace{0.3in}%\n"
     track_gap = "%\n\\hspace{0.4in}%\n"
+
     # Room on the left for the y label, which names the row's benchmark set over its axis.
     margin = "\\hspace*{0.6in}"
     titles = track_gap.join(_track_title(TRACK_NAMES[kind], len(PAIRS[kind])) for kind in kinds)
+
     # Table 1 puts ASP before the Fast Downward planner.
     columns = [(kind, solver) for kind in kinds for solver, _, _ in reversed(PAIRS[kind])]
     labels = track_gap.join(
         plot_gap.join(rf"\parbox{{\plotsize}}{{\centering\small {label}}}" for _, label, _ in reversed(PAIRS[kind]))
         for kind in kinds
     )
+
     lines = [margin + titles + "\\\\[-0.4em]\n" + margin + labels]
     for name, tracks in rows:
         ylabel = rf"ylabel={{{name}\\X$^\alpha$ time (s)}}, ylabel style={{align=center}}"
         plots, ticked = {}, False
+
         for kind, solver in columns:
             problems = tracks.get(kind)
             if problems and solver in problems[0]:
@@ -156,15 +168,18 @@ def _runtime_figure(rows):
                     options = "yticklabels={}"
                 else:
                     options = ""
+
                 ticked = True
                 plots[kind, solver] = rf"\runtimeplot[{options}]{{X}}{{{scatter(problems, solver, f'abs-{solver}')}}}"
             else:
                 # A set the solver never ran leaves its slot empty, but the row still needs its y label.
                 plots[kind, solver] = _blank_plot(ylabel) if not plots else r"\hspace{\plotsize}"
+
         cells = track_gap.join(
             plot_gap.join(plots[kind, solver] for solver, _, _ in reversed(PAIRS[kind])) for kind in kinds
         )
         lines.append(margin + cells)
+
     return "\\begin{tabular}{@{}l@{}}\n" + "\\\\[0.6em]\n".join(lines) + "\n\\end{tabular}"
 
 
@@ -173,6 +188,7 @@ def _blank_plot(options):
     hidden = (
         "axis line style={draw=none}, tick style={draw=none}, tick label style={opacity=0}, xlabel style={opacity=0}"
     )
+
     return (
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
         + rf"\begin{{loglogaxis}}[bordered, xlabel={{X time (s)}}, {options}, {hidden}]"
@@ -184,6 +200,7 @@ def _panel(title, kind, tracks):
     """One track's half of a PR's figure, under a title."""
     if kind == "htg":
         return _titled(title, _htg_figure(tracks, "\n\n\\medskip\n"), 2)
+
     body = (
         _in_row(_track_title(TRACK_NAMES[kind], len(tracks)))
         + "\n\n\\vspace{0.4em}\n"
@@ -191,6 +208,7 @@ def _panel(title, kind, tracks):
         + "\n\n\\medskip\n"
         + "\n\n\\smallskip\n".join(_in_row(_joined(plots)) for plots in _runtime_rows(tracks, PAIRS[kind]))
     )
+
     return _titled(title, body, len(tracks))
 
 
@@ -199,11 +217,13 @@ def _htg_figure(tracks, row_gap):
     # Both plots label their own y axis, so they need more room between them than the paper's rows.
     gap = "0.75in"
     cactus_plots, runtimes = [], []
+
     for track, problems in tracks.items():
         baseline = PAIRS[track][0]
         options = f"ylabel={{Problems solved}}, {CENTRED_LEGEND}"
         cactus_plots.append(_cactus_plot(TRACK_NAMES[track], problems, (baseline,), options, legend=True))
         runtimes.append(_runtime_plot(problems, baseline, labelled=True))
+
     return _in_row(_joined(cactus_plots, gap)) + row_gap + _in_row(_joined(runtimes, gap))
 
 
@@ -219,6 +239,7 @@ def _cactus_plots(kind, tracks, pairs):
         else:
             options, legend = "ylabel={}, legend style={overlay, at={(-0.16,1.04)}, anchor=south}", True
         plots.append(_cactus_plot(SOURCES[source], problems, pairs, options, legend))
+
     return plots
 
 
@@ -231,6 +252,7 @@ def _cactus_plot(title, problems, pairs, options, legend):
             )
             if legend:
                 lines.append(rf"\addlegendentry{{{name}}}")
+
     return (
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
         + rf"\begin{{semilogxaxis}}[cactusplot, title={{\small {title}}}, {ABOVE_LEGEND}, {options}]"
@@ -312,6 +334,7 @@ def _scaled_plot(problems, options=""):
         shares = " ".join(f"({size},{share:.2f})" for size, share in scaled_coverage(problems, mode))
         lines.append(rf"\addplot[{style}, very thick, mark={mark}, mark size=1.4pt] coordinates {{{shares}}};")
         lines.append(rf"\addlegendentry{{{name}}}")
+
     return (
         "\\begin{tikzpicture}\n\\begin{semilogxaxis}[scale only axis, width=0.8\\columnwidth, "
         "height=0.5\\columnwidth, xmin=1.8, xmax=1150, xtick={2,10,100,1000}, xticklabels={2,$10^1$,$10^2$,$10^3$}, "
@@ -352,8 +375,10 @@ def _render(paper, panels, out):
     """Typeset the panels side by side with the paper's preamble, then crop the page to a PNG."""
     with tempfile.TemporaryDirectory() as directory:
         render_pdf(paper, "\\noindent\\mbox{" + r"\hspace{2em}".join(panels) + "}", Path(directory, "figure.pdf"), 8)
+
         command = ["pdftoppm", "-png", "-r", "250", "-singlefile", "figure.pdf", "figure"]
         subprocess.run(command, cwd=directory, check=True, capture_output=True)
+
         shutil.copy(Path(directory, "figure.png"), out)
 
 
@@ -361,16 +386,19 @@ def render_pdf(paper, body, out, margins=0):
     """Typeset a body with the paper's preamble, then crop the page to a PDF."""
     preamble = Path(paper).read_text().split(r"\title{")[0]
     document = preamble + "\\pagestyle{empty}\n\\begin{document}\n" + body + "\n\\end{document}\n"
+
     with tempfile.TemporaryDirectory() as directory:
         # The paper's style file has to sit next to the document that loads it.
         for style in Path(paper).parent.glob("*.sty"):
             shutil.copy(style, directory)
+
         Path(directory, "figure.tex").write_text(document)
         for command in (
             ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "figure.tex"],
             ["pdfcrop", "--margins", str(margins), "figure.pdf", "cropped.pdf"],
         ):
             subprocess.run(command, cwd=directory, check=True, capture_output=True)
+
         shutil.copy(Path(directory, "cropped.pdf"), out)
 
 

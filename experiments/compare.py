@@ -15,12 +15,14 @@ def main():
     args = _argument_parser().parse_args()
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
+
     columns = {}
     for track, modes in submitted_tracks(manifests).items():
         kind, source = track.split("/")
         base = load_tracks(args.base, kind, base_manifests, [source])[source]
         branch = load_tracks(args.branch, kind, manifests, [source])[source]
         columns[f"{kind} {source}"] = (base, branch, modes)
+
     print(tables(columns))
 
 
@@ -46,8 +48,10 @@ def tables(columns):
                 continue
             plan_cells.append(_plans_cell(base, branch, mode))
             runtime_cells.append(_runtime_cell(base, branch, mode))
+
         plans.append(_line(LABELS[mode], plan_cells))
         runtimes.append(_line(LABELS[mode], runtime_cells))
+
     header = list(columns)
     return "\n".join(
         [
@@ -74,6 +78,7 @@ def _runtime_cell(base, branch, mode):
     before = {_key(problem): problem[mode] for problem in base if solved(problem[mode])}
     after = {_key(problem): problem[mode] for problem in branch if solved(problem[mode])}
     shared = before.keys() & after.keys()
+
     if not shared:
         return ""
     median = lambda rows: statistics.median(solve_time(rows[key]) for key in shared)

@@ -68,8 +68,10 @@ def write_problem(problem: Problem):
             # The writer drops an action whose precondition is false, so it has no written name.
             # No plan can use that action, so it needs no entry here.
             continue
+
         if written != item.name:
             renamings[written] = item.name
+
     return PddlText(domain, problem_text, renamings)
 
 
@@ -92,6 +94,7 @@ def _with_explicit_initial_state(problem):
                 continue
             for expression in get_all_fluent_exp(view, fluent):
                 values.setdefault(expression, default)
+
         return values
 
     view = copy.copy(problem)
@@ -145,6 +148,7 @@ def to_positive_normal_form(problem):
     condition and lose plans the concrete task has.
     """
     get_environment().credits_stream = None
+
     try:
         # Selected by name, not by problem kind: the kind lookup refuses a task
         # over features the translation never touches, such as the undefined
@@ -184,11 +188,13 @@ def without_action_costs(problem):
             fluent = effect.fluent.fluent()
             if fluent.type.is_bool_type() or fluent.arity > 0:
                 kept.append(effect)
+
         if len(kept) == len(action.effects):
             continue
         action.clear_effects()
         for effect in kept:
             add_effect_like(action, effect, effect.fluent, effect.value, effect.condition)
+
     return stripped
 
 

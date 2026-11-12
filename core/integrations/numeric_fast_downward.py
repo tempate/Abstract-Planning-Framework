@@ -39,6 +39,7 @@ def detect_resources(base_dir, domain_path, problem_path, timeout=DETECTION_TIME
         )
 
     os.makedirs(base_dir, exist_ok=True)
+
     # The engine writes output.sas and four PDDL files under fixed names in the
     # working directory, so it gets a directory of its own -- which is why the
     # task has to be named absolutely, the caller's relative paths being
@@ -108,10 +109,12 @@ def read_sas_variables(sas_path):
         if lines[index] != "begin_variable":
             index += 1
             continue
+
         name = lines[index + 1]
         count = int(lines[index + 3])
         variables[name] = tuple(lines[index + 4 : index + 4 + count])
         index += 4 + count
+
     return variables
 
 
@@ -129,6 +132,7 @@ def varying_objects(values):
         fields = _atom_fields(value)
         if fields is not None:
             atoms.append(fields)
+
     if len(atoms) < 2:
         return ()
 
@@ -142,6 +146,7 @@ def varying_objects(values):
         column = {arguments[position] for _, arguments in atoms}
         if len(column) > 1:
             objects |= column
+
     return tuple(sorted(objects))
 
 

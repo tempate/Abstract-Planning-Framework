@@ -38,9 +38,11 @@ class RefinementContext:
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Ground the concrete task, then use an abstract plan to guide its search."""
     abstract_plan = _with_original_names(abstract_plan, context.renamings)
+
     atoms = _solve_concrete_plan(context, abstract_plan, abstract_horizon)
     if atoms is None:
         return None
+
     plan = parse_plan_actions(atoms)
     context.metrics.set_counter("plan_length", len(plan))
     return plan
@@ -61,6 +63,7 @@ def _with_original_names(abstract_plan, renamings):
 def _concrete_asp(context):
     """Ground the concrete task and translate it into the ASP program the refinement searches."""
     config = context.config
+
     with context.metrics.measure("concrete_fd"):
         concrete_dir = os.path.join(context.base_dir, "concrete")
         concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
@@ -87,13 +90,16 @@ def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
         context.metrics.set_counters(counters)
 
     record_attempt(0, 0, 0)
+
     if os.path.exists(PARTIAL_GROUNDING_TRANSLATOR):
         plan = _partial_one_shot(context, abstract_plan, abstract_horizon)
         if plan is not None:
             return plan
+
         asp = _concrete_asp(context)
     else:
         asp = _concrete_asp(context)
+
         with context.metrics.measure("guided_concrete_solving"):
             plan = _one_shot(context, asp, abstract_plan, abstract_horizon)
         if plan is not None:
@@ -101,6 +107,7 @@ def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
 
     with context.metrics.measure("guided_concrete_solving"):
         solver = _fallback_solver(context, asp, abstract_plan, abstract_horizon)
+
         # Clingo holds its own copy of the program, so the text would only take memory from the search.
         del asp
         return _fallback(context, solver, abstract_plan, record_attempt)
@@ -110,11 +117,13 @@ def _partial_one_shot(context, abstract_plan, abstract_horizon):
     """The one-shot on a task grounded with only the actions the abstract plan may refine into."""
     partial_dir = os.path.join(context.base_dir, "partial")
     os.makedirs(partial_dir, exist_ok=True)
+
     actions_path = os.path.join(partial_dir, "actions.txt")
     with open(actions_path, "w", encoding="utf-8") as actions_file:
         actions_file.write("\n".join(concrete_groundings(abstract_plan, context.abstraction)) + "\n")
 
     config = context.config
+
     try:
         with context.metrics.measure("partial_fd"):
             partial_sas = partial_pddl_to_sas(partial_dir, config.domain_path, config.problem_path, actions_path)
@@ -139,6 +148,7 @@ def _one_shot(context, asp, abstract_plan, abstract_horizon):
     """Refine the abstract plan as it is, in one solve at its horizon."""
     choices = map_abstract_actions(abstract_plan, context.abstraction, gaps=False)
     rules = [drop_action_choice(asp.rules), *add_concrete_objects(context.abstraction), *choices.values()]
+
     solver = Solver(
         asp=replace(asp, rules="\n".join(rules)), init_horizon=abstract_horizon, optimize=context.config.optimize
     )

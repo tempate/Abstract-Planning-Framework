@@ -28,14 +28,17 @@ def split_actions(problem, abstraction):
 
     split_problem = problem.clone()
     collapsed_marker, kept_marker = _add_markers(split_problem, abstraction, collapsed)
+
     split_problem.clear_actions()
     for action in problem.actions:
         if SPLIT_SEPARATOR in action.name:
             raise ValueError(f"Action name already holds the split separator: {action.name}")
+
         parameters = _split_parameters(problem, action, collapsed, collapsed_type, static_fluents, true_facts)
         if not parameters:
             split_problem.add_action(action)
             continue
+
         for index, takes_collapsed in enumerate(itertools.product((False, True), repeat=len(parameters))):
             name = f"{action.name}{SPLIT_SEPARATOR}{index}" if any(takes_collapsed) else action.name
             markers = [
@@ -43,6 +46,7 @@ def split_actions(problem, abstraction):
                 for parameter, is_collapsed in zip(parameters, takes_collapsed)
             ]
             split_problem.add_action(_with_preconditions(action, name, markers))
+
     return split_problem
 
 
@@ -55,11 +59,13 @@ def _add_markers(problem, abstraction, collapsed):
     kept_marker = Fluent(f"{abstraction.name}-kept", boolean, environment=problem.environment, x=root)
     problem.add_fluent(collapsed_marker, default_initial_value=False)
     problem.add_fluent(kept_marker, default_initial_value=False)
+
     for item in problem.all_objects:
         if item.type != root and not item.type.is_subtype(root):
             continue
         marker = collapsed_marker if item in collapsed else kept_marker
         problem.set_initial_value(marker(item), True)
+
     return collapsed_marker, kept_marker
 
 
@@ -75,6 +81,7 @@ def _split_parameters(problem, action, collapsed, collapsed_type, static_fluents
             continue
         if not _is_variable_of(candidate, collapsed_type):
             continue
+
         # A parameter that only ever takes collapsed objects, as when the class
         # is a whole type, relaxes in every grounding, so a split gains nothing.
         others = {
@@ -86,18 +93,21 @@ def _split_parameters(problem, action, collapsed, collapsed_type, static_fluents
             action, candidate, others, static_fluents, true_facts
         ):
             parameters.append(candidate)
+
     return parameters
 
 
 def _with_preconditions(action, name, conditions):
     parameters = OrderedDict((parameter.name, parameter.type) for parameter in action.parameters)
     copy = InstantaneousAction(name, parameters, action.environment)
+
     for precondition in action.preconditions:
         copy.add_precondition(precondition)
     for condition in conditions:
         copy.add_precondition(condition)
     for effect in action.effects:
         add_effect_like(copy, effect, effect.fluent, effect.value, effect.condition)
+
     return copy
 
 
@@ -116,6 +126,7 @@ def find_relaxable_deletes(problem, abstraction):
         for effect in action.effects:
             if _deletes_a_collapsed_fact(action, effect, collapsed, collapsed_type, static_fluents, true_facts):
                 relaxable.append((action.name, effect))
+
     return tuple(relaxable)
 
 
@@ -141,6 +152,7 @@ def _deletes_a_collapsed_fact(action, effect, collapsed, collapsed_type, static_
             continue
         if _can_bind(action, argument, collapsed, static_fluents, true_facts):
             return True
+
     return False
 
 
@@ -151,6 +163,7 @@ def _can_bind(action, variable, collapsed, static_fluents, true_facts):
         is_static_on_variable = atom.is_fluent_exp() and atom.fluent() in static_fluents and variable in atom.args
         if is_static_on_variable:
             candidates &= _objects_satisfying(atom, variable, true_facts)
+
     return bool(candidates)
 
 
@@ -171,6 +184,7 @@ def _objects_satisfying(atom, variable, true_facts):
         bound = _binding(atom, fact, variable)
         if bound is not None:
             objects.add(bound)
+
     return objects
 
 
@@ -190,6 +204,7 @@ def _binding(atom, fact, variable):
             continue
         elif expected != actual:
             return None
+
     return bound
 
 
@@ -215,6 +230,7 @@ def relax_inequalities(problem, abstraction):
         return _is_variable_of(side, collapsed_type) and _can_bind(action, side, collapsed, static_fluents, true_facts)
 
     relaxed_problem = problem.clone()
+
     root = _root_type(problem, abstraction)
     boolean = problem.environment.type_manager.BoolType()
     distinct = Fluent(f"{abstraction.name}-distinct", boolean, environment=problem.environment, x=root, y=root)
@@ -231,6 +247,7 @@ def relax_inequalities(problem, abstraction):
 
     if relaxed:
         relaxed_problem.add_fluent(distinct, default_initial_value=False)
+
         side_types = {_type_of(side) for _, inequality in relaxed for side in inequality.arg(0).args}
         objects = [
             item
@@ -239,6 +256,7 @@ def relax_inequalities(problem, abstraction):
         ]
         for first, second in itertools.permutations(objects, 2):
             relaxed_problem.set_initial_value(distinct(first, second), True)
+
     return relaxed_problem, tuple(relaxed)
 
 
@@ -254,6 +272,7 @@ def _with_distinct(action, condition, can_be_collapsed, distinct, relaxed):
             relaxed.append((action.name, condition))
             return distinct(*sides)
         return condition
+
     if not condition.is_and():
         return condition
     arguments = [_with_distinct(action, argument, can_be_collapsed, distinct, relaxed) for argument in condition.args]
@@ -276,6 +295,7 @@ def _is_variable_of(expression, collapsed_type):
         variable = expression.variable()
     else:
         return False
+
     return collapsed_type.is_subtype(variable.type)
 
 

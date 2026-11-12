@@ -40,6 +40,8 @@ def _run(command, base_dir, stdin_path, label, accepted=()):
     """Run one stage of MS-unsat, raising unless it succeeds or ends with an accepted exit code."""
     with open(stdin_path, encoding="utf-8") as stdin_file:
         completed = subprocess.run(command, cwd=base_dir, stdin=stdin_file, capture_output=True, text=True)
+
     if completed.returncode != _SUCCESS and completed.returncode not in accepted:
         raise tool_failure(f"MS-unsat ({label})", completed, _OUT_OF_MEMORY)
+
     return completed

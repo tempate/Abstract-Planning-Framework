@@ -42,6 +42,7 @@ class AbstractionResult:
 def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
     """Read one concrete task, select an object class, and abstract it."""
     metrics = metrics or PlanningMetrics()
+
     with metrics.measure("problem_reading"):
         problem = read_problem(config.domain_path, config.problem_path)
 
@@ -81,6 +82,7 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     with metrics.measure("abstraction"):
         relaxable_deletes = find_relaxable_deletes(problem, abstraction)
         collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
+
     return AbstractionResult(
         abstraction=abstraction,
         problem=collapsed_problem,
@@ -95,6 +97,7 @@ def _candidate_classes(config, metrics):
         with metrics.measure("resource_detection"):
             with tempfile.TemporaryDirectory(prefix="apf-resources-") as directory:
                 resources = detect_resources(directory, config.domain_path, config.problem_path)
+
         if not resources:
             raise NoResourcesError("Resource detection found no abstractable object classes")
         return [resource.objects for resource in resources]
@@ -106,6 +109,7 @@ def _candidate_classes(config, metrics):
             config.symmetry_time_limit,
             before_grounding=config.symmetries_before_grounding,
         )
+
     if not symmetry_classes:
         raise NoSymmetriesError("PDDL Symmetries found no abstractable object classes")
     return symmetry_classes
@@ -150,6 +154,7 @@ def _create_abstraction(problem, object_names, abstract_name):
     unknown_names = [name for name in object_names if name not in objects_by_name]
     if unknown_names:
         raise AbstractionError(f"Unknown problem objects: {', '.join(unknown_names)}")
+
     objects_to_collapse = tuple(objects_by_name[name] for name in object_names)
 
     if len({item.type for item in objects_to_collapse}) != 1:
@@ -168,6 +173,7 @@ def _create_abstraction(problem, object_names, abstract_name):
     for item in problem.all_objects:
         if item not in objects_to_collapse:
             reserved_names.add(item.name.casefold())
+
     if abstract_name.casefold() in reserved_names:
         raise AbstractionError(f"Abstract object name is already used: {abstract_name}")
 
@@ -198,6 +204,7 @@ def report_abstraction(abstract_problem, metrics):
             "relaxed_inequalities": len(abstract_problem.relaxed_inequalities),
         }
     )
+
     print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
 
 

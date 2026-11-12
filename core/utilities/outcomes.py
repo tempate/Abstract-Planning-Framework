@@ -85,7 +85,9 @@ def tool_failure(tool, completed, out_of_memory_codes):
     for output in (completed.stdout, completed.stderr):
         if output.strip():
             message += "\n" + output.strip()
+
     # A Python tool can die on a MemoryError of its own, which leaves an ordinary exit code.
     if completed.returncode in out_of_memory_codes or "MemoryError" in message:
         return OutOfMemoryError(message)
+
     return IntegrationError(message)

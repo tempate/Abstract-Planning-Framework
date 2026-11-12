@@ -59,6 +59,7 @@ class PlanningMetrics:
         """Accumulate elapsed seconds for a named phase."""
         if name not in DURATION_LABELS:
             raise ValueError(f"Unknown duration metric: {name}")
+
         started_at = self._clock()
         completed = False
         try:
@@ -86,6 +87,7 @@ class PlanningMetrics:
         unknown = sorted(name for name in values if name not in COUNTER_LABELS)
         if unknown:
             raise ValueError(f"Unknown counter metric: {', '.join(unknown)}")
+
         self.counters.update(values)
         self._report({"kind": "counters_updated", "counters": sorted(values)})
 
@@ -105,6 +107,7 @@ class PlanningMetrics:
         snapshot = {"durations": durations, "counters": counters}
         if self.abstraction is not None:
             snapshot["abstraction"] = self.abstraction
+
         return snapshot
 
     def _report(self, event: dict) -> None:

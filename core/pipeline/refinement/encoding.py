@@ -46,6 +46,7 @@ def concrete_groundings(abstract_plan, abstraction):
                 options.append(abstraction.objects)
             else:
                 options.append((arg,))
+
         for args in itertools.product(*options):
             groundings.add(f"({' '.join((action.name, *args))})".lower())
 

@@ -57,6 +57,7 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
         os.fspath(domain_path),
         os.fspath(problem_path),
     ]
+
     _translate(command, label)
     return sas_path
 
@@ -77,6 +78,7 @@ def partial_pddl_to_sas(base_dir, domain_path, problem_path, actions_path):
         "--actions-file",
         os.fspath(actions_path),
     ]
+
     _translate(command, "partial")
     return sas_path
 
@@ -108,6 +110,7 @@ def find_pddl_plan(base_dir, domain_path, problem_path, label, search):
         os.fspath(problem_path),
         *search.options,
     ]
+
     return _find_plan(command, label, plan_path, search.unsolvable_exit_codes)
 
 
@@ -123,6 +126,7 @@ def find_sas_plan(base_dir, sas_path, label, search):
         sas_path,
         *search.options,
     ]
+
     return _find_plan(command, label, plan_path, search.unsolvable_exit_codes)
 
 
@@ -133,6 +137,7 @@ def parse_plan_actions(plan):
         name, *args = line.strip().strip("()").split()
         action = PlanAction(name=name, args=tuple(args), time_step=time_step)
         actions.append(action)
+
     return tuple(actions)
 
 
@@ -155,4 +160,5 @@ def _read_plan(plan_path):
             line = line.strip()
             if line and not line.startswith(";"):
                 plan.append(line)
+
         return plan

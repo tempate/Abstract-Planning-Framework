@@ -46,9 +46,11 @@ def collect(*results_dirs):
     keys = set()
     for results_dir in results_dirs or (RESULTS_DIR,):
         results_dir = Path(results_dir)
+
         for result_file in sorted(results_dir.rglob("*.json")):
             if result_file.name in ("metadata.json", MANIFEST_NAME):
                 continue
+
             result = json.loads(result_file.read_text(encoding="utf-8"))
             if not {"domain", "problem", "output"} <= result.keys():
                 continue
@@ -67,6 +69,7 @@ def collect(*results_dirs):
         result = results.get((domain, problem, mode, rank))
         values = _missing_values() if result is None else _values(result)
         rows.append({**values, "domain": domain, "problem": problem, "mode": mode, "class": rank})
+
     return rows
 
 
@@ -85,6 +88,7 @@ def _values(result):
     metrics = _metrics(output, progress)
     durations = metrics.get("durations", {})
     counters = metrics.get("counters", {})
+
     return {
         "status": _human_status(result),
         "wall_time_seconds": result["wall_time_seconds"],
@@ -103,6 +107,7 @@ def _metrics(output, progress):
         "durations": _metric_group(output, DURATION_LABELS, float),
         "counters": _metric_group(output, COUNTER_LABELS, int),
     }
+
     if metrics["durations"] or metrics["counters"]:
         return metrics
     if progress and isinstance(progress.get("metrics"), dict):
@@ -182,6 +187,7 @@ def _preserved_rows(collected, csv_file):
         kept = {field: row.get(field, "") for field in FIELDS}
         kept["class"] = key[3]
         preserved.append(kept)
+
     return preserved
 
 
@@ -189,15 +195,18 @@ def main(results_dirs=RESULTS_DIR, csv_file=None):
     if isinstance(results_dirs, (str, Path)):
         results_dirs = [results_dirs]
     csv_file = csv_file or _track_results_file(results_dirs)
+
     collected = collect(*results_dirs)
     preserved = _preserved_rows(collected, csv_file)
     rows = sorted(collected + preserved, key=result_key)
+
     csv_file = Path(csv_file)
     csv_file.parent.mkdir(parents=True, exist_ok=True)
     with csv_file.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=FIELDS)
         writer.writeheader()
         writer.writerows(rows)
+
     missing = Counter(row["mode"] for row in collected if row["status"] == "missing")
     if missing:
         details = ", ".join(f"{mode}: {count}" for mode, count in sorted(missing.items()))
@@ -215,6 +224,7 @@ def _track_results_file(results_dirs):
         # A run submitted before the manifest named its track is a plan run.
         track = json.loads(manifest.read_text(encoding="utf-8")).get("track") if manifest.is_file() else None
         tracks.add(track or DEFAULT_TRACK)
+
     if len(tracks) > 1:
         raise SystemExit(f"The runs belong to different tracks: {', '.join(sorted(tracks))}")
     return TRACKS[tracks.pop()].results_file

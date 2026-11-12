@@ -23,9 +23,11 @@ def find_symmetric_object_sets(domain_path, problem_path, time_limit=300, before
     """
     if time_limit < 1:
         raise ValueError("PDDL Symmetries time limit must be positive")
+
     command = _translator_command(domain_path, problem_path, time_limit)
     if before_grounding:
         command.append("--symmetries-before-grounding")
+
     return _parse_object_sets(_run_translator(command, time_limit))
 
 
@@ -34,6 +36,7 @@ def _translator_command(domain_path, problem_path, time_limit):
     translator = Path(PDDL_SYMMETRIES_TRANSLATOR).resolve()
     if not translator.is_file():
         raise IntegrationError("PDDL Symmetries is not initialized. Run 'git submodule update --init --recursive'.")
+
     domain = Path(domain_path).resolve()
     problem = Path(problem_path).resolve()
     for label, path in (("domain", domain), ("problem", problem)):
@@ -76,6 +79,7 @@ def _run_translator(command, time_limit):
         raise UnsolvableTaskError("PDDL Symmetries reports that the task has no relaxed solution")
     if completed.returncode != 0:
         raise tool_failure("PDDL Symmetries", completed, (_TRANSLATE_OUT_OF_MEMORY,))
+
     return completed.stdout
 
 
@@ -84,13 +88,16 @@ def _parse_object_sets(stdout):
     match = re.search(r"^\s*Non-trivial symmetric object sets:\s*(.+)$", stdout, flags=re.MULTILINE)
     if not match:
         raise IntegrationError("PDDL Symmetries did not report symmetric object sets")
+
     try:
         classes = ast.literal_eval(match.group(1))
     except (SyntaxError, ValueError) as error:
         raise IntegrationError("PDDL Symmetries returned malformed object sets") from error
+
     if not isinstance(classes, list):
         raise IntegrationError(f"PDDL Symmetries returned object sets that are not a list: {classes!r}")
     for group in classes:
         if not isinstance(group, list) or not all(isinstance(item, str) for item in group):
             raise IntegrationError(f"PDDL Symmetries returned an invalid object set: {group!r}")
+
     return classes

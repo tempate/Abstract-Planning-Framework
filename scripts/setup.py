@@ -70,6 +70,7 @@ def _build_pybliss():
     if PYBLISS_MODULE.exists():
         print(f"already built at {PYBLISS_MODULE}")
         return
+
     _run(["make", "-C", str(PYBLISS_DIR)], cwd=ROOT)
 
 
@@ -78,6 +79,7 @@ def _build_fast_downward():
     if DOWNWARD_BUILD.is_dir():
         print(f"already built at {DOWNWARD_BUILD}")
         return
+
     _run([sys.executable, "build.py", "release"], cwd=ROOT / "lib" / "downward")
 
 
@@ -86,6 +88,7 @@ def _build_structural_symmetries():
     if STRUCTURAL_SYMMETRIES_BUILD.is_dir():
         print(f"already built at {STRUCTURAL_SYMMETRIES_BUILD}")
         return
+
     environment = {**os.environ, **STRUCTURAL_SYMMETRIES_BUILD_ENV}
     _run([sys.executable, "build.py", "release"], cwd=ROOT / "lib" / "structural-symmetries", env=environment)
 
@@ -140,6 +143,7 @@ def _install_ms_unsat():
 
     with urllib.request.urlopen(MS_UNSAT_URL) as response:
         archive = response.read()
+
     digest = hashlib.sha256(archive).hexdigest()
     if digest != MS_UNSAT_ARCHIVE_SHA256:
         raise RuntimeError(f"MS-unsat archive checksum mismatch: expected {MS_UNSAT_ARCHIVE_SHA256}, received {digest}")
@@ -168,6 +172,7 @@ def _verify():
 
     if missing:
         raise SystemExit("missing after setup:\n  " + "\n  ".join(missing))
+
     print("setup complete")
 
 
