@@ -54,15 +54,9 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     # collapse, which would otherwise merge the values that price actions.
     problem = without_action_costs(problem)
 
-    if config.objects_to_abstract is None:
-        candidate_classes = _candidate_classes(config, metrics)
+    abstraction = _choose_abstraction(problem, config, metrics)
 
     with metrics.measure("abstraction"):
-        if config.objects_to_abstract is None:
-            abstraction = _select_abstraction(problem, candidate_classes, config.abstract_name, config.class_rank)
-        else:
-            abstraction = _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
-
         # The class has to be chosen before the inequalities can be relaxed,
         # and they have to be relaxed before the collapse makes them false.
         # Split before relaxing any delete, so that the relaxation sees which
@@ -89,6 +83,17 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
         relaxed_deletes=relaxed_deletes,
         relaxed_inequalities=relaxed_inequalities,
     )
+
+
+def _choose_abstraction(problem, config, metrics):
+    """The class the config names, or else the candidate at the config's rank."""
+    if config.objects_to_abstract is not None:
+        with metrics.measure("abstraction"):
+            return _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
+
+    candidate_classes = _candidate_classes(config, metrics)
+    with metrics.measure("abstraction"):
+        return _select_abstraction(problem, candidate_classes, config.abstract_name, config.class_rank)
 
 
 def _candidate_classes(config, metrics):
