@@ -15,6 +15,8 @@ SEQUENTIAL_ENCODING = _project_path("core", "encodings", "sequential-incremental
 FAST_DOWNWARD_SCRIPT = _project_path("lib", "downward", "fast-downward.py")
 # Silvan Sievers' fork of Fast Downward, whose A* prunes states symmetric to ones it has seen.
 STRUCTURAL_SYMMETRIES_SCRIPT = _project_path("lib", "structural-symmetries", "fast-downward.py")
+# A fork of Fast Downward whose translator grounds only the actions a file lists. A local checkout, not a submodule.
+PARTIAL_GROUNDING_TRANSLATOR = _project_path("lib", "downward-partial-grounding", "src", "translate", "translate.py")
 
 PDDL_SYMMETRIES_TRANSLATOR = _project_path("lib", "pddl-symmetries", "src", "translate", "translate.py")
 

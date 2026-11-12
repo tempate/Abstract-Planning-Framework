@@ -18,6 +18,9 @@ not install: the pybliss extension, the Fast Downward release build, Silvan Siev
 pinned plasp binary, and MS-unsat from the Unsolvability IPC 2016. Skipping it fails at planning time rather than at setup
 time.
 
+Refinement first tries the abstract plan on a partial grounding, from a private Fast Downward fork that must be cloned by
+hand into `lib/downward-partial-grounding` (gitignored). Without it, refinement grounds the whole task.
+
 For automatic formatting on commit:
 
 ```bash

@@ -5,7 +5,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 
-from core.integrations.paths import FAST_DOWNWARD_SCRIPT, STRUCTURAL_SYMMETRIES_SCRIPT
+from core.integrations.paths import FAST_DOWNWARD_SCRIPT, PARTIAL_GROUNDING_TRANSLATOR, STRUCTURAL_SYMMETRIES_SCRIPT
 from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
 from core.plan import PlanAction
 
@@ -57,6 +57,31 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
         os.fspath(domain_path),
         os.fspath(problem_path),
     ]
+    _translate(command, label)
+    return sas_path
+
+
+def partial_pddl_to_sas(base_dir, domain_path, problem_path, actions_path):
+    """Translate a PDDL task grounding only the actions a plan file lists, and return its SAS file."""
+    sas_path = os.path.join(base_dir, "output.sas")
+    # The fork's driver insists on a search build, so call its translator, which needs none.
+    command = [
+        sys.executable,
+        PARTIAL_GROUNDING_TRANSLATOR,
+        os.fspath(domain_path),
+        os.fspath(problem_path),
+        "--sas-file",
+        sas_path,
+        "--grounding-action-queue-ordering",
+        "actionsfromfile",
+        "--actions-file",
+        os.fspath(actions_path),
+    ]
+    _translate(command, "partial")
+    return sas_path
+
+
+def _translate(command, label):
     completed_process = subprocess.run(command, capture_output=True, text=True)
 
     if completed_process.returncode == _TRANSLATE_UNSOLVABLE or _UNSOLVABLE_MARKER in completed_process.stdout:
@@ -64,8 +89,6 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
 
     if completed_process.returncode != _SUCCESS:
         _raise_failure(completed_process, label)
-
-    return sas_path
 
 
 def find_plan(base_dir, domain_path, problem_path, label, search):

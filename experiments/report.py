@@ -37,6 +37,10 @@ KILLED_IN_PHASE = {
     # The concrete task is grounded only once there is an abstract plan to refine.
     "abstract_solving": "Translating the task",
     "abstract_fd_search": "Translating the task",
+    "partial_fd": "Translating the task to ASP",
+    "partial_asp": "Guided concrete search",
+    # The partial one-shot failed, so the whole task is grounded next.
+    "partial_one_shot": "Translating the task",
     "concrete_fd": "Translating the task to ASP",
     "concrete_asp": "Guided concrete search",
     "guided_concrete_solving": "Extended concrete search",

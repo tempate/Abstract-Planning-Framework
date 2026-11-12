@@ -1,5 +1,6 @@
 """The gaps and the abstract plan that refinement adds to the concrete ASP program."""
 
+import itertools
 import json
 
 import clingo
@@ -38,6 +39,22 @@ def map_abstract_actions(abstract_plan, abstraction, gaps=True):
         choices[time_step] = f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1."
 
     return choices
+
+
+def concrete_groundings(abstract_plan, abstraction):
+    """Every concrete action the abstract plan's actions may refine into, as plan-file lines."""
+    groundings = set()
+    for action in abstract_plan:
+        options = []
+        for arg in action.args:
+            if arg.casefold() == abstraction.name.casefold():
+                options.append(abstraction.objects)
+            else:
+                options.append((arg,))
+        for args in itertools.product(*options):
+            groundings.add(f"({' '.join((action.name, *args))})".lower())
+
+    return sorted(groundings)
 
 
 def add_switches(choices):

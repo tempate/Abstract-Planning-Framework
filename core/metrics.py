@@ -20,6 +20,9 @@ DURATION_LABELS = {
     "abstract_asp": "Abstract SAS-to-ASP",
     "abstract_solving": "Abstract plan solving",
     "abstract_fd_search": "Abstract Fast Downward search",
+    "partial_fd": "Partial Fast Downward",
+    "partial_asp": "Partial SAS-to-ASP",
+    "partial_one_shot": "Partial one-shot solving",
     "guided_concrete_solving": "Guided concrete solving",
     # No longer measured: the guided search now raises the horizon itself. Kept
     # so collecting a run made before that still writes the column it recorded.
