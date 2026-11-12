@@ -1,6 +1,6 @@
 """Plan with ASP: a concrete task directly, or the abstract task for a refinement to follow."""
 
-from core.integrations.clingo import parse_plan_actions, plan_length
+from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.utilities.config import PlanningConfig
@@ -28,9 +28,8 @@ class Asp:
                 solve_result = solver.search(on_attempt=record_attempt)
 
             run.metrics.set_counter("concrete_solve_calls", solve_result.attempts)
-            plan = solve_result.plan
-            if plan is not None:
-                run.metrics.set_counter("plan_length", plan_length(plan))
+            plan = parse_plan_actions(solve_result.plan)
+            run.metrics.set_counter("plan_length", len(plan))
 
         return run.plan_result(config, plan)
 

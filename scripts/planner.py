@@ -44,18 +44,8 @@ def print_planning_result(result):
 
     if result["plan"] is not None:
         print(f"\nPlan ({length} actions):")
-        for action in _ordered_actions(result["plan"]):
-            print(" ", action)
-
-
-def _ordered_actions(plan):
-    """Order a plan for reading: our own by time step, an external one as given."""
-    occurrences = [atom for atom in plan if atom.startswith("occurs(")]
-    return sorted(occurrences, key=_time_step) if occurrences else plan
-
-
-def _time_step(atom):
-    return int(str(atom).split(",")[-1].rstrip(")"))
+        for action in result["plan"]:
+            print(f"  {action.time_step}: ({' '.join((action.name, *action.args))})")
 
 
 def _argument_parser():

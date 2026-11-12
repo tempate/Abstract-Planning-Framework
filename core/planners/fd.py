@@ -20,11 +20,13 @@ class FastDownward:
         """Search one PDDL task, reporting it like our own pipelines."""
         with planning_run(LABEL, on_update) as run:
             with run.metrics.measure("fd_search"):
-                plan = find_pddl_plan(run.base_dir, config.domain_path, config.problem_path, LABEL, self.search)
+                lines = find_pddl_plan(run.base_dir, config.domain_path, config.problem_path, LABEL, self.search)
 
             # An already satisfied goal gives an empty plan, which is a solved
             # task rather than a failure, so the length is set on any plan.
-            if plan is not None:
+            plan = None
+            if lines is not None:
+                plan = parse_plan_actions(lines)
                 run.metrics.set_counter("plan_length", len(plan))
 
         return run.plan_result(config, plan)

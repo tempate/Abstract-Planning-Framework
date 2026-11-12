@@ -22,8 +22,8 @@ def solve(config: AbstractPlanningConfig, on_update=None):
         # proves the concrete one has none either.
         if actions is None:
             raise UnsolvableTaskError("The abstract task has no plan")
-        # A doubling horizon leaves empty steps and Fast Downward counts from 0,
-        # while the refinement maps one abstract action onto each step from 1.
+        # A doubling horizon leaves empty steps, while the refinement maps one
+        # abstract action onto each step from 1.
         abstract_plan = one_action_per_step(actions)
         run.metrics.set_counter("abstract_plan_length", len(abstract_plan))
         context = RefinementContext(

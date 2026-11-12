@@ -5,7 +5,7 @@ from dataclasses import dataclass, replace
 
 from core.pipeline.abstraction.factory import Abstraction
 from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
-from core.integrations.clingo import plan_length
+from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import partial_pddl_to_sas, pddl_to_sas
 from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
 from core.integrations.plasp import sas_to_asp
@@ -38,9 +38,11 @@ class RefinementContext:
 def refine(context: RefinementContext, abstract_plan, abstract_horizon):
     """Ground the concrete task, then use an abstract plan to guide its search."""
     abstract_plan = _with_original_names(abstract_plan, context.renamings)
-    plan = _solve_concrete_plan(context, abstract_plan, abstract_horizon)
-    if plan is not None:
-        context.metrics.set_counter("plan_length", plan_length(plan))
+    atoms = _solve_concrete_plan(context, abstract_plan, abstract_horizon)
+    if atoms is None:
+        return None
+    plan = parse_plan_actions(atoms)
+    context.metrics.set_counter("plan_length", len(plan))
     return plan
 
 

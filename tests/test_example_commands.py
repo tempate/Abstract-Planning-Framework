@@ -12,6 +12,7 @@ from scripts import planner, unsolvability
 from core.pipeline.abstraction.collapse import AbstractionError
 from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.utilities.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
+from core.utilities.plan import PlanAction
 from experiments.collect import _values
 
 # Each example runs the planner mode it is named after.
@@ -36,7 +37,7 @@ class PlannerOutputTests(unittest.TestCase):
         }
         output = StringIO()
         with redirect_stdout(output):
-            planner.print_planning_result({"plan": ["occurs(move,1)"], "success": True, "metrics": metrics})
+            planner.print_planning_result({"plan": (PlanAction("move", (), 1),), "success": True, "metrics": metrics})
 
         values = _values({"status": "success", "wall_time_seconds": 1.0, "output": output.getvalue()})
 
