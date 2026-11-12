@@ -268,6 +268,44 @@ class BenchmarkTests(unittest.TestCase):
                 [(mode, rank) for mode, _n, _d, _p, rank in tasks], [("abs-asp", 1), ("abs-asp", 2), ("asp", None)]
             )
 
+    def test_an_abstract_mode_runs_only_the_class_another_mode_did_best_with(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+            (benchmark / "p02.pddl").touch()
+
+            tasks = _benchmark_tasks(
+                root,
+                ["example"],
+                None,
+                class_counts={("example", "p01.pddl"): 3, ("example", "p02.pddl"): 3},
+                best={("example", "p01.pddl", "abs-lama"): 2, ("example", "p02.pddl", "abs-asp"): 1},
+                best_of="abs-lama",
+            )
+
+            self.assertEqual([(problem.name, rank) for _m, _n, _d, problem, rank in tasks], [("p01.pddl", 2)])
+
+    def test_concrete_modes_skip_the_problems_that_do_not_ground(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            benchmark = root / "example"
+            benchmark.mkdir()
+            (benchmark / "domain.pddl").touch()
+            (benchmark / "p01.pddl").touch()
+            (benchmark / "p02.pddl").touch()
+
+            tasks = _benchmark_tasks(
+                root, ["example"], None, modes=("abs-asp", "asp"), ungroundable={("example", "p02.pddl")}
+            )
+
+            self.assertEqual(
+                [(mode, problem.name) for mode, _n, _d, problem, _r in tasks],
+                [("abs-asp", "p01.pddl"), ("asp", "p01.pddl"), ("abs-asp", "p02.pddl")],
+            )
+
     def test_a_run_leaves_out_what_an_earlier_run_submitted(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

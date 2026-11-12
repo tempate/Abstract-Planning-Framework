@@ -145,6 +145,19 @@ def _siblings(track_name):
     return [track for track in TRACKS.values() if track.benchmarks_dir == benchmarks_dir]
 
 
+def ungroundable(track_name):
+    """The (domain, problem) pairs the track's list says Fast Downward cannot ground, empty without a list."""
+    list_file = _list_file(track_name)
+    if not list_file.is_file():
+        return frozenset()
+    problems = set()
+    for line in list_file.read_text(encoding="utf-8").splitlines():
+        if line.strip() and not line.startswith("#"):
+            domain, _, problem = line.strip().rpartition("/")
+            problems.add((domain, problem))
+    return frozenset(problems)
+
+
 def _list_file(track_name):
     return Path(os.path.commonpath([track.directory for track in _siblings(track_name)])) / "ungroundable.txt"
 
