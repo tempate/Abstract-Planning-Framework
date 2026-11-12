@@ -17,6 +17,7 @@ class MsUnsat:
     def check_solvability(self, on_update=None):
         """Search the concrete task, which settles it either way."""
         config = self.config
+
         with planning_run("concrete", on_update) as run:
             with run.metrics.measure("fd_search"):
                 found = has_plan(run.base_dir, config.domain_path, config.problem_path, "concrete")

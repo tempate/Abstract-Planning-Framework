@@ -19,9 +19,11 @@ class Asp:
     def solve(self, on_update=None):
         """Translate and solve the PDDL task."""
         config = self.config
+
         with planning_run("concrete", on_update) as run:
             with run.metrics.measure("concrete_fd"):
                 sas_file = pddl_to_sas(run.base_dir, config.domain_path, config.problem_path, "concrete")
+
             plan = self.plan_sas(sas_file, run.metrics.prefixed("concrete_"))
             run.metrics.set_counter("plan_length", len(plan))
 
