@@ -1,12 +1,11 @@
 """Plan with ASP: a concrete task directly, or the abstract task for a refinement to follow."""
 
-from dataclasses import replace
-
 from core.integrations.clingo import parse_plan_actions, plan_length
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.utilities.config import PlanningConfig
 from core.utilities.execution import planning_run
+from core.utilities.plan import one_action_per_step
 from core.asp.solver import Solver
 
 
@@ -36,14 +35,10 @@ class Asp:
             solver = Solver(abstract_asp, optimize=config.optimize)
             solve_result = solver.search(on_attempt=record_attempt)
 
-        # An exponential horizon can leave steps empty. Closing them up keeps an abstract action on
-        # every step, which is the layout refinement maps onto the concrete steps.
-        actions = []
-        for step, action in enumerate(parse_plan_actions(solve_result.plan), 1):
-            actions.append(replace(action, time_step=step))
-
+        # An exponential horizon can leave steps empty, which closing them up removes.
+        actions = one_action_per_step(parse_plan_actions(solve_result.plan))
         metrics.set_counters({"abstract_plan_length": len(actions), "abstract_solve_calls": solve_result.attempts})
-        return tuple(actions), len(actions)
+        return actions, len(actions)
 
 
 def _search(asp, config, metrics):

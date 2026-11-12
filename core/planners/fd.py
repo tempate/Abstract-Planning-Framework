@@ -1,11 +1,12 @@
 """Plan and decide with Fast Downward."""
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 from core.integrations.fast_downward import Search, find_plan, find_sas_plan, parse_plan_actions
 from core.utilities.outcomes import SOLVABLE, UNSOLVABLE, UnsolvableTaskError
 from core.utilities.config import PlanningConfig
 from core.utilities.execution import planning_run
+from core.utilities.plan import one_action_per_step
 
 LABEL = "fd"
 
@@ -46,7 +47,6 @@ class FastDownward:
         if plan is None:
             raise UnsolvableTaskError("Fast Downward found no abstract plan")
 
-        # Fast Downward counts from 0 and ASP from 1, where the mapping expects it.
-        actions = tuple(replace(action, time_step=action.time_step + 1) for action in parse_plan_actions(plan))
+        actions = one_action_per_step(parse_plan_actions(plan))
         metrics.set_counter("abstract_plan_length", len(actions))
         return actions, len(actions)
