@@ -2,11 +2,14 @@ import unittest
 
 from experiments.paper import update_table
 
-TABLE = r"""\multicolumn{14}{l}{\emph{Resources}} \\
-nomystery & 19 & \textbf{4} & 2 & \textbf{12} & 10 & 20 & 10 & 12 & 18 & 17 & -- & -- & -- \\
+TABLE = r"""\begin{table*}
+\multicolumn{11}{l}{\emph{IPC Resources}} \\
+nomystery & 19 & \textbf{4} & 2 & \textbf{12} & 10 & 20 & 10 & 12 & 18 & 17 \\
 \midrule
-Total & 19 & 4 & 2 & 12 & 10 & 20 & 10 & 12 & 18 & 17 & -- & -- & -- \\
+Total & 19 & 4 & 2 & 12 & 10 & 20 & 10 & 12 & 18 & 17 \\
 \bottomrule
+\label{tab:ipc}
+\end{table*}
 """
 
 

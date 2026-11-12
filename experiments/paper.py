@@ -7,13 +7,13 @@ from pathlib import Path
 
 from experiments.figure import DEFAULT_PAPER, load_tracks, paper_figures, render_pdf, solved
 
-# Where each track's columns start in tab:ipc, and the modes they count in order.
+# Each track's table, where its columns start in it, and the modes they count in order.
 TABLE_COLUMNS = {
-    "sat": (1, ("asp", "abs-asp", "lama", "abs-lama")),
-    "opt": (6, ("asp", "abs-asp", "lmcut", "abs-lmcut")),
-    "unsat": (11, ("ms", "abs-ms")),
+    "sat": ("tab:ipc", 1, ("asp", "abs-asp", "lama", "abs-lama")),
+    "opt": ("tab:ipc", 6, ("asp", "abs-asp", "lmcut", "abs-lmcut")),
+    "unsat": ("tab:unsat", 1, ("ms", "abs-ms")),
 }
-TABLE_SECTIONS = {"symmetries": "Symmetries", "resources": "Resources"}
+TABLE_SECTIONS = {"symmetries": "IPC Symmetries", "resources": "IPC Resources"}
 
 
 def main():
@@ -32,7 +32,7 @@ def main():
 
 def domain_counts(problems, kind):
     """Each domain's row of the table for one track, problems first, under the name the paper gives it."""
-    modes = TABLE_COLUMNS[kind][1]
+    modes = TABLE_COLUMNS[kind][2]
     rows = defaultdict(lambda: [0] * (len(modes) + 1))
     for problem in problems:
         row = rows[_short(next(iter(problem.values()))["domain"])]
@@ -46,11 +46,12 @@ def domain_counts(problems, kind):
 
 def update_table(tex, kind, source, counts):
     """Write one track's columns of one source's section, bolding the better mode of each pair."""
-    start = tex.index(rf"\emph{{{TABLE_SECTIONS[source]}}}")
+    label, first, modes = TABLE_COLUMNS[kind]
+    table = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{label}}}"))
+    start = tex.index(rf"\emph{{{TABLE_SECTIONS[source]}}}", table)
     # The section runs to the next section's heading or the end of the table.
     end = re.compile(r"\\emph\{|\\bottomrule").search(tex, start + 1).start()
     lines = tex[start:end].split("\n")
-    first, modes = TABLE_COLUMNS[kind]
     width = len(modes) + 1
     changed = []
     for index, line in enumerate(lines):
