@@ -6,8 +6,8 @@ from pathlib import Path
 
 from unified_planning.model import Problem
 
-from core.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
-from core.abstraction.relaxation import find_relaxable_deletes, relax_inequalities, split_actions
+from core.pipeline.abstraction.collapse import AbstractionError, collapse_objects, validate_supported_problem
+from core.pipeline.abstraction.relaxation import find_relaxable_deletes, relax_inequalities, split_actions
 from core.integrations.numeric_fast_downward import detect_resources
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import (

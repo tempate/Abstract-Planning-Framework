@@ -2,7 +2,7 @@ import unittest
 from types import SimpleNamespace
 
 from core.utilities.plan import PlanAction
-from core.refinement.encoding import (
+from core.pipeline.refinement.encoding import (
     add_concrete_objects,
     add_switches,
     concrete_groundings,

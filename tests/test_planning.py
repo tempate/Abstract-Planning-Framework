@@ -7,14 +7,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from core.abstraction.factory import Abstraction, build_abstract_problem
+from core.pipeline.abstraction.factory import Abstraction, build_abstract_problem
 from core.integrations.fast_downward import LAMA
 from core.integrations.unified_planning import read_problem
 from core.utilities.outcomes import UnsolvableTaskError
-from core.abstraction.factory import write_abstract_problem
+from core.pipeline.abstraction.factory import write_abstract_problem
 from core.utilities.metrics import PlanningMetrics
 from core.baselines import asp, fd, ms
-from core.planning import abstraction
+from core.pipeline import pipeline
 from core.utilities.config import AbstractPlanningConfig, PlanningConfig
 from scripts.utils.arguments import positive_int
 
@@ -66,12 +66,12 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
 def _stubbed_decision(found):
     """Run the abstract decision pipeline against stubbed integrations."""
     with (
-        patch("core.planning.abstraction.temp_run_dir") as temp_run_dir,
+        patch("core.pipeline.pipeline.temp_run_dir") as temp_run_dir,
         patch(
-            "core.planning.abstraction.build_abstract_problem", return_value=_generated_abstraction()
+            "core.pipeline.pipeline.build_abstract_problem", return_value=_generated_abstraction()
         ) as build_abstract_problem,
-        patch("core.planning.abstraction.write_abstract_problem", return_value=("domain.pddl", "problem.pddl", {})),
-        patch("core.planning.abstraction.has_plan", return_value=found),
+        patch("core.pipeline.pipeline.write_abstract_problem", return_value=("domain.pddl", "problem.pddl", {})),
+        patch("core.pipeline.pipeline.has_plan", return_value=found),
     ):
         temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
         yield SimpleNamespace(build_abstract_problem=build_abstract_problem)
@@ -90,13 +90,13 @@ class DecisionTests(unittest.TestCase):
 
     def test_an_abstract_plan_settles_nothing(self):
         with _stubbed_decision(found=True):
-            result = abstraction.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            result = pipeline.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unknown")
 
     def test_an_abstraction_with_no_plan_proves_the_task_unsolvable(self):
         with _stubbed_decision(found=False):
-            result = abstraction.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            result = pipeline.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unsolvable")
 
@@ -104,7 +104,7 @@ class DecisionTests(unittest.TestCase):
         with _stubbed_decision(found=True) as stubs:
             stubs.build_abstract_problem.side_effect = UnsolvableTaskError("no relaxed solution")
 
-            result = abstraction.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
+            result = pipeline.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
 
         self.assertEqual(result["verdict"], "unsolvable")
 

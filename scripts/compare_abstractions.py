@@ -3,7 +3,7 @@
 For the first problem of each plan-track domain, collapse its largest same-type
 object set with both versions of the code and compare the abstract task and the
 relaxed-delete and inequality counts. It is the check that a change to
-core/abstraction preserves behavior, which the tests alone cannot show. A class
+core/pipeline/abstraction preserves behavior, which the tests alone cannot show. A class
 chosen this way is not the one PDDL Symmetries would pick, and some are rejected;
 a problem both versions reject says nothing either way.
 """
@@ -25,8 +25,8 @@ TIMEOUT = 120
 # versions of the code provide.
 DESCRIBE = """
 import collections, hashlib, json, sys
-from core.abstraction.factory import build_abstract_problem
 from core.integrations.unified_planning import read_problem, without_action_costs
+from core.pipeline.abstraction.factory import build_abstract_problem
 from core.utilities.config import AbstractPlanningConfig
 
 domain, problem = sys.argv[1:3]

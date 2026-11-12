@@ -7,9 +7,9 @@ from io import StringIO
 from pathlib import Path
 from unittest.mock import patch
 
-from core.planning import abstraction
+from core.pipeline import pipeline
 from scripts import planner, unsolvability
-from core.abstraction.collapse import AbstractionError
+from core.pipeline.abstraction.collapse import AbstractionError
 from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.utilities.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
 from experiments.collect import _values
@@ -139,7 +139,7 @@ class PlannerExitStatusTests(unittest.TestCase):
 
     def test_explicit_selection_reaches_the_planning_pipeline(self):
         with (
-            patch.object(abstraction, "solve", return_value={"success": True}) as compute,
+            patch.object(pipeline, "solve", return_value={"success": True}) as compute,
             patch.object(planner, "print_planning_result"),
         ):
             status = self._main(
@@ -168,10 +168,10 @@ class PlannerExitStatusTests(unittest.TestCase):
             (planner, "abs-lama", "solve", "print_planning_result"),
             (unsolvability, "abs-ms", "check_solvability", "print_verdict"),
         )
-        for driver, mode, pipeline, printer in drivers:
+        for driver, mode, method, printer in drivers:
             with self.subTest(driver=driver.__name__):
                 with (
-                    patch.object(abstraction, pipeline, return_value={"success": True}) as compute,
+                    patch.object(pipeline, method, return_value={"success": True}) as compute,
                     patch.object(driver, printer),
                     patch.object(
                         sys,

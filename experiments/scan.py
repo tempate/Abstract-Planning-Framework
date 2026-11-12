@@ -62,8 +62,8 @@ print(f"{len(classes)} classes" if classes else "none")
 """
 RANK = """
 import json, sys
-from core.abstraction.collapse import validate_supported_problem
-from core.abstraction.factory import AbstractionError, _candidate_classes, _select_abstraction
+from core.pipeline.abstraction.collapse import validate_supported_problem
+from core.pipeline.abstraction.factory import AbstractionError, _candidate_classes, _select_abstraction
 from core.integrations.unified_planning import read_problem, without_action_costs
 from core.utilities.metrics import PlanningMetrics
 from core.utilities.config import AbstractPlanningConfig

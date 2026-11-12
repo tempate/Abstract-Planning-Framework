@@ -9,7 +9,7 @@ may exist only because of the relaxation, and is reported as unknown.
 
 import argparse
 
-from core.planning import abstraction
+from core.pipeline import pipeline
 from core.baselines.backends import BACKENDS
 
 from .utils.arguments import abstract_planning_config, abstraction_arguments, planning_config, task_arguments
@@ -31,7 +31,7 @@ def _compute(args):
     if args.mode in ("ms", "oss"):
         return BACKENDS[args.mode].check_solvability(planning_config(args), on_update)
     if args.mode == "abs-ms":
-        return abstraction.check_solvability(abstract_planning_config(args), on_update)
+        return pipeline.check_solvability(abstract_planning_config(args), on_update)
 
 
 def print_verdict(result):

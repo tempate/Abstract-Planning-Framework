@@ -3,8 +3,8 @@
 import os
 from dataclasses import dataclass, replace
 
-from core.abstraction.factory import Abstraction
-from core.abstraction.relaxation import SPLIT_SEPARATOR
+from core.pipeline.abstraction.factory import Abstraction
+from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.clingo import plan_length
 from core.integrations.fast_downward import partial_pddl_to_sas, pddl_to_sas
 from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
@@ -12,7 +12,7 @@ from core.integrations.plasp import sas_to_asp
 from core.utilities.metrics import PlanningMetrics
 from core.utilities.outcomes import IntegrationError, UnsolvableTaskError
 from core.utilities.config import AbstractPlanningConfig
-from core.refinement.encoding import (
+from core.pipeline.refinement.encoding import (
     add_concrete_objects,
     add_switches,
     concrete_groundings,

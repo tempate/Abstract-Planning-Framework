@@ -5,12 +5,12 @@ import os
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.ms_unsat import has_plan
 from core.utilities.metrics import PlanningMetrics
-from core.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
+from core.pipeline.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
 from core.utilities.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
 from core.baselines.backends import BACKENDS
 from core.utilities.config import AbstractPlanningConfig
 from core.utilities.execution import temp_run_dir
-from core.refinement.pipeline import RefinementContext, refine
+from core.pipeline.refinement.pipeline import RefinementContext, refine
 
 
 def solve(config: AbstractPlanningConfig, on_update=None):

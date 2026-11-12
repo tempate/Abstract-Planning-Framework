@@ -3,7 +3,7 @@
 import sys
 import traceback
 
-from core.abstraction.collapse import AbstractionError
+from core.pipeline.abstraction.collapse import AbstractionError
 from core.integrations.unified_planning import PddlError
 from core.utilities.outcomes import PlanningOutcomeError
 

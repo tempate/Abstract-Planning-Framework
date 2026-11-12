@@ -11,12 +11,12 @@ from unified_planning.engines.results import ValidationResultStatus
 from unified_planning.plans import ActionInstance, SequentialPlan
 from unified_planning.shortcuts import SequentialSimulator
 
-from core.abstraction.factory import build_abstract_problem
-from core.abstraction.relaxation import SPLIT_SEPARATOR
+from core.pipeline.abstraction.factory import build_abstract_problem
+from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.unified_planning import parse_problem
 from core.utilities.plan import PlanAction
-from core.planning import abstraction
+from core.pipeline import pipeline
 from core.baselines.backends import BACKENDS
 from core.utilities.config import AbstractPlanningConfig
 
@@ -130,7 +130,7 @@ class SoundnessTests(unittest.TestCase):
             for planner in ("asp", "lama"):
                 with self.subTest(objects=objects, planner=planner):
                     with redirect_stdout(StringIO()):
-                        result = abstraction.solve(self._config(objects, planner))
+                        result = pipeline.solve(self._config(objects, planner))
                     steps = [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
 
                     self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
@@ -180,7 +180,7 @@ class RefinementTests(unittest.TestCase):
             patch.object(type(BACKENDS["lama"]), "find_abstract_plan", return_value=(plan, steps)),
             redirect_stdout(StringIO()),
         ):
-            result = abstraction.solve(config)
+            result = pipeline.solve(config)
         return [(action.name, *action.args) for action in parse_plan_actions(result["plan"])]
 
     @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
