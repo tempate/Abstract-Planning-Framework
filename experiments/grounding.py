@@ -132,7 +132,7 @@ def _collect(track_name):
         memory=MEMORY_LIMIT.replace("G", " GB"), time=TIME_LIMIT.replace("m", " minutes"), track=track_name
     )
     _list_file(track_name).write_text(header + "".join(f"{name}\n" for name in failed), encoding="utf-8")
-    print(f"Wrote {len(failed)} of {len(outcomes)} grounded problems to {_list_file(track_name)}")
+    print(f"Wrote the {len(failed)} of {len(outcomes)} problems that did not ground to {_list_file(track_name)}")
 
 
 def _unsolved(track_name):
