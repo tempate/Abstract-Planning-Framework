@@ -6,7 +6,7 @@ from core.search.solver import Solver, SolveResult
 
 
 class IncrementalSolver(Solver):
-    """One Clingo control whose horizon can be raised without regrounding."""
+    """One Clingo control whose horizon can be raised without regrounding, and whose assumptions can be given up."""
 
     def __init__(self, asp, init_horizon=0, optimize=True):
         if init_horizon < 0:
@@ -22,21 +22,29 @@ class IncrementalSolver(Solver):
         self._ground_steps(0, init_horizon)
         self._add_goal()
 
-    def search(self, assumptions=(), on_attempt=None):
-        """Raise the horizon until the program becomes satisfiable."""
+    def search(self, symbols=(), on_attempt=None, dropped=0):
+        """Assume every symbol but the first `dropped`, give the rest up in the order given, then raise the horizon."""
+        assumptions = {symbol: index >= dropped for index, symbol in enumerate(symbols)}
         attempts = 0
+
         while True:
             attempts += 1
 
             # Allow callers to report progress while the search runs.
             if on_attempt is not None:
-                on_attempt(self.horizon, attempts)
+                on_attempt(self.horizon, dropped, attempts)
 
-            plan = self.solve(assumptions)
+            plan = self.solve(list(assumptions.items()))
             if plan is not None:
-                return SolveResult(plan, self.horizon, attempts)
+                return SolveResult(plan, self.horizon, attempts, dropped)
 
-            self.extend()
+            if dropped < len(symbols):
+                assumptions[symbols[dropped]] = False
+                dropped += 1
+            else:
+                # Nothing constrains the search any more, so the only way left to
+                # satisfy the program is to give it another time step.
+                self.extend()
 
     def extend(self):
         """Raise the horizon keeping everything grounded so far."""

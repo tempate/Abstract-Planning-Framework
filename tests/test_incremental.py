@@ -47,7 +47,7 @@ reached(t).
         attempts = []
 
         result = IncrementalSolver(AspProgram(program), init_horizon=2).search(
-            on_attempt=lambda horizon, calls: attempts.append((horizon, calls))
+            on_attempt=lambda horizon, _dropped, calls: attempts.append((horizon, calls))
         )
 
         self.assertEqual(result.horizon, 3)
@@ -91,7 +91,7 @@ reached(t).
         horizons = []
 
         result = IncrementalSolver(AspProgram(program), optimize=False).search(
-            on_attempt=lambda horizon, _calls: horizons.append(horizon)
+            on_attempt=lambda horizon, _dropped, _calls: horizons.append(horizon)
         )
 
         self.assertEqual(horizons, [0, 1, 2, 4])
@@ -111,7 +111,7 @@ reached(t).
         horizons = []
 
         result = IncrementalSolver(AspProgram(program), init_horizon=3, optimize=False).search(
-            on_attempt=lambda horizon, _calls: horizons.append(horizon)
+            on_attempt=lambda horizon, _dropped, _calls: horizons.append(horizon)
         )
 
         self.assertEqual(horizons, [3, 4, 5, 7])

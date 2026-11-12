@@ -5,6 +5,8 @@ from collections import OrderedDict
 
 from unified_planning.model import Fluent, InstantaneousAction
 
+from core.integrations.unified_planning import add_effect_like
+
 # A split action keeps the name it came from, so the refinement can still find
 # it in the concrete task, and carries the separator to mark what it is.
 SPLIT_SEPARATOR = "--abs-"
@@ -95,14 +97,7 @@ def _with_preconditions(action, name, conditions):
     for condition in conditions:
         copy.add_precondition(condition)
     for effect in action.effects:
-        if effect.is_assignment():
-            copy.add_effect(effect.fluent, effect.value, effect.condition, effect.forall)
-        elif effect.is_increase():
-            copy.add_increase_effect(effect.fluent, effect.value, effect.condition, effect.forall)
-        elif effect.is_decrease():
-            copy.add_decrease_effect(effect.fluent, effect.value, effect.condition, effect.forall)
-        else:
-            raise ValueError(f"Unsupported effect in action {action.name}: {effect}")
+        add_effect_like(copy, effect, effect.fluent, effect.value, effect.condition)
     return copy
 
 

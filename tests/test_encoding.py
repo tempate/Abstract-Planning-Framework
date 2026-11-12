@@ -7,12 +7,12 @@ from core.refinement.encoding import (
     add_switches,
     concrete_groundings,
     drop_action_choice,
-    make_steps_optional,
     map_abstract_actions,
     switches,
 )
 from core.search.incremental import IncrementalSolver
 from core.encodings.program import AspProgram
+from core.encodings.rules import make_steps_optional
 
 OCCURRENCE_ENCODING = "#program step(t).\n1 {occurs(Action, t) : action(Action)} 1.\n#program base.\n"
 

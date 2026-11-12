@@ -102,6 +102,27 @@ MIXED_NUMERIC_PROBLEM = """
   (:goal (at lorry site)))
 """
 
+UNIVERSAL_EFFECT_DOMAIN = """
+(define (domain sweep)
+  (:requirements :strips :typing :universal-preconditions :action-costs)
+  (:types item)
+  (:predicates (dirty ?i - item))
+  (:functions (total-cost) - number)
+  (:action sweep
+    :parameters ()
+    :effect (and (forall (?i - item) (not (dirty ?i))) (increase (total-cost) 1))))
+"""
+
+UNIVERSAL_EFFECT_PROBLEM = """
+(define (problem sweep-task)
+  (:domain sweep)
+  (:objects a b - item)
+  ; An initial cost would make the reader turn the increases into action costs.
+  (:init (dirty a) (dirty b))
+  (:goal (not (dirty a)))
+  (:metric minimize (total-cost)))
+"""
+
 
 class UnifiedPlanningCodecTests(unittest.TestCase):
     def test_writing_leaves_the_closed_world_out_of_the_problem(self):
@@ -287,6 +308,14 @@ class WithoutActionCostsTests(unittest.TestCase):
         numeric = [e for e in stripped.action("drive").effects if not e.fluent.fluent().type.is_bool_type()]
         self.assertEqual(len(numeric), 1)
         self.assertTrue(numeric[0].is_decrease())
+
+    def test_a_universal_effect_keeps_its_variables(self):
+        problem = parse_problem(UNIVERSAL_EFFECT_DOMAIN, UNIVERSAL_EFFECT_PROBLEM)
+
+        stripped = without_action_costs(problem)
+
+        (effect,) = stripped.action("sweep").effects
+        self.assertEqual([variable.name for variable in effect.forall], ["i"])
 
     def test_the_problem_it_was_given_keeps_its_costs(self):
         problem = parse_problem(ROUND_TRIP_DOMAIN, ROUND_TRIP_PROBLEM)

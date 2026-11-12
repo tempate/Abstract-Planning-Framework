@@ -18,9 +18,6 @@ class Solver:
     """A Clingo control holding the base program, solved one call at a time."""
 
     def __init__(self, asp):
-        self._setup_control(asp)
-
-    def _setup_control(self, asp):
         """Create the control, load the program and ground its base."""
         self.control = clingo.Control(["-t", str(THREADS), "--warn=none"])
         self.control.configuration.solve.models = 1

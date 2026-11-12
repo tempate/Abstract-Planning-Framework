@@ -42,7 +42,7 @@ def _to_asp(sas_file, config, metrics):
 def _search(asp, config, run_id, metrics):
     """Solve the program, raising the horizon until a plan is found."""
 
-    def record_attempt(_horizon, solve_calls):
+    def record_attempt(_horizon, _dropped, solve_calls):
         metrics.set_counter("concrete_solve_calls", solve_calls)
 
     with metrics.measure("guided_concrete_solving"):
@@ -66,7 +66,7 @@ def find_abstract_plan(config, _base_dir, abstract_sas, metrics):
     with metrics.measure("abstract_asp"):
         abstract_asp = sas_to_asp(abstract_sas, config.optimize)
 
-    def record_attempt(horizon, solve_calls):
+    def record_attempt(horizon, _dropped, solve_calls):
         metrics.set_counters({"abstract_plan_length": horizon, "abstract_solve_calls": solve_calls})
 
     with metrics.measure("abstract_solving"):

@@ -3,7 +3,7 @@
 import os
 import subprocess
 
-from core.encodings.rules import AT_MOST_ONE_ACTION, EXACTLY_ONE_ACTION
+from core.encodings.rules import make_steps_optional
 from core.integrations.paths import PLASP_BIN, SEQUENTIAL_ENCODING
 from core.outcomes import IntegrationError
 from core.encodings.program import AspProgram
@@ -16,7 +16,7 @@ def sas_to_asp(sas_path, optimize=True):
 
     # A doubling horizon finds the plans shorter than it only if a step can stay empty.
     if not optimize:
-        encoding = encoding.replace(EXACTLY_ONE_ACTION, AT_MOST_ONE_ACTION)
+        encoding = make_steps_optional(encoding)
 
     return AspProgram(encoding, _translate(sas_path))
 

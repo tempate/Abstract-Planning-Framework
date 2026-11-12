@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass
 
 from core.integrations.paths import FAST_DOWNWARD_SCRIPT, PARTIAL_GROUNDING_TRANSLATOR, STRUCTURAL_SYMMETRIES_SCRIPT
-from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
+from core.outcomes import UnsolvableTaskError, tool_failure
 from core.plan import PlanAction
 
 # Fast Downward's exit codes, documented at
@@ -88,7 +88,7 @@ def _translate(command, label):
         raise UnsolvableTaskError(f"Fast Downward ({label}) proved the task unsolvable while translating")
 
     if completed_process.returncode != _SUCCESS:
-        _raise_failure(completed_process, label)
+        raise tool_failure(f"Fast Downward ({label})", completed_process, _OUT_OF_MEMORY)
 
 
 def find_plan(base_dir, domain_path, problem_path, label, search):
@@ -142,7 +142,7 @@ def _find_plan(command, label, plan_path, unsolvable_exit_codes):
     if out.returncode in unsolvable_exit_codes:
         return None
     elif out.returncode != _SUCCESS:
-        _raise_failure(out, label)
+        raise tool_failure(f"Fast Downward ({label})", out, _OUT_OF_MEMORY)
 
     return _read_plan(plan_path)
 
@@ -156,17 +156,3 @@ def _read_plan(plan_path):
             if line and not line.startswith(";"):
                 plan.append(line)
         return plan
-
-
-def _raise_failure(out, label):
-    """Report what Fast Downward said, as memory when that is what ran out."""
-    message = f"Fast Downward ({label}) failed with exit code {out.returncode}"
-    if out.stdout.strip():
-        message += "\n" + out.stdout.strip()
-    if out.stderr.strip():
-        message += "\n" + out.stderr.strip()
-
-    if out.returncode in _OUT_OF_MEMORY:
-        raise OutOfMemoryError(message)
-    else:
-        raise IntegrationError(message)

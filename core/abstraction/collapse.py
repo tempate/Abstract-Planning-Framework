@@ -7,6 +7,8 @@ from unified_planning.model.metrics import (
     MinimizeSequentialPlanLength,
 )
 
+from core.integrations.unified_planning import add_effect_like
+
 __all__ = ["AbstractionError", "collapse_objects", "validate_supported_problem"]
 
 
@@ -103,14 +105,7 @@ def _copy_action(action, rewrite, deletes_to_relax):
         fluent = rewrite(effect.fluent)
         value = rewrite(effect.value)
         condition = rewrite(effect.condition)
-        if effect.is_assignment():
-            collapsed_action.add_effect(fluent, value, condition, effect.forall)
-        elif effect.is_increase():
-            collapsed_action.add_increase_effect(fluent, value, condition, effect.forall)
-        elif effect.is_decrease():
-            collapsed_action.add_decrease_effect(fluent, value, condition, effect.forall)
-        else:
-            raise AbstractionError(f"Unsupported effect in action {action.name}: {effect}")
+        add_effect_like(collapsed_action, effect, fluent, value, condition)
     return collapsed_action, relaxed_deletes
 
 

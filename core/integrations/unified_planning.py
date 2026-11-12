@@ -184,11 +184,16 @@ def without_action_costs(problem):
             continue
         action.clear_effects()
         for effect in kept:
-            # By kind, or a surviving increase comes back as an assignment.
-            if effect.is_increase():
-                action.add_increase_effect(effect.fluent, effect.value, effect.condition)
-            elif effect.is_decrease():
-                action.add_decrease_effect(effect.fluent, effect.value, effect.condition)
-            else:
-                action.add_effect(effect.fluent, effect.value, effect.condition)
+            add_effect_like(action, effect, effect.fluent, effect.value, effect.condition)
     return stripped
+
+
+def add_effect_like(action, effect, fluent, value, condition):
+    """Add an effect of the same kind and quantifier as `effect` to `action`."""
+    # By kind, or an increase comes back as an assignment.
+    if effect.is_increase():
+        action.add_increase_effect(fluent, value, condition, effect.forall)
+    elif effect.is_decrease():
+        action.add_decrease_effect(fluent, value, condition, effect.forall)
+    else:
+        action.add_effect(fluent, value, condition, effect.forall)

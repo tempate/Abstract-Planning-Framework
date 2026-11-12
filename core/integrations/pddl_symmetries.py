@@ -9,7 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from core.integrations.paths import PDDL_SYMMETRIES_TRANSLATOR
-from core.outcomes import IntegrationError, OutOfMemoryError, SymmetryTimeoutError, UnsolvableTaskError
+from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError, tool_failure
 
 # The exit code Fast Downward's translator, which PDDL Symmetries extends, gives when memory runs out.
 _TRANSLATE_OUT_OF_MEMORY = 20
@@ -74,15 +74,10 @@ def _run_translator(command, time_limit):
         raise SymmetryTimeoutError(f"PDDL Symmetries exceeded its {time_limit}-second limit") from error
     except OSError as error:
         raise IntegrationError(f"Could not run PDDL Symmetries: {error}") from error
-    diagnostics = "\n".join(value.strip() for value in (result.stdout, result.stderr) if value.strip())
-    if "No relaxed solution" in diagnostics:
+    if "No relaxed solution" in result.stdout + result.stderr:
         raise UnsolvableTaskError("PDDL Symmetries reports that the task has no relaxed solution")
     if result.returncode != 0:
-        suffix = f":\n{diagnostics}" if diagnostics else ""
-        message = f"PDDL Symmetries failed with exit code {result.returncode}{suffix}"
-        if result.returncode == _TRANSLATE_OUT_OF_MEMORY or "MemoryError" in diagnostics:
-            raise OutOfMemoryError(message)
-        raise IntegrationError(message)
+        raise tool_failure("PDDL Symmetries", result, (_TRANSLATE_OUT_OF_MEMORY,))
     return result.stdout
 
 

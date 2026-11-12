@@ -77,3 +77,15 @@ STATUS_BY_EXIT_CODE = {
     NoResourcesError.exit_code: NoResourcesError.status,
     OutOfMemoryError.exit_code: OutOfMemoryError.status,
 }
+
+
+def tool_failure(tool, completed, out_of_memory_codes):
+    """The error a failed tool run raises, carrying what the tool printed."""
+    message = f"{tool} failed with exit code {completed.returncode}"
+    for output in (completed.stdout, completed.stderr):
+        if output.strip():
+            message += "\n" + output.strip()
+    # A Python tool can die on a MemoryError of its own, which leaves an ordinary exit code.
+    if completed.returncode in out_of_memory_codes or "MemoryError" in message:
+        return OutOfMemoryError(message)
+    return IntegrationError(message)
