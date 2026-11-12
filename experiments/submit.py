@@ -11,6 +11,7 @@ from datetime import datetime
 from pathlib import Path
 
 from experiments.collect import collect, manifest_keys
+from experiments.grounding import ungroundable
 from experiments.report import best_classes
 from experiments.run import (
     ABSTRACTION_PREFIX,
@@ -65,6 +66,8 @@ def main():
             class_counts=track.class_counts(),
             from_rank=args.from_rank,
             best=best,
+            best_of=args.best_class_of,
+            ungroundable=ungroundable(track_name) if args.groundable else None,
         )
     )
 
@@ -274,6 +277,16 @@ def _argument_parser():
         help="Run abstract modes only on the class each did best with in the track's results, or on every class",
     )
     parser.add_argument(
+        "--best-class-of",
+        choices=[mode for mode in MODES if mode.startswith(ABSTRACTION_PREFIX)],
+        help="Run abstract modes only on the class this abstract mode did best with, skipping problems it never ran",
+    )
+    parser.add_argument(
+        "--groundable",
+        action="store_true",
+        help="Submit concrete modes only on the problems Fast Downward can ground, leaving out its ungroundable list",
+    )
+    parser.add_argument(
         "--all-problems",
         action="store_true",
         help="Submit every problem of the suite, not only the ones the track lists as runnable",
@@ -360,12 +373,17 @@ def _benchmark_tasks(
     class_counts=None,
     from_rank=0,
     best=None,
+    best_of=None,
+    ungroundable=None,
 ):
     """One task per concrete mode and problem, and per abstract mode, problem and class rank.
 
     Without class counts, or for a problem they do not list, an abstract mode
     collapses the largest class only. With the best class of each abstract mode
     and problem, it runs that one class instead, and every class where none is known.
+    best_of looks the best class up under that mode instead of each mode's own,
+    and skips the problem where that mode has none.
+    Concrete modes skip the problems listed as ungroundable.
     """
     if domains is not None:
         unknown = sorted(set(domains) - set(suite))
@@ -386,13 +404,17 @@ def _benchmark_tasks(
             domain = find_domain(problem)
             for mode in modes:
                 if not mode.startswith(ABSTRACTION_PREFIX):
-                    yield mode, domain_name, domain, problem, None
+                    if ungroundable is None or (domain_name, problem.name) not in ungroundable:
+                        yield mode, domain_name, domain, problem, None
                     continue
 
                 count = 1 if class_counts is None else class_counts.get((domain_name, problem.name), 1)
                 ranks = range(from_rank, count)
-                if best is not None and (domain_name, problem.name, mode) in best:
-                    ranks = [best[(domain_name, problem.name, mode)]]
+                best_key = (domain_name, problem.name, best_of or mode)
+                if best is not None and best_key in best:
+                    ranks = [best[best_key]]
+                elif best_of is not None:
+                    ranks = []
                 for rank in ranks:
                     yield mode, domain_name, domain, problem, rank
 
