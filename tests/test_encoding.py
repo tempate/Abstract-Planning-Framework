@@ -1,7 +1,7 @@
 import unittest
 from types import SimpleNamespace
 
-from core.plan import PlanAction
+from core.utilities.plan import PlanAction
 from core.refinement.encoding import (
     add_concrete_objects,
     add_switches,

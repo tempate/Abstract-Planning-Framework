@@ -9,7 +9,7 @@ from core.integrations.numeric_fast_downward import (
     read_sas_variables,
     varying_objects,
 )
-from core.outcomes import ResourceTimeoutError
+from core.utilities.outcomes import ResourceTimeoutError
 
 DETECTOR_OUTPUT = """we are here
 Detection time: 0.374387s

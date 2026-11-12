@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 from core.integrations.paths import MS_UNSAT_PREPROCESSOR, MS_UNSAT_SEARCH, MS_UNSAT_TRANSLATOR
-from core.outcomes import tool_failure
+from core.utilities.outcomes import tool_failure
 
 # MS-unsat's exit codes, from utilities.h of its Fast Downward.
 _SUCCESS = 0

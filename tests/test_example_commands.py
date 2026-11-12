@@ -10,8 +10,8 @@ from unittest.mock import patch
 from core.planning import abstraction
 from scripts import planner, unsolvability
 from core.abstraction.collapse import AbstractionError
-from core.metrics import COUNTER_LABELS, DURATION_LABELS
-from core.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
+from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
+from core.utilities.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
 from experiments.collect import _values
 
 # Each example runs the planner mode it is named after.

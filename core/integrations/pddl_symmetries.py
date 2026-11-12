@@ -9,7 +9,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from core.integrations.paths import PDDL_SYMMETRIES_TRANSLATOR
-from core.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError, tool_failure
+from core.utilities.outcomes import IntegrationError, SymmetryTimeoutError, UnsolvableTaskError, tool_failure
 
 # The exit code Fast Downward's translator, which PDDL Symmetries extends, gives when memory runs out.
 _TRANSLATE_OUT_OF_MEMORY = 20

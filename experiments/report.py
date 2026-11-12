@@ -8,7 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from core.outcomes import SOLVABLE, UNKNOWN
+from core.utilities.outcomes import SOLVABLE, UNKNOWN
 from experiments.run import ABSTRACTION_PREFIX, MODES, PROJECT_ROOT
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 

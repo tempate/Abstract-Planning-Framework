@@ -10,11 +10,11 @@ from unittest.mock import Mock, patch
 from core.abstraction.factory import Abstraction, build_abstract_problem
 from core.integrations.fast_downward import LAMA
 from core.integrations.unified_planning import read_problem
-from core.outcomes import UnsolvableTaskError
+from core.utilities.outcomes import UnsolvableTaskError
 from core.abstraction.factory import write_abstract_problem
-from core.metrics import PlanningMetrics
+from core.utilities.metrics import PlanningMetrics
 from core.planning import abstraction, asp, fd, ms
-from core.planning.config import AbstractPlanningConfig, PlanningConfig
+from core.utilities.config import AbstractPlanningConfig, PlanningConfig
 from scripts.utils.arguments import positive_int
 
 

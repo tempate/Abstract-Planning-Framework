@@ -10,7 +10,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from core.outcomes import STATUS_BY_EXIT_CODE
+from core.utilities.outcomes import STATUS_BY_EXIT_CODE
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 from scripts.utils.arguments import positive_int
 

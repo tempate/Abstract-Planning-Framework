@@ -11,8 +11,8 @@ from core.integrations.fast_downward import BLIND_OSS, LAMA, find_plan, pddl_to_
 from core.integrations.ms_unsat import has_plan
 from core.integrations.paths import MS_UNSAT_SEARCH, STRUCTURAL_SYMMETRIES_SCRIPT
 from core.integrations.plasp import sas_to_asp
-from core.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
-from core.plan import PlanAction
+from core.utilities.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
+from core.utilities.plan import PlanAction
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
 

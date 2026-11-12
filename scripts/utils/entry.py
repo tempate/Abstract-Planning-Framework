@@ -5,7 +5,7 @@ import traceback
 
 from core.abstraction.collapse import AbstractionError
 from core.integrations.unified_planning import PddlError
-from core.outcomes import PlanningOutcomeError
+from core.utilities.outcomes import PlanningOutcomeError
 
 
 def run(parser, compute, report):

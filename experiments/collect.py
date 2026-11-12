@@ -8,7 +8,7 @@ import json
 import re
 from pathlib import Path
 
-from core.metrics import COUNTER_LABELS, DURATION_LABELS
+from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
 from experiments.run import MANIFEST_NAME, MODES, RESULTS_DIR, _human_status, class_rank
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 

@@ -23,7 +23,7 @@ from unified_planning.shortcuts import (
 
 from core.integrations.unified_planning import parse_problem, write_problem
 from core.abstraction.factory import AbstractionError, build_abstract_problem
-from core.planning.config import AbstractPlanningConfig
+from core.utilities.config import AbstractPlanningConfig
 
 ABSTRACTION_DOMAIN = """
 (define (domain inventory)

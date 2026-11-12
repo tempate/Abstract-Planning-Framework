@@ -15,10 +15,10 @@ from core.abstraction.factory import build_abstract_problem
 from core.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.unified_planning import parse_problem
-from core.plan import PlanAction
+from core.utilities.plan import PlanAction
 from core.planning import abstraction
 from core.planning.backends import BACKENDS
-from core.planning.config import AbstractPlanningConfig
+from core.utilities.config import AbstractPlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
 

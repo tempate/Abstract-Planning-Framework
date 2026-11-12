@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.planning.execution import KEEP_FAILED_RUNS, temp_run_dir
+from core.utilities.execution import KEEP_FAILED_RUNS, temp_run_dir
 
 
 class ExecutionTests(unittest.TestCase):

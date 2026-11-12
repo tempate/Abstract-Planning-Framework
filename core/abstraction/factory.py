@@ -17,9 +17,9 @@ from core.integrations.unified_planning import (
     without_action_costs,
     write_problem,
 )
-from core.metrics import PlanningMetrics
-from core.outcomes import NoResourcesError, NoSymmetriesError
-from core.planning.config import RESOURCES, AbstractPlanningConfig
+from core.utilities.metrics import PlanningMetrics
+from core.utilities.outcomes import NoResourcesError, NoSymmetriesError
+from core.utilities.config import RESOURCES, AbstractPlanningConfig
 
 __all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "NoSymmetriesError", "build_abstract_problem"]
 

@@ -6,8 +6,8 @@ import sys
 from dataclasses import dataclass
 
 from core.integrations.paths import FAST_DOWNWARD_SCRIPT, PARTIAL_GROUNDING_TRANSLATOR, STRUCTURAL_SYMMETRIES_SCRIPT
-from core.outcomes import UnsolvableTaskError, tool_failure
-from core.plan import PlanAction
+from core.utilities.outcomes import UnsolvableTaskError, tool_failure
+from core.utilities.plan import PlanAction
 
 # Fast Downward's exit codes, documented at
 # https://www.fast-downward.org/latest/documentation/exit-codes/.

@@ -5,7 +5,7 @@ import subprocess
 
 from core.encodings.rules import make_steps_optional
 from core.integrations.paths import PLASP_BIN, SEQUENTIAL_ENCODING
-from core.outcomes import IntegrationError
+from core.utilities.outcomes import IntegrationError
 from core.encodings.program import AspProgram
 
 

@@ -8,7 +8,7 @@ import sys
 from dataclasses import dataclass
 
 from core.integrations.paths import NUMERIC_FAST_DOWNWARD_BIN, NUMERIC_FAST_DOWNWARD_SCRIPT
-from core.outcomes import IntegrationError, ResourceTimeoutError
+from core.utilities.outcomes import IntegrationError, ResourceTimeoutError
 
 BUILD = "release64"
 DETECTION_SEARCH = "resource_detection()"

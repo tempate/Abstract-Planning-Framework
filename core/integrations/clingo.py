@@ -2,8 +2,8 @@
 
 import clingo
 
-from core.outcomes import IntegrationError
-from core.plan import PlanAction
+from core.utilities.outcomes import IntegrationError
+from core.utilities.plan import PlanAction
 
 
 def parse_plan_actions(atoms):

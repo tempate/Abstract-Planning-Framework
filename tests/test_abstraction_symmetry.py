@@ -9,9 +9,9 @@ from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
 from core.abstraction.factory import AbstractionError, NoSymmetriesError, _select_abstraction, build_abstract_problem
 from core.integrations.numeric_fast_downward import ResourceDetection, ResourceVariable
-from core.outcomes import NoResourcesError
-from core.outcomes import IntegrationError, OutOfMemoryError, SymmetryTimeoutError, UnsolvableTaskError
-from core.planning.config import AbstractPlanningConfig
+from core.utilities.outcomes import NoResourcesError
+from core.utilities.outcomes import IntegrationError, OutOfMemoryError, SymmetryTimeoutError, UnsolvableTaskError
+from core.utilities.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 GRIPPER = PROJECT_ROOT / "experiments" / "benchmarks" / "downward-benchmarks" / "gripper"

@@ -27,7 +27,7 @@ DESCRIBE = """
 import collections, hashlib, json, sys
 from core.abstraction.factory import build_abstract_problem
 from core.integrations.unified_planning import read_problem, without_action_costs
-from core.planning.config import AbstractPlanningConfig
+from core.utilities.config import AbstractPlanningConfig
 
 domain, problem = sys.argv[1:3]
 objects_by_type = collections.defaultdict(list)

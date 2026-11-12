@@ -5,7 +5,7 @@ import os
 from functools import partial
 from pathlib import Path
 
-from core.metrics import COUNTER_LABELS, DURATION_LABELS
+from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
 
 
 def progress_callback():

@@ -65,8 +65,8 @@ import json, sys
 from core.abstraction.collapse import validate_supported_problem
 from core.abstraction.factory import AbstractionError, _candidate_classes, _select_abstraction
 from core.integrations.unified_planning import read_problem, without_action_costs
-from core.metrics import PlanningMetrics
-from core.planning.config import AbstractPlanningConfig
+from core.utilities.metrics import PlanningMetrics
+from core.utilities.config import AbstractPlanningConfig
 
 domain, problem, source, before_grounding = sys.argv[1:5]
 config = AbstractPlanningConfig(
