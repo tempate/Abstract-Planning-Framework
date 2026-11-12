@@ -16,9 +16,21 @@ class Asp:
         with planning_run("concrete", on_update) as run:
             with run.metrics.measure("concrete_fd"):
                 sas_file = pddl_to_sas(run.base_dir, config.domain_path, config.problem_path, "concrete")
+
             with run.metrics.measure("concrete_asp"):
                 asp = sas_to_asp(sas_file, config.optimize)
-            plan = _search(asp, config, run.metrics)
+
+            def record_attempt(_horizon, _dropped, solve_calls):
+                run.metrics.set_counter("concrete_solve_calls", solve_calls)
+
+            with run.metrics.measure("guided_concrete_solving"):
+                solver = Solver(asp, optimize=config.optimize)
+                solve_result = solver.search(on_attempt=record_attempt)
+
+            run.metrics.set_counter("concrete_solve_calls", solve_result.attempts)
+            plan = solve_result.plan
+            if plan is not None:
+                run.metrics.set_counter("plan_length", plan_length(plan))
 
         return run.plan_result(config, plan)
 
@@ -36,19 +48,3 @@ class Asp:
 
         metrics.set_counter("abstract_solve_calls", solve_result.attempts)
         return parse_plan_actions(solve_result.plan)
-
-
-def _search(asp, config, metrics):
-    """Solve the program, raising the horizon until a plan is found."""
-
-    def record_attempt(_horizon, _dropped, solve_calls):
-        metrics.set_counter("concrete_solve_calls", solve_calls)
-
-    with metrics.measure("guided_concrete_solving"):
-        solver = Solver(asp, optimize=config.optimize)
-        solve_result = solver.search(on_attempt=record_attempt)
-
-    metrics.set_counter("concrete_solve_calls", solve_result.attempts)
-    if solve_result.plan is not None:
-        metrics.set_counter("plan_length", plan_length(solve_result.plan))
-    return solve_result.plan
