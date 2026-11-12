@@ -10,7 +10,7 @@ may exist only because of the relaxation, and is reported as unknown.
 import argparse
 
 from core.planning import abstraction
-from core.planning.backends import BACKENDS
+from core.baselines.backends import BACKENDS
 
 from .utils.arguments import abstract_planning_config, abstraction_arguments, planning_config, task_arguments
 from .utils.entry import run

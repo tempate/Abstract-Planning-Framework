@@ -17,7 +17,7 @@ from core.integrations.clingo import parse_plan_actions
 from core.integrations.unified_planning import parse_problem
 from core.utilities.plan import PlanAction
 from core.planning import abstraction
-from core.planning.backends import BACKENDS
+from core.baselines.backends import BACKENDS
 from core.utilities.config import AbstractPlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"

@@ -3,7 +3,7 @@
 import argparse
 
 from core.planning import abstraction
-from core.planning.backends import BACKENDS
+from core.baselines.backends import BACKENDS
 
 from .utils.arguments import (
     abstract_planning_config,
