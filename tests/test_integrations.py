@@ -136,6 +136,15 @@ class FastDownwardHelperTests(unittest.TestCase):
                         find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
 
     @patch("core.integrations.fast_downward.subprocess.run")
+    def test_a_memory_error_the_driver_crashes_on_is_out_of_memory(self, run):
+        # The driver can crash on its own report of a MemoryError, which leaves exit code 1.
+        run.return_value = _completed(1, stderr="MemoryError")
+
+        with tempfile.TemporaryDirectory() as directory:
+            with self.assertRaises(OutOfMemoryError):
+                find_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
+
+    @patch("core.integrations.fast_downward.subprocess.run")
     def test_both_unsolvable_exit_codes_mean_no_plan(self, run):
         for returncode in (10, 11):
             with self.subTest(returncode=returncode):
