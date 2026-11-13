@@ -13,9 +13,9 @@ python -m pip install -e ".[dev]"
 python -m scripts.setup
 ```
 
-`scripts.setup` initializes the submodules and builds the five things pip does
-not install: the pybliss extension, the Fast Downward release build, Silvan Sievers' structural symmetries fork of it, the
-pinned plasp binary, and MS-unsat from the Unsolvability IPC 2016. Skipping it fails at planning time rather than at setup
+`scripts.setup` initializes the submodules and builds the three things pip does
+not install: the pybliss extension, the Fast Downward release build, and the
+pinned plasp binary. Skipping it fails at planning time rather than at setup
 time.
 
 Refinement first tries the abstract plan on a partial grounding, from a private Fast Downward fork that must be cloned by
@@ -62,7 +62,7 @@ Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
 Slurm task per mode and problem, each capped at 30 minutes and 8192 MiB.
 `--modes lama asp abs-lama abs-asp` submits all four; the default is the track's
-first mode alone. The unsat track runs `abs-ms` and `ms`.
+first mode alone.
 
 ```bash
 python -m experiments.submit
@@ -83,10 +83,6 @@ python -m experiments.figure sat --base origin/main --out before-after.png
   `asp` and `lmcut` as the baselines, and `abs-lmcut` in place of `abs-lama`.
   `--abstraction-source resources` submits `experiments/ipc/opt/resources/` instead, whose list
   `python -m experiments.scan --track opt/resources` writes.
-- `--track unsat` submits `experiments/ipc/unsat/symmetries/` over unsolve-ipc-2016
-  through `scripts.unsolvability`, which reports a solvability verdict instead of
-  a plan. Both modes search with MS-unsat, Torralba and Hoffmann's
-  merge-and-shrink entry to that competition. Only the probNN problems run, the ones known to be unsolvable.
 - `--track sat-htg` submits `experiments/htg/sat/` over the hard-to-ground
   benchmarks of [htg-domains](https://github.com/abcorrea/htg-domains), a
   submodule, with the sat track's modes and the full grounding.

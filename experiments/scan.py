@@ -25,7 +25,7 @@ from pathlib import Path
 
 from experiments import slurm
 from experiments.run import RESULTS_DIR
-from experiments.tracks import TRACKS, find_domain, has_other_status, is_domain_file
+from experiments.tracks import TRACKS, find_domain, is_domain_file
 
 WORKERS = 1
 # Detection gets 300 seconds; reading and ranking the classes needs the rest.
@@ -200,7 +200,7 @@ def _suite_problems(benchmarks_dir, suite):
     for domain_name in suite:
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
-            if not is_domain_file(problem.name) and not has_other_status(problem.name):
+            if not is_domain_file(problem.name):
                 yield domain_name, problem.name
 
 

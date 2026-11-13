@@ -13,8 +13,6 @@ PLASP_BIN = _project_path("lib", "plasp", "bin", "plasp")
 SEQUENTIAL_ENCODING = _project_path("core", "asp", "sequential-incremental.lp")
 
 FAST_DOWNWARD_SCRIPT = _project_path("lib", "downward", "fast-downward.py")
-# Silvan Sievers' fork of Fast Downward, whose A* prunes states symmetric to ones it has seen.
-STRUCTURAL_SYMMETRIES_SCRIPT = _project_path("lib", "structural-symmetries", "fast-downward.py")
 # A fork of Fast Downward whose translator grounds only the actions a file lists. A local checkout, not a submodule.
 PARTIAL_GROUNDING_TRANSLATOR = _project_path("lib", "downward-partial-grounding", "src", "translate", "translate.py")
 
@@ -22,7 +20,3 @@ PDDL_SYMMETRIES_TRANSLATOR = _project_path("lib", "pddl-symmetries", "src", "tra
 
 NUMERIC_FAST_DOWNWARD_SCRIPT = _project_path("lib", "numeric-fast-downward", "fast-downward.py")
 NUMERIC_FAST_DOWNWARD_BIN = _project_path("lib", "numeric-fast-downward", "builds", "release64", "bin", "downward")
-
-MS_UNSAT_TRANSLATOR = _project_path("lib", "ms-unsat", "src", "translate", "translate.py")
-MS_UNSAT_PREPROCESSOR = _project_path("lib", "ms-unsat", "src", "preprocess", "preprocess")
-MS_UNSAT_SEARCH = _project_path("lib", "ms-unsat", "src", "search", "downward-release")

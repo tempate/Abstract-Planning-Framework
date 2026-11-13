@@ -22,7 +22,7 @@ from experiments.run import (
     RESULTS_DIR,
     class_rank,
 )
-from experiments.tracks import DEFAULT_TRACK, TRACKS, find_domain, has_other_status, is_domain_file
+from experiments.tracks import DEFAULT_TRACK, TRACKS, find_domain, is_domain_file
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.arguments import positive_int
 
@@ -295,7 +295,7 @@ def _argument_parser():
         "--track",
         choices=sorted({name.split("/")[0] for name in TRACKS}),
         default=DEFAULT_TRACK.split("/")[0],
-        help="What the run asks of each problem: a plan (sat), an optimal plan (opt), or a proof that none exists (unsat)",
+        help="What the run asks of each problem: a plan (sat) or an optimal plan (opt)",
     )
     parser.add_argument(
         "--abstraction-source",
@@ -394,7 +394,7 @@ def _benchmark_tasks(
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
-            if is_domain_file(problem.name) or has_other_status(problem.name):
+            if is_domain_file(problem.name):
                 continue
             if runnable is not None and (domain_name, problem.name) not in runnable:
                 continue

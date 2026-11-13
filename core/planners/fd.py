@@ -1,10 +1,9 @@
-"""Plan and decide with Fast Downward."""
+"""Plan with Fast Downward."""
 
 import os
 from dataclasses import dataclass
 
 from core.integrations.fast_downward import Search, find_pddl_plan, find_sas_plan, parse_plan_actions
-from core.utilities.outcomes import SOLVABLE, UNSOLVABLE
 from core.utilities.config import PlanningConfig
 from core.utilities.execution import planning_run
 
@@ -34,16 +33,6 @@ class FastDownward:
                 run.metrics.set_counter("plan_length", len(plan))
 
         return run.plan_result(config, plan)
-
-    def check_solvability(self, on_update=None):
-        """Search the concrete task, which settles it either way."""
-        config = self.config
-
-        with planning_run(LABEL, on_update) as run:
-            with run.metrics.measure("fd_search"):
-                plan = find_pddl_plan(run.base_dir, config.domain_path, config.problem_path, LABEL, self.search)
-
-        return run.verdict_result(config, SOLVABLE if plan is not None else UNSOLVABLE)
 
     def plan_sas(self, sas_file, metrics):
         """Search a translated task for a plan, or None when it has none."""

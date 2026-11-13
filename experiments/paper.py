@@ -12,7 +12,6 @@ from experiments.report import solved
 TABLE_COLUMNS = {
     "sat": ("tab:ipc", 1, ("asp", "abs-asp", "lama", "abs-lama")),
     "opt": ("tab:ipc", 6, ("asp", "abs-asp", "lmcut", "abs-lmcut")),
-    "unsat": ("tab:unsat", 1, ("ms", "abs-ms")),
 }
 
 

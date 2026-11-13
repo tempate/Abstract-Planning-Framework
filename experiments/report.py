@@ -1,4 +1,4 @@
-"""Summarize a collected benchmark CSV, as plan coverage or as solvability verdicts."""
+"""Summarize a collected benchmark CSV as plan coverage."""
 
 import argparse
 import csv
@@ -8,7 +8,6 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from core.utilities.outcomes import SOLVABLE, UNKNOWN
 from experiments.run import ABSTRACTION_PREFIX, MODES, PROJECT_ROOT
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
@@ -17,12 +16,9 @@ SOLVER_LABELS = {
     "asp": "ASP",
     "lama": "LAMA",
     "lmcut": "LMcut",
-    "ms": "M&S",
-    "oss": "OSS",
 }
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
-VERDICTS = ("unsolvable", "unknown")
 # A killed run reports the phase it completed last, so it died in the next one.
 # In the order the abstraction pipelines run them, which the timeout table keeps.
 KILLED_IN_PHASE = {
@@ -46,8 +42,6 @@ KILLED_IN_PHASE = {
     "concrete_asp": "Guided concrete search",
     "guided_concrete_solving": "Extended concrete search",
 }
-# The solvability check searches the abstract task straight from its PDDL.
-KILLED_IN_PHASE_DECIDING = KILLED_IN_PHASE | {"abstract_pddl_writing": "Abstract search"}
 
 
 def main():
@@ -56,29 +50,20 @@ def main():
     abstractions = [mode for mode in modes if mode.startswith(ABSTRACTION_PREFIX)]
     pairs = _pairs(abstractions, modes)
 
-    # A decide run reports no plan, horizon or refinement, so none of the other
-    # tables have anything to say about one.
-    verdict_run = _is_verdict_run(problems)
     labels = _labels(abstractions)
-    if verdict_run:
-        sections = [_verdicts(problems, modes, labels)]
-        if pairs:
-            sections.append(_head_to_head(problems, pairs, VERDICT_COMPARISON, labels))
-    else:
-        sections = [_coverage(problems, modes, labels)]
-        if pairs:
-            sections.append(_head_to_head(problems, pairs, PLAN_COMPARISON, labels))
+    sections = [_coverage(problems, modes, labels)]
+    if pairs:
+        sections.append(_head_to_head(problems, pairs, PLAN_COMPARISON, labels))
 
     # Only a mode through an abstraction has one to report on.
     if abstractions:
-        sections.append(_timeout_phases(problems, abstractions, verdict_run, labels))
-        if not verdict_run:
-            sections += [
-                _refinement_outcomes(problems, abstractions, labels),
-                _relaxed_deletes(problems, abstractions, labels),
-            ]
+        sections += [
+            _timeout_phases(problems, abstractions, labels),
+            _refinement_outcomes(problems, abstractions, labels),
+            _relaxed_deletes(problems, abstractions, labels),
+        ]
 
-    sections.append(_by_domain(problems, modes, verdict_run, labels))
+    sections.append(_by_domain(problems, modes, labels))
 
     summary = _summary(modes, problems, dropped)
     reports_file = Path(args.results).parent / "report.md"
@@ -200,31 +185,16 @@ def _phase_position(phase):
 
 
 def solved(row):
-    """Whether a mode did what its track asks: found a plan, or proved that none exists."""
-    # A verdict run that finds a plan, or an abstraction that leaves the verdict unknown, proves nothing.
-    return row["status"] == "success" and row.get("verdict") not in (SOLVABLE, UNKNOWN)
-
-
-def _is_verdict_run(problems):
-    """Tell a run that decided solvability from one that searched for plans."""
-    for problem in problems:
-        for row in problem.values():
-            if row.get("verdict"):
-                return True
-    return False
-
-
-def _verdicts(problems, modes, labels):
-    rows = [(verdict.capitalize(), _verdict_counts(problems, modes, verdict)) for verdict in VERDICTS]
-    return "Verdicts", _outcome_table(problems, modes, "Verdict", rows, labels)
+    """Whether a mode found a plan."""
+    return row["status"] == "success"
 
 
 def _coverage(problems, modes, labels):
     rows = [("Plans found", _status_counts(problems, modes, "success"))]
-    return "Coverage", _outcome_table(problems, modes, "Metric", rows, labels)
+    return "Coverage", _outcome_table(problems, modes, rows, labels)
 
 
-def _outcome_table(problems, modes, heading, rows, labels):
+def _outcome_table(problems, modes, rows, labels):
     """Count each mode's outcomes, ending with the ones the given rows, timeouts and memory leave out."""
     total = len(problems)
     rows = rows + [
@@ -235,20 +205,11 @@ def _outcome_table(problems, modes, heading, rows, labels):
     # the total even when a status nobody has named yet turns up.
     other = {mode: total - sum(counts[mode] for _label, counts in rows) for mode in modes}
 
-    lines = _wide_header(heading, modes, labels)
+    lines = _wide_header("Metric", modes, labels)
     for label, counts in (*rows, ("Others", other)):
         lines.append(_wide(label, [_share(counts[mode], total, 1) for mode in modes]))
     lines.append(_wide("Total problems", [total for _ in modes]))
     return lines
-
-
-def _verdict_counts(problems, modes, verdict):
-    counts = {mode: 0 for mode in modes}
-    for problem in problems:
-        for mode in counts:
-            if problem[mode]["verdict"] == verdict:
-                counts[mode] += 1
-    return counts
 
 
 PLAN_COMPARISON = {
@@ -261,13 +222,6 @@ PLAN_COMPARISON = {
     "equal": "Same plan length",
     "median_length": "Median plan length",
     "total_length": "Total plan length",
-}
-VERDICT_COMPARISON = {
-    "shared": "Proved unsolvable by both",
-    "faster": "Faster",
-    "alone": "Proved when the other did not",
-    "median": "Median runtime",
-    "total": "Total runtime",
 }
 
 
@@ -296,7 +250,6 @@ def _compare_pair(problems, abstraction, solver):
         winner = abstraction if _runtime(problem[abstraction]) < _runtime(problem[solver]) else solver
         faster[winner] += 1
 
-    # A verdict run reports no plan, so only the problems with both lengths compare.
     measured = [problem for problem in both if all(_plan_length(problem[mode]) is not None for mode in pair)]
     shorter = {mode: 0 for mode in pair}
     for problem in measured:
@@ -336,8 +289,7 @@ def _discarded_the_abstract_plan(row):
     return int(row["decrements"]) == int(row["abstract_plan_length"])
 
 
-def _timeout_phases(problems, abstractions, verdict_run, labels):
-    killed_in = KILLED_IN_PHASE_DECIDING if verdict_run else KILLED_IN_PHASE
+def _timeout_phases(problems, abstractions, labels):
     counts = {mode: {} for mode in abstractions}
     totals = {}
     positions = {}
@@ -348,7 +300,7 @@ def _timeout_phases(problems, abstractions, verdict_run, labels):
 
         for row in timeouts:
             completed = row["last_completed_phase"]
-            phase = killed_in.get(completed, completed)
+            phase = KILLED_IN_PHASE.get(completed, completed)
 
             # The extended search is no longer a phase of its own. A guided search that
             # has switched off every abstract action is what used to enter it.
@@ -419,11 +371,11 @@ def _relaxed_deletes(problems, abstractions, labels):
     return title, lines
 
 
-def _by_domain(problems, modes, verdict_run, labels):
-    title = "Proved unsolvable by domain" if verdict_run else "Plans found by domain"
+def _by_domain(problems, modes, labels):
+    title = "Plans found by domain"
 
     domains = {}
-    # A scaled domain counts each base problem once across its sizes.
+    # A domain split into subdirectories counts each problem once across them.
     names = {}
 
     for problem in problems:
@@ -435,19 +387,19 @@ def _by_domain(problems, modes, verdict_run, labels):
         for mode in modes:
             counts[mode] += solved(problem[mode])
 
-    # The scaled track names its domains <domain>/size-N, and the size gets a column of its own.
+    # HTG names some domains <domain>/<subdirectory>, and the subdirectory gets a column of its own.
     sized = any("/" in domain for domain in domains)
     header = _compact("Domain (problems)", [*(["Size"] if sized else []), *(labels[mode] for mode in modes)])
     lines = [header, "-" * len(header)]
 
-    # Numbers sort by value, so that over-nomystery/size-10 follows over-nomystery/size-2.
+    # Numbers sort by value, so that blocksworld-large-simple/goal-10 would follow goal-2.
     previous = None
     for domain in sorted(domains, key=_numbers_by_value):
         counts = domains[domain]
         name, _, size = domain.rpartition("/") if "/" in domain else (domain, "", "")
-        sizes = [size.removeprefix("size-")] if sized else []
+        sizes = [size] if sized else []
 
-        # Only the first size of a domain names it.
+        # Only the first subdirectory of a domain names it.
         label = f"{name} ({len(names[name])})" if name != previous else ""
         previous = name
         lines.append(_compact(label, [*sizes, *(counts[mode] for mode in modes)]))

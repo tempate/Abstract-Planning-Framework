@@ -1,6 +1,5 @@
-"""The benchmark tracks: the problems each one runs, the driver that runs them, and where the results go."""
+"""The benchmark tracks: the problems each one runs, and where the results go."""
 
-import re
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,8 +8,6 @@ from experiments.htg.opt import suite as htg_opt
 from experiments.htg.sat import suite as htg
 from experiments.ipc.opt import suite as opt
 from experiments.ipc.sat import suite as sat
-from experiments.ipc.unsat import suite as unsat
-from experiments.ipc.unsat.scaled import suite as scaled
 
 # The benchmark collections. A track says which of their problems it runs; it
 # does not own the PDDL, so that two tracks over one collection cannot drift
@@ -27,8 +24,7 @@ class Track:
     directory: Path
     suite: list[str]
     benchmarks_dir: Path
-    driver: str
-    # The driver's modes, the first of them submitted by default.
+    # The modes, the first of them submitted by default.
     modes: tuple[str, ...]
     # Passed to the modes through an abstraction only; the others have no class to choose.
     abstract_arguments: tuple[str, ...] = ()
@@ -78,7 +74,6 @@ TRACKS = {
         directory=EXPERIMENTS / "ipc" / "sat" / "symmetries",
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-        driver="scripts.planner",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
     ),
     # The same suite, restricted to the problems numeric-fast-downward finds a
@@ -87,7 +82,6 @@ TRACKS = {
         directory=EXPERIMENTS / "ipc" / "sat" / "resources",
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-        driver="scripts.planner",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
@@ -96,7 +90,6 @@ TRACKS = {
         directory=EXPERIMENTS / "htg" / "sat",
         suite=htg.SUITE,
         benchmarks_dir=BENCHMARKS / "htg-domains",
-        driver="scripts.planner",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
         abstract_arguments=HTG_ARGUMENTS,
     ),
@@ -105,7 +98,6 @@ TRACKS = {
         directory=EXPERIMENTS / "htg" / "opt",
         suite=htg_opt.SUITE,
         benchmarks_dir=BENCHMARKS / "htg-domains",
-        driver="scripts.planner",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
         abstract_arguments=HTG_ARGUMENTS,
         optimizing_arguments=("--optimize",),
@@ -116,7 +108,6 @@ TRACKS = {
         directory=EXPERIMENTS / "ipc" / "opt" / "symmetries",
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-        driver="scripts.planner",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
         optimizing_arguments=("--optimize",),
     ),
@@ -124,48 +115,17 @@ TRACKS = {
         directory=EXPERIMENTS / "ipc" / "opt" / "resources",
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-        driver="scripts.planner",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
         abstract_arguments=("--abstraction-source", "resources"),
         optimizing_arguments=("--optimize",),
-    ),
-    "unsat/symmetries": Track(
-        directory=EXPERIMENTS / "ipc" / "unsat" / "symmetries",
-        suite=unsat.SUITE,
-        benchmarks_dir=BENCHMARKS / "unsolve-ipc-2016",
-        driver="scripts.unsolvability",
-        modes=("abs-ms", "ms"),
-    ),
-    # Unsolvable problems whose symmetric class grows, to see how each mode scales with it.
-    # oss prunes symmetric states in the concrete search, so it shows what that buys without abstracting.
-    "scaled/symmetries": Track(
-        directory=EXPERIMENTS / "ipc" / "unsat" / "scaled",
-        suite=scaled.SUITE,
-        benchmarks_dir=BENCHMARKS / "scaled",
-        driver="scripts.unsolvability",
-        modes=("abs-ms", "ms", "oss"),
     ),
 }
 DEFAULT_TRACK = "sat/symmetries"
 
 
 def is_domain_file(name):
-    """Tell a domain file from a problem file by name.
-
-    downward-benchmarks spells it out in full; unsolve-ipc-2016 shortens it to
-    domNN, satdomNN and unknowndomNN, against probNN, satprobNN and unknownprobNN.
-    """
-    return "domain" in name or re.match(r"(sat|unknown)?dom\d", name) is not None
-
-
-def has_other_status(name):
-    """Tell the problems standing around an unsolvable one from the problem itself.
-
-    unsolve-ipc-2016 names probNN for the instances known to be unsolvable,
-    satprobNN for the solvable twin beside it, and unknownprobNN for the ones
-    nobody settled. Only the first is what this suite asks about.
-    """
-    return name.startswith(("satprob", "unknownprob"))
+    """Tell a domain file from a problem file by name."""
+    return "domain" in name
 
 
 def find_domain(problem):
@@ -177,16 +137,6 @@ def find_domain(problem):
         f"domain_{problem.name}",
         f"domain-{problem.name}",
     ]
-
-    if "prob" in problem.stem:
-        # unsolve-ipc-2016 names the pair after each other: probNN.pddl with
-        # domNN.pddl, and likewise satprobNN and unknownprobNN. Guarded, or a
-        # problem with no prob in its name would answer as its own domain.
-        candidates.append(f"{problem.stem.replace('prob', 'dom', 1)}{problem.suffix}")
-        # bag-barman and bag-transport ship no satdomNN, and their satprobNN is
-        # probNN with a single symbol changed, so it belongs to the same domNN.
-        # Last, or diagnosis and cave-diving would take domNN over their satdomNN.
-        candidates.append(f"dom{problem.stem.partition('prob')[2]}{problem.suffix}")
 
     for name in candidates:
         domain = problem.parent / name

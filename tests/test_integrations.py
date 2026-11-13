@@ -7,9 +7,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.integrations.clingo import parse_plan_actions
-from core.integrations.fast_downward import BLIND_OSS, LAMA, find_pddl_plan, pddl_to_sas
-from core.integrations.ms_unsat import has_plan
-from core.integrations.paths import MS_UNSAT_SEARCH, STRUCTURAL_SYMMETRIES_SCRIPT
+from core.integrations.fast_downward import LAMA, find_pddl_plan, pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.utilities.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
 from core.utilities.plan import PlanAction
@@ -152,75 +150,6 @@ class FastDownwardHelperTests(unittest.TestCase):
 
                 with tempfile.TemporaryDirectory() as directory:
                     self.assertIsNone(find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA))
-
-
-class MsUnsatTests(unittest.TestCase):
-    @patch("core.integrations.ms_unsat.subprocess.run")
-    def test_the_search_exit_code_carries_the_verdict(self, run):
-        # The translator and the preprocessor succeed, so the search decides.
-        for returncode, found in ((0, True), (4, False)):
-            with self.subTest(returncode=returncode), tempfile.TemporaryDirectory() as directory:
-                Path(directory, "output.sas").touch()
-                Path(directory, "output").touch()
-                run.reset_mock()
-                run.side_effect = [_completed(0), _completed(0), _completed(returncode)]
-
-                self.assertIs(has_plan(directory, "domain.pddl", "problem.pddl", "concrete"), found)
-                for call in run.call_args_list:
-                    self.assertEqual(call.kwargs["cwd"], directory)
-
-    @patch("core.integrations.ms_unsat.subprocess.run")
-    def test_running_out_of_memory_is_told_apart_from_other_failures(self, run):
-        # The translator's traceback, the search's own exit code, and a SIGKILL.
-        translator_out_of_memory = [_completed(1, stderr="Traceback\nMemoryError")]
-        for steps, error in (
-            (translator_out_of_memory, OutOfMemoryError),
-            ([_completed(0), _completed(0), _completed(6)], OutOfMemoryError),
-            ([_completed(0), _completed(0), _completed(-9)], OutOfMemoryError),
-            ([_completed(1, stderr="Traceback\nKeyError")], IntegrationError),
-        ):
-            with self.subTest(steps=steps), tempfile.TemporaryDirectory() as directory:
-                Path(directory, "output.sas").touch()
-                Path(directory, "output").touch()
-                run.side_effect = steps
-
-                with self.assertRaises(error):
-                    has_plan(directory, "domain.pddl", "problem.pddl", "concrete")
-
-    @unittest.skipUnless(
-        RUN_INTEGRATION and Path(MS_UNSAT_SEARCH).exists(), "set RUN_PLANNER_INTEGRATION=1 with MS-unsat installed"
-    )
-    def test_ms_unsat_decides_real_tasks(self):
-        unsolvable = (
-            Path(__file__).resolve().parents[1] / "experiments" / "benchmarks" / "unsolve-ipc-2016" / "bag-gripper"
-        )
-        solvable = (
-            Path(__file__).resolve().parents[1] / "experiments" / "benchmarks" / "downward-benchmarks" / "gripper"
-        )
-        for domain, problem, found in (
-            (unsolvable / "domain.pddl", unsolvable / "prob01.pddl", False),
-            (solvable / "domain.pddl", solvable / "prob01.pddl", True),
-        ):
-            with self.subTest(problem=str(problem)), tempfile.TemporaryDirectory() as directory:
-                self.assertIs(has_plan(directory, domain, problem, "concrete"), found)
-
-
-class StructuralSymmetriesTests(unittest.TestCase):
-    @unittest.skipUnless(
-        RUN_INTEGRATION and Path(STRUCTURAL_SYMMETRIES_SCRIPT).parent.joinpath("builds", "release").exists(),
-        "set RUN_PLANNER_INTEGRATION=1 with the structural symmetries fork built",
-    )
-    def test_blind_search_with_symmetry_pruning_decides_real_tasks(self):
-        benchmarks = Path(__file__).resolve().parents[1] / "experiments" / "benchmarks"
-        unsolvable = benchmarks / "unsolve-ipc-2016" / "bag-gripper"
-        solvable = benchmarks / "downward-benchmarks" / "gripper"
-        for domain, problem, found in (
-            (unsolvable / "domain.pddl", unsolvable / "prob01.pddl", False),
-            (solvable / "domain.pddl", solvable / "prob01.pddl", True),
-        ):
-            with self.subTest(problem=str(problem)), tempfile.TemporaryDirectory() as directory:
-                plan = find_pddl_plan(directory, domain, problem, "concrete", BLIND_OSS)
-                self.assertIs(plan is not None, found)
 
 
 def _completed(returncode, stderr=""):

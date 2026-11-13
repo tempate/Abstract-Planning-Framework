@@ -15,7 +15,3 @@
 [submodule "experiments/benchmarks/htg-domains"]
 	path = experiments/benchmarks/htg-domains
 	url = https://github.com/abcorrea/htg-domains.git
-[submodule "lib/structural-symmetries"]
-	path = lib/structural-symmetries
-	url = https://github.com/silvansievers/structural-symmetries-pruning.git
-	branch = structural-symmetries-pruning

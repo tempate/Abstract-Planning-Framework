@@ -359,8 +359,8 @@ class BenchmarkTests(unittest.TestCase):
     def test_a_missing_result_ranks_below_a_finished_class_without_a_time(self):
         with tempfile.TemporaryDirectory() as directory:
             results = Path(directory) / "results.csv"
-            fields = "domain,problem,mode,class,status,wall_time_seconds,last_completed_phase,verdict"
-            rows = ["d,p01.pddl,abs-asp,0,timed out,1800,,", "d,p01.pddl,abs-asp,1,missing,,,"]
+            fields = "domain,problem,mode,class,status,wall_time_seconds,last_completed_phase"
+            rows = ["d,p01.pddl,abs-asp,0,timed out,1800,", "d,p01.pddl,abs-asp,1,missing,,"]
             results.write_text("\n".join([fields, *rows]) + "\n")
 
             self.assertEqual(best_classes(results), {("d", "p01.pddl", "abs-asp"): 0})
@@ -441,18 +441,6 @@ class BenchmarkTests(unittest.TestCase):
             list(_benchmark_tasks(Path("/nowhere"), ["driverlog"], runnable=None, domains=["driverlgo"]))
 
         self.assertIn("driverlgo", str(refusal.exception))
-
-    def test_only_the_problems_known_unsolvable_are_submitted(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / "example").mkdir()
-            names = ("dom01.pddl", "prob01.pddl", "satdom01.pddl", "satprob01.pddl", "unknownprob01.pddl")
-            for name in names:
-                (root / "example" / name).touch()
-
-            tasks = list(_benchmark_tasks(root, ["example"], runnable=None))
-
-        self.assertEqual([task[3].name for task in tasks], ["prob01.pddl"])
 
     def test_a_problem_whose_name_holds_dom_is_still_a_problem(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -705,13 +693,13 @@ class BenchmarkTests(unittest.TestCase):
 
     def test_a_run_is_collected_into_the_results_of_its_track(self):
         task = [("asp", "example", Path("domain.pddl"), Path("p01.pddl"), None)]
-        with tempfile.TemporaryDirectory() as plan, tempfile.TemporaryDirectory() as decide:
-            _write_manifest(task, plan, track="sat/symmetries")
-            _write_manifest(task, decide, track="unsat/symmetries")
+        with tempfile.TemporaryDirectory() as sat, tempfile.TemporaryDirectory() as opt:
+            _write_manifest(task, sat, track="sat/symmetries")
+            _write_manifest(task, opt, track="opt/symmetries")
 
-            self.assertEqual(_track_results_file([decide]), TRACKS["unsat/symmetries"].results_file)
+            self.assertEqual(_track_results_file([opt]), TRACKS["opt/symmetries"].results_file)
             with self.assertRaises(SystemExit):
-                _track_results_file([plan, decide])
+                _track_results_file([sat, opt])
 
 
 class CollectedCsvTests(unittest.TestCase):
@@ -893,18 +881,15 @@ class ReportTests(unittest.TestCase):
 
         self.assertEqual(counted, [len(problems)] * len(modes))
 
-    def test_the_domains_are_alphabetical_and_their_sizes_increase(self):
-        names = ["over-rovers/size-10", "cave-diving/size-100", "over-rovers/size-2", "cave-diving/size-3"]
-        problems = [
-            {"ms": {"domain": name, "problem": "prob01.pddl", "status": "success", "verdict": "unsolvable"}}
-            for name in names
-        ]
+    def test_the_domains_are_alphabetical_and_their_subdirectories_increase(self):
+        names = ["rovers/goal-10", "blocksworld/goal-100", "rovers/goal-2", "blocksworld/goal-3"]
+        problems = [{"lama": {"domain": name, "problem": "p01.pddl", "status": "success"}} for name in names]
 
-        _title, lines = _by_domain(problems, ("ms",), True, _labels([]))
+        _title, lines = _by_domain(problems, ("lama",), _labels([]))
 
-        sizes = [line.split()[-2] for line in lines[2:-1]]
-        self.assertEqual(sizes, ["3", "100", "2", "10"])
-        self.assertEqual([line.split()[0] for line in lines[2:-1] if "(" in line], ["cave-diving", "over-rovers"])
+        subdirectories = [line.split()[-2] for line in lines[2:-1]]
+        self.assertEqual(subdirectories, ["goal-3", "goal-100", "goal-2", "goal-10"])
+        self.assertEqual([line.split()[0] for line in lines[2:-1] if "(" in line], ["blocksworld", "rovers"])
 
     def test_each_abstraction_is_compared_against_its_solver_alone(self):
         """Intersecting every mode would drop the problems one solver missed out
@@ -1021,21 +1006,6 @@ class DomainLookupTests(unittest.TestCase):
         directory = self._collection(["domain.pddl", "p01.pddl"])
 
         self.assertEqual(find_domain(directory / "p01.pddl").name, "domain.pddl")
-
-    def test_finds_the_domain_numbered_with_the_problem(self):
-        directory = self._collection(["dom01.pddl", "prob01.pddl", "dom02.pddl", "prob02.pddl"])
-
-        self.assertEqual(find_domain(directory / "prob02.pddl").name, "dom02.pddl")
-
-    def test_finds_the_domain_of_a_named_problem_variant(self):
-        directory = self._collection(["satdom02.pddl", "satprob02.pddl", "dom02.pddl", "prob02.pddl"])
-
-        self.assertEqual(find_domain(directory / "satprob02.pddl").name, "satdom02.pddl")
-
-    def test_falls_back_to_the_domain_the_variant_shares_with_its_problem(self):
-        directory = self._collection(["dom02.pddl", "prob02.pddl", "satprob02.pddl"])
-
-        self.assertEqual(find_domain(directory / "satprob02.pddl").name, "dom02.pddl")
 
     def test_reports_a_problem_with_no_domain(self):
         directory = self._collection(["p01.pddl"])

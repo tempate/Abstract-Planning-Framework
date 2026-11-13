@@ -37,7 +37,7 @@ never add a paragraph interpreting the numbers.
 
 - No H1, since the title is the heading.
 - Write the prose without passive voice, colons or semicolons.
-- Name the modes ASP, ASPᵅ, LAMA, LAMAᵅ, LMcut, LMcutᵅ, M&S and M&Sᵅ, as the paper does.
+- Name the modes ASP, ASPᵅ, LAMA, LAMAᵅ, LMcut and LMcutᵅ, as the paper does.
 - Keep the `🤖 Generated with [Claude Code](https://claude.com/claude-code)` footer.
 - Draft the body in the scratchpad and apply it with `gh pr edit <n> --body-file <draft>`. Never commit it to the repo.
 - Daniel edits descriptions too, so fetch the live body with `gh pr view <n> --json body -q .body` before every edit and change only your part.
@@ -91,8 +91,8 @@ abstract rows the run's manifest lists, as the `cluster-benchmarks` skill explai
 For a run over a subset of problems, report on the problems the subset was meant to
 cover, not on whatever extra the submission swept in.
 
-`experiments.figure` draws the paper's sat, opt or unsat figure, problems solved or
-proved over time and runtime per problem with every mode, for the base and the branch
+`experiments.figure` draws the paper's sat, opt or htg figure, problems solved
+over time and runtime per problem with every mode, for the base and the branch
 side by side:
 
 ```bash
@@ -100,8 +100,6 @@ python -m experiments.figure opt --base origin/main --branch HEAD \
   --manifests /tmp/apf-results-<a>/manifest.json /tmp/apf-results-<b>/manifest.json \
   --out 130-opt-before-after.png
 ```
-
-`scaled` draws the share of the scaled unsat problems each mode proves per class size, for the branch alone.
 
 `--manifests` limits the branch's abstract modes to the classes its runs submitted.
 `htg` draws the hard-to-ground sat and opt tracks in one figure, without ASP modes. Pass
