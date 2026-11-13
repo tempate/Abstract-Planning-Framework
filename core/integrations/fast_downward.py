@@ -5,7 +5,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 
-from core.integrations.paths import FAST_DOWNWARD_SCRIPT, PARTIAL_GROUNDING_TRANSLATOR, STRUCTURAL_SYMMETRIES_SCRIPT
+from core.integrations.paths import FAST_DOWNWARD_SCRIPT, PARTIAL_GROUNDING_TRANSLATOR
 from core.utilities.outcomes import UnsolvableTaskError, tool_failure
 from core.utilities.plan import PlanAction
 
@@ -14,9 +14,6 @@ from core.utilities.plan import PlanAction
 _SUCCESS = 0
 _TRANSLATE_UNSOLVABLE = 10
 _SEARCH_UNSOLVABLE = 11
-# Fast Downward before 23.06 exits with this whenever the search ends without a plan,
-# so for a complete search that ran out of states it means unsolvable.
-_SEARCH_UNSOLVED_INCOMPLETE = 12
 _OUT_OF_MEMORY = (20, 22, 24, 247)
 _UNSOLVABLE_MARKER = "Generating unsolvable task"
 
@@ -27,20 +24,12 @@ class Search:
 
     driver: tuple[str, ...] = ()
     options: tuple[str, ...] = ()
-    script: str = FAST_DOWNWARD_SCRIPT
-    unsolvable_exit_codes: tuple[int, ...] = (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE)
 
 
 # Satisficing
 LAMA = Search(driver=("--alias", "lama-first"))
 # Optimal
 LMCUT = Search(options=("--search", "astar(eval_modify_costs(lmcut(),cost_type=one),cost_type=one)"))
-# Unsolvability, with orbit space search pruning every state symmetric to one already generated
-BLIND_OSS = Search(
-    options=("--search", "astar(blind(),symmetries=structural_symmetries(search_symmetries=oss,time_bound=0))"),
-    script=STRUCTURAL_SYMMETRIES_SCRIPT,
-    unsolvable_exit_codes=(_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE, _SEARCH_UNSOLVED_INCOMPLETE),
-)
 
 
 def pddl_to_sas(base_dir, domain_path, problem_path, label):
@@ -100,7 +89,7 @@ def find_pddl_plan(base_dir, domain_path, problem_path, label, search):
     sas_path = os.path.join(base_dir, f"{label}.sas")
     command = [
         sys.executable,
-        search.script,
+        FAST_DOWNWARD_SCRIPT,
         "--sas-file",
         sas_path,
         "--plan-file",
@@ -111,7 +100,7 @@ def find_pddl_plan(base_dir, domain_path, problem_path, label, search):
         *search.options,
     ]
 
-    return _find_plan(command, label, plan_path, search.unsolvable_exit_codes)
+    return _find_plan(command, label, plan_path)
 
 
 def find_sas_plan(base_dir, sas_path, label, search):
@@ -119,7 +108,7 @@ def find_sas_plan(base_dir, sas_path, label, search):
     plan_path = os.path.join(base_dir, f"{label}.plan")
     command = [
         sys.executable,
-        search.script,
+        FAST_DOWNWARD_SCRIPT,
         "--plan-file",
         plan_path,
         *search.driver,
@@ -127,7 +116,7 @@ def find_sas_plan(base_dir, sas_path, label, search):
         *search.options,
     ]
 
-    return _find_plan(command, label, plan_path, search.unsolvable_exit_codes)
+    return _find_plan(command, label, plan_path)
 
 
 def parse_plan_actions(plan):
@@ -141,10 +130,10 @@ def parse_plan_actions(plan):
     return tuple(actions)
 
 
-def _find_plan(command, label, plan_path, unsolvable_exit_codes):
+def _find_plan(command, label, plan_path):
     completed = subprocess.run(command, capture_output=True, text=True)
 
-    if completed.returncode in unsolvable_exit_codes:
+    if completed.returncode in (_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE):
         return None
     elif completed.returncode != _SUCCESS:
         raise tool_failure(f"Fast Downward ({label})", completed, _OUT_OF_MEMORY)

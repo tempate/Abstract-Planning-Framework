@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.pipeline import pipeline
-from scripts import planner, unsolvability
+from scripts import planner
 from core.pipeline.abstraction.collapse import AbstractionError
 from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.utilities.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
@@ -164,34 +164,16 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
         self.assertEqual(config.abstract_name, "combined")
 
-    def test_both_drivers_pass_the_abstraction_source_on(self):
-        drivers = (
-            (planner, "abs-lama", "solve", "print_planning_result"),
-            (unsolvability, "abs-ms", "check_solvability", "print_verdict"),
-        )
-        for driver, mode, method, printer in drivers:
-            with self.subTest(driver=driver.__name__):
-                with (
-                    patch.object(pipeline, method, return_value={"success": True}) as compute,
-                    patch.object(driver, printer),
-                    patch.object(
-                        sys,
-                        "argv",
-                        [
-                            "driver",
-                            mode,
-                            "--domain",
-                            "d.pddl",
-                            "--problem",
-                            "p.pddl",
-                            "--abstraction-source",
-                            "resources",
-                        ],
-                    ),
-                ):
-                    driver.main()
+    def test_the_planner_passes_the_abstraction_source_on(self):
+        argv = ["planner", "abs-lama", "--domain", "d.pddl", "--problem", "p.pddl", "--abstraction-source", "resources"]
+        with (
+            patch.object(pipeline, "solve", return_value={"success": True}) as compute,
+            patch.object(planner, "print_planning_result"),
+            patch.object(sys, "argv", argv),
+        ):
+            planner.main()
 
-                self.assertEqual(compute.call_args.args[0].abstraction_source, "resources")
+        self.assertEqual(compute.call_args.args[0].abstraction_source, "resources")
 
 
 if __name__ == "__main__":

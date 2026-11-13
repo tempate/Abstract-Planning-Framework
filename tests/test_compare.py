@@ -11,7 +11,6 @@ def _problem(name, **times):
             "domain": "d",
             "problem": name,
             "status": "success" if seconds else "timed out",
-            "verdict": "",
             "wall_time_seconds": str(seconds or 0),
         }
     return rows

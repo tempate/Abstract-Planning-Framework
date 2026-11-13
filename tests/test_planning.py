@@ -2,10 +2,9 @@ import argparse
 import subprocess
 import tempfile
 import unittest
-from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from core.pipeline.abstraction.factory import Abstraction, build_abstract_problem
 from core.integrations.fast_downward import LAMA
@@ -15,20 +14,10 @@ from core.pipeline.abstraction.factory import write_abstract_problem
 from core.utilities.metrics import PlanningMetrics
 from core.planners import fd
 from core.planners.asp import Asp
-from core.planners.ms import MsUnsat
 from core.pipeline import pipeline
 from core.utilities.config import AbstractPlanningConfig, PlanningConfig
 from core.utilities.plan import one_action_per_step
 from scripts.utils.arguments import positive_int
-
-
-def _generated_abstraction():
-    return SimpleNamespace(
-        problem=Mock(),
-        abstraction=Abstraction("item_abs", ("a", "b"), "item"),
-        relaxed_deletes=(),
-        relaxed_inequalities=(),
-    )
 
 
 class BaselinePlanningOrchestrationTests(unittest.TestCase):
@@ -62,53 +51,6 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
         self.assertNotIn("plan_length", result["metrics"]["counters"])
-
-
-@contextmanager
-def _stubbed_decision(found):
-    """Run the abstract decision pipeline against stubbed integrations."""
-    with (
-        patch("core.utilities.execution.temp_run_dir") as temp_run_dir,
-        patch(
-            "core.pipeline.pipeline.build_abstract_problem", return_value=_generated_abstraction()
-        ) as build_abstract_problem,
-        patch("core.pipeline.pipeline.write_abstract_problem", return_value=("domain.pddl", "problem.pddl", {})),
-        patch("core.pipeline.pipeline.has_plan", return_value=found),
-    ):
-        temp_run_dir.return_value.__enter__.return_value = ("run-dir", "run-123")
-        yield SimpleNamespace(build_abstract_problem=build_abstract_problem)
-
-
-class DecisionTests(unittest.TestCase):
-    @patch("core.planners.ms.has_plan")
-    def test_searching_the_task_itself_settles_it(self, has_plan):
-        for found, verdict in ((True, "solvable"), (False, "unsolvable")):
-            with self.subTest(found=found):
-                has_plan.return_value = found
-
-                result = MsUnsat(PlanningConfig("domain.pddl", "problem.pddl")).check_solvability()
-
-                self.assertEqual(result["verdict"], verdict)
-
-    def test_an_abstract_plan_settles_nothing(self):
-        with _stubbed_decision(found=True):
-            result = pipeline.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
-
-        self.assertEqual(result["verdict"], "unknown")
-
-    def test_an_abstraction_with_no_plan_proves_the_task_unsolvable(self):
-        with _stubbed_decision(found=False):
-            result = pipeline.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
-
-        self.assertEqual(result["verdict"], "unsolvable")
-
-    def test_an_integration_proving_the_task_unsolvable_settles_it(self):
-        with _stubbed_decision(found=True) as stubs:
-            stubs.build_abstract_problem.side_effect = UnsolvableTaskError("no relaxed solution")
-
-            result = pipeline.check_solvability(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
-
-        self.assertEqual(result["verdict"], "unsolvable")
 
 
 class PlanningConfigurationTests(unittest.TestCase):

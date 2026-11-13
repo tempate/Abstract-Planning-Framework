@@ -49,15 +49,6 @@ class PlanningRun:
             "metrics": self.metrics.as_dict(),
         }
 
-    def verdict_result(self, config, verdict):
-        """What a run that decided solvability reports, once it has ended."""
-        return {
-            "configuration": config.as_dict(),
-            "verdict": verdict,
-            "run_id": self.run_id,
-            "metrics": self.metrics.as_dict(),
-        }
-
 
 @contextmanager
 def planning_run(label, on_update=None):

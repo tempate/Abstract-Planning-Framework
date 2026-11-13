@@ -1,1 +1,1 @@
-"""The IPC benchmark tracks: satisficing, optimal and unsolvability."""
+"""The IPC benchmark tracks: satisficing and optimal."""

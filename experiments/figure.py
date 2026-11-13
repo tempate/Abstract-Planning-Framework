@@ -7,7 +7,6 @@ import json
 import shutil
 import subprocess
 import tempfile
-from collections import defaultdict
 from pathlib import Path
 
 from experiments.collect import result_key
@@ -16,16 +15,15 @@ from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 from experiments.tracks import TRACKS
 
 SOURCES = {"symmetries": "Symmetries", "resources": "Resources"}
-FIGURES = ("sat", "opt", "unsat", "htg", "scaled")
+FIGURES = ("sat", "opt", "htg")
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
 TIME_LIMIT = 1800
-TRACK_NAMES = {"sat": "Satisficing", "opt": "Optimal", "unsat": "Unsolvability"}
+TRACK_NAMES = {"sat": "Satisficing", "opt": "Optimal"}
 # Each track's solvers with their labels, each drawn against its abstraction, the first with solid lines.
 PAIRS = {
     "sat": (("lama", r"\LAMA", r"\LAMAa"), ("asp", r"\ASP", r"\ASPa")),
     "opt": (("lmcut", r"\LMcut", r"\LMcuta"), ("asp", r"\ASP", r"\ASPa")),
-    "unsat": (("ms", r"\MS", r"\MSa"),),
 }
 # Lifts a cactus plot's source title over the legend that sits just above the plot.
 ABOVE_LEGEND = "title style={yshift=11pt}"
@@ -44,9 +42,7 @@ def main():
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
 
-    if args.kind == "scaled":
-        panels = [_scaled_plot(load_tracks(args.branch, args.kind, manifests)["symmetries"])]
-    elif args.no_base:
+    if args.no_base:
         panels = [_panel("", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources))]
     else:
         # A label like #134 would otherwise read as a macro parameter in LaTeX.
@@ -129,15 +125,11 @@ def paper_figures(revision):
     # Each PDF is as wide as the float main.tex includes it in, so it keeps the paper's sizes.
     return {
         "runtimes": _minipage(r"\textwidth", _runtime_figure(rows)),
-        "unsat": _runtime_plot(ipc["unsat"]["symmetries"], PAIRS["unsat"][0], labelled=True),
-        # The paper sets the scaled plot beside the unsat runtime plot, at the same height.
-        "scaled": _scaled_plot(load_tracks(revision, "scaled", [])["symmetries"], SCALED_BESIDE_RUNTIME),
     }
 
 
 def _runtime_figure(rows):
     """The paper's runtime figure as Table 1 lays it out, a row per benchmark set and a column per track's solver."""
-    # The unsolvability track has a single plot, so it sits in the figure of the scalability plot instead.
     kinds = ("sat", "opt")
     plot_gap = "%\n\\hspace{0.3in}%\n"
     track_gap = "%\n\\hspace{0.4in}%\n"
@@ -204,7 +196,7 @@ def _panel(title, kind, tracks):
     body = (
         _in_row(_track_title(TRACK_NAMES[kind], len(tracks)))
         + "\n\n\\vspace{0.4em}\n"
-        + _in_row(_joined(_cactus_plots(kind, tracks, PAIRS[kind])))
+        + _in_row(_joined(_cactus_plots(tracks, PAIRS[kind])))
         + "\n\n\\medskip\n"
         + "\n\n\\smallskip\n".join(_in_row(_joined(plots)) for plots in _runtime_rows(tracks, PAIRS[kind]))
     )
@@ -227,15 +219,14 @@ def _htg_figure(tracks, row_gap):
     return _in_row(_joined(cactus_plots, gap)) + row_gap + _in_row(_joined(runtimes, gap))
 
 
-def _cactus_plots(kind, tracks, pairs):
+def _cactus_plots(tracks, pairs):
     """One track's problems solved over time, a plot per abstraction source, the right one carrying the legend."""
-    ylabel = "Problems proved" if kind == "unsat" else "Problems solved"
     plots = []
     for index, (source, problems) in enumerate(tracks.items()):
         if len(tracks) == 1:
-            options, legend = f"ylabel={{{ylabel}}}, {CENTRED_LEGEND}", True
+            options, legend = f"ylabel={{Problems solved}}, {CENTRED_LEGEND}", True
         elif index == 0:
-            options, legend = f"ylabel={{{ylabel}}}", False
+            options, legend = "ylabel={Problems solved}", False
         else:
             options, legend = "ylabel={}, legend style={overlay, at={(-0.16,1.04)}, anchor=south}", True
         plots.append(_cactus_plot(SOURCES[source], problems, pairs, options, legend))
@@ -305,49 +296,6 @@ def _titled(title, body, columns):
 
 def _minipage(width, body):
     return f"\\noindent\\begin{{minipage}}{{{width}}}\\centering\n{body}\n\\end{{minipage}}"
-
-
-# Beside the unsat runtime plot, the legend moves inside, into the band between the M&S curves and the OSS
-# curve, so the axis can take the width a legend above it would need.
-SCALED_BESIDE_RUNTIME = (
-    r"width=1.25in, height=\plotsize, legend columns=1, "
-    r"legend style={at={(0.22,0.27)}, anchor=south west, row sep=-2pt}"
-)
-SCALED_MODES = (
-    ("ms", "conc", "*", r"\MS"),
-    ("abs-ms", "abst", "square*", r"\MSa"),
-    ("oss", "conc, dashed", "triangle*", "OSS"),
-)
-
-
-def scaled_coverage(problems, mode):
-    """The share of each class size's problems a mode proves unsolvable, in percent."""
-    by_size = defaultdict(list)
-    for problem in problems:
-        by_size[int(problem[mode]["domain"].rsplit("/size-", 1)[1])].append(solved(problem[mode]))
-    return [(size, 100 * sum(proved) / len(proved)) for size, proved in sorted(by_size.items())]
-
-
-def _scaled_plot(problems, options=""):
-    lines = []
-    for mode, style, mark, name in SCALED_MODES:
-        shares = " ".join(f"({size},{share:.2f})" for size, share in scaled_coverage(problems, mode))
-        lines.append(rf"\addplot[{style}, very thick, mark={mark}, mark size=1.4pt] coordinates {{{shares}}};")
-        lines.append(rf"\addlegendentry{{{name}}}")
-
-    return (
-        "\\begin{tikzpicture}\n\\begin{semilogxaxis}[scale only axis, width=0.8\\columnwidth, "
-        "height=0.5\\columnwidth, xmin=1.8, xmax=1150, xtick={2,10,100,1000}, xticklabels={2,$10^1$,$10^2$,$10^3$}, "
-        "ymin=0, ymax=105, ytick={0,25,50,75,100}, minor tick length=0pt, xlabel={Size of $K$}, "
-        "ylabel={Problems proved (\\%)}, axis line style={black!50}, tick style={black!50}, "
-        "xtick pos=bottom, ytick pos=left, tick label style={font=\\footnotesize}, label style={font=\\footnotesize}, "
-        "legend style={font=\\footnotesize, draw=none, fill=none, at={(0.5,1.03)}, anchor=south, "
-        "/tikz/every even column/.append style={column sep=10pt}}, legend columns=3, legend cell align=left, "
-        + options
-        + "]\n"
-        + "\n".join(lines)
-        + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
-    )
 
 
 def cactus(problems, mode):

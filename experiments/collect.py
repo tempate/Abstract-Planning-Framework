@@ -22,17 +22,11 @@ FIELDS = (
     "wall_time_seconds",
     "last_completed_phase",
     *DURATION_FIELDS,
-    "verdict",
     *COUNTER_LABELS,
     "abstracted_object_count",
     "abstracted_object_type",
     "error_message",
 )
-
-
-def _value(output, label, convert=str):
-    match = re.search(rf"^{re.escape(label)}: (.+)$", output, re.MULTILINE)
-    return "" if match is None else convert(match.group(1))
 
 
 def collect(*results_dirs):
@@ -94,7 +88,6 @@ def _values(result):
         "wall_time_seconds": result["wall_time_seconds"],
         "last_completed_phase": progress.get("last_completed_phase", ""),
         **{f"{name}_seconds": durations.get(name, "") for name in DURATION_LABELS},
-        "verdict": _value(output, "Verdict"),
         **{name: counters.get(name, "") for name in COUNTER_LABELS},
         **_abstraction_values(output, metrics.get("abstraction")),
         "error_message": _error_message(result),

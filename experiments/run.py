@@ -1,4 +1,4 @@
-"""Run one benchmark mode, for a plan or for a solvability verdict."""
+"""Run one benchmark mode on one problem."""
 
 import argparse
 import json
@@ -21,7 +21,7 @@ MANIFEST_NAME = "manifest.json"
 # Every way one problem gets solved, in the order a report reads them. A mode
 # names the solver that finds the plan, or through an abstraction the abstract
 # plan, which ASP then refines.
-MODES = ("asp", "abs-asp", "abs-lama", "lama", "abs-lmcut", "lmcut", "abs-ms", "ms", "oss")
+MODES = ("asp", "abs-asp", "abs-lama", "lama", "abs-lmcut", "lmcut")
 ABSTRACTION_PREFIX = "abs-"
 OPTIMIZING_MODES = ("asp", "abs-asp", "abs-lmcut")
 
@@ -62,7 +62,7 @@ def _argument_parser():
         "--track",
         choices=sorted(TRACKS),
         default=DEFAULT_TRACK,
-        help="Track the problem belongs to, which names the driver that runs it",
+        help="Track the problem belongs to, which names the arguments its modes take",
     )
     parser.add_argument(
         "--class-rank",
@@ -187,7 +187,7 @@ def _machine_status(return_code):
 
 
 def _planner_command(domain, problem, mode, track, rank):
-    command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
+    command = [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
 
     if mode.startswith(ABSTRACTION_PREFIX):
         command.extend(TRACKS[track].abstract_arguments)
