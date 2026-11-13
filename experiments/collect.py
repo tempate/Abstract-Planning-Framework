@@ -10,6 +10,7 @@ from pathlib import Path
 
 from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
 from experiments.run import MANIFEST_NAME, MODES, RESULTS_DIR, _human_status, class_rank
+from experiments.report import UNFINISHED_STATUSES
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
@@ -175,8 +176,8 @@ def _preserved_rows(collected, csv_file):
     # A run that re-ran a class the CSV holds ran newer code on that problem, so
     # the classes it skipped measure code that no longer exists. A run that only
     # adds classes, as --from-rank does, leaves the earlier ones alone, and so
-    # does a job that never reported.
-    finished = {result_key(row) for row in collected if row["status"] != "missing"}
+    # does a job that never reported, or was killed before it could.
+    finished = {result_key(row) for row in collected if row["status"] not in UNFINISHED_STATUSES}
     replaced = {key[:3] for key in finished & {result_key(row) for row in rows}}
 
     preserved = []

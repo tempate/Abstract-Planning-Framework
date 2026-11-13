@@ -19,7 +19,7 @@ pinned plasp binary, and MS-unsat from the Unsolvability IPC 2016. Skipping it f
 time.
 
 Refinement first tries the abstract plan on a partial grounding, from a private Fast Downward fork that must be cloned by
-hand into `lib/downward-partial-grounding` (gitignored). Without it, refinement grounds the whole task.
+hand into `lib/downward-partial-grounding` (gitignored). Without it, refinement fails and `scripts.setup` reports it missing.
 
 For automatic formatting on commit:
 

@@ -7,7 +7,6 @@ from core.pipeline.abstraction.factory import Abstraction
 from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import partial_pddl_to_sas, pddl_to_sas
-from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
 from core.integrations.plasp import sas_to_asp
 from core.utilities.metrics import PlanningMetrics
 from core.utilities.outcomes import IntegrationError, UnsolvableTaskError
@@ -45,14 +44,11 @@ def refine(context: RefinementContext, abstract_plan):
     # Publish the counters before searching so an interrupted run still has them.
     _record_search(context.metrics, increments=0, decrements=0, solve_calls=1)
 
-    partial = os.path.exists(PARTIAL_GROUNDING_TRANSLATOR)
-    atoms = None
-    if partial:
-        atoms = _partial_one_shot(context, abstract_plan)
+    atoms = _partial_one_shot(context, abstract_plan)
 
     if atoms is None:
         # A one-shot that fails on the partial grounding fails on the full one too.
-        atoms = _refine_on_full_grounding(context, abstract_plan, one_shot=not partial)
+        atoms = _refine_on_full_grounding(context, abstract_plan)
 
     if atoms is None:
         return None
@@ -127,8 +123,8 @@ def _one_shot(context, asp, abstract_plan):
     return solver.solve()
 
 
-def _refine_on_full_grounding(context, abstract_plan, one_shot):
-    """Refine the abstract plan as it is if asked, then give it up from its end and search above its horizon."""
+def _refine_on_full_grounding(context, abstract_plan):
+    """Give the abstract plan up from its end, then search above its horizon."""
     config = context.config
 
     with context.metrics.measure("concrete_fd"):
@@ -140,11 +136,6 @@ def _refine_on_full_grounding(context, abstract_plan, one_shot):
         asp = sas_to_asp(concrete_sas, config.optimize)
 
     with context.metrics.measure("guided_concrete_solving"):
-        if one_shot:
-            atoms = _one_shot(context, asp, abstract_plan)
-            if atoms is not None:
-                return atoms
-
         gaps = not config.optimize
         if gaps:
             # A gap before every abstract action and one after the last.

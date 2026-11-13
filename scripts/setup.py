@@ -37,6 +37,8 @@ MS_UNSAT_ARCHIVE_ROOT = "MS-unsat/src/"
 MS_UNSAT_MEMBERS = ("translate/", "preprocess/preprocess", "search/downward-release")
 MS_UNSAT_DIR = ROOT / "lib" / "ms-unsat" / "src"
 MS_UNSAT_SEARCH = MS_UNSAT_DIR / "search" / "downward-release"
+# Private, so setup cannot fetch it: clone it by hand.
+PARTIAL_GROUNDING_TRANSLATOR = ROOT / "lib" / "downward-partial-grounding" / "src" / "translate" / "translate.py"
 
 # Each of these fails silently at run time rather than at setup time: a missing
 # pybliss kills every abstract run in symmetry discovery, a missing Fast
@@ -47,6 +49,7 @@ ARTIFACTS = {
     "structural symmetries release build": STRUCTURAL_SYMMETRIES_BUILD,
     "plasp binary": PLASP_BIN,
     "MS-unsat search": MS_UNSAT_SEARCH,
+    "partial grounding translator": PARTIAL_GROUNDING_TRANSLATOR,
 }
 
 

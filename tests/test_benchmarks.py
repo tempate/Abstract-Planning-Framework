@@ -790,19 +790,20 @@ class CollectedCsvTests(unittest.TestCase):
         self.assertEqual([(row["problem"], row["class"]) for row in preserved], [("p02.pddl", "1")])
 
     def test_a_job_that_never_reported_keeps_the_other_classes(self):
-        with tempfile.TemporaryDirectory() as directory:
-            csv_file = Path(directory) / "results.csv"
-            with csv_file.open("w", encoding="utf-8", newline="") as stream:
-                writer = csv.DictWriter(stream, fieldnames=FIELDS)
-                writer.writeheader()
-                for rank in ("0", "1"):
-                    writer.writerow({"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": rank})
-            collected = self._collected([("example", "p01.pddl", "abs-asp", "missing")])
-            collected[0]["class"] = "0"
+        for status in ("missing", "running"):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as directory:
+                csv_file = Path(directory) / "results.csv"
+                with csv_file.open("w", encoding="utf-8", newline="") as stream:
+                    writer = csv.DictWriter(stream, fieldnames=FIELDS)
+                    writer.writeheader()
+                    for rank in ("0", "1"):
+                        writer.writerow({"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": rank})
+                collected = self._collected([("example", "p01.pddl", "abs-asp", status)])
+                collected[0]["class"] = "0"
 
-            preserved = _preserved_rows(collected, csv_file)
+                preserved = _preserved_rows(collected, csv_file)
 
-        self.assertEqual([row["class"] for row in preserved], ["1"])
+                self.assertEqual([row["class"] for row in preserved], ["1"])
 
     def test_a_first_run_has_nothing_to_keep(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -64,6 +64,11 @@ def pddl_to_sas(base_dir, domain_path, problem_path, label):
 
 def partial_pddl_to_sas(base_dir, domain_path, problem_path, actions_path):
     """Translate a PDDL task grounding only the actions a plan file lists, and return its SAS file."""
+    if not os.path.exists(PARTIAL_GROUNDING_TRANSLATOR):
+        raise FileNotFoundError(
+            f"Partial grounding translator not found: {PARTIAL_GROUNDING_TRANSLATOR}; clone the fork"
+        )
+
     sas_path = os.path.join(base_dir, "output.sas")
     # The fork's driver insists on a search build, so call its translator, which needs none.
     command = [
