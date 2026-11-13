@@ -38,7 +38,7 @@ def solve(config: AbstractPlanningConfig, on_update=None):
             base_dir=run.base_dir,
             renamings=renamings,
         )
-        plan = refine(context, abstract_plan, len(abstract_plan))
+        plan = refine(context, abstract_plan)
 
     return run.plan_result(config, plan)
 

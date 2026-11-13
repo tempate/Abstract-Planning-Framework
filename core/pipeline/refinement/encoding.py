@@ -29,20 +29,19 @@ def map_abstract_actions(abstract_plan, abstraction, gaps=True):
     for action in abstract_plan:
         time_step = _concrete_time_step(action.time_step, gaps)
 
-        # Map each abstract action to one of its groundings.
         action_str, conds_str = _action_pattern(action, abstraction)
         choices[time_step] = f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1."
 
     return choices
 
 
-def concrete_groundings(abstract_plan, abstraction):
+def expand_abstract_actions(abstract_plan, abstraction):
     """Every concrete action the abstract plan's actions may refine into, as plan-file lines."""
     groundings = set()
     for action in abstract_plan:
         options = []
         for arg in action.args:
-            if arg.casefold() == abstraction.name.casefold():
+            if _is_abstract(arg, abstraction):
                 options.append(abstraction.objects)
             else:
                 options.append((arg,))
@@ -69,12 +68,12 @@ def add_switches(choices):
 
 def switches(abstract_plan, gaps=True):
     """The switches holding the abstract plan, latest first, so that what survives relaxation is a prefix of it."""
-    switches = []
+    held = []
     for action in abstract_plan:
         time_step = _concrete_time_step(action.time_step, gaps)
-        switches.append(_switch(time_step))
+        held.append(_switch(time_step))
 
-    return sorted(switches, reverse=True)
+    return sorted(held, reverse=True)
 
 
 def _switch(time_step):
@@ -90,13 +89,13 @@ def _concrete_time_step(abstract_time_step, gaps=True):
 
 
 def _action_pattern(action, abstraction):
-    """Extract the action pattern and independent variables from an abstract action."""
-    vars = []
+    """The action term with a variable for each abstract argument, and the conditions that ground those variables."""
+    variables = []
     args = []
     for arg in action.args:
-        if arg.casefold() == abstraction.name.casefold():
-            var = f"ConcreteObject{len(vars) + 1}"
-            vars.append(var)
+        if _is_abstract(arg, abstraction):
+            var = f"ConcreteObject{len(variables) + 1}"
+            variables.append(var)
             args.append(var)
         else:
             args.append(_quote(arg))
@@ -104,11 +103,15 @@ def _action_pattern(action, abstraction):
     action_name = _quote(action.name)
     action_str = f"action(({','.join((action_name, *args))}))"
 
-    conds = [f"concrete_object({var})" for var in vars]
+    conds = [f"concrete_object({var})" for var in variables]
     conds.append(f"action({action_str})")
     conds_str = ", ".join(conds)
 
     return action_str, conds_str
+
+
+def _is_abstract(arg, abstraction):
+    return arg.casefold() == abstraction.name.casefold()
 
 
 def _quote(value):
