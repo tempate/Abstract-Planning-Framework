@@ -5,8 +5,8 @@ from core.utilities.plan import PlanAction
 from core.pipeline.refinement.encoding import (
     add_concrete_objects,
     add_switches,
-    concrete_groundings,
     drop_action_choice,
+    expand_abstract_actions,
     map_abstract_actions,
     switches,
 )
@@ -107,7 +107,7 @@ action(action(("unrelated","x"))).
         abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
 
         self.assertEqual(
-            set(concrete_groundings(abstract_plan, abstraction)),
+            set(expand_abstract_actions(abstract_plan, abstraction)),
             {
                 "(move item1 room1 item1)",
                 "(move item1 room1 item2)",

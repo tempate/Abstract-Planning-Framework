@@ -15,8 +15,8 @@ from core.utilities.config import AbstractPlanningConfig
 from core.pipeline.refinement.encoding import (
     add_concrete_objects,
     add_switches,
-    concrete_groundings,
     drop_action_choice,
+    expand_abstract_actions,
     map_abstract_actions,
     switches,
 )
@@ -35,11 +35,25 @@ class RefinementContext:
     renamings: dict[str, str]
 
 
-def refine(context: RefinementContext, abstract_plan, abstract_horizon):
-    """Ground the concrete task, then use an abstract plan to guide its search."""
+def refine(context: RefinementContext, abstract_plan):
+    """Refine an abstract plan as it is, then give it up step by step and search above its horizon.
+
+    The plan holds one action per step, from 1.
+    """
     abstract_plan = _with_original_names(abstract_plan, context.renamings)
 
-    atoms = _solve_concrete_plan(context, abstract_plan, abstract_horizon)
+    # Publish the counters before searching so an interrupted run still has them.
+    _record_search(context.metrics, increments=0, decrements=0, solve_calls=1)
+
+    partial = os.path.exists(PARTIAL_GROUNDING_TRANSLATOR)
+    atoms = None
+    if partial:
+        atoms = _partial_one_shot(context, abstract_plan)
+
+    if atoms is None:
+        # A one-shot that fails on the partial grounding fails on the full one too.
+        atoms = _refine_on_full_grounding(context, abstract_plan, one_shot=not partial)
+
     if atoms is None:
         return None
 
@@ -60,67 +74,25 @@ def _with_original_names(abstract_plan, renamings):
     return tuple(renamed)
 
 
-def _concrete_asp(context):
-    """Ground the concrete task and translate it into the ASP program the refinement searches."""
-    config = context.config
-
-    with context.metrics.measure("concrete_fd"):
-        concrete_dir = os.path.join(context.base_dir, "concrete")
-        concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
-
-    with context.metrics.measure("concrete_asp"):
-        return sas_to_asp(concrete_sas, config.optimize)
+def _record_search(metrics, increments, decrements, solve_calls):
+    metrics.set_counters(
+        {
+            "increments": increments,
+            "decrements": decrements,
+            "concrete_solve_calls": solve_calls,
+        }
+    )
 
 
-def _solve_concrete_plan(context, abstract_plan, abstract_horizon):
-    """Refine the abstract plan as it is, then give it up step by step and search above its horizon."""
-    # Publish the counters before searching so an interrupted run still has them.
-    counters = {
-        "increments": 0,
-        "decrements": 0,
-        "concrete_solve_calls": 0,
-    }
-    context.metrics.set_counters(counters)
-
-    def record_attempt(increments, dropped, search_calls):
-        counters["increments"] = increments
-        counters["decrements"] = dropped
-        # The solve with every switch held comes before the search's own calls.
-        counters["concrete_solve_calls"] = search_calls + 1
-        context.metrics.set_counters(counters)
-
-    record_attempt(0, 0, 0)
-
-    if os.path.exists(PARTIAL_GROUNDING_TRANSLATOR):
-        plan = _partial_one_shot(context, abstract_plan, abstract_horizon)
-        if plan is not None:
-            return plan
-
-        asp = _concrete_asp(context)
-    else:
-        asp = _concrete_asp(context)
-
-        with context.metrics.measure("guided_concrete_solving"):
-            plan = _one_shot(context, asp, abstract_plan, abstract_horizon)
-        if plan is not None:
-            return plan
-
-    with context.metrics.measure("guided_concrete_solving"):
-        solver = _fallback_solver(context, asp, abstract_plan, abstract_horizon)
-
-        # Clingo holds its own copy of the program, so the text would only take memory from the search.
-        del asp
-        return _fallback(context, solver, abstract_plan, record_attempt)
-
-
-def _partial_one_shot(context, abstract_plan, abstract_horizon):
+def _partial_one_shot(context, abstract_plan):
     """The one-shot on a task grounded with only the actions the abstract plan may refine into."""
     partial_dir = os.path.join(context.base_dir, "partial")
     os.makedirs(partial_dir, exist_ok=True)
 
     actions_path = os.path.join(partial_dir, "actions.txt")
     with open(actions_path, "w", encoding="utf-8") as actions_file:
-        actions_file.write("\n".join(concrete_groundings(abstract_plan, context.abstraction)) + "\n")
+        expanded_actions = expand_abstract_actions(abstract_plan, context.abstraction)
+        actions_file.write("\n".join(expanded_actions) + "\n")
 
     config = context.config
 
@@ -141,42 +113,59 @@ def _partial_one_shot(context, abstract_plan, abstract_horizon):
         partial_asp = sas_to_asp(partial_sas)
 
     with context.metrics.measure("partial_one_shot"):
-        return _one_shot(context, partial_asp, abstract_plan, abstract_horizon)
+        return _one_shot(context, partial_asp, abstract_plan)
 
 
-def _one_shot(context, asp, abstract_plan, abstract_horizon):
+def _one_shot(context, asp, abstract_plan):
     """Refine the abstract plan as it is, in one solve at its horizon."""
     choices = map_abstract_actions(abstract_plan, context.abstraction, gaps=False)
     rules = [drop_action_choice(asp.rules), *add_concrete_objects(context.abstraction), *choices.values()]
 
     solver = Solver(
-        asp=replace(asp, rules="\n".join(rules)), init_horizon=abstract_horizon, optimize=context.config.optimize
+        asp=replace(asp, rules="\n".join(rules)), init_horizon=len(abstract_plan), optimize=context.config.optimize
     )
     return solver.solve()
 
 
-def _fallback_solver(context, asp, abstract_plan, abstract_horizon):
-    """Load the program whose switches can give the abstract plan up step by step."""
-    gaps = not context.config.optimize
-    if gaps:
-        init_horizon = 2 * abstract_horizon + 1
-    else:
-        init_horizon = abstract_horizon
+def _refine_on_full_grounding(context, abstract_plan, one_shot):
+    """Refine the abstract plan as it is if asked, then give it up from its end and search above its horizon."""
+    config = context.config
 
-    choices = map_abstract_actions(abstract_plan, context.abstraction, gaps)
-    rules = [asp.rules, *add_concrete_objects(context.abstraction), *add_switches(choices)]
-    return Solver(asp=replace(asp, rules="\n".join(rules)), init_horizon=init_horizon, optimize=context.config.optimize)
+    with context.metrics.measure("concrete_fd"):
+        concrete_dir = os.path.join(context.base_dir, "concrete")
+        concrete_sas = pddl_to_sas(concrete_dir, config.domain_path, config.problem_path, "concrete")
 
+    # The program text stays local, so that nothing outside holds it once clingo has loaded it.
+    with context.metrics.measure("concrete_asp"):
+        asp = sas_to_asp(concrete_sas, config.optimize)
 
-def _fallback(context, solver, abstract_plan, record_attempt):
-    """Give the abstract plan up step by step, from its end, and search above its horizon."""
-    gaps = not context.config.optimize
+    with context.metrics.measure("guided_concrete_solving"):
+        if one_shot:
+            atoms = _one_shot(context, asp, abstract_plan)
+            if atoms is not None:
+                return atoms
 
-    def record_search(horizon, dropped, search_calls):
-        record_attempt(horizon - solver.init_horizon, dropped, search_calls)
+        gaps = not config.optimize
+        if gaps:
+            # A gap before every abstract action and one after the last.
+            init_horizon = 2 * len(abstract_plan) + 1
+        else:
+            init_horizon = len(abstract_plan)
 
-    # Without gaps, holding every switch is the one-shot that already failed, so the first switch starts released.
-    result = solver.search(switches(abstract_plan, gaps), record_search, dropped=int(not gaps))
+        # Switches let the search give the abstract plan up one action at a time.
+        choices = map_abstract_actions(abstract_plan, context.abstraction, gaps)
+        rules = [asp.rules, *add_concrete_objects(context.abstraction), *add_switches(choices)]
+        solver = Solver(asp=replace(asp, rules="\n".join(rules)), init_horizon=init_horizon, optimize=config.optimize)
 
-    record_search(result.horizon, result.dropped, result.attempts)
-    return result.plan
+        # Clingo holds its own copy of the program, so the text would only take memory from the search.
+        del asp, rules
+
+        def record_attempt(horizon, dropped, attempts):
+            # The one-shot solve came before the search's own attempts.
+            _record_search(context.metrics, horizon - init_horizon, dropped, attempts + 1)
+
+        # Without gaps, holding every switch is the one-shot that already failed, so the first switch starts released.
+        result = solver.search(switches(abstract_plan, gaps), record_attempt, dropped=int(not gaps))
+
+        record_attempt(result.horizon, result.dropped, result.attempts)
+        return result.plan
