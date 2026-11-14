@@ -14,9 +14,9 @@ from experiments.ipc.sat import suite as sat
 # onto different revisions of it.
 EXPERIMENTS = Path(__file__).parent
 BENCHMARKS = EXPERIMENTS / "benchmarks"
-# PDDL Symmetries grounds the task before it searches for symmetries, and the
-# hard-to-ground problems run out of memory there, so they skip the grounding.
-HTG_ARGUMENTS = ("--symmetries-before-grounding",)
+# Every track finds its classes on the lifted task, without grounding it
+# or filtering it by reachability, which the hard-to-ground problems could not survive.
+SYMMETRY_ARGUMENTS = ("--symmetries-before-grounding",)
 
 
 @dataclass(frozen=True)
@@ -75,6 +75,7 @@ TRACKS = {
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
+        abstract_arguments=SYMMETRY_ARGUMENTS,
     ),
     # The same suite, restricted to the problems numeric-fast-downward finds a
     # resource for, and planned from that resource's objects.
@@ -83,7 +84,7 @@ TRACKS = {
         suite=sat.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
-        abstract_arguments=("--abstraction-source", "resources"),
+        abstract_arguments=("--abstraction-source", "resources", *SYMMETRY_ARGUMENTS),
     ),
     # The hard-to-ground benchmarks, refined with the full grounding like sat/symmetries.
     "sat-htg/symmetries": Track(
@@ -91,7 +92,7 @@ TRACKS = {
         suite=htg.SUITE,
         benchmarks_dir=BENCHMARKS / "htg-domains",
         modes=("abs-asp", "abs-lama", "asp", "lama"),
-        abstract_arguments=HTG_ARGUMENTS,
+        abstract_arguments=SYMMETRY_ARGUMENTS,
     ),
     # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
     "opt-htg/symmetries": Track(
@@ -99,7 +100,7 @@ TRACKS = {
         suite=htg_opt.SUITE,
         benchmarks_dir=BENCHMARKS / "htg-domains",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        abstract_arguments=HTG_ARGUMENTS,
+        abstract_arguments=SYMMETRY_ARGUMENTS,
         optimizing_arguments=("--optimize",),
     ),
     # The optimal suite, refined without gaps so that every plan is optimal, with
@@ -109,6 +110,7 @@ TRACKS = {
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+        abstract_arguments=SYMMETRY_ARGUMENTS,
         optimizing_arguments=("--optimize",),
     ),
     "opt/resources": Track(
@@ -116,7 +118,7 @@ TRACKS = {
         suite=opt.SUITE,
         benchmarks_dir=BENCHMARKS / "downward-benchmarks",
         modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        abstract_arguments=("--abstraction-source", "resources"),
+        abstract_arguments=("--abstraction-source", "resources", *SYMMETRY_ARGUMENTS),
         optimizing_arguments=("--optimize",),
     ),
 }
