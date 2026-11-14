@@ -61,25 +61,75 @@ agricola-sat18-strips/p19.pddl	2	vegetable	2	carrot grain
 agricola-sat18-strips/p20.pddl	0	room	5	room3 room4 room5 room6 room7
 agricola-sat18-strips/p20.pddl	1	animal	3	boar cattle sheep
 agricola-sat18-strips/p20.pddl	2	vegetable	2	carrot grain
-airport/p01-airport1-p1.pddl	0	segment	2	seg_rwte2_0_10 seg_rwtw2_0_10
-airport/p02-airport1-p1.pddl	0	segment	2	seg_rwte2_0_10 seg_rwtw2_0_10
-airport/p03-airport1-p2.pddl	0	segment	2	seg_rwte2_0_10 seg_rwtw2_0_10
-airport/p04-airport2-p1.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p05-airport2-p1.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p06-airport2-p2.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p07-airport2-p2.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p08-airport2-p3.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p09-airport2-p4.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p10-airport3-p1.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p11-airport3-p1.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p12-airport3-p2.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p13-airport3-p2.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p14-airport3-p3.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p15-airport3-p3.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p16-airport3-p4.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p18-airport3-p6.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p19-airport3-p6.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
-airport/p20-airport3-p7.pddl	0	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p01-airport1-p1.pddl	0	airplanetype	2	heavy light
+airport/p01-airport1-p1.pddl	1	segment	2	seg_rwte2_0_10 seg_rwtw2_0_10
+airport/p02-airport1-p1.pddl	0	airplanetype	2	heavy light
+airport/p02-airport1-p1.pddl	1	segment	2	seg_rwte2_0_10 seg_rwtw2_0_10
+airport/p03-airport1-p2.pddl	0	airplanetype	2	heavy light
+airport/p03-airport1-p2.pddl	1	segment	2	seg_rwte2_0_10 seg_rwtw2_0_10
+airport/p04-airport2-p1.pddl	0	airplanetype	2	heavy light
+airport/p04-airport2-p1.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p05-airport2-p1.pddl	0	airplanetype	2	heavy light
+airport/p05-airport2-p1.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p06-airport2-p2.pddl	0	airplanetype	2	heavy light
+airport/p06-airport2-p2.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p07-airport2-p2.pddl	0	airplanetype	2	heavy light
+airport/p07-airport2-p2.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p08-airport2-p3.pddl	0	airplanetype	2	heavy light
+airport/p08-airport2-p3.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p09-airport2-p4.pddl	0	airplanetype	2	heavy light
+airport/p09-airport2-p4.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p10-airport3-p1.pddl	0	airplanetype	2	heavy light
+airport/p10-airport3-p1.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p11-airport3-p1.pddl	0	airplanetype	2	heavy light
+airport/p11-airport3-p1.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p12-airport3-p2.pddl	0	airplanetype	2	heavy light
+airport/p12-airport3-p2.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p13-airport3-p2.pddl	0	airplanetype	2	heavy light
+airport/p13-airport3-p2.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p14-airport3-p3.pddl	0	airplanetype	2	heavy light
+airport/p14-airport3-p3.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p15-airport3-p3.pddl	0	airplanetype	2	heavy light
+airport/p15-airport3-p3.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p16-airport3-p4.pddl	0	airplanetype	2	heavy light
+airport/p16-airport3-p4.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p17-airport3-p5.pddl	0	airplanetype	2	heavy light
+airport/p18-airport3-p6.pddl	0	airplanetype	2	heavy light
+airport/p18-airport3-p6.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p19-airport3-p6.pddl	0	airplanetype	2	heavy light
+airport/p19-airport3-p6.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p20-airport3-p7.pddl	0	airplanetype	2	heavy light
+airport/p20-airport3-p7.pddl	1	segment	2	seg_09thresh_0_100 seg_27thresh_0_100
+airport/p21-airport4halfMUC-p2.pddl	0	airplanetype	2	heavy light
+airport/p22-airport4halfMUC-p3.pddl	0	airplanetype	2	heavy light
+airport/p23-airport4halfMUC-p4.pddl	0	airplanetype	2	heavy light
+airport/p24-airport4halfMUC-p4.pddl	0	airplanetype	2	heavy light
+airport/p25-airport4halfMUC-p5.pddl	0	airplanetype	2	heavy light
+airport/p26-airport4halfMUC-p6.pddl	0	airplanetype	2	heavy light
+airport/p27-airport4halfMUC-p6.pddl	0	airplanetype	2	heavy light
+airport/p28-airport4halfMUC-p7.pddl	0	airplanetype	2	heavy light
+airport/p29-airport4halfMUC-p8.pddl	0	airplanetype	2	heavy light
+airport/p30-airport4halfMUC-p8.pddl	0	airplanetype	2	heavy light
+airport/p31-airport4halfMUC-p9.pddl	0	airplanetype	2	heavy light
+airport/p32-airport4halfMUC-p10.pddl	0	airplanetype	2	heavy light
+airport/p33-airport4halfMUC-p10.pddl	0	airplanetype	2	heavy light
+airport/p34-airport4halfMUC-p11.pddl	0	airplanetype	2	heavy light
+airport/p35-airport4halfMUC-p12.pddl	0	airplanetype	2	heavy light
+airport/p36-airport5MUC-p2.pddl	0	airplanetype	2	heavy light
+airport/p37-airport5MUC-p3.pddl	0	airplanetype	2	heavy light
+airport/p38-airport5MUC-p3.pddl	0	airplanetype	2	heavy light
+airport/p39-airport5MUC-p4.pddl	0	airplanetype	2	heavy light
+airport/p40-airport5MUC-p4.pddl	0	airplanetype	2	heavy light
+airport/p41-airport5MUC-p4.pddl	0	airplanetype	2	heavy light
+airport/p42-airport5MUC-p5.pddl	0	airplanetype	2	heavy light
+airport/p43-airport5MUC-p5.pddl	0	airplanetype	2	heavy light
+airport/p44-airport5MUC-p5.pddl	0	airplanetype	2	heavy light
+airport/p45-airport5MUC-p6.pddl	0	airplanetype	2	heavy light
+airport/p46-airport5MUC-p6.pddl	0	airplanetype	2	heavy light
+airport/p47-airport5MUC-p8.pddl	0	airplanetype	2	heavy light
+airport/p48-airport5MUC-p9.pddl	0	airplanetype	2	heavy light
+airport/p49-airport5MUC-p10.pddl	0	airplanetype	2	heavy light
+airport/p50-airport5MUC-p15.pddl	0	airplanetype	2	heavy light
 barman-sat11-strips/pfile06-021.pddl	0	hand	2	left right
 barman-sat11-strips/pfile06-022.pddl	0	hand	2	left right
 barman-sat11-strips/pfile06-022.pddl	1	shot	2	shot7 shot9
@@ -404,6 +454,7 @@ depot/p22.pddl	1	object	2	hoist0 hoist12
 driverlog/p01.pddl	0	object	2	package1 package2
 driverlog/p02.pddl	0	object	2	driver1 driver2
 driverlog/p03.pddl	0	object	2	package1 package2
+driverlog/p04.pddl	0	object	2	p1-0 p2-1
 driverlog/p05.pddl	0	object	2	package1 package2
 driverlog/p05.pddl	1	object	2	truck1 truck2
 driverlog/p06.pddl	0	object	3	package2 package4 package5
@@ -1007,6 +1058,156 @@ miconic/s26-0.pddl	0	object	2	p13 p5
 miconic/s30-0.pddl	0	object	2	p12 p28
 miconic/s7-0.pddl	0	object	2	p2 p4
 miconic/s9-3.pddl	0	object	2	p7 p8
+movie/prob01.pddl	0	object	5	c1 c2 c3 c4 c5
+movie/prob01.pddl	1	object	5	d1 d2 d3 d4 d5
+movie/prob01.pddl	2	object	5	k1 k2 k3 k4 k5
+movie/prob01.pddl	3	object	5	p1 p2 p3 p4 p5
+movie/prob01.pddl	4	object	5	z1 z2 z3 z4 z5
+movie/prob02.pddl	0	object	6	c1 c2 c3 c4 c5 c6
+movie/prob02.pddl	1	object	6	d1 d2 d3 d4 d5 d6
+movie/prob02.pddl	2	object	6	k1 k2 k3 k4 k5 k6
+movie/prob02.pddl	3	object	6	p1 p2 p3 p4 p5 p6
+movie/prob02.pddl	4	object	6	z1 z2 z3 z4 z5 z6
+movie/prob03.pddl	0	object	7	c1 c2 c3 c4 c5 c6 c7
+movie/prob03.pddl	1	object	7	d1 d2 d3 d4 d5 d6 d7
+movie/prob03.pddl	2	object	7	k1 k2 k3 k4 k5 k6 k7
+movie/prob03.pddl	3	object	7	p1 p2 p3 p4 p5 p6 p7
+movie/prob03.pddl	4	object	7	z1 z2 z3 z4 z5 z6 z7
+movie/prob04.pddl	0	object	8	c1 c2 c3 c4 c5 c6 c7 c8
+movie/prob04.pddl	1	object	8	d1 d2 d3 d4 d5 d6 d7 d8
+movie/prob04.pddl	2	object	8	k1 k2 k3 k4 k5 k6 k7 k8
+movie/prob04.pddl	3	object	8	p1 p2 p3 p4 p5 p6 p7 p8
+movie/prob04.pddl	4	object	8	z1 z2 z3 z4 z5 z6 z7 z8
+movie/prob05.pddl	0	object	9	c1 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob05.pddl	1	object	9	d1 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob05.pddl	2	object	9	k1 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob05.pddl	3	object	9	p1 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob05.pddl	4	object	9	z1 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob06.pddl	0	object	10	c1 c10 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob06.pddl	1	object	10	d1 d10 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob06.pddl	2	object	10	k1 k10 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob06.pddl	3	object	10	p1 p10 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob06.pddl	4	object	10	z1 z10 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob07.pddl	0	object	11	c1 c10 c11 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob07.pddl	1	object	11	d1 d10 d11 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob07.pddl	2	object	11	k1 k10 k11 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob07.pddl	3	object	11	p1 p10 p11 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob07.pddl	4	object	11	z1 z10 z11 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob08.pddl	0	object	12	c1 c10 c11 c12 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob08.pddl	1	object	12	d1 d10 d11 d12 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob08.pddl	2	object	12	k1 k10 k11 k12 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob08.pddl	3	object	12	p1 p10 p11 p12 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob08.pddl	4	object	12	z1 z10 z11 z12 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob09.pddl	0	object	13	c1 c10 c11 c12 c13 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob09.pddl	1	object	13	d1 d10 d11 d12 d13 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob09.pddl	2	object	13	k1 k10 k11 k12 k13 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob09.pddl	3	object	13	p1 p10 p11 p12 p13 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob09.pddl	4	object	13	z1 z10 z11 z12 z13 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob10.pddl	0	object	14	c1 c10 c11 c12 c13 c14 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob10.pddl	1	object	14	d1 d10 d11 d12 d13 d14 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob10.pddl	2	object	14	k1 k10 k11 k12 k13 k14 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob10.pddl	3	object	14	p1 p10 p11 p12 p13 p14 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob10.pddl	4	object	14	z1 z10 z11 z12 z13 z14 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob11.pddl	0	object	15	c1 c10 c11 c12 c13 c14 c15 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob11.pddl	1	object	15	d1 d10 d11 d12 d13 d14 d15 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob11.pddl	2	object	15	k1 k10 k11 k12 k13 k14 k15 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob11.pddl	3	object	15	p1 p10 p11 p12 p13 p14 p15 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob11.pddl	4	object	15	z1 z10 z11 z12 z13 z14 z15 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob12.pddl	0	object	16	c1 c10 c11 c12 c13 c14 c15 c16 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob12.pddl	1	object	16	d1 d10 d11 d12 d13 d14 d15 d16 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob12.pddl	2	object	16	k1 k10 k11 k12 k13 k14 k15 k16 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob12.pddl	3	object	16	p1 p10 p11 p12 p13 p14 p15 p16 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob12.pddl	4	object	16	z1 z10 z11 z12 z13 z14 z15 z16 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob13.pddl	0	object	17	c1 c10 c11 c12 c13 c14 c15 c16 c17 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob13.pddl	1	object	17	d1 d10 d11 d12 d13 d14 d15 d16 d17 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob13.pddl	2	object	17	k1 k10 k11 k12 k13 k14 k15 k16 k17 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob13.pddl	3	object	17	p1 p10 p11 p12 p13 p14 p15 p16 p17 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob13.pddl	4	object	17	z1 z10 z11 z12 z13 z14 z15 z16 z17 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob14.pddl	0	object	18	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob14.pddl	1	object	18	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob14.pddl	2	object	18	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob14.pddl	3	object	18	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob14.pddl	4	object	18	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob15.pddl	0	object	19	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c3 c4 c5 c6 c7 c8 c9
+movie/prob15.pddl	1	object	19	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d3 d4 d5 d6 d7 d8 d9
+movie/prob15.pddl	2	object	19	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k3 k4 k5 k6 k7 k8 k9
+movie/prob15.pddl	3	object	19	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p3 p4 p5 p6 p7 p8 p9
+movie/prob15.pddl	4	object	19	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z3 z4 z5 z6 z7 z8 z9
+movie/prob16.pddl	0	object	20	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c3 c4 c5 c6 c7 c8 c9
+movie/prob16.pddl	1	object	20	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d3 d4 d5 d6 d7 d8 d9
+movie/prob16.pddl	2	object	20	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k3 k4 k5 k6 k7 k8 k9
+movie/prob16.pddl	3	object	20	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p3 p4 p5 p6 p7 p8 p9
+movie/prob16.pddl	4	object	20	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z3 z4 z5 z6 z7 z8 z9
+movie/prob17.pddl	0	object	21	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c3 c4 c5 c6 c7 c8 c9
+movie/prob17.pddl	1	object	21	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d3 d4 d5 d6 d7 d8 d9
+movie/prob17.pddl	2	object	21	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k3 k4 k5 k6 k7 k8 k9
+movie/prob17.pddl	3	object	21	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p3 p4 p5 p6 p7 p8 p9
+movie/prob17.pddl	4	object	21	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z3 z4 z5 z6 z7 z8 z9
+movie/prob18.pddl	0	object	22	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c3 c4 c5 c6 c7 c8 c9
+movie/prob18.pddl	1	object	22	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d3 d4 d5 d6 d7 d8 d9
+movie/prob18.pddl	2	object	22	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k3 k4 k5 k6 k7 k8 k9
+movie/prob18.pddl	3	object	22	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p3 p4 p5 p6 p7 p8 p9
+movie/prob18.pddl	4	object	22	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z3 z4 z5 z6 z7 z8 z9
+movie/prob19.pddl	0	object	23	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c3 c4 c5 c6 c7 c8 c9
+movie/prob19.pddl	1	object	23	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d3 d4 d5 d6 d7 d8 d9
+movie/prob19.pddl	2	object	23	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k3 k4 k5 k6 k7 k8 k9
+movie/prob19.pddl	3	object	23	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p3 p4 p5 p6 p7 p8 p9
+movie/prob19.pddl	4	object	23	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z3 z4 z5 z6 z7 z8 z9
+movie/prob20.pddl	0	object	24	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c3 c4 c5 c6 c7 c8 c9
+movie/prob20.pddl	1	object	24	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d3 d4 d5 d6 d7 d8 d9
+movie/prob20.pddl	2	object	24	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k3 k4 k5 k6 k7 k8 k9
+movie/prob20.pddl	3	object	24	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p3 p4 p5 p6 p7 p8 p9
+movie/prob20.pddl	4	object	24	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z3 z4 z5 z6 z7 z8 z9
+movie/prob21.pddl	0	object	25	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c25 c3 c4 c5 c6 c7 c8 c9
+movie/prob21.pddl	1	object	25	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d25 d3 d4 d5 d6 d7 d8 d9
+movie/prob21.pddl	2	object	25	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k25 k3 k4 k5 k6 k7 k8 k9
+movie/prob21.pddl	3	object	25	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p25 p3 p4 p5 p6 p7 p8 p9
+movie/prob21.pddl	4	object	25	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z25 z3 z4 z5 z6 z7 z8 z9
+movie/prob22.pddl	0	object	26	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c25 c26 c3 c4 c5 c6 c7 c8 c9
+movie/prob22.pddl	1	object	26	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d25 d26 d3 d4 d5 d6 d7 d8 d9
+movie/prob22.pddl	2	object	26	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k25 k26 k3 k4 k5 k6 k7 k8 k9
+movie/prob22.pddl	3	object	26	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p25 p26 p3 p4 p5 p6 p7 p8 p9
+movie/prob22.pddl	4	object	26	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z25 z26 z3 z4 z5 z6 z7 z8 z9
+movie/prob23.pddl	0	object	27	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c25 c26 c27 c3 c4 c5 c6 c7 c8 c9
+movie/prob23.pddl	1	object	27	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d25 d26 d27 d3 d4 d5 d6 d7 d8 d9
+movie/prob23.pddl	2	object	27	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k25 k26 k27 k3 k4 k5 k6 k7 k8 k9
+movie/prob23.pddl	3	object	27	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p25 p26 p27 p3 p4 p5 p6 p7 p8 p9
+movie/prob23.pddl	4	object	27	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z25 z26 z27 z3 z4 z5 z6 z7 z8 z9
+movie/prob24.pddl	0	object	28	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c25 c26 c27 c28 c3 c4 c5 c6 c7 c8 c9
+movie/prob24.pddl	1	object	28	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d25 d26 d27 d28 d3 d4 d5 d6 d7 d8 d9
+movie/prob24.pddl	2	object	28	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k25 k26 k27 k28 k3 k4 k5 k6 k7 k8 k9
+movie/prob24.pddl	3	object	28	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p25 p26 p27 p28 p3 p4 p5 p6 p7 p8 p9
+movie/prob24.pddl	4	object	28	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z25 z26 z27 z28 z3 z4 z5 z6 z7 z8 z9
+movie/prob25.pddl	0	object	29	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c3 c4 c5 c6 c7 c8 c9
+movie/prob25.pddl	1	object	29	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d3 d4 d5 d6 d7 d8 d9
+movie/prob25.pddl	2	object	29	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k25 k26 k27 k28 k29 k3 k4 k5 k6 k7 k8 k9
+movie/prob25.pddl	3	object	29	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p25 p26 p27 p28 p29 p3 p4 p5 p6 p7 p8 p9
+movie/prob25.pddl	4	object	29	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z25 z26 z27 z28 z29 z3 z4 z5 z6 z7 z8 z9
+movie/prob26.pddl	0	object	30	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c3 c30 c4 c5 c6 c7 c8 c9
+movie/prob26.pddl	1	object	30	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d3 d30 d4 d5 d6 d7 d8 d9
+movie/prob26.pddl	2	object	30	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k25 k26 k27 k28 k29 k3 k30 k4 k5 k6 k7 k8 k9
+movie/prob26.pddl	3	object	30	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p25 p26 p27 p28 p29 p3 p30 p4 p5 p6 p7 p8 p9
+movie/prob26.pddl	4	object	30	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z25 z26 z27 z28 z29 z3 z30 z4 z5 z6 z7 z8 z9
+movie/prob27.pddl	0	object	31	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c3 c30 c31 c4 c5 c6 c7 c8 c9
+movie/prob27.pddl	1	object	31	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d3 d30 d31 d4 d5 d6 d7 d8 d9
+movie/prob27.pddl	2	object	31	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k25 k26 k27 k28 k29 k3 k30 k31 k4 k5 k6 k7 k8 k9
+movie/prob27.pddl	3	object	31	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p25 p26 p27 p28 p29 p3 p30 p31 p4 p5 p6 p7 p8 p9
+movie/prob27.pddl	4	object	31	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z25 z26 z27 z28 z29 z3 z30 z31 z4 z5 z6 z7 z8 z9
+movie/prob28.pddl	0	object	32	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c3 c30 c31 c32 c4 c5 c6 c7 c8 c9
+movie/prob28.pddl	1	object	32	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d3 d30 d31 d32 d4 d5 d6 d7 d8 d9
+movie/prob28.pddl	2	object	32	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k25 k26 k27 k28 k29 k3 k30 k31 k32 k4 k5 k6 k7 k8 k9
+movie/prob28.pddl	3	object	32	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p25 p26 p27 p28 p29 p3 p30 p31 p32 p4 p5 p6 p7 p8 p9
+movie/prob28.pddl	4	object	32	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z25 z26 z27 z28 z29 z3 z30 z31 z32 z4 z5 z6 z7 z8 z9
+movie/prob29.pddl	0	object	33	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c3 c30 c31 c32 c33 c4 c5 c6 c7 c8 c9
+movie/prob29.pddl	1	object	33	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d3 d30 d31 d32 d33 d4 d5 d6 d7 d8 d9
+movie/prob29.pddl	2	object	33	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k25 k26 k27 k28 k29 k3 k30 k31 k32 k33 k4 k5 k6 k7 k8 k9
+movie/prob29.pddl	3	object	33	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p25 p26 p27 p28 p29 p3 p30 p31 p32 p33 p4 p5 p6 p7 p8 p9
+movie/prob29.pddl	4	object	33	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z25 z26 z27 z28 z29 z3 z30 z31 z32 z33 z4 z5 z6 z7 z8 z9
+movie/prob30.pddl	0	object	34	c1 c10 c11 c12 c13 c14 c15 c16 c17 c18 c19 c2 c20 c21 c22 c23 c24 c25 c26 c27 c28 c29 c3 c30 c31 c32 c33 c34 c4 c5 c6 c7 c8 c9
+movie/prob30.pddl	1	object	34	d1 d10 d11 d12 d13 d14 d15 d16 d17 d18 d19 d2 d20 d21 d22 d23 d24 d25 d26 d27 d28 d29 d3 d30 d31 d32 d33 d34 d4 d5 d6 d7 d8 d9
+movie/prob30.pddl	2	object	34	k1 k10 k11 k12 k13 k14 k15 k16 k17 k18 k19 k2 k20 k21 k22 k23 k24 k25 k26 k27 k28 k29 k3 k30 k31 k32 k33 k34 k4 k5 k6 k7 k8 k9
+movie/prob30.pddl	3	object	34	p1 p10 p11 p12 p13 p14 p15 p16 p17 p18 p19 p2 p20 p21 p22 p23 p24 p25 p26 p27 p28 p29 p3 p30 p31 p32 p33 p34 p4 p5 p6 p7 p8 p9
+movie/prob30.pddl	4	object	34	z1 z10 z11 z12 z13 z14 z15 z16 z17 z18 z19 z2 z20 z21 z22 z23 z24 z25 z26 z27 z28 z29 z3 z30 z31 z32 z33 z34 z4 z5 z6 z7 z8 z9
 mprime/prob02.pddl	0	object	5	abrasion anger depression grief prostatitis
 mprime/prob02.pddl	1	object	4	boils hangover laceration sciatica
 mprime/prob02.pddl	2	object	3	angina dread loneliness
@@ -1131,6 +1332,13 @@ mystery/prob05.pddl	0	object	3	abrasion depression prostatitis
 mystery/prob05.pddl	1	object	3	angina jealousy laceration
 mystery/prob05.pddl	2	object	3	anxiety boils sciatica
 mystery/prob05.pddl	3	object	3	dread grief-2 hangover
+mystery/prob07.pddl	0	object	4	abrasion dread prostatitis sciatica
+mystery/prob07.pddl	1	object	4	abrasion-1 depression-4 dread-3 loneliness-2
+mystery/prob07.pddl	2	object	4	anger-6 grief-5 prostatitis-7 sciatica-16
+mystery/prob07.pddl	3	object	3	anger depression grief
+mystery/prob07.pddl	4	object	2	angina loneliness
+mystery/prob07.pddl	5	object	2	anxiety laceration
+mystery/prob07.pddl	6	object	2	boils hangover
 mystery/prob08.pddl	0	object	2	abrasion anger
 mystery/prob09.pddl	0	object	5	abrasion anger hangover loneliness prostatitis
 mystery/prob09.pddl	1	object	3	angina boils grief
@@ -1548,6 +1756,20 @@ openstacks-sat14-strips/p290_1.pddl	1	order	2	o23 o289
 openstacks-sat14-strips/p290_1.pddl	2	order	2	o239 o278
 openstacks-sat14-strips/p290_1.pddl	3	product	2	p149 p67
 openstacks-sat14-strips/p290_1.pddl	4	product	2	p234 p70
+parcprinter-08-strips/p11.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-08-strips/p12.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-08-strips/p13.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-08-strips/p14.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-08-strips/p15.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-08-strips/p16.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-08-strips/p17.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-08-strips/p18.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-08-strips/p19.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-08-strips/p20.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-sat11-strips/p04.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-sat11-strips/p14.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-sat11-strips/p15.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
+parcprinter-sat11-strips/p16.pddl	0	location_t	4	lre_rodantray1 lre_rodantray2 ure_rodantray1 ure_rodantray2
 pipesworld-notankage/p03-net1-b8-g3.pddl	0	batch-atom	2	b3 b7
 pipesworld-notankage/p04-net1-b8-g5.pddl	0	batch-atom	2	b3 b7
 pipesworld-notankage/p05-net1-b10-g4.pddl	0	batch-atom	2	b4 b8
@@ -1561,6 +1783,8 @@ pipesworld-notankage/p09-net1-b14-g6.pddl	1	batch-atom	2	b13 b9
 pipesworld-notankage/p09-net1-b14-g6.pddl	2	batch-atom	2	b4 b6
 pipesworld-notankage/p10-net1-b14-g8.pddl	0	batch-atom	2	b12 b8
 pipesworld-notankage/p10-net1-b14-g8.pddl	1	batch-atom	2	b4 b6
+pipesworld-notankage/p11-net2-b10-g2.pddl	0	product	2	oc1b oca1
+pipesworld-notankage/p12-net2-b10-g4.pddl	0	product	2	oc1b oca1
 pipesworld-notankage/p13-net2-b12-g3.pddl	0	batch-atom	2	b4 b7
 pipesworld-notankage/p15-net2-b14-g4.pddl	0	batch-atom	2	b0 b5
 pipesworld-notankage/p16-net2-b14-g6.pddl	0	batch-atom	2	b0 b5
@@ -1670,11 +1894,13 @@ pipesworld-tankage/p10-net1-b14-g8-t50.pddl	7	tank-slot	2	ta2-1-rat-a ta2-2-rat-
 pipesworld-tankage/p10-net1-b14-g8-t50.pddl	8	tank-slot	2	ta3-1-oca1 ta3-2-oca1
 pipesworld-tankage/p10-net1-b14-g8-t50.pddl	9	tank-slot	2	ta3-1-rat-a ta3-2-rat-a
 pipesworld-tankage/p10-net1-b14-g8-t50.pddl	10	tank-slot	2	ta3-2-lco ta3-3-lco
-pipesworld-tankage/p11-net2-b10-g2-t30.pddl	0	tank-slot	2	ta1-1-gasoleo ta1-2-gasoleo
+pipesworld-tankage/p11-net2-b10-g2-t30.pddl	0	product	2	oc1b oca1
+pipesworld-tankage/p11-net2-b10-g2-t30.pddl	1	tank-slot	2	ta1-1-gasoleo ta1-2-gasoleo
 pipesworld-tankage/p12-net2-b10-g4-t60.pddl	0	tank-slot	3	ta2-2-gasoleo ta2-3-gasoleo ta2-4-gasoleo
 pipesworld-tankage/p12-net2-b10-g4-t60.pddl	1	tank-slot	3	ta3-2-gasoleo ta3-3-gasoleo ta3-4-gasoleo
-pipesworld-tankage/p12-net2-b10-g4-t60.pddl	2	tank-slot	2	ta1-1-gasoleo ta1-2-gasoleo
-pipesworld-tankage/p12-net2-b10-g4-t60.pddl	3	tank-slot	2	ta1-3-gasoleo ta1-4-gasoleo
+pipesworld-tankage/p12-net2-b10-g4-t60.pddl	2	product	2	oc1b oca1
+pipesworld-tankage/p12-net2-b10-g4-t60.pddl	3	tank-slot	2	ta1-1-gasoleo ta1-2-gasoleo
+pipesworld-tankage/p12-net2-b10-g4-t60.pddl	4	tank-slot	2	ta1-3-gasoleo ta1-4-gasoleo
 pipesworld-tankage/p13-net2-b12-g3-t70.pddl	0	tank-slot	3	ta1-1-lco ta1-2-lco ta1-3-lco
 pipesworld-tankage/p13-net2-b12-g3-t70.pddl	1	tank-slot	3	ta2-1-lco ta2-2-lco ta2-3-lco
 pipesworld-tankage/p13-net2-b12-g3-t70.pddl	2	tank-slot	3	ta2-1-oca1 ta2-2-oca1 ta2-3-oca1
@@ -2222,7 +2448,8 @@ quantum-layout-sat23-strips/p18.pddl	0	pqubit	2	p4 p9
 quantum-layout-sat23-strips/p19.pddl	0	pqubit	2	p4 p9
 quantum-layout-sat23-strips/p20.pddl	0	pqubit	2	p4 p9
 satellite/p01-pfile1.pddl	0	object	3	groundstation1 phenomenon3 star0
-satellite/p01-pfile1.pddl	1	object	2	phenomenon4 star5
+satellite/p01-pfile1.pddl	1	object	2	image1 spectrograph2
+satellite/p01-pfile1.pddl	2	object	2	phenomenon4 star5
 satellite/p02-pfile2.pddl	0	object	3	phenomenon6 planet3 star7
 satellite/p04-pfile4.pddl	0	object	2	phenomenon9 star7
 satellite/p04-pfile4.pddl	1	object	2	planet3 star4
@@ -2357,18 +2584,68 @@ satellite/p36-HC-pfile16.pddl	3	object	31	phenomenon103 phenomenon141 phenomenon
 satellite/p36-HC-pfile16.pddl	4	object	25	phenomenon102 phenomenon132 phenomenon162 phenomenon18 phenomenon195 phenomenon33 phenomenon65 phenomenon68 phenomenon70 phenomenon74 phenomenon83 planet100 planet112 planet120 planet139 planet152 planet153 planet160 planet48 star104 star111 star115 star118 star133 star54
 satellite/p36-HC-pfile16.pddl	5	object	24	phenomenon114 phenomenon123 phenomenon127 phenomenon180 phenomenon30 phenomenon43 phenomenon47 phenomenon95 planet140 planet164 planet19 planet197 planet201 planet25 planet66 planet69 planet71 star165 star167 star184 star187 star50 star76 star91
 satellite/p36-HC-pfile16.pddl	6	object	2	instrument20 instrument21
-sokoban-sat08-strips/p03.pddl	0	location	2	pos-1-1 pos-1-7
-sokoban-sat08-strips/p06.pddl	0	location	2	pos-01-03 pos-03-01
-sokoban-sat08-strips/p20.pddl	0	location	4	pos-1-1 pos-1-9 pos-9-1 pos-9-9
-sokoban-sat08-strips/p26.pddl	0	location	2	pos-06-01 pos-11-01
-sokoban-sat08-strips/p27.pddl	0	location	8	pos-01-01 pos-01-06 pos-01-11 pos-06-01 pos-06-11 pos-11-01 pos-11-06 pos-11-11
-sokoban-sat08-strips/p29.pddl	0	location	3	pos-01-09 pos-02-10 pos-03-11
-sokoban-sat08-strips/p30.pddl	0	location	2	pos-01-09 pos-09-01
-sokoban-sat11-strips/p13.pddl	0	location	8	pos-01-01 pos-01-06 pos-01-11 pos-06-01 pos-06-11 pos-11-01 pos-11-06 pos-11-11
-sokoban-sat11-strips/p15.pddl	0	location	2	pos-01-09 pos-09-01
-sokoban-sat11-strips/p17.pddl	0	location	2	pos-06-01 pos-11-01
-sokoban-sat11-strips/p18.pddl	0	location	3	pos-01-09 pos-02-10 pos-03-11
-sokoban-sat11-strips/p20.pddl	0	location	4	pos-1-1 pos-1-9 pos-9-1 pos-9-9
+sokoban-sat08-strips/p01.pddl	0	location	27	pos-1-1 pos-1-3 pos-1-4 pos-1-5 pos-1-6 pos-1-7 pos-2-3 pos-2-7 pos-3-1 pos-3-2 pos-3-3 pos-3-7 pos-4-1 pos-4-7 pos-5-1 pos-5-4 pos-5-7 pos-6-1 pos-6-4 pos-6-7 pos-7-1 pos-7-2 pos-7-3 pos-7-4 pos-7-5 pos-7-6 pos-7-7
+sokoban-sat08-strips/p02.pddl	0	location	36	pos-01-01 pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-02-01 pos-02-06 pos-03-01 pos-03-06 pos-04-01 pos-04-06 pos-05-01 pos-05-04 pos-05-05 pos-05-06 pos-06-01 pos-06-02 pos-06-05 pos-07-02 pos-07-05 pos-08-01 pos-08-02 pos-08-05 pos-09-01 pos-09-05 pos-10-01 pos-10-03 pos-10-05 pos-11-01 pos-11-05 pos-12-01 pos-12-02 pos-12-03 pos-12-04 pos-12-05
+sokoban-sat08-strips/p03.pddl	0	location	24	pos-1-2 pos-1-3 pos-1-4 pos-1-5 pos-1-6 pos-2-1 pos-2-2 pos-2-6 pos-2-7 pos-3-1 pos-3-7 pos-4-1 pos-4-7 pos-5-1 pos-5-2 pos-5-5 pos-5-6 pos-5-7 pos-6-2 pos-6-5 pos-7-2 pos-7-3 pos-7-4 pos-7-5
+sokoban-sat08-strips/p03.pddl	1	location	2	pos-1-1 pos-1-7
+sokoban-sat08-strips/p04.pddl	0	location	34	pos-01-01 pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-02-01 pos-02-05 pos-02-08 pos-02-09 pos-02-10 pos-02-11 pos-03-01 pos-03-11 pos-04-01 pos-04-05 pos-04-11 pos-05-01 pos-05-02 pos-05-03 pos-05-04 pos-05-09 pos-05-10 pos-05-11 pos-06-04 pos-06-09 pos-07-04 pos-07-05 pos-07-06 pos-07-07 pos-07-08 pos-07-09
+sokoban-sat08-strips/p05.pddl	0	location	36	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-02-01 pos-02-02 pos-02-05 pos-03-01 pos-03-05 pos-03-06 pos-04-01 pos-04-06 pos-04-07 pos-04-08 pos-04-09 pos-05-01 pos-05-09 pos-06-01 pos-06-05 pos-06-06 pos-06-09 pos-07-01 pos-07-02 pos-07-03 pos-07-04 pos-07-05 pos-07-08 pos-07-09 pos-08-05 pos-08-08 pos-09-05 pos-09-08 pos-10-05 pos-10-06 pos-10-07 pos-10-08
+sokoban-sat08-strips/p06.pddl	0	location	42	pos-01-01 pos-01-02 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-01-09 pos-02-01 pos-02-02 pos-02-03 pos-02-04 pos-02-09 pos-03-02 pos-03-09 pos-04-01 pos-04-02 pos-04-04 pos-04-08 pos-04-09 pos-05-01 pos-05-05 pos-05-07 pos-05-08 pos-06-01 pos-06-05 pos-06-08 pos-07-01 pos-07-02 pos-07-08 pos-08-02 pos-08-05 pos-08-08 pos-09-02 pos-09-05 pos-09-06 pos-09-07 pos-09-08 pos-10-02 pos-10-03 pos-10-04 pos-10-05
+sokoban-sat08-strips/p06.pddl	1	location	2	pos-01-03 pos-03-01
+sokoban-sat08-strips/p07.pddl	0	location	37	pos-1-1 pos-1-2 pos-1-3 pos-1-4 pos-1-5 pos-1-6 pos-1-7 pos-2-1 pos-2-4 pos-2-7 pos-3-1 pos-3-7 pos-4-1 pos-4-4 pos-4-7 pos-5-1 pos-5-2 pos-5-4 pos-5-6 pos-5-7 pos-6-1 pos-6-4 pos-6-7 pos-6-8 pos-7-1 pos-7-8 pos-8-1 pos-8-4 pos-8-8 pos-9-1 pos-9-2 pos-9-3 pos-9-4 pos-9-5 pos-9-6 pos-9-7 pos-9-8
+sokoban-sat08-strips/p08.pddl	0	location	47	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-02-02 pos-02-05 pos-02-06 pos-02-07 pos-02-08 pos-03-02 pos-03-08 pos-03-09 pos-03-10 pos-04-02 pos-04-04 pos-04-10 pos-05-02 pos-05-04 pos-05-07 pos-05-08 pos-05-10 pos-06-02 pos-06-04 pos-06-10 pos-07-02 pos-07-05 pos-07-09 pos-07-10 pos-08-01 pos-08-02 pos-08-06 pos-08-07 pos-08-08 pos-08-09 pos-09-01 pos-09-06 pos-10-01 pos-10-03 pos-10-06 pos-11-01 pos-11-06 pos-12-01 pos-12-02 pos-12-03 pos-12-04 pos-12-05 pos-12-06
+sokoban-sat08-strips/p09.pddl	0	location	48	pos-01-01 pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-02-01 pos-02-05 pos-02-06 pos-03-01 pos-03-03 pos-03-06 pos-03-07 pos-04-01 pos-04-04 pos-04-07 pos-05-01 pos-05-05 pos-05-07 pos-06-01 pos-06-05 pos-06-07 pos-07-01 pos-07-02 pos-07-04 pos-07-07 pos-08-01 pos-08-07 pos-09-01 pos-09-04 pos-09-07 pos-10-01 pos-10-04 pos-10-07 pos-11-01 pos-11-02 pos-11-03 pos-11-04 pos-11-07 pos-12-04 pos-12-07 pos-13-04 pos-13-07 pos-14-04 pos-14-07 pos-15-04 pos-15-05 pos-15-06 pos-15-07
+sokoban-sat08-strips/p10.pddl	0	location	262	pos-01-15 pos-01-16 pos-01-17 pos-02-01 pos-02-02 pos-02-03 pos-02-04 pos-02-05 pos-02-06 pos-02-07 pos-02-08 pos-02-09 pos-02-10 pos-02-11 pos-02-12 pos-02-13 pos-02-14 pos-02-15 pos-02-17 pos-03-01 pos-03-17 pos-04-01 pos-04-03 pos-04-04 pos-04-05 pos-04-06 pos-04-07 pos-04-08 pos-04-09 pos-04-10 pos-04-11 pos-04-12 pos-04-13 pos-04-14 pos-04-15 pos-04-17 pos-05-01 pos-05-03 pos-05-17 pos-06-01 pos-06-03 pos-06-05 pos-06-06 pos-06-07 pos-06-08 pos-06-09 pos-06-10 pos-06-11 pos-06-12 pos-06-13 pos-06-14 pos-06-15 pos-06-16 pos-06-17 pos-07-01 pos-07-03 pos-07-05 pos-07-17 pos-08-01 pos-08-03 pos-08-05 pos-08-07 pos-08-08 pos-08-09 pos-08-10 pos-08-11 pos-08-12 pos-08-13 pos-08-14 pos-08-15 pos-08-17 pos-09-01 pos-09-03 pos-09-05 pos-09-07 pos-09-15 pos-09-17 pos-10-01 pos-10-03 pos-10-05 pos-10-07 pos-10-09 pos-10-10 pos-10-11 pos-10-12 pos-10-13 pos-10-15 pos-10-17 pos-11-01 pos-11-03 pos-11-05 pos-11-07 pos-11-09 pos-11-13 pos-11-15 pos-11-17 pos-12-01 pos-12-03 pos-12-05 pos-12-07 pos-12-09 pos-12-11 pos-12-13 pos-12-15 pos-12-17 pos-13-01 pos-13-03 pos-13-05 pos-13-07 pos-13-09 pos-13-11 pos-13-13 pos-13-15 pos-13-17 pos-14-01 pos-14-03 pos-14-05 pos-14-07 pos-14-09 pos-14-11 pos-14-13 pos-14-15 pos-14-17 pos-15-01 pos-15-03 pos-15-05 pos-15-07 pos-15-09 pos-15-11 pos-15-13 pos-15-15 pos-15-17 pos-16-01 pos-16-03 pos-16-05 pos-16-07 pos-16-09 pos-16-11 pos-16-13 pos-16-15 pos-16-17 pos-17-01 pos-17-03 pos-17-05 pos-17-07 pos-17-09 pos-17-11 pos-17-13 pos-17-15 pos-17-17 pos-18-01 pos-18-03 pos-18-05 pos-18-07 pos-18-09 pos-18-11 pos-18-13 pos-18-15 pos-18-17 pos-19-01 pos-19-03 pos-19-05 pos-19-07 pos-19-09 pos-19-11 pos-19-13 pos-19-15 pos-19-17 pos-20-01 pos-20-03 pos-20-05 pos-20-07 pos-20-09 pos-20-11 pos-20-13 pos-20-15 pos-20-17 pos-21-01 pos-21-03 pos-21-05 pos-21-07 pos-21-09 pos-21-11 pos-21-13 pos-21-15 pos-21-17 pos-22-01 pos-22-03 pos-22-05 pos-22-07 pos-22-11 pos-22-13 pos-22-15 pos-22-17 pos-23-01 pos-23-03 pos-23-05 pos-23-07 pos-23-08 pos-23-09 pos-23-10 pos-23-11 pos-23-13 pos-23-15 pos-23-17 pos-24-01 pos-24-03 pos-24-05 pos-24-13 pos-24-15 pos-24-17 pos-25-01 pos-25-03 pos-25-05 pos-25-06 pos-25-07 pos-25-08 pos-25-09 pos-25-10 pos-25-11 pos-25-12 pos-25-13 pos-25-15 pos-25-17 pos-26-01 pos-26-03 pos-26-15 pos-26-17 pos-27-01 pos-27-03 pos-27-04 pos-27-05 pos-27-06 pos-27-07 pos-27-08 pos-27-09 pos-27-10 pos-27-11 pos-27-12 pos-27-13 pos-27-14 pos-27-15 pos-27-17 pos-28-01 pos-28-17 pos-29-01 pos-29-02 pos-29-03 pos-29-04 pos-29-05 pos-29-06 pos-29-07 pos-29-08 pos-29-09 pos-29-10 pos-29-11 pos-29-12 pos-29-13 pos-29-14 pos-29-15 pos-29-16 pos-29-17
+sokoban-sat08-strips/p11.pddl	0	location	28	pos-1-1 pos-1-2 pos-1-3 pos-1-4 pos-1-5 pos-1-6 pos-1-7 pos-1-8 pos-2-1 pos-2-8 pos-3-1 pos-3-8 pos-4-1 pos-4-8 pos-5-1 pos-5-8 pos-6-1 pos-6-8 pos-7-1 pos-7-8 pos-8-1 pos-8-2 pos-8-3 pos-8-4 pos-8-5 pos-8-6 pos-8-7 pos-8-8
+sokoban-sat08-strips/p12.pddl	0	location	43	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-02-01 pos-02-02 pos-02-05 pos-02-07 pos-02-08 pos-02-09 pos-02-10 pos-03-01 pos-03-05 pos-03-06 pos-03-07 pos-03-10 pos-04-01 pos-04-10 pos-05-01 pos-05-05 pos-05-06 pos-05-07 pos-05-10 pos-06-01 pos-06-02 pos-06-07 pos-06-09 pos-06-10 pos-07-02 pos-07-03 pos-07-10 pos-08-03 pos-08-04 pos-08-10 pos-09-04 pos-09-05 pos-09-08 pos-09-09 pos-09-10 pos-10-05 pos-10-06 pos-10-07 pos-10-08
+sokoban-sat08-strips/p13.pddl	0	location	28	pos-02-02 pos-02-03 pos-02-04 pos-02-05 pos-02-06 pos-02-07 pos-02-08 pos-02-09 pos-03-01 pos-03-02 pos-03-09 pos-03-10 pos-04-01 pos-04-10 pos-05-01 pos-05-10 pos-06-01 pos-06-02 pos-06-03 pos-06-04 pos-06-05 pos-06-06 pos-06-07 pos-06-10 pos-07-07 pos-07-08 pos-07-09 pos-07-10
+sokoban-sat08-strips/p14.pddl	0	location	39	pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-02-01 pos-02-02 pos-02-03 pos-02-04 pos-02-07 pos-03-01 pos-03-07 pos-04-01 pos-04-04 pos-04-07 pos-05-01 pos-05-04 pos-05-07 pos-06-01 pos-06-04 pos-06-07 pos-06-08 pos-06-09 pos-07-01 pos-07-09 pos-08-01 pos-08-05 pos-08-07 pos-08-09 pos-09-01 pos-09-02 pos-09-03 pos-09-04 pos-09-05 pos-09-09 pos-10-05 pos-10-06 pos-10-07 pos-10-08 pos-10-09
+sokoban-sat08-strips/p15.pddl	0	location	37	pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-02-01 pos-02-02 pos-02-03 pos-02-04 pos-02-07 pos-03-01 pos-03-04 pos-03-07 pos-04-01 pos-04-07 pos-04-08 pos-05-01 pos-05-04 pos-05-08 pos-06-01 pos-06-04 pos-06-08 pos-07-01 pos-07-04 pos-07-08 pos-08-01 pos-08-02 pos-08-04 pos-08-07 pos-08-08 pos-09-02 pos-09-07 pos-10-02 pos-10-03 pos-10-04 pos-10-05 pos-10-06 pos-10-07
+sokoban-sat08-strips/p16.pddl	0	location	38	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-02-01 pos-02-02 pos-02-05 pos-02-06 pos-02-07 pos-03-01 pos-03-07 pos-03-08 pos-04-01 pos-04-05 pos-04-08 pos-05-01 pos-05-05 pos-05-08 pos-06-01 pos-06-05 pos-06-08 pos-07-01 pos-07-08 pos-08-01 pos-08-02 pos-08-05 pos-08-08 pos-09-02 pos-09-03 pos-09-04 pos-09-05 pos-09-07 pos-09-08 pos-10-05 pos-10-07 pos-11-05 pos-11-06 pos-11-07
+sokoban-sat08-strips/p17.pddl	0	location	39	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-02-01 pos-02-02 pos-02-07 pos-03-01 pos-03-05 pos-03-07 pos-04-01 pos-04-07 pos-05-01 pos-05-04 pos-05-05 pos-05-06 pos-05-07 pos-06-01 pos-06-06 pos-07-01 pos-07-04 pos-07-06 pos-08-01 pos-08-06 pos-09-01 pos-09-04 pos-09-06 pos-10-01 pos-10-06 pos-11-01 pos-11-04 pos-11-05 pos-11-06 pos-12-01 pos-12-02 pos-12-03 pos-12-04
+sokoban-sat08-strips/p18.pddl	0	location	48	pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-02-02 pos-02-03 pos-02-04 pos-02-07 pos-03-02 pos-03-07 pos-04-02 pos-04-04 pos-04-07 pos-05-02 pos-05-04 pos-05-07 pos-06-01 pos-06-02 pos-06-07 pos-07-01 pos-07-05 pos-07-07 pos-07-08 pos-08-01 pos-08-08 pos-09-01 pos-09-02 pos-09-03 pos-09-04 pos-09-08 pos-10-03 pos-10-06 pos-10-07 pos-10-08 pos-11-03 pos-11-06 pos-12-03 pos-12-06 pos-12-07 pos-13-03 pos-13-07 pos-14-03 pos-14-07 pos-15-03 pos-15-04 pos-15-05 pos-15-06 pos-15-07
+sokoban-sat08-strips/p19.pddl	0	location	41	pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-02-04 pos-02-08 pos-03-03 pos-03-04 pos-03-08 pos-03-09 pos-04-01 pos-04-02 pos-04-03 pos-04-09 pos-04-10 pos-04-11 pos-05-01 pos-05-11 pos-06-01 pos-06-06 pos-06-11 pos-07-01 pos-07-11 pos-08-01 pos-08-02 pos-08-03 pos-08-09 pos-08-10 pos-08-11 pos-09-03 pos-09-04 pos-09-08 pos-09-09 pos-10-04 pos-10-08 pos-11-04 pos-11-05 pos-11-06 pos-11-07 pos-11-08
+sokoban-sat08-strips/p20.pddl	0	location	32	pos-1-2 pos-1-3 pos-1-4 pos-1-5 pos-1-6 pos-1-7 pos-1-8 pos-2-1 pos-2-2 pos-2-8 pos-2-9 pos-3-1 pos-3-9 pos-4-1 pos-4-9 pos-5-1 pos-5-9 pos-6-1 pos-6-9 pos-7-1 pos-7-9 pos-8-1 pos-8-2 pos-8-8 pos-8-9 pos-9-2 pos-9-3 pos-9-4 pos-9-5 pos-9-6 pos-9-7 pos-9-8
+sokoban-sat08-strips/p20.pddl	1	location	4	pos-1-1 pos-1-9 pos-9-1 pos-9-9
+sokoban-sat08-strips/p21.pddl	0	location	57	pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-02-03 pos-02-08 pos-03-02 pos-03-03 pos-03-08 pos-04-01 pos-04-02 pos-04-05 pos-04-07 pos-04-08 pos-05-01 pos-05-05 pos-05-08 pos-05-09 pos-06-01 pos-06-03 pos-06-09 pos-07-01 pos-07-05 pos-07-09 pos-08-01 pos-08-02 pos-08-03 pos-08-04 pos-08-05 pos-08-06 pos-08-08 pos-08-09 pos-08-10 pos-09-05 pos-09-10 pos-09-11 pos-09-12 pos-09-13 pos-10-05 pos-10-13 pos-11-05 pos-11-06 pos-11-13 pos-12-06 pos-12-07 pos-12-11 pos-12-12 pos-12-13 pos-13-07 pos-13-10 pos-13-11 pos-14-07 pos-14-08 pos-14-09 pos-14-10
+sokoban-sat08-strips/p22.pddl	0	location	42	pos-01-01 pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-02-01 pos-02-05 pos-02-08 pos-02-09 pos-03-01 pos-03-09 pos-04-01 pos-04-03 pos-04-05 pos-04-06 pos-04-09 pos-05-01 pos-05-05 pos-05-09 pos-06-01 pos-06-02 pos-06-08 pos-06-09 pos-07-02 pos-07-05 pos-07-08 pos-08-02 pos-08-03 pos-08-04 pos-08-05 pos-08-08 pos-09-05 pos-09-08 pos-10-05 pos-10-08 pos-11-05 pos-11-06 pos-11-07 pos-11-08
+sokoban-sat08-strips/p23.pddl	0	location	52	pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-02-03 pos-02-07 pos-02-08 pos-02-09 pos-02-10 pos-03-03 pos-03-10 pos-04-03 pos-04-04 pos-04-06 pos-04-07 pos-04-08 pos-04-10 pos-05-04 pos-05-08 pos-05-10 pos-06-04 pos-06-10 pos-07-02 pos-07-03 pos-07-04 pos-07-05 pos-07-07 pos-07-08 pos-07-10 pos-08-01 pos-08-02 pos-08-10 pos-09-01 pos-09-05 pos-09-07 pos-09-08 pos-09-09 pos-09-10 pos-10-01 pos-10-07 pos-11-01 pos-11-02 pos-11-06 pos-11-07 pos-12-02 pos-12-06 pos-13-02 pos-13-03 pos-13-04 pos-13-05 pos-13-06
+sokoban-sat08-strips/p24.pddl	0	location	55	pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-01-09 pos-01-10 pos-02-01 pos-02-02 pos-02-03 pos-02-06 pos-02-07 pos-02-10 pos-02-11 pos-03-01 pos-03-11 pos-04-01 pos-04-07 pos-04-08 pos-04-11 pos-05-01 pos-05-03 pos-05-05 pos-05-06 pos-05-07 pos-05-08 pos-05-10 pos-05-11 pos-06-01 pos-06-05 pos-06-08 pos-06-11 pos-07-01 pos-07-02 pos-07-03 pos-07-04 pos-07-05 pos-07-06 pos-07-07 pos-07-08 pos-07-11 pos-08-06 pos-08-11 pos-09-06 pos-09-08 pos-09-11 pos-10-06 pos-10-11 pos-11-06 pos-11-07 pos-11-08 pos-11-09 pos-11-10 pos-11-11
+sokoban-sat08-strips/p25.pddl	0	location	43	pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-01-09 pos-02-05 pos-02-09 pos-03-01 pos-03-02 pos-03-03 pos-03-04 pos-03-05 pos-03-09 pos-04-01 pos-04-05 pos-04-09 pos-05-01 pos-05-07 pos-05-09 pos-06-01 pos-06-02 pos-06-04 pos-06-05 pos-06-07 pos-06-08 pos-06-09 pos-07-01 pos-07-05 pos-07-09 pos-08-01 pos-08-09 pos-09-01 pos-09-05 pos-09-09 pos-10-01 pos-10-02 pos-10-03 pos-10-04 pos-10-05 pos-10-06 pos-10-07 pos-10-08 pos-10-09
+sokoban-sat08-strips/p26.pddl	0	location	48	pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-01-09 pos-02-01 pos-02-02 pos-02-03 pos-02-04 pos-02-09 pos-03-01 pos-03-07 pos-03-09 pos-04-01 pos-04-07 pos-04-09 pos-04-10 pos-05-01 pos-05-02 pos-05-04 pos-05-06 pos-05-10 pos-06-02 pos-06-04 pos-06-10 pos-07-01 pos-07-02 pos-07-04 pos-07-09 pos-07-10 pos-08-01 pos-08-05 pos-08-09 pos-09-01 pos-09-06 pos-09-08 pos-09-09 pos-10-01 pos-10-02 pos-10-08 pos-11-02 pos-11-03 pos-11-04 pos-11-05 pos-11-06 pos-11-07 pos-11-08
+sokoban-sat08-strips/p26.pddl	1	location	2	pos-06-01 pos-11-01
+sokoban-sat08-strips/p27.pddl	0	location	56	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-01-07 pos-01-08 pos-01-09 pos-01-10 pos-02-01 pos-02-02 pos-02-05 pos-02-06 pos-02-07 pos-02-10 pos-02-11 pos-03-01 pos-03-05 pos-03-07 pos-03-11 pos-04-01 pos-04-11 pos-05-01 pos-05-02 pos-05-03 pos-05-09 pos-05-10 pos-05-11 pos-06-02 pos-06-10 pos-07-01 pos-07-02 pos-07-03 pos-07-09 pos-07-10 pos-07-11 pos-08-01 pos-08-11 pos-09-01 pos-09-05 pos-09-07 pos-09-11 pos-10-01 pos-10-02 pos-10-05 pos-10-06 pos-10-07 pos-10-10 pos-10-11 pos-11-02 pos-11-03 pos-11-04 pos-11-05 pos-11-07 pos-11-08 pos-11-09 pos-11-10
+sokoban-sat08-strips/p27.pddl	1	location	8	pos-01-01 pos-01-06 pos-01-11 pos-06-01 pos-06-11 pos-11-01 pos-11-06 pos-11-11
+sokoban-sat08-strips/p28.pddl	0	location	58	pos-01-01 pos-01-02 pos-01-03 pos-01-04 pos-02-01 pos-02-04 pos-03-01 pos-03-04 pos-04-01 pos-04-04 pos-05-01 pos-05-04 pos-05-05 pos-05-06 pos-05-07 pos-05-08 pos-05-09 pos-05-10 pos-05-11 pos-06-01 pos-06-11 pos-07-01 pos-07-07 pos-07-11 pos-08-01 pos-08-02 pos-08-03 pos-08-04 pos-08-09 pos-08-10 pos-08-11 pos-09-03 pos-09-04 pos-09-05 pos-09-06 pos-09-07 pos-09-09 pos-10-03 pos-10-07 pos-10-09 pos-10-10 pos-11-03 pos-11-10 pos-12-03 pos-12-07 pos-12-10 pos-13-03 pos-13-09 pos-13-10 pos-14-03 pos-14-06 pos-14-07 pos-14-08 pos-14-09 pos-15-03 pos-15-04 pos-15-05 pos-15-06
+sokoban-sat08-strips/p29.pddl	0	location	64	pos-01-02 pos-01-03 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-01-10 pos-01-11 pos-01-12 pos-01-13 pos-02-05 pos-02-08 pos-02-09 pos-02-11 pos-02-12 pos-02-13 pos-03-01 pos-03-02 pos-03-03 pos-03-04 pos-03-05 pos-03-09 pos-03-10 pos-03-12 pos-03-13 pos-04-01 pos-04-10 pos-04-11 pos-05-01 pos-05-03 pos-05-05 pos-05-06 pos-05-11 pos-05-12 pos-05-13 pos-06-01 pos-06-05 pos-06-06 pos-06-07 pos-06-13 pos-07-01 pos-07-03 pos-07-05 pos-07-06 pos-07-07 pos-07-08 pos-07-10 pos-07-11 pos-07-13 pos-08-01 pos-08-13 pos-09-01 pos-09-02 pos-09-03 pos-09-04 pos-09-05 pos-09-06 pos-09-07 pos-09-08 pos-09-09 pos-09-10 pos-09-11 pos-09-12 pos-09-13
+sokoban-sat08-strips/p29.pddl	1	location	3	pos-01-09 pos-02-10 pos-03-11
+sokoban-sat08-strips/p30.pddl	0	location	55	pos-01-01 pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-02-01 pos-02-08 pos-02-09 pos-03-01 pos-03-04 pos-03-05 pos-03-06 pos-03-09 pos-04-01 pos-04-02 pos-04-07 pos-04-09 pos-05-01 pos-05-07 pos-05-09 pos-06-01 pos-06-09 pos-07-01 pos-07-04 pos-07-05 pos-07-07 pos-07-08 pos-07-09 pos-08-01 pos-08-02 pos-08-03 pos-08-04 pos-08-07 pos-09-02 pos-09-03 pos-09-07 pos-10-01 pos-10-02 pos-10-07 pos-11-01 pos-11-06 pos-11-07 pos-12-01 pos-12-05 pos-12-06 pos-13-01 pos-13-04 pos-13-05 pos-14-01 pos-14-02 pos-14-03 pos-14-04
+sokoban-sat08-strips/p30.pddl	1	location	2	pos-01-09 pos-09-01
+sokoban-sat11-strips/p01.pddl	0	location	43	pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-01-09 pos-02-05 pos-02-09 pos-03-01 pos-03-02 pos-03-03 pos-03-04 pos-03-05 pos-03-09 pos-04-01 pos-04-05 pos-04-09 pos-05-01 pos-05-07 pos-05-09 pos-06-01 pos-06-02 pos-06-04 pos-06-05 pos-06-07 pos-06-08 pos-06-09 pos-07-01 pos-07-05 pos-07-09 pos-08-01 pos-08-09 pos-09-01 pos-09-05 pos-09-09 pos-10-01 pos-10-02 pos-10-03 pos-10-04 pos-10-05 pos-10-06 pos-10-07 pos-10-08 pos-10-09
+sokoban-sat11-strips/p02.pddl	0	location	47	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-02-02 pos-02-05 pos-02-06 pos-02-07 pos-02-08 pos-03-02 pos-03-08 pos-03-09 pos-03-10 pos-04-02 pos-04-04 pos-04-10 pos-05-02 pos-05-04 pos-05-07 pos-05-08 pos-05-10 pos-06-02 pos-06-04 pos-06-10 pos-07-02 pos-07-05 pos-07-09 pos-07-10 pos-08-01 pos-08-02 pos-08-06 pos-08-07 pos-08-08 pos-08-09 pos-09-01 pos-09-06 pos-10-01 pos-10-03 pos-10-06 pos-11-01 pos-11-06 pos-12-01 pos-12-02 pos-12-03 pos-12-04 pos-12-05 pos-12-06
+sokoban-sat11-strips/p03.pddl	0	location	39	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-02-01 pos-02-02 pos-02-07 pos-03-01 pos-03-05 pos-03-07 pos-04-01 pos-04-07 pos-05-01 pos-05-04 pos-05-05 pos-05-06 pos-05-07 pos-06-01 pos-06-06 pos-07-01 pos-07-04 pos-07-06 pos-08-01 pos-08-06 pos-09-01 pos-09-04 pos-09-06 pos-10-01 pos-10-06 pos-11-01 pos-11-04 pos-11-05 pos-11-06 pos-12-01 pos-12-02 pos-12-03 pos-12-04
+sokoban-sat11-strips/p04.pddl	0	location	38	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-02-01 pos-02-02 pos-02-05 pos-02-06 pos-02-07 pos-03-01 pos-03-07 pos-03-08 pos-04-01 pos-04-05 pos-04-08 pos-05-01 pos-05-05 pos-05-08 pos-06-01 pos-06-05 pos-06-08 pos-07-01 pos-07-08 pos-08-01 pos-08-02 pos-08-05 pos-08-08 pos-09-02 pos-09-03 pos-09-04 pos-09-05 pos-09-07 pos-09-08 pos-10-05 pos-10-07 pos-11-05 pos-11-06 pos-11-07
+sokoban-sat11-strips/p05.pddl	0	location	39	pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-02-01 pos-02-02 pos-02-03 pos-02-04 pos-02-07 pos-03-01 pos-03-07 pos-04-01 pos-04-04 pos-04-07 pos-05-01 pos-05-04 pos-05-07 pos-06-01 pos-06-04 pos-06-07 pos-06-08 pos-06-09 pos-07-01 pos-07-09 pos-08-01 pos-08-05 pos-08-07 pos-08-09 pos-09-01 pos-09-02 pos-09-03 pos-09-04 pos-09-05 pos-09-09 pos-10-05 pos-10-06 pos-10-07 pos-10-08 pos-10-09
+sokoban-sat11-strips/p06.pddl	0	location	43	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-02-01 pos-02-02 pos-02-05 pos-02-07 pos-02-08 pos-02-09 pos-02-10 pos-03-01 pos-03-05 pos-03-06 pos-03-07 pos-03-10 pos-04-01 pos-04-10 pos-05-01 pos-05-05 pos-05-06 pos-05-07 pos-05-10 pos-06-01 pos-06-02 pos-06-07 pos-06-09 pos-06-10 pos-07-02 pos-07-03 pos-07-10 pos-08-03 pos-08-04 pos-08-10 pos-09-04 pos-09-05 pos-09-08 pos-09-09 pos-09-10 pos-10-05 pos-10-06 pos-10-07 pos-10-08
+sokoban-sat11-strips/p07.pddl	0	location	28	pos-02-02 pos-02-03 pos-02-04 pos-02-05 pos-02-06 pos-02-07 pos-02-08 pos-02-09 pos-03-01 pos-03-02 pos-03-09 pos-03-10 pos-04-01 pos-04-10 pos-05-01 pos-05-10 pos-06-01 pos-06-02 pos-06-03 pos-06-04 pos-06-05 pos-06-06 pos-06-07 pos-06-10 pos-07-07 pos-07-08 pos-07-09 pos-07-10
+sokoban-sat11-strips/p08.pddl	0	location	42	pos-01-01 pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-02-01 pos-02-05 pos-02-08 pos-02-09 pos-03-01 pos-03-09 pos-04-01 pos-04-03 pos-04-05 pos-04-06 pos-04-09 pos-05-01 pos-05-05 pos-05-09 pos-06-01 pos-06-02 pos-06-08 pos-06-09 pos-07-02 pos-07-05 pos-07-08 pos-08-02 pos-08-03 pos-08-04 pos-08-05 pos-08-08 pos-09-05 pos-09-08 pos-10-05 pos-10-08 pos-11-05 pos-11-06 pos-11-07 pos-11-08
+sokoban-sat11-strips/p09.pddl	0	location	262	pos-01-15 pos-01-16 pos-01-17 pos-02-01 pos-02-02 pos-02-03 pos-02-04 pos-02-05 pos-02-06 pos-02-07 pos-02-08 pos-02-09 pos-02-10 pos-02-11 pos-02-12 pos-02-13 pos-02-14 pos-02-15 pos-02-17 pos-03-01 pos-03-17 pos-04-01 pos-04-03 pos-04-04 pos-04-05 pos-04-06 pos-04-07 pos-04-08 pos-04-09 pos-04-10 pos-04-11 pos-04-12 pos-04-13 pos-04-14 pos-04-15 pos-04-17 pos-05-01 pos-05-03 pos-05-17 pos-06-01 pos-06-03 pos-06-05 pos-06-06 pos-06-07 pos-06-08 pos-06-09 pos-06-10 pos-06-11 pos-06-12 pos-06-13 pos-06-14 pos-06-15 pos-06-16 pos-06-17 pos-07-01 pos-07-03 pos-07-05 pos-07-17 pos-08-01 pos-08-03 pos-08-05 pos-08-07 pos-08-08 pos-08-09 pos-08-10 pos-08-11 pos-08-12 pos-08-13 pos-08-14 pos-08-15 pos-08-17 pos-09-01 pos-09-03 pos-09-05 pos-09-07 pos-09-15 pos-09-17 pos-10-01 pos-10-03 pos-10-05 pos-10-07 pos-10-09 pos-10-10 pos-10-11 pos-10-12 pos-10-13 pos-10-15 pos-10-17 pos-11-01 pos-11-03 pos-11-05 pos-11-07 pos-11-09 pos-11-13 pos-11-15 pos-11-17 pos-12-01 pos-12-03 pos-12-05 pos-12-07 pos-12-09 pos-12-11 pos-12-13 pos-12-15 pos-12-17 pos-13-01 pos-13-03 pos-13-05 pos-13-07 pos-13-09 pos-13-11 pos-13-13 pos-13-15 pos-13-17 pos-14-01 pos-14-03 pos-14-05 pos-14-07 pos-14-09 pos-14-11 pos-14-13 pos-14-15 pos-14-17 pos-15-01 pos-15-03 pos-15-05 pos-15-07 pos-15-09 pos-15-11 pos-15-13 pos-15-15 pos-15-17 pos-16-01 pos-16-03 pos-16-05 pos-16-07 pos-16-09 pos-16-11 pos-16-13 pos-16-15 pos-16-17 pos-17-01 pos-17-03 pos-17-05 pos-17-07 pos-17-09 pos-17-11 pos-17-13 pos-17-15 pos-17-17 pos-18-01 pos-18-03 pos-18-05 pos-18-07 pos-18-09 pos-18-11 pos-18-13 pos-18-15 pos-18-17 pos-19-01 pos-19-03 pos-19-05 pos-19-07 pos-19-09 pos-19-11 pos-19-13 pos-19-15 pos-19-17 pos-20-01 pos-20-03 pos-20-05 pos-20-07 pos-20-09 pos-20-11 pos-20-13 pos-20-15 pos-20-17 pos-21-01 pos-21-03 pos-21-05 pos-21-07 pos-21-09 pos-21-11 pos-21-13 pos-21-15 pos-21-17 pos-22-01 pos-22-03 pos-22-05 pos-22-07 pos-22-11 pos-22-13 pos-22-15 pos-22-17 pos-23-01 pos-23-03 pos-23-05 pos-23-07 pos-23-08 pos-23-09 pos-23-10 pos-23-11 pos-23-13 pos-23-15 pos-23-17 pos-24-01 pos-24-03 pos-24-05 pos-24-13 pos-24-15 pos-24-17 pos-25-01 pos-25-03 pos-25-05 pos-25-06 pos-25-07 pos-25-08 pos-25-09 pos-25-10 pos-25-11 pos-25-12 pos-25-13 pos-25-15 pos-25-17 pos-26-01 pos-26-03 pos-26-15 pos-26-17 pos-27-01 pos-27-03 pos-27-04 pos-27-05 pos-27-06 pos-27-07 pos-27-08 pos-27-09 pos-27-10 pos-27-11 pos-27-12 pos-27-13 pos-27-14 pos-27-15 pos-27-17 pos-28-01 pos-28-17 pos-29-01 pos-29-02 pos-29-03 pos-29-04 pos-29-05 pos-29-06 pos-29-07 pos-29-08 pos-29-09 pos-29-10 pos-29-11 pos-29-12 pos-29-13 pos-29-14 pos-29-15 pos-29-16 pos-29-17
+sokoban-sat11-strips/p10.pddl	0	location	52	pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-02-03 pos-02-07 pos-02-08 pos-02-09 pos-02-10 pos-03-03 pos-03-10 pos-04-03 pos-04-04 pos-04-06 pos-04-07 pos-04-08 pos-04-10 pos-05-04 pos-05-08 pos-05-10 pos-06-04 pos-06-10 pos-07-02 pos-07-03 pos-07-04 pos-07-05 pos-07-07 pos-07-08 pos-07-10 pos-08-01 pos-08-02 pos-08-10 pos-09-01 pos-09-05 pos-09-07 pos-09-08 pos-09-09 pos-09-10 pos-10-01 pos-10-07 pos-11-01 pos-11-02 pos-11-06 pos-11-07 pos-12-02 pos-12-06 pos-13-02 pos-13-03 pos-13-04 pos-13-05 pos-13-06
+sokoban-sat11-strips/p11.pddl	0	location	58	pos-01-01 pos-01-02 pos-01-03 pos-01-04 pos-02-01 pos-02-04 pos-03-01 pos-03-04 pos-04-01 pos-04-04 pos-05-01 pos-05-04 pos-05-05 pos-05-06 pos-05-07 pos-05-08 pos-05-09 pos-05-10 pos-05-11 pos-06-01 pos-06-11 pos-07-01 pos-07-07 pos-07-11 pos-08-01 pos-08-02 pos-08-03 pos-08-04 pos-08-09 pos-08-10 pos-08-11 pos-09-03 pos-09-04 pos-09-05 pos-09-06 pos-09-07 pos-09-09 pos-10-03 pos-10-07 pos-10-09 pos-10-10 pos-11-03 pos-11-10 pos-12-03 pos-12-07 pos-12-10 pos-13-03 pos-13-09 pos-13-10 pos-14-03 pos-14-06 pos-14-07 pos-14-08 pos-14-09 pos-15-03 pos-15-04 pos-15-05 pos-15-06
+sokoban-sat11-strips/p12.pddl	0	location	48	pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-02-02 pos-02-03 pos-02-04 pos-02-07 pos-03-02 pos-03-07 pos-04-02 pos-04-04 pos-04-07 pos-05-02 pos-05-04 pos-05-07 pos-06-01 pos-06-02 pos-06-07 pos-07-01 pos-07-05 pos-07-07 pos-07-08 pos-08-01 pos-08-08 pos-09-01 pos-09-02 pos-09-03 pos-09-04 pos-09-08 pos-10-03 pos-10-06 pos-10-07 pos-10-08 pos-11-03 pos-11-06 pos-12-03 pos-12-06 pos-12-07 pos-13-03 pos-13-07 pos-14-03 pos-14-07 pos-15-03 pos-15-04 pos-15-05 pos-15-06 pos-15-07
+sokoban-sat11-strips/p13.pddl	0	location	56	pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-01-07 pos-01-08 pos-01-09 pos-01-10 pos-02-01 pos-02-02 pos-02-05 pos-02-06 pos-02-07 pos-02-10 pos-02-11 pos-03-01 pos-03-05 pos-03-07 pos-03-11 pos-04-01 pos-04-11 pos-05-01 pos-05-02 pos-05-03 pos-05-09 pos-05-10 pos-05-11 pos-06-02 pos-06-10 pos-07-01 pos-07-02 pos-07-03 pos-07-09 pos-07-10 pos-07-11 pos-08-01 pos-08-11 pos-09-01 pos-09-05 pos-09-07 pos-09-11 pos-10-01 pos-10-02 pos-10-05 pos-10-06 pos-10-07 pos-10-10 pos-10-11 pos-11-02 pos-11-03 pos-11-04 pos-11-05 pos-11-07 pos-11-08 pos-11-09 pos-11-10
+sokoban-sat11-strips/p13.pddl	1	location	8	pos-01-01 pos-01-06 pos-01-11 pos-06-01 pos-06-11 pos-11-01 pos-11-06 pos-11-11
+sokoban-sat11-strips/p14.pddl	0	location	55	pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-01-09 pos-01-10 pos-02-01 pos-02-02 pos-02-03 pos-02-06 pos-02-07 pos-02-10 pos-02-11 pos-03-01 pos-03-11 pos-04-01 pos-04-07 pos-04-08 pos-04-11 pos-05-01 pos-05-03 pos-05-05 pos-05-06 pos-05-07 pos-05-08 pos-05-10 pos-05-11 pos-06-01 pos-06-05 pos-06-08 pos-06-11 pos-07-01 pos-07-02 pos-07-03 pos-07-04 pos-07-05 pos-07-06 pos-07-07 pos-07-08 pos-07-11 pos-08-06 pos-08-11 pos-09-06 pos-09-08 pos-09-11 pos-10-06 pos-10-11 pos-11-06 pos-11-07 pos-11-08 pos-11-09 pos-11-10 pos-11-11
+sokoban-sat11-strips/p15.pddl	0	location	55	pos-01-01 pos-01-02 pos-01-03 pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-02-01 pos-02-08 pos-02-09 pos-03-01 pos-03-04 pos-03-05 pos-03-06 pos-03-09 pos-04-01 pos-04-02 pos-04-07 pos-04-09 pos-05-01 pos-05-07 pos-05-09 pos-06-01 pos-06-09 pos-07-01 pos-07-04 pos-07-05 pos-07-07 pos-07-08 pos-07-09 pos-08-01 pos-08-02 pos-08-03 pos-08-04 pos-08-07 pos-09-02 pos-09-03 pos-09-07 pos-10-01 pos-10-02 pos-10-07 pos-11-01 pos-11-06 pos-11-07 pos-12-01 pos-12-05 pos-12-06 pos-13-01 pos-13-04 pos-13-05 pos-14-01 pos-14-02 pos-14-03 pos-14-04
+sokoban-sat11-strips/p15.pddl	1	location	2	pos-01-09 pos-09-01
+sokoban-sat11-strips/p16.pddl	0	location	41	pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-02-04 pos-02-08 pos-03-03 pos-03-04 pos-03-08 pos-03-09 pos-04-01 pos-04-02 pos-04-03 pos-04-09 pos-04-10 pos-04-11 pos-05-01 pos-05-11 pos-06-01 pos-06-06 pos-06-11 pos-07-01 pos-07-11 pos-08-01 pos-08-02 pos-08-03 pos-08-09 pos-08-10 pos-08-11 pos-09-03 pos-09-04 pos-09-08 pos-09-09 pos-10-04 pos-10-08 pos-11-04 pos-11-05 pos-11-06 pos-11-07 pos-11-08
+sokoban-sat11-strips/p17.pddl	0	location	48	pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-01-09 pos-02-01 pos-02-02 pos-02-03 pos-02-04 pos-02-09 pos-03-01 pos-03-07 pos-03-09 pos-04-01 pos-04-07 pos-04-09 pos-04-10 pos-05-01 pos-05-02 pos-05-04 pos-05-06 pos-05-10 pos-06-02 pos-06-04 pos-06-10 pos-07-01 pos-07-02 pos-07-04 pos-07-09 pos-07-10 pos-08-01 pos-08-05 pos-08-09 pos-09-01 pos-09-06 pos-09-08 pos-09-09 pos-10-01 pos-10-02 pos-10-08 pos-11-02 pos-11-03 pos-11-04 pos-11-05 pos-11-06 pos-11-07 pos-11-08
+sokoban-sat11-strips/p17.pddl	1	location	2	pos-06-01 pos-11-01
+sokoban-sat11-strips/p18.pddl	0	location	64	pos-01-02 pos-01-03 pos-01-05 pos-01-06 pos-01-07 pos-01-08 pos-01-10 pos-01-11 pos-01-12 pos-01-13 pos-02-05 pos-02-08 pos-02-09 pos-02-11 pos-02-12 pos-02-13 pos-03-01 pos-03-02 pos-03-03 pos-03-04 pos-03-05 pos-03-09 pos-03-10 pos-03-12 pos-03-13 pos-04-01 pos-04-10 pos-04-11 pos-05-01 pos-05-03 pos-05-05 pos-05-06 pos-05-11 pos-05-12 pos-05-13 pos-06-01 pos-06-05 pos-06-06 pos-06-07 pos-06-13 pos-07-01 pos-07-03 pos-07-05 pos-07-06 pos-07-07 pos-07-08 pos-07-10 pos-07-11 pos-07-13 pos-08-01 pos-08-13 pos-09-01 pos-09-02 pos-09-03 pos-09-04 pos-09-05 pos-09-06 pos-09-07 pos-09-08 pos-09-09 pos-09-10 pos-09-11 pos-09-12 pos-09-13
+sokoban-sat11-strips/p18.pddl	1	location	3	pos-01-09 pos-02-10 pos-03-11
+sokoban-sat11-strips/p19.pddl	0	location	37	pos-01-04 pos-01-05 pos-01-06 pos-01-07 pos-02-01 pos-02-02 pos-02-03 pos-02-04 pos-02-07 pos-03-01 pos-03-04 pos-03-07 pos-04-01 pos-04-07 pos-04-08 pos-05-01 pos-05-04 pos-05-08 pos-06-01 pos-06-04 pos-06-08 pos-07-01 pos-07-04 pos-07-08 pos-08-01 pos-08-02 pos-08-04 pos-08-07 pos-08-08 pos-09-02 pos-09-07 pos-10-02 pos-10-03 pos-10-04 pos-10-05 pos-10-06 pos-10-07
+sokoban-sat11-strips/p20.pddl	0	location	32	pos-1-2 pos-1-3 pos-1-4 pos-1-5 pos-1-6 pos-1-7 pos-1-8 pos-2-1 pos-2-2 pos-2-8 pos-2-9 pos-3-1 pos-3-9 pos-4-1 pos-4-9 pos-5-1 pos-5-9 pos-6-1 pos-6-9 pos-7-1 pos-7-9 pos-8-1 pos-8-2 pos-8-8 pos-8-9 pos-9-2 pos-9-3 pos-9-4 pos-9-5 pos-9-6 pos-9-7 pos-9-8
+sokoban-sat11-strips/p20.pddl	1	location	4	pos-1-1 pos-1-9 pos-9-1 pos-9-9
 tpp/p02.pddl	0	goods	2	goods1 goods2
 tpp/p03.pddl	0	goods	3	goods1 goods2 goods3
 tpp/p04.pddl	0	goods	4	goods1 goods2 goods3 goods4
@@ -2438,9 +2715,14 @@ transport-sat08-strips/p18.pddl	0	package	2	package-1 package-12
 transport-sat11-strips/p06.pddl	0	package	2	package-1 package-12
 transport-sat11-strips/p11.pddl	0	package	2	package-20 package-7
 woodworking-sat08-strips/p03.pddl	0	part	2	p4 p6
+woodworking-sat08-strips/p03.pddl	1	acolour	2	red white
+woodworking-sat08-strips/p04.pddl	0	acolour	2	black green
+woodworking-sat08-strips/p05.pddl	0	acolour	2	black blue
 woodworking-sat08-strips/p08.pddl	0	part	2	p19 p21
 woodworking-sat08-strips/p09.pddl	0	part	2	p13 p26
 woodworking-sat08-strips/p13.pddl	0	board	2	b1 b2
+woodworking-sat08-strips/p13.pddl	1	acolour	2	green mauve
+woodworking-sat08-strips/p15.pddl	0	acolour	2	black mauve
 woodworking-sat08-strips/p16.pddl	0	part	2	p15 p5
 woodworking-sat08-strips/p17.pddl	0	part	2	p1 p3
 woodworking-sat08-strips/p28.pddl	0	board	2	b0 b1
@@ -2456,12 +2738,24 @@ woodworking-sat11-strips/p12.pddl	0	part	2	p12 p24
 woodworking-sat11-strips/p13.pddl	0	board	2	b7 b8
 woodworking-sat11-strips/p14.pddl	0	part	2	p1 p22
 woodworking-sat11-strips/p15.pddl	0	board	2	b2 b3
-woodworking-sat11-strips/p17.pddl	0	highspeed-saw	3	highspeed-saw0 highspeed-saw1 highspeed-saw2
-woodworking-sat11-strips/p17.pddl	1	part	2	p1 p14
-woodworking-sat11-strips/p18.pddl	0	highspeed-saw	3	highspeed-saw0 highspeed-saw1 highspeed-saw2
-woodworking-sat11-strips/p19.pddl	0	highspeed-saw	3	highspeed-saw0 highspeed-saw1 highspeed-saw2
-woodworking-sat11-strips/p20.pddl	0	highspeed-saw	3	highspeed-saw0 highspeed-saw1 highspeed-saw2
-woodworking-sat11-strips/p20.pddl	1	part	2	p11 p4
+woodworking-sat11-strips/p17.pddl	0	grinder	3	grinder0 grinder1 grinder2
+woodworking-sat11-strips/p17.pddl	1	highspeed-saw	3	highspeed-saw0 highspeed-saw1 highspeed-saw2
+woodworking-sat11-strips/p17.pddl	2	planer	3	planer0 planer1 planer2
+woodworking-sat11-strips/p17.pddl	3	saw	3	saw0 saw1 saw2
+woodworking-sat11-strips/p17.pddl	4	part	2	p1 p14
+woodworking-sat11-strips/p18.pddl	0	grinder	3	grinder0 grinder1 grinder2
+woodworking-sat11-strips/p18.pddl	1	highspeed-saw	3	highspeed-saw0 highspeed-saw1 highspeed-saw2
+woodworking-sat11-strips/p18.pddl	2	planer	3	planer0 planer1 planer2
+woodworking-sat11-strips/p18.pddl	3	saw	3	saw0 saw1 saw2
+woodworking-sat11-strips/p19.pddl	0	grinder	3	grinder0 grinder1 grinder2
+woodworking-sat11-strips/p19.pddl	1	highspeed-saw	3	highspeed-saw0 highspeed-saw1 highspeed-saw2
+woodworking-sat11-strips/p19.pddl	2	planer	3	planer0 planer1 planer2
+woodworking-sat11-strips/p19.pddl	3	saw	3	saw0 saw1 saw2
+woodworking-sat11-strips/p20.pddl	0	grinder	3	grinder0 grinder1 grinder2
+woodworking-sat11-strips/p20.pddl	1	highspeed-saw	3	highspeed-saw0 highspeed-saw1 highspeed-saw2
+woodworking-sat11-strips/p20.pddl	2	planer	3	planer0 planer1 planer2
+woodworking-sat11-strips/p20.pddl	3	saw	3	saw0 saw1 saw2
+woodworking-sat11-strips/p20.pddl	4	part	2	p11 p4
 zenotravel/p05.pddl	0	object	2	person2 person3
 zenotravel/p07.pddl	0	object	2	person1 person5
 zenotravel/p08.pddl	0	object	2	person2 person4
