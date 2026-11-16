@@ -1,6 +1,6 @@
 import unittest
 
-from experiments.figure import select
+from experiments.figure import scaled_coverage, select
 
 
 def _row(mode, problem="p01.pddl", rank=""):
@@ -30,3 +30,18 @@ class FigureSelectionTests(unittest.TestCase):
             {(row["mode"], row["class"]) for row in selected},
             {("abs-asp", "1"), ("abs-lama", "0"), ("asp", "")},
         )
+
+
+class ScaledFigureTests(unittest.TestCase):
+    def test_coverage_is_the_share_solved_of_each_size(self):
+        def problem(size, found):
+            row = {
+                "domain": f"gripper/size-{size}",
+                "problem": "prob01.pddl",
+                "status": "success" if found else "timeout",
+            }
+            return {"lmcut": row}
+
+        problems = [problem(2, True), problem(2, False), problem(2, True), problem(2, True), problem(50, False)]
+
+        self.assertEqual(scaled_coverage(problems, "lmcut"), [(2, 75.0), (50, 0.0)])
