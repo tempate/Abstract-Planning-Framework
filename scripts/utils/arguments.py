@@ -60,8 +60,8 @@ def planning_config(args):
 
 def abstract_planning_config(args):
     """The configuration the task and abstraction arguments describe."""
-    # An optimal abstract plan is wasted on a refinement with gaps, so abs-lmcut always optimizes.
-    optimize = args.mode == "abs-lmcut" or getattr(args, "optimize", False)
+    # An optimal abstract plan is wasted on a refinement with gaps, so both abs-lmcut modes always optimize.
+    optimize = args.mode in ("abs-lmcut", "abs-lmcut-symmetry-pruning") or getattr(args, "optimize", False)
     return AbstractPlanningConfig(
         _domain(args),
         args.problem,
