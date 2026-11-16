@@ -15,3 +15,6 @@
 [submodule "experiments/benchmarks/htg-domains"]
 	path = experiments/benchmarks/htg-domains
 	url = https://github.com/abcorrea/htg-domains.git
+[submodule "lib/cpddl"]
+	path = lib/cpddl
+	url = https://gitlab.com/danfis/cpddl.git

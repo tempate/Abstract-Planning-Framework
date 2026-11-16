@@ -20,3 +20,6 @@ PDDL_SYMMETRIES_TRANSLATOR = _project_path("lib", "pddl-symmetries", "src", "tra
 
 NUMERIC_FAST_DOWNWARD_SCRIPT = _project_path("lib", "numeric-fast-downward", "fast-downward.py")
 NUMERIC_FAST_DOWNWARD_BIN = _project_path("lib", "numeric-fast-downward", "builds", "release64", "bin", "downward")
+
+# The lifted planner of Horčík, Fišer and Torralba (AAAI 2022), built by scripts.setup.
+CPDDL_BIN = _project_path("lib", "cpddl", "bin", "pddl-tool")
