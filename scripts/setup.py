@@ -5,6 +5,7 @@ import hashlib
 import io
 import os
 import platform
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -26,6 +27,8 @@ NUMERIC_DOWNWARD = ROOT / "lib" / "numeric-fast-downward"
 NUMERIC_DOWNWARD_PATCH = ROOT / "lib" / "numeric-fast-downward.patch"
 NUMERIC_DOWNWARD_BUILD = NUMERIC_DOWNWARD / "builds" / "release64"
 POWERLIFTED_SEARCH = ROOT / "lib" / "powerlifted" / "builds" / "release" / "search" / "search"
+CPDDL_DIR = ROOT / "lib" / "cpddl"
+CPDDL_BIN = CPDDL_DIR / "bin" / "pddl-tool"
 
 # Each of these fails silently at run time rather than at setup time: a missing
 # pybliss kills every abstract run in symmetry discovery, a missing Fast
@@ -37,6 +40,7 @@ ARTIFACTS = {
     "plasp binary": PLASP_BIN,
     "numeric Fast Downward release64 build": NUMERIC_DOWNWARD_BUILD,
     "Powerlifted release build": POWERLIFTED_SEARCH,
+    "cpddl binary": CPDDL_BIN,
 }
 
 
@@ -47,6 +51,7 @@ def main():
     _build_numeric_fast_downward()
     _build_powerlifted()
     _install_plasp()
+    _build_cpddl()
     _verify()
 
 
@@ -98,6 +103,17 @@ def _build_powerlifted():
     # GCC 16 reports a spurious overflow in it that Powerlifted's -Werror makes fatal.
     flags = {**os.environ, "CXXFLAGS": "-std=c++17 -Wno-error=stringop-overflow"}
     _run([sys.executable, "build.py"], cwd=ROOT / "lib" / "powerlifted", env=flags)
+
+
+def _build_cpddl():
+    print("== cpddl")
+    if CPDDL_BIN.exists():
+        print(f"already built at {CPDDL_BIN}")
+        return
+
+    # The template's defaults build without the optional LP solvers, which rnd-g does not need.
+    shutil.copyfile(CPDDL_DIR / "Makefile.config.tpl", CPDDL_DIR / "Makefile.config")
+    _run(["make", "bin"], cwd=CPDDL_DIR)
 
 
 def _install_plasp():

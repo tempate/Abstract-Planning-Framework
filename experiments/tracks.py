@@ -103,7 +103,7 @@ TRACKS = {
             directory=EXPERIMENTS / "htg" / "sat",
             suite=htg.SUITE,
             benchmarks_dir=BENCHMARKS / "htg-domains",
-            modes=("abs-asp", "abs-lama", "asp", "lama", "abs-powerlifted", "powerlifted"),
+            modes=("abs-asp", "abs-lama", "asp", "lama", "abs-powerlifted", "powerlifted", "rnd-g"),
         ),
         # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
         Track(
@@ -111,7 +111,7 @@ TRACKS = {
             directory=EXPERIMENTS / "htg" / "opt",
             suite=htg_opt.SUITE,
             benchmarks_dir=BENCHMARKS / "htg-domains",
-            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "abs-powerlifted", "powerlifted"),
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "abs-powerlifted", "powerlifted", "rnd-g"),
             optimizing_arguments=("--optimize",),
         ),
         # The optimal suite, refined without gaps so that every plan is optimal, with

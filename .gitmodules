@@ -18,3 +18,6 @@
 [submodule "lib/powerlifted"]
 	path = lib/powerlifted
 	url = https://github.com/abcorrea/powerlifted.git
+[submodule "lib/cpddl"]
+	path = lib/cpddl
+	url = https://gitlab.com/danfis/cpddl.git
