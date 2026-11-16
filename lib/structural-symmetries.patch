@@ -1,0 +1,143 @@
+diff --git a/src/search/search_engines/lazy_search.cc b/src/search/search_engines/lazy_search.cc
+index 147c3fe4b..d522d43a9 100644
+--- a/src/search/search_engines/lazy_search.cc
++++ b/src/search/search_engines/lazy_search.cc
+@@ -4,8 +4,10 @@
+ 
+ #include "../algorithms/ordered_set.h"
+ #include "../plugins/options.h"
++#include "../structural_symmetries/group.h"
+ #include "../task_utils/successor_generator.h"
+ #include "../task_utils/task_properties.h"
++#include "../tasks/root_task.h"
+ #include "../utils/logging.h"
+ #include "../utils/rng.h"
+ #include "../utils/rng_options.h"
+@@ -35,6 +37,22 @@ LazySearch::LazySearch(const plugins::Options &opts)
+       We initialize current_eval_context in such a way that the initial node
+       counts as "preferred".
+     */
++    if (opts.contains("symmetries")) {
++        group = opts.get<shared_ptr<Group>>("symmetries");
++        if (!group->is_initialized()) {
++            log << "Initializing symmetries (lazy search)" << endl;
++            group->compute_symmetries(TaskProxy(*tasks::g_root_task));
++        }
++        if (use_oss()) {
++            current_state = state_registry.register_state_buffer(
++                group->get_canonical_representative(current_state));
++            current_eval_context = EvaluationContext(current_state, 0, true, &statistics);
++        }
++    }
++}
++
++bool LazySearch::use_oss() const {
++    return group && group->has_symmetries() && group->get_search_symmetries() == SearchSymmetries::OSS;
+ }
+ 
+ void LazySearch::set_preferred_operator_evaluators(
+@@ -56,9 +74,9 @@ void LazySearch::initialize() {
+     }
+ 
+     path_dependent_evaluators.assign(evals.begin(), evals.end());
+-    State initial_state = state_registry.get_initial_state();
++    // Under orbit space search the search starts from the canonical initial state.
+     for (Evaluator *evaluator : path_dependent_evaluators) {
+-        evaluator->notify_initial_state(initial_state);
++        evaluator->notify_initial_state(current_state);
+     }
+ }
+ 
+@@ -128,7 +146,16 @@ SearchStatus LazySearch::fetch_next_state() {
+     State current_predecessor = state_registry.lookup_state(current_predecessor_id);
+     OperatorProxy current_operator = task_proxy.get_operators()[current_operator_id];
+     assert(task_properties::is_applicable(current_operator, current_predecessor));
+-    current_state = state_registry.get_successor_state(current_predecessor, current_operator);
++    if (use_oss()) {
++        // Only the canonical representative enters the registry, so the
++        // successor itself needs a temporary one.
++        StateRegistry tmp_registry(task_proxy);
++        State successor = tmp_registry.get_successor_state(current_predecessor, current_operator);
++        current_state = state_registry.register_state_buffer(
++            group->get_canonical_representative(successor));
++    } else {
++        current_state = state_registry.get_successor_state(current_predecessor, current_operator);
++    }
+ 
+     SearchNode pred_node = search_space.get_node(current_predecessor);
+     current_g = pred_node.get_g() + get_adjusted_cost(current_operator);
+@@ -189,7 +216,7 @@ SearchStatus LazySearch::step() {
+                 }
+             }
+             node.close();
+-            if (check_goal_and_set_plan(current_state))
++            if (check_goal_and_set_plan(current_state, group))
+                 return SOLVED;
+             if (search_progress.check_progress(current_eval_context)) {
+                 statistics.print_checkpoint_line(current_g);
+diff --git a/src/search/search_engines/lazy_search.h b/src/search/search_engines/lazy_search.h
+index bace0f734..d9b4b95bc 100644
+--- a/src/search/search_engines/lazy_search.h
++++ b/src/search/search_engines/lazy_search.h
+@@ -14,6 +14,8 @@
+ #include <memory>
+ #include <vector>
+ 
++class Group;
++
+ namespace lazy_search {
+ class LazySearch : public SearchEngine {
+ protected:
+@@ -27,6 +29,8 @@ protected:
+ 
+     std::vector<Evaluator *> path_dependent_evaluators;
+     std::vector<std::shared_ptr<Evaluator>> preferred_operator_evaluators;
++    // Orbit space search: only canonical representatives enter the registry.
++    std::shared_ptr<Group> group;
+ 
+     State current_state;
+     StateID current_predecessor_id;
+@@ -42,6 +46,7 @@ protected:
+     SearchStatus fetch_next_state();
+ 
+     void reward_progress();
++    bool use_oss() const;
+ 
+     std::vector<OperatorID> get_successor_operators(
+         const ordered_set::OrderedSet<OperatorID> &preferred_operators) const;
+diff --git a/src/search/search_engines/plugin_lazy_greedy.cc b/src/search/search_engines/plugin_lazy_greedy.cc
+index fe5cbd98e..001bc0e76 100644
+--- a/src/search/search_engines/plugin_lazy_greedy.cc
++++ b/src/search/search_engines/plugin_lazy_greedy.cc
+@@ -2,6 +2,7 @@
+ #include "search_common.h"
+ 
+ #include "../plugins/plugin.h"
++#include "../structural_symmetries/group.h"
+ 
+ using namespace std;
+ 
+@@ -32,6 +33,10 @@ public:
+             DEFAULT_LAZY_BOOST);
+         SearchEngine::add_succ_order_options(*this);
+         SearchEngine::add_options_to_feature(*this);
++        add_option<shared_ptr<Group>>(
++            "symmetries",
++            "symmetries object to compute structural symmetries for orbit space search",
++            plugins::ArgumentInfo::NO_DEFAULT);
+ 
+         document_note(
+             "Open lists",
+@@ -69,7 +74,11 @@ public:
+             true);
+     }
+ 
+-    virtual shared_ptr<lazy_search::LazySearch> create_component(const plugins::Options &options, const utils::Context &) const override {
++    virtual shared_ptr<lazy_search::LazySearch> create_component(const plugins::Options &options, const utils::Context &context) const override {
++        if (options.contains("symmetries") &&
++            options.get<shared_ptr<Group>>("symmetries")->get_search_symmetries() != SearchSymmetries::OSS) {
++            context.error("Lazy search supports only orbit space search (search_symmetries=oss).");
++        }
+         plugins::Options options_copy(options);
+         options_copy.set("open", search_common::create_greedy_open_list_factory(options));
+         shared_ptr<lazy_search::LazySearch> engine = make_shared<lazy_search::LazySearch>(options_copy);

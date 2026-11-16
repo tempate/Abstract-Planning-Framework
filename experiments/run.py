@@ -26,6 +26,8 @@ MODES = (
     "abs-asp",
     "abs-lama",
     "lama",
+    "abs-lama-symmetry-pruning",
+    "lama-symmetry-pruning",
     "abs-lmcut",
     "lmcut",
     "abs-lmcut-symmetry-pruning",

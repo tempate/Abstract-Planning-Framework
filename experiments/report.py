@@ -15,6 +15,7 @@ DEFAULT_CSV = TRACKS[DEFAULT_TRACK].results_file
 SOLVER_LABELS = {
     "asp": "ASP",
     "lama": "LAMA",
+    "lama-symmetry-pruning": "LAMA-symmetry-pruning",
     "lmcut": "LMcut",
     "lmcut-symmetry-pruning": "LMcut-symmetry-pruning",
 }
