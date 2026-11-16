@@ -81,7 +81,7 @@ class PlannerArgumentTests(unittest.TestCase):
     def test_the_optimal_tracks_run_every_mode_optimally(self):
         for track in ("opt/symmetries", "opt/resources", "opt-htg/symmetries"):
             for mode in TRACKS[track].modes:
-                if mode == "lmcut":
+                if mode in ("lmcut", "lmcut-symmetry-pruning"):
                     continue
                 with self.subTest(track=track, mode=mode):
                     argv = _planner_command(Path("domain.pddl"), Path(self.PROBLEM), mode, track, 0)[3:]

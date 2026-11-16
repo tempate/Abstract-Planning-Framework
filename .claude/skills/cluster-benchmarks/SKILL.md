@@ -18,7 +18,7 @@ its results are pushed, and ready from then on (see **Closing the loop**).
 ## Checkouts
 
 Every run has its own checkout, a worktree of the bare repo `~/apf/.bare` at
-`~/apf/<branch>`. Its `lib/downward`, `lib/pddl-symmetries`, `lib/plasp/bin`,
+`~/apf/<branch>`. Its `lib/downward`, `lib/structural-symmetries`, `lib/pddl-symmetries`, `lib/plasp/bin`,
 `experiments/benchmarks/downward-benchmarks` and, where vendored,
 `lib/numeric-fast-downward` are symlinks into `~/apf/.shared`, the only built copy.
 Nothing is built per checkout, so a branch that moved a submodule pointer would
@@ -52,6 +52,7 @@ and names what is missing, rather than queueing jobs that all die the same way:
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
 | `lib/numeric-fast-downward/builds/release64` | `numeric-fast-downward binary not found`, on every resources-track job |
 | `lib/downward-partial-grounding` | refinement grounds the whole task, which no row records |
+| `lib/structural-symmetries/builds/release` | every `lmcut-symmetry-pruning` job fails before its search |
 
 Smoke-test a branch that changes the pipeline, which the checks above cannot
 judge. Run each mode it touches on a problem it solves fast and expect a valid plan:
@@ -80,7 +81,7 @@ python -m experiments.submit --track sat --abstraction-source symmetries
 | track | modes | baseline |
 |---|---|---|
 | `sat` | `asp`, `abs-asp`, `lama`, `abs-lama` | `lama`, Fast Downward's lama-first |
-| `opt` | `asp`, `abs-asp`, `lmcut`, `abs-lmcut` | `lmcut`, A* with LM-cut |
+| `opt` | `asp`, `abs-asp`, `lmcut`, `abs-lmcut`, `lmcut-symmetry-pruning`, `abs-lmcut-symmetry-pruning` | `lmcut`, A* with LM-cut, and `lmcut-symmetry-pruning`, the same with orbit space search |
 
 `--abstraction-source resources` collapses resources instead of symmetric objects.
 `--track sat-htg` and `--track opt-htg` run the hard-to-ground benchmarks, with
