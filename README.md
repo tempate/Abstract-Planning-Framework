@@ -63,6 +63,9 @@ resource detection with `--abstraction-source resources`. Pass
 error, not a fallback to concrete search. `--domain` defaults to the domain file
 beside the problem.
 
+`lama-symmetry-pruning` and `abs-lama-symmetry-pruning` add orbit space search to
+`lama` and `abs-lama`. Orbit space search in lazy search comes from
+`lib/structural-symmetries.patch`, which `scripts.setup` applies before it builds.
 
 ## Benchmark suite
 

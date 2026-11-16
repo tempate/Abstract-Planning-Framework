@@ -2,7 +2,7 @@
 
 from functools import partial
 
-from core.integrations.fast_downward import LAMA, LMCUT, LMCUT_SYMMETRY_PRUNING
+from core.integrations.fast_downward import LAMA, LAMA_SYMMETRY_PRUNING, LMCUT, LMCUT_SYMMETRY_PRUNING
 from core.planners.asp import Asp
 from core.planners.fd import FastDownward
 from core.planners.powerlifted import Powerlifted
@@ -10,6 +10,7 @@ from core.planners.powerlifted import Powerlifted
 PLANNERS = {
     "asp": Asp,
     "lama": partial(FastDownward, LAMA),
+    "lama-symmetry-pruning": partial(FastDownward, LAMA_SYMMETRY_PRUNING),
     "lmcut": partial(FastDownward, LMCUT),
     "powerlifted": Powerlifted,
     "lmcut-symmetry-pruning": partial(FastDownward, LMCUT_SYMMETRY_PRUNING),
