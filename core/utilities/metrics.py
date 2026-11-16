@@ -21,6 +21,8 @@ DURATION_LABELS = {
     "abstract_asp": "Abstract SAS-to-ASP",
     "abstract_solving": "Abstract plan solving",
     "abstract_fd_search": "Abstract Fast Downward search",
+    "powerlifted_search": "Powerlifted search",
+    "abstract_powerlifted_search": "Abstract Powerlifted search",
     "partial_fd": "Partial Fast Downward",
     "partial_asp": "Partial SAS-to-ASP",
     "partial_one_shot": "Partial one-shot solving",
