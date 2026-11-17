@@ -118,6 +118,22 @@ where it goes:
 <!-- 130-sat-before-after.png: before (main) left, after right -->
 ```
 
+## Keeping runs.md current
+
+`experiments/runs.md` says which code, classes and partition each mode's rows on `main`
+come from. Every PR that changes `results.csv` or a result updates it in the same PR,
+so the file is right the moment the PR merges.
+
+| The PR | Update in runs.md |
+|---|---|
+| ran a mode | its row: Status, Classes, Code (`#<n>`), Partition, and Lacks without what the run covered |
+| changes a result without running a mode | that mode's row: add `#<n>` to Lacks and set Status to ❌ **stale** |
+| changes a result at all | the opening paragraph: add `#<n>` to the result-changing PRs and move "main at" to it |
+| changes `classes.txt` or a suite | Jobs, as `experiments.submit --classes all --dry-run` counts them |
+
+Set Status by the legend in the file. A run on broadwell or on the
+best class only stays ⚠️ **partly stale** however current its code is.
+
 ## Merging
 
 ```bash
