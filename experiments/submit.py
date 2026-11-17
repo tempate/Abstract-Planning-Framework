@@ -1,6 +1,7 @@
 """Submit the complete benchmark suite to Slurm through CopperBench."""
 
 import argparse
+import csv
 import json
 import os
 import shlex
@@ -69,7 +70,7 @@ def main():
         track_name, missing = _track_name(args, parser), None
         modes = args.modes or TRACKS[track_name].modes
         domains = args.domains
-        best = best_classes(TRACKS[track_name].results_file) if args.classes == "best" else None
+        best = _best_classes(TRACKS[track_name]) if args.classes == "best" else None
 
     track = TRACKS[track_name]
     unknown = sorted(set(modes) - set(track.modes))
@@ -122,6 +123,16 @@ def main():
 
         print(f"Submitting {len(tasks)} cluster jobs (one per mode, benchmark problem and class)")
         subprocess.run(["copperbench", str(config_file), "--submit", "bench"], cwd=RESULTS_DIR, check=True)
+
+
+def _best_classes(track):
+    """Each abstract mode's best class on each problem, from best_classes.csv while the track has no results."""
+    if track.results_file.is_file():
+        return best_classes(track.results_file)
+
+    # A generated track, such as opt-htg-scaled, names the class it grew before any result exists.
+    with (track.directory / "best_classes.csv").open(encoding="utf-8", newline="") as stream:
+        return {(row["domain"], row["problem"], row["mode"]): int(row["class"]) for row in csv.DictReader(stream)}
 
 
 def _missing_results(results_dir):

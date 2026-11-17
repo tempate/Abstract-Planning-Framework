@@ -1,0 +1,28 @@
+(define (problem TPP)
+(:domain TPP-Propositional)
+(:objects
+	goods1 goods1-copy1 goods1-copy2 goods1-copy3 goods1-copy4 goods1-copy5 goods1-copy6 goods1-copy7 goods1-copy8 goods2 - goods
+	truck1 - truck
+	market1 - market
+	depot1 - depot
+	level0 level1 - level)
+
+(:init
+	(next level1 level0)
+	(ready-to-load goods1 market1 level0) (ready-to-load goods1-copy1 market1 level0) (ready-to-load goods1-copy2 market1 level0) (ready-to-load goods1-copy3 market1 level0) (ready-to-load goods1-copy4 market1 level0) (ready-to-load goods1-copy5 market1 level0) (ready-to-load goods1-copy6 market1 level0) (ready-to-load goods1-copy7 market1 level0) (ready-to-load goods1-copy8 market1 level0)
+	(ready-to-load goods2 market1 level0)
+	(stored goods1 level0) (stored goods1-copy1 level0) (stored goods1-copy2 level0) (stored goods1-copy3 level0) (stored goods1-copy4 level0) (stored goods1-copy5 level0) (stored goods1-copy6 level0) (stored goods1-copy7 level0) (stored goods1-copy8 level0)
+	(stored goods2 level0)
+	(loaded goods1 truck1 level0) (loaded goods1-copy1 truck1 level0) (loaded goods1-copy2 truck1 level0) (loaded goods1-copy3 truck1 level0) (loaded goods1-copy4 truck1 level0) (loaded goods1-copy5 truck1 level0) (loaded goods1-copy6 truck1 level0) (loaded goods1-copy7 truck1 level0) (loaded goods1-copy8 truck1 level0)
+	(loaded goods2 truck1 level0)
+	(connected depot1 market1)
+	(connected market1 depot1)
+	(on-sale goods1 market1 level1) (on-sale goods1-copy1 market1 level1) (on-sale goods1-copy2 market1 level1) (on-sale goods1-copy3 market1 level1) (on-sale goods1-copy4 market1 level1) (on-sale goods1-copy5 market1 level1) (on-sale goods1-copy6 market1 level1) (on-sale goods1-copy7 market1 level1) (on-sale goods1-copy8 market1 level1)
+	(on-sale goods2 market1 level1)
+	(at truck1 depot1))
+
+(:goal (and
+	(stored goods1 level1) (stored goods1-copy1 level1) (stored goods1-copy2 level1) (stored goods1-copy3 level1) (stored goods1-copy4 level1) (stored goods1-copy5 level1) (stored goods1-copy6 level1) (stored goods1-copy7 level1) (stored goods1-copy8 level1)
+	(stored goods2 level1)))
+
+)

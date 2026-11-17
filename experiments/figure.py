@@ -7,15 +7,17 @@ import json
 import shutil
 import subprocess
 import tempfile
+from collections import defaultdict
 from pathlib import Path
 
 from experiments.collect import result_key
+from experiments.ipc.opt.scaled.suite import SIZES
 from experiments.report import finished_problems, solved
 from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 from experiments.tracks import TRACKS
 
 SOURCES = {"symmetries": "Symmetries", "resources": "Resources"}
-FIGURES = ("sat", "opt", "htg")
+FIGURES = ("sat", "opt", "htg", "opt-scaled", "opt-htg-scaled")
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
 TIME_LIMIT = 1800
@@ -42,7 +44,9 @@ def main():
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
 
-    if args.no_base:
+    if args.kind in ("opt-scaled", "opt-htg-scaled"):
+        panels = [_scaled_plot(load_tracks(args.branch, args.kind, manifests)["symmetries"])]
+    elif args.no_base:
         panels = [_panel("", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources))]
     else:
         # A label like #134 would otherwise read as a macro parameter in LaTeX.
@@ -296,6 +300,44 @@ def _titled(title, body, columns):
 
 def _minipage(width, body):
     return f"\\noindent\\begin{{minipage}}{{{width}}}\\centering\n{body}\n\\end{{minipage}}"
+
+
+SCALED_MODES = (
+    ("lmcut", "conc", "*", r"\LMcut"),
+    ("abs-lmcut", "abst", "square*", r"\LMcuta"),
+)
+
+
+def scaled_coverage(problems, mode):
+    """The share of each class size's problems a mode solves, in percent."""
+    by_size = defaultdict(list)
+    for problem in problems:
+        size = int(problem[mode]["domain"].rsplit("/size-", 1)[1])
+        # A size outside SIZES holds only the base problems that start there.
+        if size in SIZES:
+            by_size[size].append(solved(problem[mode]))
+    return [(size, 100 * sum(found) / len(found)) for size, found in sorted(by_size.items())]
+
+
+def _scaled_plot(problems):
+    lines = []
+    for mode, style, mark, name in SCALED_MODES:
+        shares = " ".join(f"({size},{share:.2f})" for size, share in scaled_coverage(problems, mode))
+        lines.append(rf"\addplot[{style}, very thick, mark={mark}, mark size=1.4pt] coordinates {{{shares}}};")
+        lines.append(rf"\addlegendentry{{{name}}}")
+
+    return (
+        "\\begin{tikzpicture}\n\\begin{semilogxaxis}[scale only axis, width=0.8\\columnwidth, "
+        "height=0.5\\columnwidth, xmin=1.8, xmax=1150, xtick={2,10,100,1000}, xticklabels={2,$10^1$,$10^2$,$10^3$}, "
+        "ymin=0, ymax=105, ytick={0,25,50,75,100}, minor tick length=0pt, xlabel={Size of $K$}, "
+        "ylabel={Problems solved (\\%)}, axis line style={black!50}, tick style={black!50}, "
+        "xtick pos=bottom, ytick pos=left, tick label style={font=\\footnotesize}, label style={font=\\footnotesize}, "
+        "legend style={font=\\footnotesize, draw=none, fill=none, at={(0.5,1.03)}, anchor=south, "
+        "/tikz/every even column/.append style={column sep=10pt}}, legend columns=2, legend cell align=left"
+        + "]\n"
+        + "\n".join(lines)
+        + "\n\\end{semilogxaxis}\n\\end{tikzpicture}"
+    )
 
 
 def cactus(problems, mode):
