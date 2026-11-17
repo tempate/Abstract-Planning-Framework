@@ -29,7 +29,7 @@ action(action(("inspect","item1"))).
 :- occurs(Action, t), occurs(Action, T), T < t.
 #program base.
 """ + mapping
-        solver = Solver(AspProgram(program), init_horizon=2 * 2 + 1)
+        solver = Solver(AspProgram(program), init_horizon=2 * 2 + 1, optimize=True)
         first, second = sorted(switches(abstract_plan))
 
         self.assertIsNone(solver.solve([(first, True), (second, True)]))
@@ -103,7 +103,7 @@ action(action(("move","item1"))).
 switch(2).
 """ + mapping
 
-        result = Solver(AspProgram(program), init_horizon=2).control.solve()
+        result = Solver(AspProgram(program), init_horizon=2, optimize=True).control.solve()
 
         self.assertTrue(result.unsatisfiable)
 
@@ -114,7 +114,7 @@ switch(2).
         self.assertEqual([str(switch) for switch in switches(abstract_plan)], ["switch(10)", "switch(2)"])
 
     def _models(self, program, horizon):
-        control = Solver(AspProgram(program), horizon).control
+        control = Solver(AspProgram(program), horizon, optimize=True).control
         control.configuration.solve.models = 0
         models = []
         with control.solve(yield_=True) as handle:

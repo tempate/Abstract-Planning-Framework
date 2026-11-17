@@ -5,7 +5,7 @@ from dataclasses import dataclass, replace
 
 from core.pipeline.abstraction.abstract_task import CollapsedSet
 from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
-from core.integrations.clingo import parse_plan_actions
+from core.integrations.clingo import actions_from_model
 from core.integrations.fast_downward import partial_pddl_to_sas, pddl_to_sas
 from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
 from core.integrations.plasp import sas_to_asp
@@ -57,7 +57,7 @@ def refine(context: RefinementContext, abstract_plan):
     if atoms is None:
         return None
 
-    plan = parse_plan_actions(atoms)
+    plan = actions_from_model(atoms)
     context.metrics.set_counter("plan_length", len(plan))
     return plan
 
@@ -110,7 +110,7 @@ def _partial_one_shot(context, abstract_plan):
         return None
 
     with context.metrics.measure("partial_asp"):
-        partial_asp = sas_to_asp(partial_sas)
+        partial_asp = sas_to_asp(partial_sas, context.config.optimize)
 
     with context.metrics.measure("partial_one_shot"):
         return _one_shot(context, partial_asp, abstract_plan)

@@ -40,15 +40,22 @@ def split_actions(problem, collapsed_set):
     """
     reach = _reach(problem, collapsed_set)
 
+    split_parameters = {}
+    for action in problem.actions:
+        if SPLIT_SEPARATOR in action.name:
+            raise ValueError(f"Action name already holds the split separator: {action.name}")
+        split_parameters[action.name] = _split_parameters(problem, action, reach)
+
+    # Without a split, the markers would be predicates no action reads.
+    if not any(split_parameters.values()):
+        return problem
+
     split_problem = problem.clone()
     collapsed_marker, kept_marker = _add_markers(split_problem, collapsed_set, reach.collapsed)
 
     split_problem.clear_actions()
     for action in problem.actions:
-        if SPLIT_SEPARATOR in action.name:
-            raise ValueError(f"Action name already holds the split separator: {action.name}")
-
-        parameters = _split_parameters(problem, action, reach)
+        parameters = split_parameters[action.name]
         if not parameters:
             split_problem.add_action(action)
             continue

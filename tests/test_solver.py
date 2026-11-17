@@ -11,10 +11,10 @@ class SolverTests(unittest.TestCase):
         facts = '% variables\ncontains(variable(0), value("at(a)", true)).\n\n'
         rules = "found(V) :- contains(variable(V), value(_, true)). #show found/1."
 
-        self.assertEqual(Solver(AspProgram(rules, facts)).solve(), ["found(0)"])
+        self.assertEqual(Solver(AspProgram(rules, facts), optimize=True).solve(), ["found(0)"])
 
     def test_unsatisfiable_program_has_no_plan(self):
-        self.assertIsNone(Solver(AspProgram(":-.\n")).solve())
+        self.assertIsNone(Solver(AspProgram(":-.\n"), optimize=True).solve())
 
 
 class IncrementalSolverTests(unittest.TestCase):
@@ -26,7 +26,7 @@ step(0).
 #program step(t).
 step(t).
 """
-        plan = Solver(AspProgram(program), init_horizon=3).solve()
+        plan = Solver(AspProgram(program), init_horizon=3, optimize=True).solve()
 
         self.assertEqual(set(plan), {"step(0)", "step(1)", "step(2)", "step(3)"})
 
@@ -40,7 +40,7 @@ ready.
 :- query(t), not ready.
 """
 
-        result = Solver(AspProgram(program)).search()
+        result = Solver(AspProgram(program), optimize=True).search()
 
         self.assertEqual(result.plan, ["ready"])
         self.assertEqual(result.horizon, 0)
@@ -59,7 +59,7 @@ reached(t).
 """
         attempts = []
 
-        result = Solver(AspProgram(program), init_horizon=2).search(
+        result = Solver(AspProgram(program), init_horizon=2, optimize=True).search(
             on_attempt=lambda horizon, _dropped, calls: attempts.append((horizon, calls))
         )
 
@@ -79,7 +79,7 @@ reached(t).
 #external query(t).
 :- query(t), t < 2.
 """
-        solver = Solver(AspProgram(program), init_horizon=1)
+        solver = Solver(AspProgram(program), init_horizon=1, optimize=True)
 
         self.assertIsNone(solver.solve())
 
@@ -115,7 +115,7 @@ def _keep(number):
 
 class RelaxingSolverTests(unittest.TestCase):
     def _search(self, program, numbers, on_attempt=None, switches_off=0):
-        solver = Solver(AspProgram(program), init_horizon=0)
+        solver = Solver(AspProgram(program), init_horizon=0, optimize=True)
         return solver.search([_keep(number) for number in numbers], on_attempt, switches_off)
 
     def test_keeps_every_assumption_when_they_hold_together(self):
