@@ -39,6 +39,26 @@ def main():
     parser = _argument_parser()
     args = parser.parse_args()
 
+    # Each of these combinations would run, but one of its flags would change nothing.
+    if args.best_class_of and args.classes == "all":
+        parser.error("--best-class-of picks one class per problem, so it cannot run with --classes all")
+    if args.from_rank and args.classes == "best":
+        parser.error("--from-rank applies only with --classes all; --classes best runs each problem's best class")
+    retry_ignores = [
+        flag
+        for flag, value in (
+            ("--modes", args.modes),
+            ("--domains", args.domains),
+            ("--problems", args.problems),
+            ("--from-rank", args.from_rank),
+            ("--best-class-of", args.best_class_of),
+            ("--classes all", args.classes == "all"),
+        )
+        if value
+    ]
+    if args.retry_missing and retry_ignores:
+        parser.error(f"--retry-missing resubmits exactly what the run lacks, so drop {', '.join(retry_ignores)}")
+
     if args.retry_missing:
         # Exactly what the earlier run never got back, on its track and with the classes it submitted.
         track_name, missing = _missing_results(args.retry_missing)

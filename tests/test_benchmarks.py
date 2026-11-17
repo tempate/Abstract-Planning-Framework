@@ -433,6 +433,22 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual([(n, p.name) for _m, n, _d, p, _r in by_problem], [("two", "p02.pddl")])
             self.assertEqual({p.name for _m, _n, _d, p, _r in by_file_name}, {"p02.pddl"})
 
+    def test_flags_that_would_change_nothing_are_refused(self):
+        combinations = (
+            ["--best-class-of", "abs-asp", "--classes", "all"],
+            ["--from-rank", "2"],
+            ["--retry-missing", "runs", "--modes", "asp"],
+        )
+        for flags in combinations:
+            with (
+                self.subTest(flags=flags),
+                patch("sys.argv", ["submit", *flags]),
+                contextlib.redirect_stderr(io.StringIO()),
+                self.assertRaises(SystemExit) as refusal,
+            ):
+                experiments.submit.main()
+            self.assertEqual(refusal.exception.code, 2)
+
     def test_a_misspelled_domain_is_refused_rather_than_submitting_nothing(self):
         with self.assertRaises(SystemExit) as refusal:
             list(_benchmark_tasks(Path("/nowhere"), ["driverlog"], runnable=None, domains=["driverlgo"]))

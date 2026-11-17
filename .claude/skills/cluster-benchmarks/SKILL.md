@@ -199,7 +199,7 @@ detached checkout of the producing commit and copy the CSVs to the branch tip.
 Collect replaces a row where the run holds its (domain, problem, mode, class). When
 the run re-ran a class the CSV already holds, it also drops the other classes of that
 problem and mode, since they measure older code. A run that only adds classes, as
-`--from-rank` does, leaves the earlier rows alone. A job that never reported replaces
+`--from-rank` does with `--classes all`, leaves the earlier rows alone. A job that never reported replaces
 its own row with `missing` but leaves the other classes alone. Problems the run did
 not touch keep their rows. For the PR's numbers, keep only the
 abstract rows the run's manifest lists, and compare against the base on the same
