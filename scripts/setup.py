@@ -21,14 +21,19 @@ PLASP_BIN = ROOT / "lib" / "plasp" / "bin" / "plasp"
 PYBLISS_DIR = ROOT / "lib" / "pddl-symmetries" / "src" / "translate" / "pybliss-0.73"
 PYBLISS_MODULE = PYBLISS_DIR / "pybind11_blissmodule.so"
 DOWNWARD_BUILD = ROOT / "lib" / "downward" / "builds" / "release"
+NUMERIC_DOWNWARD = ROOT / "lib" / "numeric-fast-downward"
+NUMERIC_DOWNWARD_PATCH = ROOT / "lib" / "numeric-fast-downward.patch"
+NUMERIC_DOWNWARD_BUILD = NUMERIC_DOWNWARD / "builds" / "release64"
 
 # Each of these fails silently at run time rather than at setup time: a missing
 # pybliss kills every abstract run in symmetry discovery, a missing Fast
-# Downward build exits 36, and a missing plasp cannot translate anything.
+# Downward build exits 36, a missing plasp cannot translate anything, and a
+# missing numeric Fast Downward kills every resources-track job in detection.
 ARTIFACTS = {
     "pybliss extension": PYBLISS_MODULE,
     "Fast Downward release build": DOWNWARD_BUILD,
     "plasp binary": PLASP_BIN,
+    "numeric Fast Downward release64 build": NUMERIC_DOWNWARD_BUILD,
 }
 
 
@@ -36,6 +41,7 @@ def main():
     _initialize_submodules()
     _build_pybliss()
     _build_fast_downward()
+    _build_numeric_fast_downward()
     _install_plasp()
     _verify()
 
@@ -61,6 +67,21 @@ def _build_fast_downward():
         return
 
     _run([sys.executable, "build.py", "release"], cwd=ROOT / "lib" / "downward")
+
+
+def _build_numeric_fast_downward():
+    """Build numeric Fast Downward for resource detection, with the patch that lets it use Clp instead of CPLEX."""
+    print("== numeric Fast Downward")
+    if NUMERIC_DOWNWARD_BUILD.is_dir():
+        print(f"already built at {NUMERIC_DOWNWARD_BUILD}")
+        return
+
+    patch_is_applied = subprocess.run(
+        ["git", "apply", "--reverse", "--check", str(NUMERIC_DOWNWARD_PATCH)], cwd=NUMERIC_DOWNWARD
+    )
+    if patch_is_applied.returncode != 0:
+        _run(["git", "apply", str(NUMERIC_DOWNWARD_PATCH)], cwd=NUMERIC_DOWNWARD)
+    _run([sys.executable, "build.py", "release64"], cwd=NUMERIC_DOWNWARD)
 
 
 def _install_plasp():

@@ -13,13 +13,16 @@ python -m pip install -e ".[dev]"
 python -m scripts.setup
 ```
 
-`scripts.setup` initializes the submodules and builds the three things pip does
-not install: the pybliss extension, the Fast Downward release build, and the
-pinned plasp binary. Skipping it fails at planning time rather than at setup
+`scripts.setup` initializes the submodules and builds the four things pip does
+not install: the pybliss extension, the Fast Downward release build, numeric Fast
+Downward for resource detection, and the pinned plasp binary. Numeric Fast Downward
+needs COIN's Clp and Osi, found through `DOWNWARD_COIN_ROOT`, or resource detection
+has no LP solver. Skipping it fails at planning time rather than at setup
 time.
 
 Refinement first tries the abstract plan on a partial grounding, from a private Fast Downward fork that must be cloned by
-hand into `lib/downward-partial-grounding` (gitignored). Without it, refinement grounds the whole task.
+hand into `lib/downward-partial-grounding` (gitignored). Without it, refinement grounds the whole task, and
+`experiments.submit` refuses to run.
 
 For automatic formatting on commit:
 
@@ -58,8 +61,6 @@ resource detection with `--abstraction-source resources`. Pass
 error, not a fallback to concrete search. `--domain` defaults to the domain file
 beside the problem.
 
-Resource detection needs numeric Fast Downward, which `scripts.setup` does not
-build. Apply `lib/numeric-fast-downward.patch` there and run `./build.py release64`.
 
 ## Benchmark suite
 
