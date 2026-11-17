@@ -11,12 +11,13 @@ from collections import defaultdict
 from pathlib import Path
 
 from experiments.collect import result_key
+from experiments.ipc.opt.scaled.suite import SIZES
 from experiments.report import finished_problems, solved
 from experiments.run import ABSTRACTION_PREFIX, PROJECT_ROOT
 from experiments.tracks import TRACKS
 
 SOURCES = {"symmetries": "Symmetries", "resources": "Resources"}
-FIGURES = ("sat", "opt", "htg", "opt-scaled")
+FIGURES = ("sat", "opt", "htg", "opt-scaled", "opt-htg-scaled")
 # The figure draws a problem a mode leaves unsolved on this border, past the 1800 s limit.
 UNSOLVED = 6000.0
 TIME_LIMIT = 1800
@@ -43,7 +44,7 @@ def main():
     manifests = [json.loads(Path(path).read_text()) for path in args.manifests]
     base_manifests = [json.loads(Path(path).read_text()) for path in args.base_manifests]
 
-    if args.kind == "opt-scaled":
+    if args.kind in ("opt-scaled", "opt-htg-scaled"):
         panels = [_scaled_plot(load_tracks(args.branch, args.kind, manifests)["symmetries"])]
     elif args.no_base:
         panels = [_panel("", args.kind, load_tracks(args.branch, args.kind, manifests, args.sources))]
@@ -311,7 +312,10 @@ def scaled_coverage(problems, mode):
     """The share of each class size's problems a mode solves, in percent."""
     by_size = defaultdict(list)
     for problem in problems:
-        by_size[int(problem[mode]["domain"].rsplit("/size-", 1)[1])].append(solved(problem[mode]))
+        size = int(problem[mode]["domain"].rsplit("/size-", 1)[1])
+        # A size outside SIZES holds only the base problems that start there.
+        if size in SIZES:
+            by_size[size].append(solved(problem[mode]))
     return [(size, 100 * sum(found) / len(found)) for size, found in sorted(by_size.items())]
 
 

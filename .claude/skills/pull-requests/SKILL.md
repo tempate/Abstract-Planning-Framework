@@ -104,7 +104,7 @@ python -m experiments.figure opt --base origin/main --branch HEAD \
 `--manifests` limits the branch's abstract modes to the classes its runs submitted.
 `htg` draws the hard-to-ground sat and opt tracks in one figure, without ASP modes. Pass
 `--no-base` for a track the base does not hold yet, to draw the branch alone.
-`opt-scaled` draws the share of the scaled opt problems each mode solves per class size, for the branch alone.
+`opt-scaled` and `opt-htg-scaled` draw the share of their scaled problems each mode solves per class size, for the branch alone.
 Pass `--sources resources` or `--sources symmetries` for a PR that changes one abstraction source only.
 For a stacked PR, pass `--base <the base branch> --base-label '#<n>'` and the base's
 own manifests as `--base-manifests`. The script needs the paper checked out next to
