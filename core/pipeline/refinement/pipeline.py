@@ -49,6 +49,11 @@ def refine(context: RefinementContext, abstract_plan):
     atoms = None
     if partial:
         atoms = _partial_one_shot(context, abstract_plan)
+    else:
+        print(
+            f"Grounding the whole task, since the partial grounder is missing: {PARTIAL_GROUNDING_TRANSLATOR}",
+            flush=True,
+        )
 
     if atoms is None:
         # A one-shot that fails on the partial grounding fails on the full one too.
