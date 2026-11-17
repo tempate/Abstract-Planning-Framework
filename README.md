@@ -30,14 +30,13 @@ pre-commit install
 ## Try it
 
 ```bash
-./examples/lama.sh
-./examples/asp.sh
-./examples/abs-lama.sh
-./examples/abs-asp.sh
+python -m scripts.planner lama --problem experiments/benchmarks/downward-benchmarks/driverlog/p07.pddl
+python -m scripts.planner asp --problem experiments/benchmarks/downward-benchmarks/driverlog/p07.pddl
+python -m scripts.planner abs-lama --problem experiments/benchmarks/downward-benchmarks/driverlog/p07.pddl
+python -m scripts.planner abs-asp --problem experiments/benchmarks/downward-benchmarks/driverlog/p07.pddl
 ```
 
-All four solve the same task, so the runs are comparable. See
-[examples/README.md](examples/README.md).
+All four solve the same task, so the runs are comparable.
 
 ## Command-line tools
 
