@@ -8,7 +8,7 @@ from core.utilities.outcomes import IntegrationError
 from core.asp.program import AspProgram, make_steps_optional
 
 
-def sas_to_asp(sas_path, optimize=True):
+def sas_to_asp(sas_path, optimize):
     """Translate a SAS instance using the sequential incremental encoding."""
     with open(SEQUENTIAL_ENCODING, "r", encoding="utf-8") as encoding_source:
         encoding = encoding_source.read()

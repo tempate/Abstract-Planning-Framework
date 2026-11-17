@@ -3,7 +3,6 @@
 import copy
 from dataclasses import dataclass
 from pathlib import Path
-from unittest.mock import patch
 
 from unified_planning.engines import CompilationKind
 from unified_planning.engines.compilers import negative_conditions_remover
@@ -153,11 +152,14 @@ def to_positive_normal_form(problem):
         # Selected by name, not by problem kind: the kind lookup refuses a task
         # over features the translation never touches, such as the undefined
         # initial numeric every action-costs domain in the suite carries.
-        with (
-            patch.object(negative_conditions_remover, "NegativeFluentRemover", _InequalityKeeper),
-            Compiler(name="up_negative_conditions_remover") as compiler,
-        ):
-            translated = compiler.compile(problem, CompilationKind.NEGATIVE_CONDITIONS_REMOVING).problem
+        # The compiler builds its remover from this module global, so swap ours in for the call.
+        original = negative_conditions_remover.NegativeFluentRemover
+        negative_conditions_remover.NegativeFluentRemover = _InequalityKeeper
+        try:
+            with Compiler(name="up_negative_conditions_remover") as compiler:
+                translated = compiler.compile(problem, CompilationKind.NEGATIVE_CONDITIONS_REMOVING).problem
+        finally:
+            negative_conditions_remover.NegativeFluentRemover = original
     except Exception as error:
         raise PddlError(f"Could not translate the task to PNF: {error}") from error
 

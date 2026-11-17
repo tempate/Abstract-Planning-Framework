@@ -3,7 +3,7 @@
 import os
 from dataclasses import dataclass
 
-from core.integrations.fast_downward import Search, find_pddl_plan, find_sas_plan, parse_plan_actions
+from core.integrations.fast_downward import Search, find_pddl_plan, find_sas_plan, actions_from_plan_file
 from core.utilities.config import PlanningConfig
 from core.utilities.execution import planning_run
 
@@ -29,7 +29,7 @@ class FastDownward:
             # task rather than a failure, so the length is set on any plan.
             plan = None
             if lines is not None:
-                plan = parse_plan_actions(lines)
+                plan = actions_from_plan_file(lines)
                 run.metrics.set_counter("plan_length", len(plan))
 
         return run.plan_result(config, plan)
@@ -40,4 +40,4 @@ class FastDownward:
             # The plan file goes beside the task it solves.
             plan = find_sas_plan(os.path.dirname(sas_file), sas_file, LABEL, self.search)
 
-        return None if plan is None else parse_plan_actions(plan)
+        return None if plan is None else actions_from_plan_file(plan)

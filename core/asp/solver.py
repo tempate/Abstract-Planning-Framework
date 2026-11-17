@@ -17,7 +17,7 @@ class SolveResult:
 class Solver:
     """One Clingo control whose horizon can be raised without regrounding, and whose assumptions can be given up."""
 
-    def __init__(self, asp, init_horizon=0, optimize=True):
+    def __init__(self, asp, init_horizon=0, *, optimize):
         """Create the control, load the program, and ground it up to the initial horizon."""
         if init_horizon < 0:
             raise ValueError("Horizon must be nonnegative")
