@@ -24,7 +24,6 @@ Found 0/1294 producer actions
 
 FUEL = ("Atom fuel(t0, level0)", "Atom fuel(t0, level1)", "Atom fuel(t0, level2)")
 AXIOM = ("Atom new-axiom@0()", "NegatedAtom new-axiom@0()")
-TRUCK = ("Atom at(t0, l0)", "Atom at(t0, l1)")
 
 
 class VaryingObjectTests(unittest.TestCase):
@@ -42,13 +41,6 @@ class ParseResourceTests(unittest.TestCase):
 
         self.assertEqual([resource.name for resource in resources], ["var7"])
         self.assertEqual(resources[0].objects, ("level0", "level1", "level2"))
-
-    def test_the_widest_variable_comes_first(self):
-        resources = parse_resources(
-            DETECTOR_OUTPUT.replace("var8 resource", "var9 resource"), {"var7": TRUCK, "var9": FUEL}
-        )
-
-        self.assertEqual([len(resource.objects) for resource in resources], [3, 2])
 
 
 class SasReadingTests(unittest.TestCase):

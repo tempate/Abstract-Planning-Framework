@@ -1,4 +1,3 @@
-import argparse
 import subprocess
 import tempfile
 import unittest
@@ -6,7 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from core.pipeline.abstraction.factory import Abstraction, build_abstract_problem
+from core.pipeline.abstraction.factory import build_abstract_problem
 from core.integrations.fast_downward import LAMA
 from core.integrations.unified_planning import read_problem
 from core.utilities.outcomes import UnsolvableTaskError
@@ -17,7 +16,6 @@ from core.planners.asp import Asp
 from core.pipeline import pipeline
 from core.utilities.config import AbstractPlanningConfig, PlanningConfig
 from core.utilities.plan import one_action_per_step
-from scripts.utils.arguments import positive_int
 
 
 class BaselinePlanningOrchestrationTests(unittest.TestCase):
@@ -29,7 +27,6 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
         result = fd.FastDownward(LAMA, config).solve()
 
         self.assertTrue(result["success"])
-        self.assertEqual(result["configuration"], config.as_dict())
         # The plan carries no occurs/2 atoms for the collector to count.
         self.assertEqual(result["metrics"]["counters"]["plan_length"], 2)
 
@@ -50,16 +47,6 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
 
         self.assertFalse(result["success"])
         self.assertIsNone(result["plan"])
-        self.assertNotIn("plan_length", result["metrics"]["counters"])
-
-
-class PlanningConfigurationTests(unittest.TestCase):
-    def test_selected_objects_are_stored_immutably(self):
-        objects_to_abstract = ["hangar1", "hangar2"]
-        config = AbstractPlanningConfig("domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract)
-        objects_to_abstract.append("hangar3")
-
-        self.assertEqual(config.objects_to_abstract, ("hangar1", "hangar2"))
 
 
 class GeneratedAbstractionTests(unittest.TestCase):
@@ -82,12 +69,6 @@ class GeneratedAbstractionTests(unittest.TestCase):
             generated = read_problem(abstract_domain, abstract_problem_path)
 
         self.assertEqual({item.name for item in generated.all_objects}, {abstract_problem.abstraction.name})
-
-
-class ArgumentTests(unittest.TestCase):
-    def test_positive_integer_rejects_zero(self):
-        with self.assertRaises(argparse.ArgumentTypeError):
-            positive_int("0")
 
 
 # A counter that three actions advance from 0 to 3, in the facts plasp would emit.

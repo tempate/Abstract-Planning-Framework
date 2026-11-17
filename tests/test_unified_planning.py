@@ -279,7 +279,8 @@ class PositiveNormalFormTests(unittest.TestCase):
 
         translated = to_positive_normal_form(problem)
 
-        complements = [fluent for fluent in translated.fluents if fluent.name.startswith("not_locked")]
+        original = {fluent.name for fluent in problem.fluents}
+        complements = [fluent for fluent in translated.fluents if fluent.name not in original]
         self.assertEqual(len(complements), 1)
         values = translated.initial_values
         for room in translated.objects(translated.user_type("room")):

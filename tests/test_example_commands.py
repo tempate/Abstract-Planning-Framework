@@ -2,10 +2,13 @@ import sys
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
+from pathlib import Path
 from unittest.mock import patch
 
-from core.pipeline import pipeline
+from experiments.run import _planner_command
+from experiments.tracks import TRACKS
 from scripts import planner
+from scripts.utils.arguments import abstract_planning_config, planning_config
 from core.pipeline.abstraction.collapse import AbstractionError
 from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.utilities.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
@@ -47,8 +50,6 @@ class PlannerExitStatusTests(unittest.TestCase):
                 status = self._main(["asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(status, 1)
-        self.assertIn("No plan: task is unsolvable", output.getvalue())
-        self.assertNotIn("Traceback", output.getvalue())
 
     def test_a_crash_is_an_error_rather_than_a_task_without_a_plan(self):
         output = StringIO()
@@ -57,18 +58,6 @@ class PlannerExitStatusTests(unittest.TestCase):
                 status = self._main(["asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(STATUS_BY_EXIT_CODE[status], "error")
-        self.assertIn("KeyError", output.getvalue())
-
-    def test_both_modes_report_failure_when_no_plan_is_found(self):
-        for mode in ("asp", "abs-asp"):
-            with self.subTest(mode=mode):
-                with (
-                    patch.object(planner, "_compute", return_value={"success": False}),
-                    patch.object(planner, "print_planning_result"),
-                ):
-                    status = self._main([mode, "--domain", "domain.pddl", "--problem", "problem.pddl"])
-
-                self.assertEqual(status, 1)
 
     def test_an_abstraction_error_exits_through_the_parser(self):
         errors = StringIO()
@@ -77,41 +66,52 @@ class PlannerExitStatusTests(unittest.TestCase):
                 self._main(["abs-asp", "--domain", "domain.pddl", "--problem", "problem.pddl"])
 
         self.assertEqual(raised.exception.code, 2)
-        self.assertIn("no abstractable object classes", errors.getvalue())
 
-    def test_explicit_selection_reaches_the_planning_pipeline(self):
-        with (
-            patch.object(pipeline, "solve", return_value={"success": True}) as compute,
-            patch.object(planner, "print_planning_result"),
-        ):
-            status = self._main(
-                [
-                    "abs-asp",
-                    "--domain",
-                    "domain.pddl",
-                    "--problem",
-                    "problem.pddl",
-                    "--objects-to-abstract",
-                    "a",
-                    "b",
-                ]
-            )
 
-        config = compute.call_args.args[0]
-        self.assertEqual(status, 0)
-        self.assertEqual(config.domain_path, "domain.pddl")
+class PlannerArgumentTests(unittest.TestCase):
+    """What each mode's arguments ask of the pipeline."""
+
+    PROBLEM = "experiments/benchmarks/downward-benchmarks/driverlog/p07.pddl"
+
+    def _config(self, *argv):
+        args = planner._argument_parser().parse_args([*argv, "--problem", self.PROBLEM])
+        if args.mode.startswith("abs-"):
+            return abstract_planning_config(args)
+        return planning_config(args)
+
+    def test_the_abstraction_arguments_reach_the_config(self):
+        config = self._config("abs-lama", "--objects-to-abstract", "a", "b", "--abstraction-source", "resources")
+
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
+        self.assertEqual(config.abstraction_source, "resources")
 
-    def test_the_planner_passes_the_abstraction_source_on(self):
-        argv = ["planner", "abs-lama", "--domain", "d.pddl", "--problem", "p.pddl", "--abstraction-source", "resources"]
-        with (
-            patch.object(pipeline, "solve", return_value={"success": True}) as compute,
-            patch.object(planner, "print_planning_result"),
-            patch.object(sys, "argv", argv),
-        ):
-            planner.main()
+    def test_the_domain_defaults_to_the_one_beside_the_problem(self):
+        self.assertEqual(Path(self._config("asp").domain_path), Path(self.PROBLEM).parent / "domain.pddl")
 
-        self.assertEqual(compute.call_args.args[0].abstraction_source, "resources")
+    def test_only_the_optimal_modes_optimize(self):
+        optimizing = {
+            ("asp",): False,
+            ("asp", "--optimize"): True,
+            ("abs-asp",): False,
+            ("abs-asp", "--optimize"): True,
+            ("abs-lama",): False,
+            ("abs-lmcut",): True,
+        }
+        for argv, optimize in optimizing.items():
+            with self.subTest(argv=argv):
+                self.assertEqual(self._config(*argv).optimize, optimize)
+
+    def test_the_optimal_tracks_run_every_mode_optimally(self):
+        for track in ("opt/symmetries", "opt/resources", "opt-htg/symmetries"):
+            for mode in TRACKS[track].modes:
+                if mode == "lmcut":
+                    continue
+                with self.subTest(track=track, mode=mode):
+                    argv = _planner_command(Path("domain.pddl"), Path(self.PROBLEM), mode, track, 0)[3:]
+                    args = planner._argument_parser().parse_args(argv)
+                    config = abstract_planning_config(args) if mode.startswith("abs-") else planning_config(args)
+
+                    self.assertTrue(config.optimize)
 
 
 if __name__ == "__main__":

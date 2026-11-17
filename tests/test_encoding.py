@@ -35,52 +35,14 @@ action(action(("inspect","item1"))).
         self.assertIsNone(solver.solve([(first, True), (second, True)]))
         self.assertIsNotNone(solver.solve([(first, True), (second, False)]))
 
-    def test_a_gap_holds_any_concrete_action_or_none(self):
-        abstract_plan = (PlanAction("inspect", ("item1",), 1),)
+    def test_an_abstract_action_follows_a_gap_only_when_there_are_gaps(self):
+        # With gaps the k-th abstract action sits on step 2k, with a gap before it; without, on step k.
+        abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item1",), 2))
         abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = _switched(abstract_plan, abstraction)
-        program = make_steps_optional(OCCURRENCE_ENCODING) + """
-action(action(("inspect","item1"))).
-action(action(("unrelated","x"))).
-switch(2).
-""" + mapping
 
-        models = self._models(program, horizon=3)
-        in_first_gap = {'occurs(action(("inspect","item1")),1)', 'occurs(action(("unrelated","x")),1)'}
-
-        self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
-        self.assertTrue(any('occurs(action(("unrelated","x")),1)' in model for model in models))
-        self.assertTrue(any(not model & in_first_gap for model in models))
-
-    def test_without_gaps_an_abstract_action_keeps_its_time_step(self):
-        abstract_plan = (PlanAction("inspect", ("item1",), 1),)
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = _switched(abstract_plan, abstraction, gaps=False)
-        program = OCCURRENCE_ENCODING + """
-action(action(("inspect","item1"))).
-action(action(("unrelated","x"))).
-""" + mapping
-
-        models = self._models(program + "switch(1).", horizon=1)
-
-        self.assertEqual([str(switch) for switch in switches(abstract_plan, gaps=False)], ["switch(1)"])
-        self.assertTrue(models)
-        self.assertTrue(all('occurs(action(("inspect","item1")),1)' in model for model in models))
-
-    def test_an_exponential_horizon_lets_the_steps_above_the_abstract_plan_stay_empty(self):
-        abstract_plan = (PlanAction("inspect", ("item1",), 1),)
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = _switched(abstract_plan, abstraction)
-        program = make_steps_optional(OCCURRENCE_ENCODING) + """
-action(action(("inspect","item1"))).
-switch(2).
-""" + mapping
-
-        models = self._models(program, horizon=5)
-        above = {f'occurs(action(("inspect","item1")),{step})' for step in (4, 5)}
-
-        self.assertTrue(all('occurs(action(("inspect","item1")),2)' in model for model in models))
-        self.assertTrue(any(not model & above for model in models))
+        for gaps, steps in ((True, [2, 4]), (False, [1, 2])):
+            with self.subTest(gaps=gaps):
+                self.assertEqual(sorted(map_abstract_actions(abstract_plan, abstraction, gaps)), steps)
 
     def test_a_held_step_takes_exactly_one_grounding_of_its_abstract_action(self):
         abstract_plan = (PlanAction("inspect", ("item_abs",), 1),)

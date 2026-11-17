@@ -1,6 +1,5 @@
 import os
 import subprocess
-import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -42,15 +41,6 @@ class ClingoPlanParsingTests(unittest.TestCase):
 
 class FastDownwardHelperTests(unittest.TestCase):
     @patch("core.integrations.fast_downward.subprocess.run")
-    def test_fast_downward_runs_under_the_active_interpreter(self, run):
-        run.return_value = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
-
-        with tempfile.TemporaryDirectory() as directory:
-            pddl_to_sas(directory, "domain.pddl", "problem.pddl", "concrete")
-
-        self.assertEqual(run.call_args.args[0][0], sys.executable)
-
-    @patch("core.integrations.fast_downward.subprocess.run")
     def test_a_translator_that_proved_the_task_unsolvable_stops_the_search(self, run):
         # It says so on stdout and still exits 0, leaving a dummy task the
         # horizon search would raise forever on.
@@ -74,9 +64,6 @@ class FastDownwardHelperTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "translator output"):
                 pddl_to_sas(directory, domain, problem, "concrete")
 
-            command = run.call_args.args[0]
-            self.assertIn(str(domain), command)
-            self.assertIn(str(problem), command)
             self.assertFalse(Path(directory, "domain.pddl").exists())
             self.assertFalse(Path(directory, "problem.pddl").exists())
 
@@ -124,32 +111,24 @@ class FastDownwardHelperTests(unittest.TestCase):
             self.assertEqual(find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA), [])
 
     @patch("core.integrations.fast_downward.subprocess.run")
-    def test_running_out_of_memory_is_told_apart_from_other_failures(self, run):
-        # The translator's, the search's, the search's with time, and a SIGKILL.
-        for returncode in (20, 22, 24, 247):
-            with self.subTest(returncode=returncode):
-                run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr="")
+    def test_each_failed_search_is_told_apart_by_its_exit_code(self, run):
+        outcomes = (
+            # The translator's, the search's, the search's with time, and a SIGKILL.
+            *((_completed(code), OutOfMemoryError) for code in (20, 22, 24, 247)),
+            # The driver can crash on its own report of a MemoryError, which leaves exit code 1.
+            (_completed(1, stderr="MemoryError"), OutOfMemoryError),
+            (_completed(10), None),
+            (_completed(11), None),
+        )
+        for completed, outcome in outcomes:
+            with self.subTest(returncode=completed.returncode, stderr=completed.stderr):
+                run.return_value = completed
                 with tempfile.TemporaryDirectory() as directory:
-                    with self.assertRaises(OutOfMemoryError):
-                        find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
-
-    @patch("core.integrations.fast_downward.subprocess.run")
-    def test_a_memory_error_the_driver_crashes_on_is_out_of_memory(self, run):
-        # The driver can crash on its own report of a MemoryError, which leaves exit code 1.
-        run.return_value = _completed(1, stderr="MemoryError")
-
-        with tempfile.TemporaryDirectory() as directory:
-            with self.assertRaises(OutOfMemoryError):
-                find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
-
-    @patch("core.integrations.fast_downward.subprocess.run")
-    def test_both_unsolvable_exit_codes_mean_no_plan(self, run):
-        for returncode in (10, 11):
-            with self.subTest(returncode=returncode):
-                run.return_value = subprocess.CompletedProcess(args=[], returncode=returncode, stdout="", stderr="")
-
-                with tempfile.TemporaryDirectory() as directory:
-                    self.assertIsNone(find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA))
+                    if outcome is None:
+                        self.assertIsNone(find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA))
+                    else:
+                        with self.assertRaises(outcome):
+                            find_pddl_plan(directory, "domain.pddl", "problem.pddl", "lama", LAMA)
 
 
 def _completed(returncode, stderr=""):

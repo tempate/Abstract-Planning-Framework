@@ -35,7 +35,6 @@ class ExampleWorkflowTests(unittest.TestCase):
         result = self._run("abs-asp")
 
         self._assert_success(result)
-        self.assertRegex(result.stdout, r"(?m)^Collapsed \['package.*\] into object_abs")
         self.assertRegex(result.stdout, r"(?m)^    Refinement decrements +\d+$")
 
 

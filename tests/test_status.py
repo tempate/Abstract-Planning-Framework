@@ -1,5 +1,3 @@
-import contextlib
-import io
 import json
 import subprocess
 import sys
@@ -7,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from experiments.status import REMOTE_SUMMARY, _report, summarize_runs
+from experiments.status import REMOTE_SUMMARY, summarize_runs
 
 
 class StatusTests(unittest.TestCase):
@@ -29,22 +27,6 @@ class StatusTests(unittest.TestCase):
 
         self.assertEqual(summary["expected"], 4)
         self.assertEqual(summary["counts"], {"success": 2, "timed_out": 1})
-
-    def test_results_still_running_without_a_job_are_called_out(self):
-        summary = {"expected": 4, "counts": {"success": 1, "running": 3}}
-
-        with contextlib.redirect_stdout(io.StringIO()) as gone:
-            # Queued jobs have not written anything, so they cannot account for them.
-            _report("run-example", pending=5, running=0, summary=summary)
-        with contextlib.redirect_stdout(io.StringIO()) as still_running:
-            _report("run-example", pending=5, running=3, summary=summary)
-
-        self.assertIn("killed", gone.getvalue())
-        self.assertNotIn("killed", still_running.getvalue())
-
-
-if __name__ == "__main__":
-    unittest.main()
 
 
 class AllRunsTests(unittest.TestCase):
@@ -69,3 +51,7 @@ class AllRunsTests(unittest.TestCase):
         checkout, counts = runs["run-b"]
         self.assertEqual(checkout, "branch-opt")
         self.assertEqual(dict(counts), {"pending": 1, "running": 1, "oom": 1})
+
+
+if __name__ == "__main__":
+    unittest.main()

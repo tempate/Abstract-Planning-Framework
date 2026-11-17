@@ -9,7 +9,9 @@ from experiments import scan, slurm
 
 class ScanTests(unittest.TestCase):
     def test_a_later_submit_scans_the_problems_its_renumbered_tasks_hold(self):
-        directory = Path(tempfile.mkdtemp())
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        directory = Path(temporary.name)
         track = SimpleNamespace(benchmarks_dir="benchmarks", abstract_arguments=())
 
         def fake_scan(_benchmarks, domain_name, problem, *_):

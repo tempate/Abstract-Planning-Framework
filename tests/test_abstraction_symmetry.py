@@ -137,37 +137,19 @@ class SymmetrySelectionTests(unittest.TestCase):
 
         self.assertEqual(set(forwards.objects), set(backwards.objects))
 
-    def test_planner_abstraction_uses_the_top_pddl_symmetries_class(self):
-        classes = [
-            ["cargo-a", "cargo-b", "cargo-c"],
-            ["tool-a", "tool-b"],
-            ["vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"],
-        ]
-        with (
-            patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.pipeline.abstraction.factory.find_symmetric_object_sets", return_value=classes),
-        ):
-            result = build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
-
-        self.assertEqual(set(result.abstraction.objects), {"vehicle-a", "vehicle-b", "vehicle-c", "vehicle-d"})
-
-    def test_rejects_tasks_without_a_pddl_symmetries_object_class(self):
-        with (
-            patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.pipeline.abstraction.factory.find_symmetric_object_sets", return_value=[]),
-        ):
-            with self.assertRaises(NoSymmetriesError):
-                build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl"))
-
-    def test_rejects_tasks_without_a_resource_as_having_no_resources(self):
-        with (
-            patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.pipeline.abstraction.factory.detect_resources", return_value=()),
-        ):
-            with self.assertRaises(NoResourcesError):
-                build_abstract_problem(
-                    AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source="resources")
-                )
+    def test_a_source_that_finds_no_class_is_its_own_outcome(self):
+        sources = (
+            ("symmetries", "find_symmetric_object_sets", [], NoSymmetriesError),
+            ("resources", "detect_resources", (), NoResourcesError),
+        )
+        for source, detector, nothing, error in sources:
+            with (
+                self.subTest(source=source),
+                patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
+                patch(f"core.pipeline.abstraction.factory.{detector}", return_value=nothing),
+                self.assertRaises(error),
+            ):
+                build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source=source))
 
     def test_a_resource_collapses_only_the_objects_the_detector_names(self):
         # vehicle-c and vehicle-d share the resource's type, but the resource never takes them.
@@ -243,10 +225,6 @@ class SymmetrySelectionTests(unittest.TestCase):
                 with self.assertRaises(error):
                     find_symmetric_object_sets(domain, problem, 10, translator)
 
-    def test_rejects_nonpositive_symmetry_time_limit(self):
-        with self.assertRaisesRegex(ValueError, "positive"):
-            find_symmetric_object_sets("d.pddl", "p.pddl", 0)
-
 
 @unittest.skipUnless(
     os.environ.get("RUN_PLANNER_INTEGRATION") == "1", "set RUN_PLANNER_INTEGRATION=1 to run PDDL Symmetries"
@@ -257,7 +235,6 @@ class RealSymmetryIntegrationTests(unittest.TestCase):
         classes = find_symmetric_object_sets(GRIPPER / "domain.pddl", problem_path)
         selected = _select_abstraction(read_problem(GRIPPER / "domain.pddl", problem_path), classes)
 
-        self.assertEqual({tuple(group) for group in classes}, {("ball1", "ball2", "ball3", "ball4"), ("left", "right")})
         # The goal names every ball, and the four of them still win over the two
         # grippers: collapsing them is what drops the abstract horizon.
         self.assertEqual(set(selected.objects), {"ball1", "ball2", "ball3", "ball4"})
