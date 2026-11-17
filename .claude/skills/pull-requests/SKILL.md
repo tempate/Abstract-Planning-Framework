@@ -253,9 +253,10 @@ branch a worktree has checked out cannot be deleted, and `git worktree prune` cl
 the entries whose directories are gone.
 
 For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
-with the merged results. `experiments.paper` writes `main`'s results into the IPC rows of
-the per-domain table, `tab:ipc`, and draws `figures/runtimes.pdf` again. It leaves the
-summary table, `tab:summary`, and the HTG rows of `tab:ipc` alone, so update those by hand:
+with the merged results. `experiments.paper` writes `main`'s results into the summary table,
+`tab:summary`, and every row of the per-domain table, `tab:ipc`, and draws
+`figures/runtimes.pdf` again. It stops on a paper row with no results and on results with
+no paper row:
 
 ```bash
 python -m experiments.paper
