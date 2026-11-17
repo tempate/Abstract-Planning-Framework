@@ -60,7 +60,7 @@ def _argument_parser():
 
 
 # What report and collect rewrite beside a track's results, none of which changes the code a run measures.
-RESULT_FILES = ("results.csv", "report.md", "best_classes.csv")
+RESULT_FILES = ("results.csv", "report.md", "best_classes.csv", "runs.md")
 
 
 def _manifest_commit(results_dir):
