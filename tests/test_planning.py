@@ -5,15 +5,15 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from core.pipeline.abstraction.factory import build_abstract_problem
+from core.pipeline.abstraction.abstract_task import build_abstract_task
 from core.integrations.fast_downward import LAMA
 from core.integrations.unified_planning import read_problem
 from core.utilities.outcomes import UnsolvableTaskError
-from core.pipeline.abstraction.factory import write_abstract_problem
+from core.pipeline.abstraction.abstract_task import write_abstract_problem
 from core.utilities.metrics import PlanningMetrics
 from core.planners import fd
 from core.planners.asp import Asp
-from core.pipeline import pipeline
+from core.pipeline.solve import solve
 from core.utilities.config import AbstractPlanningConfig, PlanningConfig
 from core.utilities.plan import one_action_per_step
 
@@ -32,12 +32,12 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
 
     @patch("core.planners.fd.find_sas_plan", return_value=None)
     def test_an_abstract_task_without_a_plan_proves_the_concrete_one_unsolvable(self, _find_sas_plan):
-        abstraction = SimpleNamespace(abstraction=None)
+        collapsed_set = SimpleNamespace(collapsed_set=None)
         with (
-            patch("core.pipeline.pipeline._abstract", return_value=(abstraction, "abstract.sas", {})),
+            patch("core.pipeline.solve._abstract", return_value=(collapsed_set, "abstract.sas", {})),
             self.assertRaises(UnsolvableTaskError),
         ):
-            pipeline.solve(AbstractPlanningConfig("domain.pddl", "problem.pddl", planner="lama"))
+            solve(AbstractPlanningConfig("domain.pddl", "problem.pddl", planner="lama"))
 
     @patch("core.planners.fd.find_pddl_plan")
     def test_an_unsolvable_task_is_not_a_plan(self, find_pddl_plan):
@@ -64,11 +64,11 @@ class GeneratedAbstractionTests(unittest.TestCase):
             problem.write_text(problem_text, encoding="utf-8")
             config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"])
 
-            abstract_problem = build_abstract_problem(config)
+            abstract_problem = build_abstract_task(config)
             abstract_domain, abstract_problem_path, _ = write_abstract_problem(abstract_problem.problem, root / "run")
             generated = read_problem(abstract_domain, abstract_problem_path)
 
-        self.assertEqual({item.name for item in generated.all_objects}, {abstract_problem.abstraction.name})
+        self.assertEqual({item.name for item in generated.all_objects}, {abstract_problem.collapsed_set.name})
 
 
 # A counter that three actions advance from 0 to 3, in the facts plasp would emit.

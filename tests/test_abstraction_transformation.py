@@ -22,7 +22,7 @@ from unified_planning.shortcuts import (
 
 from core.integrations.unified_planning import parse_problem, write_problem
 from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
-from core.pipeline.abstraction.factory import AbstractionError, build_abstract_problem
+from core.pipeline.abstraction.abstract_task import AbstractionError, build_abstract_task
 from core.utilities.config import AbstractPlanningConfig
 
 ABSTRACTION_DOMAIN = """
@@ -107,8 +107,8 @@ def _conjuncts(conditions):
 
 def _build_from_problem(problem, objects_to_abstract):
     config = AbstractPlanningConfig("domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract)
-    with patch("core.pipeline.abstraction.factory.read_problem", return_value=problem):
-        return build_abstract_problem(config)
+    with patch("core.pipeline.abstraction.abstract_task.read_problem", return_value=problem):
+        return build_abstract_task(config)
 
 
 NO_NEGATION_DOMAIN = """
@@ -279,8 +279,8 @@ class AbstractionTransformationTests(unittest.TestCase):
         self.assertEqual(tuple(item.name for item in source.all_objects), source_objects)
         result_objects = {item.name for item in result.problem.all_objects}
         self.assertTrue({"item-a", "item-b"}.isdisjoint(result_objects))
-        self.assertEqual(result_objects, {"item-c", result.abstraction.name})
-        self.assertEqual(result.abstraction.object_type, "item")
+        self.assertEqual(result_objects, {"item-c", result.collapsed_set.name})
+        self.assertEqual(result.collapsed_set.object_type, "item")
         serialized = write_problem(result.problem)
         for selected in ("item-a", "item-b"):
             self.assertNotIn(selected, serialized.problem)

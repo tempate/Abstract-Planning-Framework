@@ -3,7 +3,7 @@
 import os
 from dataclasses import dataclass, replace
 
-from core.pipeline.abstraction.factory import Abstraction
+from core.pipeline.abstraction.abstract_task import CollapsedSet
 from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.clingo import parse_plan_actions
 from core.integrations.fast_downward import partial_pddl_to_sas, pddl_to_sas
@@ -28,7 +28,7 @@ class RefinementContext:
     """What refining an abstract plan needs."""
 
     config: AbstractPlanningConfig
-    abstraction: Abstraction
+    collapsed_set: CollapsedSet
     metrics: PlanningMetrics
     base_dir: str
     # Written name to original, for what the writer renamed in the abstract task.
@@ -43,7 +43,7 @@ def refine(context: RefinementContext, abstract_plan):
     abstract_plan = _with_original_names(abstract_plan, context.renamings)
 
     # Publish the counters before searching so an interrupted run still has them.
-    _record_search(context.metrics, increments=0, decrements=0, solve_calls=1)
+    _record_search(context.metrics, increments=0, switches_off=0, solve_calls=1)
 
     partial = os.path.exists(PARTIAL_GROUNDING_TRANSLATOR)
     atoms = None
@@ -74,11 +74,11 @@ def _with_original_names(abstract_plan, renamings):
     return tuple(renamed)
 
 
-def _record_search(metrics, increments, decrements, solve_calls):
+def _record_search(metrics, increments, switches_off, solve_calls):
     metrics.set_counters(
         {
             "increments": increments,
-            "decrements": decrements,
+            "switches_off": switches_off,
             "concrete_solve_calls": solve_calls,
         }
     )
@@ -91,7 +91,7 @@ def _partial_one_shot(context, abstract_plan):
 
     actions_path = os.path.join(partial_dir, "actions.txt")
     with open(actions_path, "w", encoding="utf-8") as actions_file:
-        expanded_actions = expand_abstract_actions(abstract_plan, context.abstraction)
+        expanded_actions = expand_abstract_actions(abstract_plan, context.collapsed_set)
         actions_file.write("\n".join(expanded_actions) + "\n")
 
     config = context.config
@@ -118,8 +118,8 @@ def _partial_one_shot(context, abstract_plan):
 
 def _one_shot(context, asp, abstract_plan):
     """Refine the abstract plan as it is, in one solve at its horizon."""
-    choices = map_abstract_actions(abstract_plan, context.abstraction, gaps=False)
-    rules = [drop_action_choice(asp.rules), *add_concrete_objects(context.abstraction), *choices.values()]
+    choices = map_abstract_actions(abstract_plan, context.collapsed_set, gaps=False)
+    rules = [drop_action_choice(asp.rules), *add_concrete_objects(context.collapsed_set), *choices.values()]
 
     solver = Solver(
         asp=replace(asp, rules="\n".join(rules)), init_horizon=len(abstract_plan), optimize=context.config.optimize
@@ -153,19 +153,19 @@ def _refine_on_full_grounding(context, abstract_plan, one_shot):
             init_horizon = len(abstract_plan)
 
         # Switches let the search give the abstract plan up one action at a time.
-        choices = map_abstract_actions(abstract_plan, context.abstraction, gaps)
-        rules = [asp.rules, *add_concrete_objects(context.abstraction), *add_switches(choices)]
+        choices = map_abstract_actions(abstract_plan, context.collapsed_set, gaps)
+        rules = [asp.rules, *add_concrete_objects(context.collapsed_set), *add_switches(choices)]
         solver = Solver(asp=replace(asp, rules="\n".join(rules)), init_horizon=init_horizon, optimize=config.optimize)
 
         # Clingo holds its own copy of the program, so the text would only take memory from the search.
         del asp, rules
 
-        def record_attempt(horizon, dropped, attempts):
+        def record_attempt(horizon, switches_off, attempts):
             # The one-shot solve came before the search's own attempts.
-            _record_search(context.metrics, horizon - init_horizon, dropped, attempts + 1)
+            _record_search(context.metrics, horizon - init_horizon, switches_off, attempts + 1)
 
         # Without gaps, holding every switch is the one-shot that already failed, so the first switch starts released.
-        result = solver.search(switches(abstract_plan, gaps), record_attempt, dropped=int(not gaps))
+        result = solver.search(switches(abstract_plan, gaps), record_attempt, switches_off=int(not gaps))
 
-        record_attempt(result.horizon, result.dropped, result.attempts)
+        record_attempt(result.horizon, result.switches_off, result.attempts)
         return result.plan

@@ -21,8 +21,8 @@ class EncodingTests(unittest.TestCase):
         # The only action can occur once, so the abstract plan's second step
         # refines only once its switch is off and it holds nothing.
         abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item1",), 2))
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
-        mapping = _switched(abstract_plan, abstraction)
+        collapsed_set = SimpleNamespace(name="item_abs", objects=("item1",))
+        mapping = _switched(abstract_plan, collapsed_set)
         program = make_steps_optional(OCCURRENCE_ENCODING) + """
 action(action(("inspect","item1"))).
 #program step(t).
@@ -38,19 +38,19 @@ action(action(("inspect","item1"))).
     def test_an_abstract_action_follows_a_gap_only_when_there_are_gaps(self):
         # With gaps the k-th abstract action sits on step 2k, with a gap before it; without, on step k.
         abstract_plan = (PlanAction("inspect", ("item1",), 1), PlanAction("inspect", ("item1",), 2))
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1",))
+        collapsed_set = SimpleNamespace(name="item_abs", objects=("item1",))
 
         for gaps, steps in ((True, [2, 4]), (False, [1, 2])):
             with self.subTest(gaps=gaps):
-                self.assertEqual(sorted(map_abstract_actions(abstract_plan, abstraction, gaps)), steps)
+                self.assertEqual(sorted(map_abstract_actions(abstract_plan, collapsed_set, gaps)), steps)
 
     def test_a_held_step_takes_exactly_one_grounding_of_its_abstract_action(self):
         abstract_plan = (PlanAction("inspect", ("item_abs",), 1),)
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
-        choices = map_abstract_actions(abstract_plan, abstraction, gaps=False)
+        collapsed_set = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
+        choices = map_abstract_actions(abstract_plan, collapsed_set, gaps=False)
         program = (
             drop_action_choice(OCCURRENCE_ENCODING)
-            + "\n".join([*add_concrete_objects(abstraction), *choices.values()])
+            + "\n".join([*add_concrete_objects(collapsed_set), *choices.values()])
             + """
 action(action(("inspect","item1"))).
 action(action(("inspect","item2"))).
@@ -66,10 +66,10 @@ action(action(("unrelated","x"))).
 
     def test_groundings_expand_only_the_collapsed_object(self):
         abstract_plan = (PlanAction("move", ("item_abs", "room1", "item_abs"), 0), PlanAction("open", ("door",), 1))
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
+        collapsed_set = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
 
         self.assertEqual(
-            set(expand_abstract_actions(abstract_plan, abstraction)),
+            set(expand_abstract_actions(abstract_plan, collapsed_set)),
             {
                 "(move item1 room1 item1)",
                 "(move item1 room1 item2)",
@@ -81,8 +81,8 @@ action(action(("unrelated","x"))).
 
     def test_grounded_action_relation_filters_incompatible_combinations(self):
         abstract_plan = (PlanAction("link", ("node_abs", "node_abs"), 1),)
-        abstraction = SimpleNamespace(name="node_abs", objects=("a", "b"))
-        mapping = _switched(abstract_plan, abstraction)
+        collapsed_set = SimpleNamespace(name="node_abs", objects=("a", "b"))
+        mapping = _switched(abstract_plan, collapsed_set)
         program = """
 action(action(("link","a","b"))).
 switch(2).
@@ -95,9 +95,9 @@ switch(2).
         self.assertTrue(all('occurs(action(("link","a","a")),2)' not in model for model in models))
 
     def test_mapping_rejects_plan_actions_that_are_not_concrete_actions(self):
-        abstraction = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
+        collapsed_set = SimpleNamespace(name="item_abs", objects=("item1", "item2"))
         abstract_plan = (PlanAction("inspect", ("item1",), 1),)
-        mapping = _switched(abstract_plan, abstraction)
+        mapping = _switched(abstract_plan, collapsed_set)
         program = """
 action(action(("move","item1"))).
 switch(2).
@@ -123,9 +123,9 @@ switch(2).
         return models
 
 
-def _switched(abstract_plan, abstraction, gaps=True):
-    choices = map_abstract_actions(abstract_plan, abstraction, gaps)
-    return "\n".join([*add_concrete_objects(abstraction), *add_switches(choices)])
+def _switched(abstract_plan, collapsed_set, gaps=True):
+    choices = map_abstract_actions(abstract_plan, collapsed_set, gaps)
+    return "\n".join([*add_concrete_objects(collapsed_set), *add_switches(choices)])
 
 
 if __name__ == "__main__":

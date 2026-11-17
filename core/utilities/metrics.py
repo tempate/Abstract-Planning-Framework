@@ -33,7 +33,7 @@ DURATION_LABELS = {
 COUNTER_LABELS = {
     "relaxed_deletes": "Relaxed deletes",
     "relaxed_inequalities": "Relaxed inequalities",
-    "decrements": "Refinement decrements",
+    "switches_off": "Switches turned off",
     "increments": "Horizon increments",
     "abstract_horizon": "Abstract horizon",
     "concrete_horizon": "Concrete horizon",
