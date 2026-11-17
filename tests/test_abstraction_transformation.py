@@ -1,5 +1,4 @@
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 from unified_planning.shortcuts import (
@@ -22,6 +21,7 @@ from unified_planning.shortcuts import (
 )
 
 from core.integrations.unified_planning import parse_problem, write_problem
+from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
 from core.pipeline.abstraction.factory import AbstractionError, build_abstract_problem
 from core.utilities.config import AbstractPlanningConfig
 
@@ -557,9 +557,9 @@ class AbstractionTransformationTests(unittest.TestCase):
 
         # item-c still leaves the dock when it moves, and only the copy of
         # shift for the collapsed object keeps it at the dock too.
-        deletes = lambda name: any(effect.value.is_false() for effect in result.problem.action(name).effects)
-        self.assertTrue(deletes("shift"))
-        self.assertFalse(deletes("shift--abs-1"))
+        copies = [action for action in result.problem.actions if action.name.split(SPLIT_SEPARATOR)[0] == "shift"]
+        deletes = {any(effect.value.is_false() for effect in action.effects) for action in copies}
+        self.assertEqual(deletes, {True, False})
 
     def test_relaxes_a_delete_that_names_a_collapsed_object_directly(self):
         domain = """
@@ -626,11 +626,10 @@ class PositiveNormalFormSkipTests(unittest.TestCase):
         """The translation writes out every atom it leaves false, which costs
         more than it buys when there is no negated condition to rewrite."""
         problem = parse_problem(NO_NEGATION_DOMAIN, NO_NEGATION_PROBLEM)
-        before = len(problem.explicit_initial_values)
 
         result = _build_from_problem(problem, ["a", "b"])
 
-        self.assertLessEqual(len(result.problem.explicit_initial_values), before)
+        self.assertTrue(all(value.is_true() for value in result.problem.explicit_initial_values.values()))
 
     def test_a_negated_goal_still_reaches_positive_normal_form(self):
         """A relaxed delete can falsify a negated goal just as it can a negated
