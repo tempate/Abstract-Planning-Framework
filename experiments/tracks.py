@@ -21,6 +21,8 @@ HTG_ARGUMENTS = ("--symmetries-before-grounding",)
 
 @dataclass(frozen=True)
 class Track:
+    # What the track asks of each problem, then what it abstracts to answer it, such as sat/symmetries.
+    name: str
     directory: Path
     suite: list[str]
     benchmarks_dir: Path
@@ -30,6 +32,14 @@ class Track:
     abstract_arguments: tuple[str, ...] = ()
     # Passed to the modes that can find a shortest plan.
     optimizing_arguments: tuple[str, ...] = ()
+
+    @property
+    def kind(self):
+        return self.name.partition("/")[0]
+
+    @property
+    def source(self):
+        return self.name.partition("/")[2]
 
     @property
     def results_file(self):
@@ -70,55 +80,64 @@ class Track:
 
 # Keyed by the question a track asks, then, for sat, by what it abstracts to answer it.
 TRACKS = {
-    "sat/symmetries": Track(
-        directory=EXPERIMENTS / "ipc" / "sat" / "symmetries",
-        suite=sat.SUITE,
-        benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-        modes=("abs-asp", "abs-lama", "asp", "lama"),
-    ),
-    # The same suite, restricted to the problems numeric-fast-downward finds a
-    # resource for, and planned from that resource's objects.
-    "sat/resources": Track(
-        directory=EXPERIMENTS / "ipc" / "sat" / "resources",
-        suite=sat.SUITE,
-        benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-        modes=("abs-asp", "abs-lama", "asp", "lama"),
-        abstract_arguments=("--abstraction-source", "resources"),
-    ),
-    # The hard-to-ground benchmarks, refined with gaps like sat/symmetries.
-    "sat-htg/symmetries": Track(
-        directory=EXPERIMENTS / "htg" / "sat",
-        suite=htg.SUITE,
-        benchmarks_dir=BENCHMARKS / "htg-domains",
-        modes=("abs-asp", "abs-lama", "asp", "lama"),
-        abstract_arguments=HTG_ARGUMENTS,
-    ),
-    # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
-    "opt-htg/symmetries": Track(
-        directory=EXPERIMENTS / "htg" / "opt",
-        suite=htg_opt.SUITE,
-        benchmarks_dir=BENCHMARKS / "htg-domains",
-        modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        abstract_arguments=HTG_ARGUMENTS,
-        optimizing_arguments=("--optimize",),
-    ),
-    # The optimal suite, refined without gaps so that every plan is optimal, with
-    # abs-lmcut searching the abstract task optimally like its lmcut baseline.
-    "opt/symmetries": Track(
-        directory=EXPERIMENTS / "ipc" / "opt" / "symmetries",
-        suite=opt.SUITE,
-        benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-        modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        optimizing_arguments=("--optimize",),
-    ),
-    "opt/resources": Track(
-        directory=EXPERIMENTS / "ipc" / "opt" / "resources",
-        suite=opt.SUITE,
-        benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-        modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-        abstract_arguments=("--abstraction-source", "resources"),
-        optimizing_arguments=("--optimize",),
-    ),
+    track.name: track
+    for track in (
+        Track(
+            name="sat/symmetries",
+            directory=EXPERIMENTS / "ipc" / "sat" / "symmetries",
+            suite=sat.SUITE,
+            benchmarks_dir=BENCHMARKS / "downward-benchmarks",
+            modes=("abs-asp", "abs-lama", "asp", "lama"),
+        ),
+        # The same suite, restricted to the problems numeric-fast-downward finds a
+        # resource for, and planned from that resource's objects.
+        Track(
+            name="sat/resources",
+            directory=EXPERIMENTS / "ipc" / "sat" / "resources",
+            suite=sat.SUITE,
+            benchmarks_dir=BENCHMARKS / "downward-benchmarks",
+            modes=("abs-asp", "abs-lama", "asp", "lama"),
+            abstract_arguments=("--abstraction-source", "resources"),
+        ),
+        # The hard-to-ground benchmarks, refined with gaps like sat/symmetries.
+        Track(
+            name="sat-htg/symmetries",
+            directory=EXPERIMENTS / "htg" / "sat",
+            suite=htg.SUITE,
+            benchmarks_dir=BENCHMARKS / "htg-domains",
+            modes=("abs-asp", "abs-lama", "asp", "lama"),
+            abstract_arguments=HTG_ARGUMENTS,
+        ),
+        # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
+        Track(
+            name="opt-htg/symmetries",
+            directory=EXPERIMENTS / "htg" / "opt",
+            suite=htg_opt.SUITE,
+            benchmarks_dir=BENCHMARKS / "htg-domains",
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+            abstract_arguments=HTG_ARGUMENTS,
+            optimizing_arguments=("--optimize",),
+        ),
+        # The optimal suite, refined without gaps so that every plan is optimal, with
+        # abs-lmcut searching the abstract task optimally like its lmcut baseline.
+        Track(
+            name="opt/symmetries",
+            directory=EXPERIMENTS / "ipc" / "opt" / "symmetries",
+            suite=opt.SUITE,
+            benchmarks_dir=BENCHMARKS / "downward-benchmarks",
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+            optimizing_arguments=("--optimize",),
+        ),
+        Track(
+            name="opt/resources",
+            directory=EXPERIMENTS / "ipc" / "opt" / "resources",
+            suite=opt.SUITE,
+            benchmarks_dir=BENCHMARKS / "downward-benchmarks",
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+            abstract_arguments=("--abstraction-source", "resources"),
+            optimizing_arguments=("--optimize",),
+        ),
+    )
 }
 DEFAULT_TRACK = "sat/symmetries"
 

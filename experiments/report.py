@@ -17,11 +17,12 @@ SOLVER_LABELS = {
     "lama": "LAMA",
     "lmcut": "LMcut",
 }
+# Each abstraction is named after the solver of its abstract task, marked with an alpha.
+MODE_LABELS = {**SOLVER_LABELS, **{f"{ABSTRACTION_PREFIX}{mode}": f"{label}ᵅ" for mode, label in SOLVER_LABELS.items()}}
 UNFINISHED_STATUSES = ("running", "missing")
 RELAXED_DELETE_BUCKETS = ("None", "1 to 4", "5 to 9", "10 to 19", "20 or more")
 # A killed run reports the phase it completed last, so it died in the next one.
-# In the order the abstraction pipelines run them, which the timeout table keeps.
-KILLED_IN_PHASE = {
+DIED_AFTER = {
     "problem_reading": "Finding the object classes",
     "symmetry_discovery": "Abstraction",
     "resource_detection": "Abstraction",
@@ -42,6 +43,9 @@ KILLED_IN_PHASE = {
     "concrete_asp": "Guided concrete search",
     "guided_concrete_solving": "Extended concrete search",
 }
+# The phases in the order the abstraction pipelines complete them, which ranks a
+# failed class by how far it got and orders the timeout table.
+PHASE_ORDER = (*DIED_AFTER, "total")
 
 
 def main():
@@ -50,7 +54,7 @@ def main():
     abstractions = [mode for mode in modes if mode.startswith(ABSTRACTION_PREFIX)]
     pairs = _pairs(abstractions, modes)
 
-    labels = _labels(abstractions)
+    labels = MODE_LABELS
     sections = [_coverage(problems, modes, labels)]
     if pairs:
         sections.append(_head_to_head(problems, pairs, PLAN_COMPARISON, labels))
@@ -87,14 +91,6 @@ def _pairs(abstractions, modes):
         if solver in modes:
             pairs.append((abstraction, solver))
     return pairs
-
-
-def _labels(abstractions):
-    """Name each abstraction after the solver of its abstract task, marked with an alpha."""
-    labels = dict(SOLVER_LABELS)
-    for abstraction in abstractions:
-        labels[abstraction] = f"{SOLVER_LABELS[abstraction.removeprefix(ABSTRACTION_PREFIX)]}ᵅ"
-    return labels
 
 
 def _summary(modes, problems, dropped):
@@ -179,9 +175,10 @@ def _performance(row):
 
 
 def _phase_position(phase):
-    """Where a phase falls in the abstraction pipelines; one nobody has placed yet goes last."""
-    pipeline = list(KILLED_IN_PHASE)
-    return pipeline.index(phase) if phase in pipeline else len(pipeline)
+    """Where a phase falls in the abstraction pipelines: none completed comes first, one nobody has placed yet last."""
+    if not phase:
+        return -1
+    return PHASE_ORDER.index(phase) if phase in PHASE_ORDER else len(PHASE_ORDER)
 
 
 def solved(row):
@@ -300,7 +297,7 @@ def _timeout_phases(problems, abstractions, labels):
 
         for row in timeouts:
             completed = row["last_completed_phase"]
-            phase = KILLED_IN_PHASE.get(completed, completed)
+            phase = DIED_AFTER.get(completed, completed)
 
             # The extended search is no longer a phase of its own. A guided search that
             # has switched off every abstract action is what used to enter it.

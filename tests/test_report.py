@@ -14,7 +14,7 @@ from experiments.report import (
     _by_domain,
     _finished_problems,
     _head_to_head,
-    _labels,
+    MODE_LABELS,
     _pairs,
     best_classes,
 )
@@ -59,7 +59,7 @@ class ReportTests(unittest.TestCase):
             }
         ]
 
-        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], PLAN_COMPARISON, _labels(["abs-asp"]))
+        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], PLAN_COMPARISON, MODE_LABELS)
 
         median = next(line for line in lines if line.startswith("Median runtime"))
         self.assertNotIn(" s", median)
@@ -68,7 +68,7 @@ class ReportTests(unittest.TestCase):
         names = ["rovers/goal-10", "blocksworld/goal-100", "rovers/goal-2", "blocksworld/goal-3"]
         problems = [{"lama": {"domain": name, "problem": "p01.pddl", "status": "success"}} for name in names]
 
-        _title, lines = _by_domain(problems, ("lama",), _labels([]))
+        _title, lines = _by_domain(problems, ("lama",), MODE_LABELS)
 
         subdirectories = [line.split()[-2] for line in lines[2:-1]]
         self.assertEqual(subdirectories, ["goal-3", "goal-100", "goal-2", "goal-10"])
@@ -85,7 +85,7 @@ class ReportTests(unittest.TestCase):
         ]
 
         pairs = [("abs-asp", "asp"), ("abs-lama", "lama")]
-        _title, lines = _head_to_head(problems, pairs, PLAN_COMPARISON, _labels(["abs-asp", "abs-lama"]))
+        _title, lines = _head_to_head(problems, pairs, PLAN_COMPARISON, MODE_LABELS)
 
         shared = next(line for line in lines if line.startswith("Plans found by both"))
         self.assertEqual(re.findall(r"\d+", shared), ["2", "2", "1", "1"])
@@ -103,7 +103,7 @@ class ReportTests(unittest.TestCase):
             {"abs-asp": solved(5), "asp": {"status": "timed out", "wall_time_seconds": "1800.0"}},
         ]
 
-        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], PLAN_COMPARISON, _labels(["abs-asp"]))
+        _title, lines = _head_to_head(problems, [("abs-asp", "asp")], PLAN_COMPARISON, MODE_LABELS)
 
         shorter = next(line for line in lines if line.startswith("Shorter plan"))
         total = next(line for line in lines if line.startswith("Total plan length"))
@@ -150,6 +150,12 @@ class ReportTests(unittest.TestCase):
             _modes, problems, _dropped = _finished_problems(results)
 
         self.assertEqual(problems[0]["abs-asp"]["class"], "1")
+
+    def test_a_class_that_completed_no_phase_got_least_far(self):
+        crashed = {"status": "error (exit code 2)", "wall_time_seconds": "1", "last_completed_phase": ""}
+        refining = {"status": "timed out", "wall_time_seconds": "1800", "last_completed_phase": "concrete_asp"}
+
+        self.assertLess(experiments.report._performance(crashed), experiments.report._performance(refining))
 
     def test_an_abstract_mode_no_class_solves_reports_the_class_that_got_furthest(self):
         with tempfile.TemporaryDirectory() as directory:

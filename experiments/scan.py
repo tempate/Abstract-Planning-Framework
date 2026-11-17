@@ -90,7 +90,7 @@ print(json.dumps(ranked))
 def main():
     args = _argument_parser().parse_args()
     track = TRACKS[args.track]
-    source = args.track.split("/")[1]
+    source = TRACKS[args.track].source
 
     if args.submit:
         _submit(args.track, track, args.domains, args.keep_classes)
@@ -176,9 +176,9 @@ def _collect(track_name, track):
     # A problem another track scanned over the same benchmarks has the same classes,
     # so a track whose suite overlaps another's submits only the problems it adds.
     suite = {_name(task) for task in _suite_problems(track.benchmarks_dir, track.suite)}
-    source = track_name.split("/")[1]
+    source = track.source
     for other_name, other in TRACKS.items():
-        if other.benchmarks_dir == track.benchmarks_dir and other_name.split("/")[1] == source:
+        if other.benchmarks_dir == track.benchmarks_dir and other.source == source:
             for name, outcome in slurm.outcomes(_task_dir(other_name)).items():
                 if name in suite:
                     scanned.setdefault(name, outcome)
