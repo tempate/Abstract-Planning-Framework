@@ -19,7 +19,8 @@ from pathlib import Path
 from core.integrations.paths import FAST_DOWNWARD_SCRIPT
 from experiments import slurm
 from experiments.run import ABSTRACTION_PREFIX, RESULTS_DIR
-from experiments.tracks import TRACKS, find_domain
+from experiments.tracks import TRACKS
+from scripts.utils.arguments import find_domain
 
 TIME_LIMIT = "30m"
 MEMORY_LIMIT = "8G"

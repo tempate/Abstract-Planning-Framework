@@ -13,7 +13,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from experiments.tracks import TRACKS, find_domain
+from experiments.tracks import TRACKS
+from scripts.utils.arguments import find_domain
 from experiments.collect import FIELDS, _preserved_rows, _track_results_file, collect
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.reporting import update_result_progress
@@ -204,16 +205,11 @@ class BenchmarkTests(unittest.TestCase):
             config_file = _write_copperbench_config(
                 [("abs-asp", "example", domain, problem, 0), ("asp", "example", domain, problem, None)],
                 definition_dir=definition_dir,
-                timeout=1800,
-                memory_limit=4096,
-                max_parallel_jobs=12,
             )
             config = json.loads(config_file.read_text(encoding="utf-8"))
             worker = shlex.split((definition_dir / "configs.txt").read_text(encoding="utf-8"))
             instances = (definition_dir / "instances.txt").read_text(encoding="utf-8").splitlines()
 
-        self.assertEqual(config["timeout"], 1800)
-        self.assertEqual(config["mem_limit"], 4096)
         self.assertEqual(config["working_dir"], os.path.relpath(PROJECT_ROOT, definition_dir))
         self.assertIn("experiments.run", worker)
         self.assertEqual(

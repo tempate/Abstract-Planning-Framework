@@ -153,8 +153,6 @@ class PlannerExitStatusTests(unittest.TestCase):
                     "--objects-to-abstract",
                     "a",
                     "b",
-                    "--abstract-name",
-                    "combined",
                 ]
             )
 
@@ -162,7 +160,6 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(config.domain_path, "domain.pddl")
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
-        self.assertEqual(config.abstract_name, "combined")
 
     def test_the_planner_passes_the_abstraction_source_on(self):
         argv = ["planner", "abs-lama", "--domain", "d.pddl", "--problem", "p.pddl", "--abstraction-source", "resources"]

@@ -22,14 +22,14 @@ from experiments.run import (
     RESULTS_DIR,
     class_rank,
 )
-from experiments.tracks import DEFAULT_TRACK, TRACKS, find_domain, is_domain_file
+from experiments.tracks import DEFAULT_TRACK, TRACKS, is_domain_file
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
-from scripts.utils.arguments import positive_int
+from scripts.utils.arguments import find_domain
 
 DEFAULT_MEMORY_LIMIT = 8 * 1024
 # One CPU generation, so wall-clock times are comparable across a whole run. The
 # "any" partition is not: it spans broadwell and sunnycove, and caps a job at one
-# hour, which silently bounds --timeout.
+# hour, which silently bounds the timeout.
 DEFAULT_PARTITION = "sunnycove"
 DEFAULT_SOURCE = DEFAULT_TRACK.split("/")[1]
 
@@ -46,7 +46,7 @@ def main():
         best = None
     else:
         track_name, missing = _track_name(args, parser), None
-        modes = args.modes or TRACKS[track_name].modes[:1]
+        modes = args.modes or TRACKS[track_name].modes
         domains = args.domains
         best = best_classes(TRACKS[track_name].results_file) if args.classes == "best" else None
 
@@ -59,7 +59,7 @@ def main():
         _benchmark_tasks(
             benchmarks_dir=track.benchmarks_dir,
             suite=track.suite,
-            runnable=None if args.all_problems else track.runnable(),
+            runnable=track.runnable(),
             modes=modes,
             domains=domains,
             problems=args.problems,
@@ -91,9 +91,6 @@ def main():
         config_file = _write_copperbench_config(
             tasks,
             definition_dir=definition_dir,
-            timeout=args.timeout,
-            memory_limit=args.memory_limit,
-            max_parallel_jobs=args.max_parallel_jobs,
             partition=args.partition,
             track=track_name,
         )
@@ -220,27 +217,13 @@ def _head_commit():
 def _argument_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--timeout",
-        type=positive_int,
-        default=DEFAULT_TIMEOUT,
-        help="Wall-clock limit in seconds for each complete problem",
-    )
-    parser.add_argument(
-        "--memory-limit", type=positive_int, default=DEFAULT_MEMORY_LIMIT, help="Memory limit in MiB for each problem"
-    )
-    parser.add_argument(
-        "--max-parallel-jobs",
-        type=positive_int,
-        help="Maximum number of CopperBench array tasks allowed to run concurrently",
-    )
-    parser.add_argument(
         "--partition", default=DEFAULT_PARTITION, help="Slurm partition to run every task of this run on"
     )
     parser.add_argument(
         "--modes",
         nargs="+",
         choices=MODES,
-        help="Ways to solve every problem, one cluster job each, by default the track's first mode",
+        help="Ways to solve every problem, one cluster job each, by default every mode of the track",
     )
     parser.add_argument(
         "--dry-run",
@@ -287,11 +270,6 @@ def _argument_parser():
         help="Submit concrete modes only on the problems Fast Downward can ground, leaving out its ungroundable list",
     )
     parser.add_argument(
-        "--all-problems",
-        action="store_true",
-        help="Submit every problem of the suite, not only the ones the track lists as runnable",
-    )
-    parser.add_argument(
         "--track",
         choices=sorted({name.split("/")[0] for name in TRACKS}),
         default=DEFAULT_TRACK.split("/")[0],
@@ -308,9 +286,6 @@ def _argument_parser():
 def _write_copperbench_config(
     tasks,
     definition_dir,
-    timeout=DEFAULT_TIMEOUT,
-    memory_limit=DEFAULT_MEMORY_LIMIT,
-    max_parallel_jobs=None,
     partition=DEFAULT_PARTITION,
     track=DEFAULT_TRACK,
 ):
@@ -351,13 +326,12 @@ def _write_copperbench_config(
         "name": run_name,
         "configs": configs_file.name,
         "instances": instances_file.name,
-        "timeout": timeout,
-        "mem_limit": memory_limit,
+        "timeout": DEFAULT_TIMEOUT,
+        "mem_limit": DEFAULT_MEMORY_LIMIT,
         "partition": partition,
         "request_cpus": 1,
         "working_dir": os.path.relpath(PROJECT_ROOT, definition_dir),
         "instances_are_parameters": True,
-        "max_parallel_jobs": max_parallel_jobs,
     }
     config_file.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
     return config_file

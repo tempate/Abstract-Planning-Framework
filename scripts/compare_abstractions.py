@@ -16,7 +16,8 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from experiments.tracks import TRACKS, find_domain
+from experiments.tracks import TRACKS
+from scripts.utils.arguments import find_domain
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TIMEOUT = 120

@@ -25,7 +25,8 @@ from pathlib import Path
 
 from experiments import slurm
 from experiments.run import RESULTS_DIR
-from experiments.tracks import TRACKS, find_domain, is_domain_file
+from experiments.tracks import TRACKS, is_domain_file
+from scripts.utils.arguments import find_domain
 
 WORKERS = 1
 # Detection gets 300 seconds; reading and ranking the classes needs the rest.

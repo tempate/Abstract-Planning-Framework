@@ -85,7 +85,7 @@ TRACKS = {
         modes=("abs-asp", "abs-lama", "asp", "lama"),
         abstract_arguments=("--abstraction-source", "resources"),
     ),
-    # The hard-to-ground benchmarks, refined with the full grounding like sat/symmetries.
+    # The hard-to-ground benchmarks, refined with gaps like sat/symmetries.
     "sat-htg/symmetries": Track(
         directory=EXPERIMENTS / "htg" / "sat",
         suite=htg.SUITE,
@@ -126,21 +126,3 @@ DEFAULT_TRACK = "sat/symmetries"
 def is_domain_file(name):
     """Tell a domain file from a problem file by name."""
     return "domain" in name
-
-
-def find_domain(problem):
-    """Find the domain file using the naming conventions of the benchmark collections."""
-    candidates = [
-        "domain.pddl",
-        f"{problem.stem}-domain{problem.suffix}",
-        f"{problem.name[:3]}-domain.pddl",
-        f"domain_{problem.name}",
-        f"domain-{problem.name}",
-    ]
-
-    for name in candidates:
-        domain = problem.parent / name
-        if domain.is_file():
-            return domain
-
-    raise FileNotFoundError(f"No domain file found for {problem}")

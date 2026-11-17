@@ -89,11 +89,11 @@ def _choose_abstraction(problem, config, metrics):
     """The class the config names, or else the candidate at the config's rank."""
     if config.objects_to_abstract is not None:
         with metrics.measure("abstraction"):
-            return _create_abstraction(problem, config.objects_to_abstract, config.abstract_name)
+            return _create_abstraction(problem, config.objects_to_abstract)
 
     candidate_classes = _candidate_classes(config, metrics)
     with metrics.measure("abstraction"):
-        return _select_abstraction(problem, candidate_classes, config.abstract_name, config.class_rank)
+        return _select_abstraction(problem, candidate_classes, config.class_rank)
 
 
 def _candidate_classes(config, metrics):
@@ -111,7 +111,6 @@ def _candidate_classes(config, metrics):
         symmetry_classes = find_symmetric_object_sets(
             config.domain_path,
             config.problem_path,
-            config.symmetry_time_limit,
             before_grounding=config.symmetries_before_grounding,
         )
 
@@ -120,7 +119,7 @@ def _candidate_classes(config, metrics):
     return symmetry_classes
 
 
-def _select_abstraction(problem, candidate_classes, abstract_name=None, rank=0):
+def _select_abstraction(problem, candidate_classes, rank=0):
     """Select the candidate class at this rank, largest first.
 
     Collapsing more objects is what lowers the abstract horizon, so size alone decides.
@@ -134,7 +133,7 @@ def _select_abstraction(problem, candidate_classes, abstract_name=None, rank=0):
 
     for candidate_class in ordered_classes:
         try:
-            abstractions.append(_create_abstraction(problem, candidate_class, abstract_name))
+            abstractions.append(_create_abstraction(problem, candidate_class))
         except AbstractionError as error:
             # One unusable class does not make the others unusable, so keep the
             # reason for the case where none of them works.
@@ -149,7 +148,7 @@ def _select_abstraction(problem, candidate_classes, abstract_name=None, rank=0):
     return abstractions[rank]
 
 
-def _create_abstraction(problem, object_names, abstract_name):
+def _create_abstraction(problem, object_names):
     objects_by_name = {item.name.casefold(): item for item in problem.all_objects}
 
     # Lowercase, without repeats, and in order.
@@ -166,8 +165,7 @@ def _create_abstraction(problem, object_names, abstract_name):
     if len({item.type for item in objects_to_collapse}) != 1:
         raise AbstractionError("Selected objects must have the same declared type")
 
-    if abstract_name is None:
-        abstract_name = f"{objects_to_collapse[0].type.name}_abs"
+    abstract_name = f"{objects_to_collapse[0].type.name}_abs"
 
     # The abstract object cannot share a name with anything the task keeps.
     reserved_names = {item.name.casefold() for item in (*problem.actions, *problem.fluents, *problem.user_types)}
