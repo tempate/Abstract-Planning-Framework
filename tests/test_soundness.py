@@ -16,8 +16,13 @@ from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.unified_planning import parse_problem
 from core.utilities.plan import PlanAction
 from core.pipeline import pipeline
+from core.integrations.fast_downward import LAMA, LMCUT, find_pddl_plan
+from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
+from core.pipeline.refinement.pipeline import _with_original_names
+from core.planners.asp import Asp
 from core.planners.fd import FastDownward
-from core.utilities.config import AbstractPlanningConfig
+from scripts.utils.arguments import find_domain
+from core.utilities.config import AbstractPlanningConfig, PlanningConfig
 
 RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
 
@@ -135,30 +140,84 @@ class SoundnessTests(unittest.TestCase):
                     self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
 
 
+BENCHMARKS = Path(__file__).resolve().parents[1] / "experiments" / "benchmarks" / "downward-benchmarks"
+# Each collapses part of a type, so actions split, and quantum-layout also needs PNF.
+REAL_TASKS = (
+    ("gripper", "prob01.pddl", ("ball1", "ball2")),
+    ("driverlog", "p01.pddl", ("s0", "s1")),
+    ("quantum-layout-sat23-strips", "p14.pddl", ("p4", "p9")),
+)
+
+
+@unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
+class RealDomainSoundnessTests(unittest.TestCase):
+    def test_a_baseline_plan_renamed_is_a_plan_of_the_abstraction(self):
+        for domain_name, problem_name, objects in REAL_TASKS:
+            with self.subTest(domain=domain_name, objects=objects):
+                problem_path = BENCHMARKS / domain_name / problem_name
+                domain_path = find_domain(problem_path)
+                with tempfile.TemporaryDirectory() as directory:
+                    lines = find_pddl_plan(directory, domain_path, problem_path, "baseline", LAMA)
+                steps = [line.strip("()").split() for line in lines]
+                config = AbstractPlanningConfig(domain_path, problem_path, objects_to_abstract=objects)
+
+                with redirect_stdout(StringIO()):
+                    abstract = build_abstract_problem(config)
+                rename = dict.fromkeys(objects, abstract.abstraction.name)
+
+                self.assertTrue(any(SPLIT_SEPARATOR in action.name for action in abstract.problem.actions))
+                self.assertTrue(_is_valid(abstract.problem, _abstract_plan_on(abstract.problem, steps, rename)))
+
+
+@unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
+class OptimalRefinementTests(unittest.TestCase):
+    def test_an_optimal_abstract_plan_refines_into_an_optimal_plan(self):
+        problem_path = BENCHMARKS / "gripper" / "prob01.pddl"
+        domain_path = find_domain(problem_path)
+        with redirect_stdout(StringIO()):
+            optimum = len(FastDownward(LMCUT, PlanningConfig(domain_path, problem_path)).solve()["plan"])
+
+            for planner in ("asp", "lmcut"):
+                with self.subTest(planner=planner):
+                    config = AbstractPlanningConfig(
+                        domain_path,
+                        problem_path,
+                        planner=planner,
+                        optimize=True,
+                        objects_to_abstract=("ball1", "ball2"),
+                    )
+                    self.assertEqual(len(pipeline.solve(config)["plan"]), optimum)
+
+
+# Two lights to switch on, and a tick that undoes no light, so a step can stay
+# busy. The goal needs the tick, or the translator would drop it.
 LIGHTS_DOMAIN = """
 (define (domain lights)
   (:requirements :strips :typing)
   (:types light)
-  (:predicates (on ?l - light) (off ?l - light))
+  (:predicates (on ?l - light) (off ?l - light) (ticked))
   (:action switch-on
     :parameters (?l - light)
     :precondition (off ?l)
     :effect (and (on ?l) (not (off ?l))))
-  (:action switch-off
-    :parameters (?l - light)
-    :precondition (on ?l)
-    :effect (and (off ?l) (not (on ?l)))))
+  (:action tick
+    :parameters ()
+    :precondition (and)
+    :effect (ticked)))
 """
 LIGHTS_PROBLEM = """
 (define (problem both-on)
   (:domain lights)
   (:objects l1 l2 - light)
   (:init (off l1) (off l2))
-  (:goal (and (on l1) (on l2))))
+  (:goal (and (on l1) (on l2) (ticked))))
 """
 
 
+@unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
 class RefinementTests(unittest.TestCase):
+    """Refinement given an abstract plan, standing in for the abstract planner's."""
+
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
@@ -168,32 +227,70 @@ class RefinementTests(unittest.TestCase):
         self.problem.write_text(LIGHTS_PROBLEM, encoding="utf-8")
         self.concrete = parse_problem(LIGHTS_DOMAIN, LIGHTS_PROBLEM)
 
-    def _refine(self, steps):
+    def _refine(self, abstract_steps, optimize, partial_grounder=PARTIAL_GROUNDING_TRANSLATOR):
         config = AbstractPlanningConfig(
-            self.domain, self.problem, planner="lama", optimize=True, objects_to_abstract=("l1", "l2")
+            self.domain, self.problem, planner="asp", optimize=optimize, objects_to_abstract=("l1", "l2")
         )
         with redirect_stdout(StringIO()):
             light = build_abstract_problem(config).abstraction.name
-        plan = tuple(PlanAction("switch-on", (light,), step) for step in range(1, steps + 1))
+        plan = tuple(
+            PlanAction(name, (light,) if name == "switch-on" else (), step)
+            for step, name in enumerate(abstract_steps, 1)
+        )
         with (
-            patch.object(FastDownward, "plan_sas", return_value=plan),
+            patch.object(Asp, "plan_sas", return_value=plan),
+            patch("core.pipeline.refinement.pipeline.PARTIAL_GROUNDING_TRANSLATOR", partial_grounder),
             redirect_stdout(StringIO()),
         ):
             result = pipeline.solve(config)
-        return [(action.name, *action.args) for action in result["plan"]]
 
-    @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
-    def test_a_plan_that_refines_as_it_is_solves_the_concrete_task(self):
-        steps = self._refine(2)
-
+        steps = [(action.name, *action.args) for action in result["plan"]]
         self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
+        return [name for name, *_ in steps], result["metrics"]
 
-    @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
-    def test_a_plan_that_must_give_up_steps_still_solves_the_concrete_task(self):
-        # The third switch-on has no light left to switch on, so refinement has to drop switches.
-        steps = self._refine(3)
+    def test_a_plan_that_refines_as_it_is_keeps_every_step(self):
+        names, _ = self._refine(["switch-on", "tick", "switch-on"], optimize=True)
 
-        self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
+        self.assertEqual(names, ["switch-on", "tick", "switch-on"])
+
+    def test_refinement_gives_up_the_last_steps_first(self):
+        # No light is left for the third switch-on, so its step is the one given up.
+        names, metrics = self._refine(["switch-on", "switch-on", "switch-on"], optimize=True)
+
+        self.assertEqual(names, ["switch-on", "switch-on", "tick"])
+        self.assertEqual(metrics["counters"]["decrements"], 1)
+
+    def test_the_horizon_rises_only_once_every_step_is_given_up(self):
+        names, metrics = self._refine(["switch-on", "switch-on"], optimize=True)
+
+        self.assertEqual(sorted(names), ["switch-on", "switch-on", "tick"])
+        self.assertEqual(metrics["counters"]["decrements"], 2)
+        self.assertEqual(metrics["counters"]["increments"], 1)
+
+    def test_a_gap_holds_an_action_the_abstract_plan_lacks(self):
+        names, metrics = self._refine(["switch-on"], optimize=False)
+
+        self.assertEqual(sorted(names), ["switch-on", "switch-on", "tick"])
+        self.assertEqual(metrics["counters"]["increments"], 0)
+
+    def test_the_whole_task_is_grounded_when_the_partial_grounder_is_missing(self):
+        runs = {"missing": self._refine(["switch-on", "switch-on"], optimize=False, partial_grounder="/nonexistent")}
+        if Path(PARTIAL_GROUNDING_TRANSLATOR).exists():
+            runs["present"] = self._refine(["switch-on", "switch-on"], optimize=False)
+
+        for grounder, (names, metrics) in runs.items():
+            with self.subTest(grounder=grounder):
+                self.assertEqual(sorted(names), ["switch-on", "switch-on", "tick"])
+                self.assertEqual("partial_fd" in metrics["durations"], grounder == "present")
+
+
+class AbstractNameTests(unittest.TestCase):
+    def test_refinement_reads_the_abstract_plan_in_the_concrete_task_s_names(self):
+        abstract_plan = (PlanAction(f"carry{SPLIT_SEPARATOR}3", ("k",), 1), PlanAction("up_0", ("k",), 2))
+
+        renamed = _with_original_names(abstract_plan, {"up_0": "up"})
+
+        self.assertEqual([action.name for action in renamed], ["carry", "up"])
 
 
 if __name__ == "__main__":
