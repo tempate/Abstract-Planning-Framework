@@ -16,6 +16,7 @@ from unittest.mock import patch
 from experiments.tracks import TRACKS
 from scripts.utils.arguments import find_domain
 from experiments.collect import FIELDS, _preserved_rows, _track_results_file, collect
+from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.reporting import update_result_progress
 from experiments.run import (
@@ -181,7 +182,7 @@ class BenchmarkTests(unittest.TestCase):
             root = Path(directory)
             with self.assertRaises(SystemExit) as refusal:
                 _check_worktree_is_built(project_root=root)
-            for artifact in ARTIFACTS.values():
+            for artifact in (*ARTIFACTS.values(), Path(PARTIAL_GROUNDING_TRANSLATOR)):
                 path = root / artifact.relative_to(SETUP_ROOT)
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()

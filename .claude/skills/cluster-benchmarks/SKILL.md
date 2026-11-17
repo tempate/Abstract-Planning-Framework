@@ -43,8 +43,7 @@ ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare fetch -q origin \
 ```
 
 Plain `git worktree add` leaves the linked directories empty. Submitting refuses
-and names the first three when they are missing, rather than queueing jobs that all
-die the same way. It does not check the last two, so check them by hand:
+and names what is missing, rather than queueing jobs that all die the same way:
 
 | missing | how it fails |
 |---|---|

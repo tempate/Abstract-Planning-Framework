@@ -22,6 +22,7 @@ from experiments.run import (
     RESULTS_DIR,
     class_rank,
 )
+from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
 from experiments.tracks import DEFAULT_TRACK, TRACKS, is_domain_file
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.arguments import find_domain
@@ -163,8 +164,10 @@ def _check_worktree_is_built(project_root=PROJECT_ROOT):
     """Refuse to submit from a worktree whose shared build artifacts are missing."""
     # A fresh worktree has none of what setup builds until new-worktree.sh links
     # it in, and a job without it dies long after the queue has drained.
+    # Setup cannot build the partial grounder, a private fork, but without it refinement grounds the whole task.
+    artifacts = {**ARTIFACTS, "partial grounder": Path(PARTIAL_GROUNDING_TRANSLATOR)}
     missing = []
-    for name, path in ARTIFACTS.items():
+    for name, path in artifacts.items():
         relative = path.relative_to(SETUP_ROOT)
         if not (Path(project_root) / relative).exists():
             missing.append(f"  {name} ({relative})")
