@@ -45,24 +45,29 @@ All four solve the same task, so the runs are comparable. See
 python -m scripts.planner --help
 ```
 
-- `lama` solves the PDDL task with plain Fast Downward (`--alias lama-first`), as
-  an external baseline.
-- `asp` solves it directly with ASP.
-- `abs-lama` collapses a symmetric object class, solves the abstraction
-  with Fast Downward's lama-first, and refines that plan with ASP.
-- `abs-asp` does the same, but solves the abstraction with ASP.
+| Mode | Plans the task with | Abstract mode |
+| --- | --- | --- |
+| `lama` | Fast Downward's lama-first | `abs-lama` |
+| `lmcut` | Fast Downward's A* with LM-cut, length-optimal | `abs-lmcut` |
+| `asp` | ASP, length-optimal with `--optimize` | `abs-asp` |
 
-Both abstraction modes ask PDDL Symmetries for the class. Pass
-`--objects-to-abstract NAME...` to choose one yourself. Finding no symmetric
-class is an error, not a fallback to concrete search.
+An abstract mode collapses an object class, plans the abstract task with its
+planner, and refines that plan with ASP. `abs-lmcut` always refines optimally, and
+`abs-asp` does with `--optimize`. The class comes from PDDL Symmetries, or from
+resource detection with `--abstraction-source resources`. Pass
+`--objects-to-abstract NAME...` to choose one yourself. Finding no class is an
+error, not a fallback to concrete search. `--domain` defaults to the domain file
+beside the problem.
+
+Resource detection needs numeric Fast Downward, which `scripts.setup` does not
+build. Apply `lib/numeric-fast-downward.patch` there and run `./build.py release64`.
 
 ## Benchmark suite
 
 Submit the suite through a cluster
 [CopperBench](https://github.com/tlyphed/copperbench) installation, as one
-Slurm task per mode and problem, each capped at 30 minutes and 8192 MiB.
-`--modes lama asp abs-lama abs-asp` submits all four; the default is the track's
-first mode alone.
+Slurm task per mode, problem and class, each capped at 30 minutes and 8192 MiB.
+It submits every mode of the track unless `--modes` names some.
 
 ```bash
 python -m experiments.submit
@@ -74,24 +79,23 @@ python -m experiments.figure sat --base origin/main --out before-after.png
 - `experiments/ipc/sat/suite.py` holds the domains, but a problem is submitted
   only when `experiments/ipc/sat/symmetries/problems.txt` records an abstraction
   class for it.
-  That file's header carries the command that regenerates it.
 - `--abstraction-source resources` submits `experiments/ipc/sat/resources/`, the
   problems its `problems.txt` lists, and collapses a resource instead of a symmetry
   class.
 - `--track opt` submits `experiments/ipc/opt/symmetries/`, the problems of the optimal
-  suite with a symmetry class, refined to the plan that fills the fewest gaps, with
+  suite with a symmetry class, refined without gaps so that every plan is optimal, with
   `asp` and `lmcut` as the baselines, and `abs-lmcut` in place of `abs-lama`.
   `--abstraction-source resources` submits `experiments/ipc/opt/resources/` instead, whose list
   `python -m experiments.scan --track opt/resources` writes.
 - `--track sat-htg` submits `experiments/htg/sat/` over the hard-to-ground
   benchmarks of [htg-domains](https://github.com/abcorrea/htg-domains), a
-  submodule, with the sat track's modes and the full grounding.
+  submodule, with the sat track's modes.
 - `--track opt-htg` submits `experiments/htg/opt/` over the same benchmarks,
   with `labyrinth/OPT` in place of `labyrinth/SAT`, and the opt track's modes.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
 - `collect` rewrites the `results.csv` of the track the run's manifest names,
-  replacing only the (domain, problem, mode) results the run holds, so a
+  replacing only the (domain, problem, mode, class) results the run holds, so a
   baseline or a gap-filling run can be collected on its own.
   `report` rewrites the `report.md` beside the CSV, comparing only the
   problems every mode finished and saying how many it dropped.

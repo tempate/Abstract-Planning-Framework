@@ -43,7 +43,8 @@ ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare fetch -q origin \
 ```
 
 Plain `git worktree add` leaves the linked directories empty. Submitting refuses
-and names what is missing, rather than queueing jobs that all die the same way:
+and names the first three when they are missing, rather than queueing jobs that all
+die the same way. It does not check the last two, so check them by hand:
 
 | missing | how it fails |
 |---|---|
@@ -51,6 +52,7 @@ and names what is missing, rather than queueing jobs that all die the same way:
 | `lib/downward/builds/release` | exit code 36, `Could not find build 'release'` |
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
 | `lib/numeric-fast-downward/builds/release64` | `numeric-fast-downward binary not found`, on every resources-track job |
+| `lib/downward-partial-grounding` | refinement grounds the whole task and prints `the partial grounder is missing` |
 
 Smoke-test a branch that changes the pipeline, which the checks above cannot
 judge. Run each mode it touches on a problem it solves fast and expect a valid plan:
@@ -73,7 +75,7 @@ one background command.
 ## Submitting
 
 ```bash
-python -m experiments.submit --track sat --abstraction-source symmetries --modes abs-asp abs-lama asp lama
+python -m experiments.submit --track sat --abstraction-source symmetries
 ```
 
 | track | modes | baseline |
@@ -82,7 +84,9 @@ python -m experiments.submit --track sat --abstraction-source symmetries --modes
 | `opt` | `asp`, `abs-asp`, `lmcut`, `abs-lmcut` | `lmcut`, A* with LM-cut |
 
 `--abstraction-source resources` collapses resources instead of symmetric objects.
-Submit refuses a mode its track does not run.
+`--track sat-htg` and `--track opt-htg` run the hard-to-ground benchmarks, with
+results in `experiments/htg/<sat|opt>/`. Submit runs every mode of the track unless
+`--modes` names some, and refuses a mode its track does not run.
 
 `experiments.report` compares only problems every mode in the CSV finished, so a
 mode left out of a run shrinks every table. Leave a mode out only when its results
@@ -196,8 +200,9 @@ detached checkout of the producing commit and copy the CSVs to the branch tip.
 Collect replaces a row where the run holds its (domain, problem, mode, class). When
 the run re-ran a class the CSV already holds, it also drops the other classes of that
 problem and mode, since they measure older code. A run that only adds classes, as
-`--from-rank` does, and a job that never reported leave the earlier rows alone, and
-problems the run did not touch keep theirs. For the PR's numbers, keep only the
+`--from-rank` does, leaves the earlier rows alone. A job that never reported replaces
+its own row with `missing` but leaves the other classes alone. Problems the run did
+not touch keep their rows. For the PR's numbers, keep only the
 abstract rows the run's manifest lists, and compare against the base on the same
 problems and classes. A problem that left the suite keeps its old row until you
 delete it.
@@ -205,7 +210,7 @@ delete it.
 ## Before reporting on a run
 
 ```bash
-awk -F, '$5=="running"' experiments/ipc/<track>/<source>/results.csv | wc -l
+awk -F, '$5=="running"' experiments/ipc/<track>/<source>/results.csv experiments/htg/<track>/results.csv | wc -l
 ```
 
 A `running` row is a job killed without a terminal status, not live work. Report the
@@ -214,22 +219,6 @@ limit and `out of memory` is Fast Downward's own. Both are results. Check `statu
 for `error` and `killed (signal 9)` too, since one domain can contribute nothing
 while the totals look healthy. In a CSV collected before #101, a crash reads
 `no plan found` and a memory kill `running`.
-
-## Mode names before #135
-
-Delete this section once no open branch predates #135. Branches that left `main` before #135 still call the modes `fd`, `abs-fd`,
-`fd-lmcut` and so on. Their CSVs need the new names after a rebase onto `main`,
-or the report ignores those rows. The mode is column 3, and the files are CRLF,
-which `awk` keeps:
-
-```bash
-awk -F, -v OFS=, 'NR>1 && $3=="fd"{$3="lama"} NR>1 && $3=="abs-fd"{$3="abs-lama"} {print}' results.csv > tmp && mv tmp results.csv
-```
-
-| track | old | new |
-|---|---|---|
-| sat | `fd`, `abs-fd` | `lama`, `abs-lama` |
-| opt | `fd-lmcut`, `abs-fd` | `lmcut`, `abs-lmcut` |
 
 ## Closing the loop
 
