@@ -51,7 +51,7 @@ and names what is missing, rather than queueing jobs that all die the same way:
 | `lib/downward/builds/release` | exit code 36, `Could not find build 'release'` |
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
 | `lib/numeric-fast-downward/builds/release64` | `numeric-fast-downward binary not found`, on every resources-track job |
-| `lib/downward-partial-grounding` | refinement grounds the whole task and prints `the partial grounder is missing` |
+| `lib/downward-partial-grounding` | refinement grounds the whole task, which no row records |
 
 Smoke-test a branch that changes the pipeline, which the checks above cannot
 judge. Run each mode it touches on a problem it solves fast and expect a valid plan:
