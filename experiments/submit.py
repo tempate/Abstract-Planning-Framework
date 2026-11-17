@@ -32,7 +32,7 @@ DEFAULT_MEMORY_LIMIT = 8 * 1024
 # "any" partition is not: it spans broadwell and sunnycove, and caps a job at one
 # hour, which silently bounds the timeout.
 DEFAULT_PARTITION = "sunnycove"
-DEFAULT_SOURCE = DEFAULT_TRACK.split("/")[1]
+DEFAULT_SOURCE = TRACKS[DEFAULT_TRACK].source
 
 
 def main():
@@ -294,13 +294,13 @@ def _argument_parser():
     )
     parser.add_argument(
         "--track",
-        choices=sorted({name.split("/")[0] for name in TRACKS}),
-        default=DEFAULT_TRACK.split("/")[0],
+        choices=sorted({track.kind for track in TRACKS.values()}),
+        default=TRACKS[DEFAULT_TRACK].kind,
         help="What the run asks of each problem: a plan (sat) or an optimal plan (opt)",
     )
     parser.add_argument(
         "--abstraction-source",
-        choices=sorted({name.split("/")[1] for name in TRACKS}),
+        choices=sorted({track.source for track in TRACKS.values()}),
         help=f"What the modes through an abstraction collapse, for sat only (default: {DEFAULT_SOURCE})",
     )
     return parser
