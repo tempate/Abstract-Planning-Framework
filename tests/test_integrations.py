@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from core.integrations.clingo import parse_plan_actions
+from core.integrations.clingo import actions_from_model
 from core.integrations.fast_downward import LAMA, find_pddl_plan, pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.utilities.outcomes import IntegrationError, OutOfMemoryError, UnsolvableTaskError
@@ -15,7 +15,7 @@ RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
 
 
 class ClingoPlanParsingTests(unittest.TestCase):
-    def test_parse_plan_actions_ignores_other_atoms_and_orders_actions(self):
+    def test_actions_from_model_ignores_other_atoms_and_orders_actions(self):
         atoms = [
             'occurs(action(("unload","p0","t0","l1")),3)',
             "cost(4)",
@@ -24,7 +24,7 @@ class ClingoPlanParsingTests(unittest.TestCase):
         ]
 
         self.assertEqual(
-            parse_plan_actions(atoms),
+            actions_from_model(atoms),
             (
                 PlanAction("load", ("p0", "t0", "l0"), 1),
                 PlanAction("wait", (), 2),
@@ -36,7 +36,7 @@ class ClingoPlanParsingTests(unittest.TestCase):
         # Dropping it would report a plan a step short of the one Clingo found.
         for atom in ('occurs(action(("load",1)),1)', "occurs(step,1)", 'occurs(action(("load","p0")),first)'):
             with self.subTest(atom=atom), self.assertRaises(IntegrationError):
-                parse_plan_actions([atom])
+                actions_from_model([atom])
 
 
 class FastDownwardHelperTests(unittest.TestCase):
@@ -152,7 +152,7 @@ class PlaspPostProcessingTests(unittest.TestCase):
                 patch("core.integrations.plasp.PLASP_BIN", str(binary)),
                 patch("core.integrations.plasp.SEQUENTIAL_ENCODING", str(exact)),
             ):
-                program = sas_to_asp(str(sas))
+                program = sas_to_asp(str(sas), optimize=True)
 
             self.assertEqual((program.rules.split(), program.facts.split()), (["exact."], ["translated."]))
 

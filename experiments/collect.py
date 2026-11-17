@@ -1,7 +1,6 @@
 """Collect benchmark result files into one CSV file."""
 
 import argparse
-import ast
 from collections import Counter
 import csv
 import json
@@ -77,9 +76,10 @@ def _missing_values():
 
 
 def _values(result):
-    output = result["output"]
+    # The planner reports its metrics into the result file as it goes, so they hold
+    # even for a run the timeout or the memory limit killed.
     progress = result.get("progress", {})
-    metrics = _metrics(output, progress)
+    metrics = progress.get("metrics") or {}
     durations = metrics.get("durations", {})
     counters = metrics.get("counters", {})
 
@@ -89,51 +89,18 @@ def _values(result):
         "last_completed_phase": progress.get("last_completed_phase", ""),
         **{f"{name}_seconds": durations.get(name, "") for name in DURATION_LABELS},
         **{name: counters.get(name, "") for name in COUNTER_LABELS},
-        **_abstraction_values(output, metrics.get("abstraction")),
+        **_abstraction_values(metrics.get("abstraction")),
         "error_message": _error_message(result),
     }
 
 
-def _metrics(output, progress):
-    """Read the metrics the planner printed, or, when it printed none, the last it reported."""
-    metrics = {
-        "durations": _metric_group(output, DURATION_LABELS, float),
-        "counters": _metric_group(output, COUNTER_LABELS, int),
-    }
-
-    if metrics["durations"] or metrics["counters"]:
-        return metrics
-    if progress and isinstance(progress.get("metrics"), dict):
-        return progress["metrics"]
-    return metrics
-
-
-def _metric_group(output, labels, conversion):
-    values = {}
-    for name, label in labels.items():
-        match = re.search(rf"^    {re.escape(label)}  +(.+)$", output, re.MULTILINE)
-        if match is not None:
-            values[name] = conversion(match.group(1))
-    return values
-
-
-def _abstraction_values(output, abstraction):
-    """Read the collapsed class from the metrics, or from the line the planner prints when it selects it."""
-    if abstraction:
-        return {
-            "abstracted_object_count": len(abstraction["objects"]),
-            "abstracted_object_type": abstraction["object_type"],
-        }
-
-    match = re.search(r"^Collapsed (\[.*\]) into \S+ \(type=([^)]+)\)$", output, re.MULTILINE)
-    if match is None:
+def _abstraction_values(abstraction):
+    if not abstraction:
         return {"abstracted_object_count": "", "abstracted_object_type": ""}
-
-    try:
-        object_count = len(ast.literal_eval(match.group(1)))
-    except (SyntaxError, ValueError):
-        object_count = ""
-    return {"abstracted_object_count": object_count, "abstracted_object_type": match.group(2)}
+    return {
+        "abstracted_object_count": len(abstraction["objects"]),
+        "abstracted_object_type": abstraction["object_type"],
+    }
 
 
 def _error_message(result):
@@ -164,18 +131,17 @@ def _preserved_rows(collected, csv_file):
     with csv_file.open(encoding="utf-8", newline="") as stream:
         rows = list(csv.DictReader(stream))
 
-    rerun = {result_key(row) for row in collected}
     # A run that re-ran a class the CSV holds ran newer code on that problem, so
     # the classes it skipped measure code that no longer exists. A run that only
-    # adds classes, as --from-rank does, leaves the earlier ones alone, and so
-    # does a job that never reported.
+    # adds classes, as --from-rank does, leaves the earlier ones alone, and a job
+    # that never reported leaves every row alone, its own included.
     finished = {result_key(row) for row in collected if row["status"] != "missing"}
     replaced = {key[:3] for key in finished & {result_key(row) for row in rows}}
 
     preserved = []
     for row in rows:
         key = result_key(row)
-        if key in rerun or key[:3] in replaced:
+        if key in finished or key[:3] in replaced:
             continue
         kept = {field: row.get(field, "") for field in FIELDS}
         kept["class"] = key[3]
@@ -191,6 +157,9 @@ def main(results_dirs=RESULTS_DIR, csv_file=None):
 
     collected = collect(*results_dirs)
     preserved = _preserved_rows(collected, csv_file)
+    # A job that never reported does not replace the result the CSV already holds for it.
+    kept = {result_key(row) for row in preserved}
+    collected = [row for row in collected if row["status"] != "missing" or result_key(row) not in kept]
     rows = sorted(collected + preserved, key=result_key)
 
     csv_file = Path(csv_file)

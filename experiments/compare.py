@@ -6,9 +6,8 @@ import statistics
 from pathlib import Path
 
 from experiments.figure import load_tracks, solve_time
-from experiments.report import solved
-
-LABELS = {"abs-asp": "ASPᵅ", "abs-lama": "LAMAᵅ", "abs-lmcut": "LMcutᵅ"}
+from experiments.report import MODE_LABELS, solved
+from experiments.run import ABSTRACTION_PREFIX
 
 
 def main():
@@ -31,13 +30,15 @@ def submitted_tracks(manifests):
     tracks = {}
     for manifest in manifests:
         modes = tracks.setdefault(manifest["track"], set())
-        modes.update(entry["mode"] for entry in manifest["expected_results"] if entry["mode"] in LABELS)
+        modes.update(
+            entry["mode"] for entry in manifest["expected_results"] if entry["mode"].startswith(ABSTRACTION_PREFIX)
+        )
     return tracks
 
 
 def tables(columns):
     """The two tables, one column per track and one row per abstract mode any track submitted."""
-    modes = [mode for mode in LABELS if any(mode in submitted for *_, submitted in columns.values())]
+    modes = [mode for mode in MODE_LABELS if any(mode in submitted for *_, submitted in columns.values())]
     plans, runtimes = [], []
     for mode in modes:
         plan_cells, runtime_cells = [], []
@@ -49,8 +50,8 @@ def tables(columns):
             plan_cells.append(_plans_cell(base, branch, mode))
             runtime_cells.append(_runtime_cell(base, branch, mode))
 
-        plans.append(_line(LABELS[mode], plan_cells))
-        runtimes.append(_line(LABELS[mode], runtime_cells))
+        plans.append(_line(MODE_LABELS[mode], plan_cells))
+        runtimes.append(_line(MODE_LABELS[mode], runtime_cells))
 
     header = list(columns)
     return "\n".join(
