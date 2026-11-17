@@ -4,6 +4,7 @@ from pathlib import Path
 
 from unified_planning.io import PDDLReader
 
+from experiments.htg.opt.scaled.generate import grown_rank
 from experiments.ipc.opt.scaled.generate import scale, scale_domain
 
 DOMAIN = """
@@ -44,3 +45,11 @@ class ScaledTests(unittest.TestCase):
         self.assertTrue({"hire-diver-d0-copy1", "hire-diver-d0-copy2"} <= {action.name for action in task.actions})
         initial = {str(fluent) for fluent, value in task.explicit_initial_values.items() if value.is_true()}
         self.assertIn("available(d0-copy2)", initial)
+
+    def test_a_grown_class_overtakes_the_classes_it_outgrows(self):
+        classes = [["a1", "a2", "a3"], ["b1", "b2"], ["c1", "c2"]]
+
+        self.assertEqual(grown_rank(classes, 2, 2), 2)
+        # Tied with a, which comes first by name.
+        self.assertEqual(grown_rank(classes, 2, 3), 1)
+        self.assertEqual(grown_rank(classes, 2, 4), 0)

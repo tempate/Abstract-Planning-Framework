@@ -90,6 +90,8 @@ python -m experiments.figure sat --base origin/main --out before-after.png
   with `labyrinth/OPT` in place of `labyrinth/SAT`, and the opt track's modes.
 - `--track opt-scaled` submits `experiments/ipc/opt/scaled/`, opt problems whose
   largest class grows up to 1000 objects, with `lmcut` and `abs-lmcut`.
+- `--track opt-htg-scaled` submits `experiments/htg/opt/scaled/`, the same for
+  opt-htg problems, growing their best class instead of the largest.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
 - `collect` rewrites the `results.csv` of the track the run's manifest names,

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from experiments.htg.opt import suite as htg_opt
+from experiments.htg.opt.scaled import suite as htg_opt_scaled
 from experiments.htg.sat import suite as htg
 from experiments.ipc.opt import suite as opt
 from experiments.ipc.opt.scaled import suite as opt_scaled
@@ -126,6 +127,15 @@ TRACKS = {
         suite=opt_scaled.SUITE,
         benchmarks_dir=BENCHMARKS / "scaled",
         modes=("abs-lmcut", "lmcut"),
+        optimizing_arguments=("--optimize",),
+    ),
+    # Problems of opt-htg/symmetries whose best class grows, the HTG counterpart of opt-scaled.
+    "opt-htg-scaled/symmetries": Track(
+        directory=EXPERIMENTS / "htg" / "opt" / "scaled",
+        suite=htg_opt_scaled.SUITE,
+        benchmarks_dir=BENCHMARKS / "scaled-htg",
+        modes=("abs-lmcut", "lmcut"),
+        abstract_arguments=HTG_ARGUMENTS,
         optimizing_arguments=("--optimize",),
     ),
 }
