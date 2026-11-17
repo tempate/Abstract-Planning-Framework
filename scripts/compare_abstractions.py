@@ -27,7 +27,10 @@ TIMEOUT = 120
 DESCRIBE = """
 import collections, hashlib, json, sys
 from core.integrations.unified_planning import read_problem, without_action_costs
-from core.pipeline.abstraction.factory import build_abstract_problem
+try:
+    from core.pipeline.abstraction.abstract_task import build_abstract_task
+except ImportError:  # a commit from before the rename
+    from core.pipeline.abstraction.factory import build_abstract_problem as build_abstract_task
 from core.utilities.config import AbstractPlanningConfig
 
 domain, problem = sys.argv[1:3]
@@ -36,7 +39,7 @@ for item in read_problem(domain, problem).all_objects:
     objects_by_type[item.type].append(item.name)
 objects = max(objects_by_type.values(), key=len)
 try:
-    result = build_abstract_problem(AbstractPlanningConfig(domain, problem, objects_to_abstract=objects))
+    result = build_abstract_task(AbstractPlanningConfig(domain, problem, objects_to_abstract=objects))
 except Exception as error:
     print(json.dumps({"rejected": f"{type(error).__name__}: {error}"}))
     sys.exit()

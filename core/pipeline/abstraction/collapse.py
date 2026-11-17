@@ -52,15 +52,15 @@ def validate_supported_problem(problem):
         raise AbstractionError("Unsupported PDDL feature: non-instantaneous actions")
 
 
-def collapse_objects(problem, abstraction, relaxable_deletes):
+def collapse_objects(problem, collapsed_set, relaxable_deletes):
     """Replace the abstraction's concrete objects in a fresh problem."""
-    objects_to_collapse = tuple(problem.object(name) for name in abstraction.objects)
+    objects_to_collapse = tuple(problem.object(name) for name in collapsed_set.objects)
     deletes_to_relax = set(relaxable_deletes)
     collapsed_problem = Problem(
         problem.name, environment=problem.environment, initial_defaults=problem.initial_defaults
     )
 
-    abstract_object = Object(abstraction.name, objects_to_collapse[0].type, problem.environment)
+    abstract_object = Object(collapsed_set.name, objects_to_collapse[0].type, problem.environment)
     object_substitutions = {item: abstract_object for item in objects_to_collapse}
 
     def rewrite(expression):

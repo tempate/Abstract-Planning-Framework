@@ -14,35 +14,35 @@ def drop_action_choice(asp):
     return asp.replace(f"{EXACTLY_ONE_ACTION}.", "").replace(f"{AT_MOST_ONE_ACTION}.", "")
 
 
-def add_concrete_objects(abstraction):
+def add_concrete_objects(collapsed_set):
     """The constants an abstract action's groundings may use in place of the abstract one."""
     rules = []
-    for name in abstraction.objects:
+    for name in collapsed_set.objects:
         rules.append(f"concrete_object({_quote(name)}).")
     return rules
 
 
-def map_abstract_actions(abstract_plan, abstraction, gaps=True):
+def map_abstract_actions(abstract_plan, collapsed_set, gaps=True):
     """Each abstract action's step, and the rule choosing exactly one of its groundings there."""
     choices = {}
 
     for action in abstract_plan:
         time_step = _concrete_time_step(action.time_step, gaps)
 
-        action_str, conds_str = _action_pattern(action, abstraction)
+        action_str, conds_str = _action_pattern(action, collapsed_set)
         choices[time_step] = f"1 {{ occurs({action_str},{time_step}) : {conds_str} }} 1."
 
     return choices
 
 
-def expand_abstract_actions(abstract_plan, abstraction):
+def expand_abstract_actions(abstract_plan, collapsed_set):
     """Every concrete action the abstract plan's actions may refine into, as plan-file lines."""
     groundings = set()
     for action in abstract_plan:
         options = []
         for arg in action.args:
-            if _is_abstract(arg, abstraction):
-                options.append(abstraction.objects)
+            if _is_abstract(arg, collapsed_set):
+                options.append(collapsed_set.objects)
             else:
                 options.append((arg,))
 
@@ -88,12 +88,12 @@ def _concrete_time_step(abstract_time_step, gaps=True):
         return abstract_time_step
 
 
-def _action_pattern(action, abstraction):
+def _action_pattern(action, collapsed_set):
     """The action term with a variable for each abstract argument, and the conditions that ground those variables."""
     variables = []
     args = []
     for arg in action.args:
-        if _is_abstract(arg, abstraction):
+        if _is_abstract(arg, collapsed_set):
             var = f"ConcreteObject{len(variables) + 1}"
             variables.append(var)
             args.append(var)
@@ -110,8 +110,8 @@ def _action_pattern(action, abstraction):
     return action_str, conds_str
 
 
-def _is_abstract(arg, abstraction):
-    return arg.casefold() == abstraction.name.casefold()
+def _is_abstract(arg, collapsed_set):
+    return arg.casefold() == collapsed_set.name.casefold()
 
 
 def _quote(value):

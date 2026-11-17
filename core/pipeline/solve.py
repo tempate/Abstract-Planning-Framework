@@ -3,19 +3,19 @@
 import os
 
 from core.integrations.fast_downward import pddl_to_sas
-from core.pipeline.abstraction.factory import build_abstract_problem, report_abstraction, write_abstract_problem
+from core.pipeline.abstraction.abstract_task import build_abstract_task, report_abstraction, write_abstract_problem
 from core.utilities.outcomes import UnsolvableTaskError
 from core.planners.registry import PLANNERS
 from core.utilities.config import AbstractPlanningConfig
 from core.utilities.execution import planning_run
 from core.utilities.plan import one_action_per_step
-from core.pipeline.refinement.pipeline import RefinementContext, refine
+from core.pipeline.refinement.refine import RefinementContext, refine
 
 
 def solve(config: AbstractPlanningConfig, on_update=None):
     """Abstract one concrete task, plan it with the config's planner, and refine that plan with ASP."""
     with planning_run("abstract", on_update) as run:
-        problem, abstract_sas, renamings = _abstract(config, run.base_dir, run.metrics)
+        abstract_task, abstract_sas, renamings = _abstract(config, run.base_dir, run.metrics)
 
         planner = PLANNERS[config.planner](config)
         actions = planner.plan_sas(abstract_sas, run.metrics.prefixed("abstract_"))
@@ -32,7 +32,7 @@ def solve(config: AbstractPlanningConfig, on_update=None):
 
         context = RefinementContext(
             config=config,
-            abstraction=problem.abstraction,
+            collapsed_set=abstract_task.collapsed_set,
             metrics=run.metrics,
             base_dir=run.base_dir,
             renamings=renamings,
@@ -43,14 +43,14 @@ def solve(config: AbstractPlanningConfig, on_update=None):
 
 
 def _abstract(config, base_dir, metrics):
-    abstract_problem = build_abstract_problem(config, metrics)
-    report_abstraction(abstract_problem, metrics)
+    abstract_task = build_abstract_task(config, metrics)
+    report_abstraction(abstract_task, metrics)
 
     with metrics.measure("abstract_pddl_writing"):
-        domain_path, problem_path, renamings = write_abstract_problem(abstract_problem.problem, base_dir)
+        domain_path, problem_path, renamings = write_abstract_problem(abstract_task.problem, base_dir)
 
     with metrics.measure("abstract_fd"):
         abstract_dir = os.path.join(base_dir, "abstract")
         abstract_sas = pddl_to_sas(abstract_dir, domain_path, problem_path, "abstract")
 
-    return abstract_problem, abstract_sas, renamings
+    return abstract_task, abstract_sas, renamings

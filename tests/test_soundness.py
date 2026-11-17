@@ -11,14 +11,14 @@ from unified_planning.engines.results import ValidationResultStatus
 from unified_planning.plans import ActionInstance, SequentialPlan
 from unified_planning.shortcuts import SequentialSimulator
 
-from core.pipeline.abstraction.factory import build_abstract_problem
+from core.pipeline.abstraction.abstract_task import build_abstract_task
 from core.pipeline.abstraction.relaxation import SPLIT_SEPARATOR
 from core.integrations.unified_planning import parse_problem
 from core.utilities.plan import PlanAction
-from core.pipeline import pipeline
+from core.pipeline.solve import solve
 from core.integrations.fast_downward import LAMA, LMCUT, find_pddl_plan
 from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
-from core.pipeline.refinement.pipeline import _with_original_names
+from core.pipeline.refinement.refine import _with_original_names
 from core.planners.asp import Asp
 from core.planners.fd import FastDownward
 from scripts.utils.arguments import find_domain
@@ -123,8 +123,8 @@ class SoundnessTests(unittest.TestCase):
         for objects in CLASSES:
             with self.subTest(objects=objects):
                 with redirect_stdout(StringIO()):
-                    abstract = build_abstract_problem(self._config(objects))
-                rename = dict.fromkeys(objects, abstract.abstraction.name)
+                    abstract = build_abstract_task(self._config(objects))
+                rename = dict.fromkeys(objects, abstract.collapsed_set.name)
 
                 self.assertTrue(_is_valid(abstract.problem, _abstract_plan_on(abstract.problem, PLAN, rename)))
 
@@ -134,7 +134,7 @@ class SoundnessTests(unittest.TestCase):
             for planner in ("asp", "lama"):
                 with self.subTest(objects=objects, planner=planner):
                     with redirect_stdout(StringIO()):
-                        result = pipeline.solve(self._config(objects, planner))
+                        result = solve(self._config(objects, planner))
                     steps = [(action.name, *action.args) for action in result["plan"]]
 
                     self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
@@ -162,8 +162,8 @@ class RealDomainSoundnessTests(unittest.TestCase):
                 config = AbstractPlanningConfig(domain_path, problem_path, objects_to_abstract=objects)
 
                 with redirect_stdout(StringIO()):
-                    abstract = build_abstract_problem(config)
-                rename = dict.fromkeys(objects, abstract.abstraction.name)
+                    abstract = build_abstract_task(config)
+                rename = dict.fromkeys(objects, abstract.collapsed_set.name)
 
                 self.assertTrue(any(SPLIT_SEPARATOR in action.name for action in abstract.problem.actions))
                 self.assertTrue(_is_valid(abstract.problem, _abstract_plan_on(abstract.problem, steps, rename)))
@@ -186,7 +186,7 @@ class OptimalRefinementTests(unittest.TestCase):
                         optimize=True,
                         objects_to_abstract=("ball1", "ball2"),
                     )
-                    self.assertEqual(len(pipeline.solve(config)["plan"]), optimum)
+                    self.assertEqual(len(solve(config)["plan"]), optimum)
 
 
 # Two lights to switch on, and a tick that undoes no light, so a step can stay
@@ -232,17 +232,17 @@ class RefinementTests(unittest.TestCase):
             self.domain, self.problem, planner="asp", optimize=optimize, objects_to_abstract=("l1", "l2")
         )
         with redirect_stdout(StringIO()):
-            light = build_abstract_problem(config).abstraction.name
+            light = build_abstract_task(config).collapsed_set.name
         plan = tuple(
             PlanAction(name, (light,) if name == "switch-on" else (), step)
             for step, name in enumerate(abstract_steps, 1)
         )
         with (
             patch.object(Asp, "plan_sas", return_value=plan),
-            patch("core.pipeline.refinement.pipeline.PARTIAL_GROUNDING_TRANSLATOR", partial_grounder),
+            patch("core.pipeline.refinement.refine.PARTIAL_GROUNDING_TRANSLATOR", partial_grounder),
             redirect_stdout(StringIO()),
         ):
-            result = pipeline.solve(config)
+            result = solve(config)
 
         steps = [(action.name, *action.args) for action in result["plan"]]
         self.assertTrue(_is_valid(self.concrete, _plan_on(self.concrete, steps)), steps)
@@ -258,13 +258,13 @@ class RefinementTests(unittest.TestCase):
         names, metrics = self._refine(["switch-on", "switch-on", "switch-on"], optimize=True)
 
         self.assertEqual(names, ["switch-on", "switch-on", "tick"])
-        self.assertEqual(metrics["counters"]["decrements"], 1)
+        self.assertEqual(metrics["counters"]["switches_off"], 1)
 
     def test_the_horizon_rises_only_once_every_step_is_given_up(self):
         names, metrics = self._refine(["switch-on", "switch-on"], optimize=True)
 
         self.assertEqual(sorted(names), ["switch-on", "switch-on", "tick"])
-        self.assertEqual(metrics["counters"]["decrements"], 2)
+        self.assertEqual(metrics["counters"]["switches_off"], 2)
         self.assertEqual(metrics["counters"]["increments"], 1)
 
     def test_a_gap_holds_an_action_the_abstract_plan_lacks(self):

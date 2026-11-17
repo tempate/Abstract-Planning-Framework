@@ -284,9 +284,9 @@ def _plan_length(row):
 
 
 def _discarded_the_abstract_plan(row):
-    if not row["decrements"].strip():
+    if not row["switches_off"].strip():
         return False
-    return int(row["decrements"]) == int(row["abstract_plan_length"])
+    return int(row["switches_off"]) == int(row["abstract_plan_length"])
 
 
 def _timeout_phases(problems, abstractions, labels):
@@ -330,7 +330,7 @@ def _refinement_outcomes(problems, abstractions, labels):
         for row in successes:
             if int(row["increments"]) > 0:
                 counts[mode]["discarded"] += 1
-            elif int(row["decrements"]) > 0:
+            elif int(row["switches_off"]) > 0:
                 counts[mode]["switched"] += 1
             else:
                 counts[mode]["refined"] += 1

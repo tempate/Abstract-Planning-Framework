@@ -7,11 +7,11 @@ from unittest.mock import patch
 
 from core.integrations.pddl_symmetries import find_symmetric_object_sets
 from core.integrations.unified_planning import parse_problem, read_problem
-from core.pipeline.abstraction.factory import (
+from core.pipeline.abstraction.abstract_task import (
     AbstractionError,
     NoSymmetriesError,
     _select_abstraction,
-    build_abstract_problem,
+    build_abstract_task,
 )
 from core.integrations.numeric_fast_downward import ResourceVariable
 from core.utilities.outcomes import NoResourcesError
@@ -145,24 +145,24 @@ class SymmetrySelectionTests(unittest.TestCase):
         for source, detector, nothing, error in sources:
             with (
                 self.subTest(source=source),
-                patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
-                patch(f"core.pipeline.abstraction.factory.{detector}", return_value=nothing),
+                patch("core.pipeline.abstraction.abstract_task.read_problem", return_value=self.problem),
+                patch(f"core.pipeline.abstraction.abstract_task.{detector}", return_value=nothing),
                 self.assertRaises(error),
             ):
-                build_abstract_problem(AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source=source))
+                build_abstract_task(AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source=source))
 
     def test_a_resource_collapses_only_the_objects_the_detector_names(self):
         # vehicle-c and vehicle-d share the resource's type, but the resource never takes them.
         resources = (ResourceVariable("var0", ("vehicle-a", "vehicle-b")),)
         with (
-            patch("core.pipeline.abstraction.factory.read_problem", return_value=self.problem),
-            patch("core.pipeline.abstraction.factory.detect_resources", return_value=resources),
+            patch("core.pipeline.abstraction.abstract_task.read_problem", return_value=self.problem),
+            patch("core.pipeline.abstraction.abstract_task.detect_resources", return_value=resources),
         ):
-            result = build_abstract_problem(
+            result = build_abstract_task(
                 AbstractPlanningConfig("domain.pddl", "problem.pddl", abstraction_source="resources")
             )
 
-        self.assertEqual(set(result.abstraction.objects), {"vehicle-a", "vehicle-b"})
+        self.assertEqual(set(result.collapsed_set.objects), {"vehicle-a", "vehicle-b"})
 
     def test_accepts_domain_constants_reported_by_pddl_symmetries(self):
         domain = """

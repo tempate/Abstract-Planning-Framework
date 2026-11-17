@@ -40,7 +40,7 @@ class ReportTests(unittest.TestCase):
                     writer.writerow(
                         {field: "" for field in FIELDS}
                         | {"domain": "example", "problem": "p01.pddl", "mode": mode, "class": rank}
-                        | {"status": "success", "wall_time_seconds": seconds, "decrements": "0", "increments": "0"}
+                        | {"status": "success", "wall_time_seconds": seconds, "switches_off": "0", "increments": "0"}
                     )
 
             with patch("sys.argv", ["report", str(results)]), contextlib.redirect_stdout(io.StringIO()):
