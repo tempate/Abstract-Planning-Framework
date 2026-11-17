@@ -105,10 +105,8 @@ def _conjuncts(conditions):
             yield condition
 
 
-def _build_from_problem(problem, objects_to_abstract, abstract_name=None):
-    config = AbstractPlanningConfig(
-        "domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract, abstract_name=abstract_name
-    )
+def _build_from_problem(problem, objects_to_abstract):
+    config = AbstractPlanningConfig("domain.pddl", "problem.pddl", objects_to_abstract=objects_to_abstract)
     with patch("core.pipeline.abstraction.factory.read_problem", return_value=problem):
         return build_abstract_problem(config)
 
@@ -276,12 +274,12 @@ class AbstractionTransformationTests(unittest.TestCase):
         source = parse_problem(ABSTRACTION_DOMAIN, ABSTRACTION_PROBLEM)
         source_objects = tuple(item.name for item in source.all_objects)
 
-        result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
+        result = _build_from_problem(source, ["item-a", "item-b"])
 
         self.assertEqual(tuple(item.name for item in source.all_objects), source_objects)
         result_objects = {item.name for item in result.problem.all_objects}
         self.assertTrue({"item-a", "item-b"}.isdisjoint(result_objects))
-        self.assertEqual(result_objects, {"item-c", "pooled-item"})
+        self.assertEqual(result_objects, {"item-c", result.abstraction.name})
         self.assertEqual(result.abstraction.object_type, "item")
         serialized = write_problem(result.problem)
         for selected in ("item-a", "item-b"):
@@ -291,7 +289,7 @@ class AbstractionTransformationTests(unittest.TestCase):
     def test_preserves_deletes_when_static_facts_make_an_action_inapplicable(self):
         source = parse_problem(ABSTRACTION_DOMAIN, ABSTRACTION_PROBLEM)
 
-        result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
+        result = _build_from_problem(source, ["item-a", "item-b"])
 
         release = result.problem.action("release")
         self.assertTrue(
@@ -304,7 +302,7 @@ class AbstractionTransformationTests(unittest.TestCase):
     def test_drops_an_action_whose_every_effect_was_relaxed(self):
         source = parse_problem(ONLY_DELETE_DOMAIN, ONLY_DELETE_PROBLEM)
 
-        result = _build_from_problem(source, ["a", "b"], "pooled-item")
+        result = _build_from_problem(source, ["a", "b"])
 
         self.assertEqual([action.name for action in result.problem.actions], ["finish"])
         # Fast Downward's parser rejects an action serialized without :effect.
@@ -379,23 +377,23 @@ class AbstractionTransformationTests(unittest.TestCase):
             with self.subTest(objects=objects), self.assertRaisesRegex(AbstractionError, message):
                 _build_from_problem(problem, objects)
 
-    def test_rejects_abstract_names_that_collide_with_model_symbols(self):
-        problem = Problem("name-collision")
-        item = UserType("collision_item")
-        ready = Fluent("ready", BoolType())
-        use = InstantaneousAction("use")
-        problem.add_fluent(ready)
-        problem.add_action(use)
-        problem.add_object("a", item)
-        problem.add_object("b", item)
-        problem.add_object("taken", item)
+    def test_rejects_an_abstract_name_that_collides_with_a_model_symbol(self):
+        def with_symbol(kind):
+            problem = Problem("name-collision")
+            item = UserType("item")
+            problem.add_object("a", item)
+            problem.add_object("b", item)
+            if kind == "object":
+                problem.add_object("item_abs", item)
+            elif kind == "fluent":
+                problem.add_fluent(Fluent("item_abs", BoolType()))
+            else:
+                problem.add_action(InstantaneousAction("item_abs"))
+            return problem
 
-        for name in ("taken", "ready", "use", "collision_item"):
-            with self.subTest(name=name), self.assertRaisesRegex(AbstractionError, "already used"):
-                _build_from_problem(problem, ["a", "b"], name)
-
-        result = _build_from_problem(problem, ["a", "b"], "a")
-        self.assertEqual({item.name for item in result.problem.all_objects}, {"a", "taken"})
+        for kind in ("object", "fluent", "action"):
+            with self.subTest(kind=kind), self.assertRaisesRegex(AbstractionError, "already used"):
+                _build_from_problem(with_symbol(kind), ["a", "b"])
 
     def test_rejects_model_features_the_copier_does_not_support(self):
         temporal = Problem("temporal")
@@ -526,7 +524,7 @@ class AbstractionTransformationTests(unittest.TestCase):
 """
         source = parse_problem(domain, problem_text)
 
-        result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
+        result = _build_from_problem(source, ["item-a", "item-b"])
 
         # Keeping the delete would drop `at` for the collapsed object while the
         # other objects it stands for are still there.
@@ -555,7 +553,7 @@ class AbstractionTransformationTests(unittest.TestCase):
 """
         source = parse_problem(domain, problem_text)
 
-        result = _build_from_problem(source, ["item-a", "item-b"], "pooled-item")
+        result = _build_from_problem(source, ["item-a", "item-b"])
 
         # item-c still leaves the dock when it moves, and only the copy of
         # shift for the collapsed object keeps it at the dock too.
@@ -586,7 +584,7 @@ class AbstractionTransformationTests(unittest.TestCase):
 """
         source = parse_problem(domain, problem_text)
 
-        result = _build_from_problem(source, ["stage", "dock"], "pooled-place")
+        result = _build_from_problem(source, ["stage", "dock"])
 
         clear_stage = result.problem.action("clear-stage")
         self.assertFalse(any(effect.value.is_false() for effect in clear_stage.effects))
@@ -615,7 +613,7 @@ class AbstractionTransformationTests(unittest.TestCase):
 """
         source = parse_problem(domain, problem_text)
 
-        result = _build_from_problem(source, ["hub", "spur"], "pooled-port")
+        result = _build_from_problem(source, ["hub", "spur"])
 
         # `movable` is static and holds for no collapsed object, so `?a` cannot
         # bind one, but the named `hub` still makes the delete apply.

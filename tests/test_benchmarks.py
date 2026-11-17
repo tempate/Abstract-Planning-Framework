@@ -13,8 +13,10 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from experiments.tracks import TRACKS, find_domain
+from experiments.tracks import TRACKS
+from scripts.utils.arguments import find_domain
 from experiments.collect import FIELDS, _preserved_rows, _track_results_file, collect
+from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.reporting import update_result_progress
 from experiments.run import (
@@ -180,7 +182,7 @@ class BenchmarkTests(unittest.TestCase):
             root = Path(directory)
             with self.assertRaises(SystemExit) as refusal:
                 _check_worktree_is_built(project_root=root)
-            for artifact in ARTIFACTS.values():
+            for artifact in (*ARTIFACTS.values(), Path(PARTIAL_GROUNDING_TRANSLATOR)):
                 path = root / artifact.relative_to(SETUP_ROOT)
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
@@ -204,16 +206,11 @@ class BenchmarkTests(unittest.TestCase):
             config_file = _write_copperbench_config(
                 [("abs-asp", "example", domain, problem, 0), ("asp", "example", domain, problem, None)],
                 definition_dir=definition_dir,
-                timeout=1800,
-                memory_limit=4096,
-                max_parallel_jobs=12,
             )
             config = json.loads(config_file.read_text(encoding="utf-8"))
             worker = shlex.split((definition_dir / "configs.txt").read_text(encoding="utf-8"))
             instances = (definition_dir / "instances.txt").read_text(encoding="utf-8").splitlines()
 
-        self.assertEqual(config["timeout"], 1800)
-        self.assertEqual(config["mem_limit"], 4096)
         self.assertEqual(config["working_dir"], os.path.relpath(PROJECT_ROOT, definition_dir))
         self.assertIn("experiments.run", worker)
         self.assertEqual(
@@ -435,6 +432,22 @@ class BenchmarkTests(unittest.TestCase):
             self.assertEqual({name for _m, name, _d, _p, _r in by_domain}, {"two"})
             self.assertEqual([(n, p.name) for _m, n, _d, p, _r in by_problem], [("two", "p02.pddl")])
             self.assertEqual({p.name for _m, _n, _d, p, _r in by_file_name}, {"p02.pddl"})
+
+    def test_flags_that_would_change_nothing_are_refused(self):
+        combinations = (
+            ["--best-class-of", "abs-asp", "--classes", "all"],
+            ["--from-rank", "2"],
+            ["--retry-missing", "runs", "--modes", "asp"],
+        )
+        for flags in combinations:
+            with (
+                self.subTest(flags=flags),
+                patch("sys.argv", ["submit", *flags]),
+                contextlib.redirect_stderr(io.StringIO()),
+                self.assertRaises(SystemExit) as refusal,
+            ):
+                experiments.submit.main()
+            self.assertEqual(refusal.exception.code, 2)
 
     def test_a_misspelled_domain_is_refused_rather_than_submitting_nothing(self):
         with self.assertRaises(SystemExit) as refusal:

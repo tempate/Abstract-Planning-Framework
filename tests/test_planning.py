@@ -75,14 +75,13 @@ class GeneratedAbstractionTests(unittest.TestCase):
             problem = root / "problem.pddl"
             domain.write_text(domain_text, encoding="utf-8")
             problem.write_text(problem_text, encoding="utf-8")
-            config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"], abstract_name="combined")
+            config = AbstractPlanningConfig(domain, problem, objects_to_abstract=["a", "b"])
 
             abstract_problem = build_abstract_problem(config)
             abstract_domain, abstract_problem_path, _ = write_abstract_problem(abstract_problem.problem, root / "run")
             generated = read_problem(abstract_domain, abstract_problem_path)
 
-        self.assertEqual(abstract_problem.abstraction.name, "combined")
-        self.assertEqual({item.name for item in generated.all_objects}, {"combined"})
+        self.assertEqual({item.name for item in generated.all_objects}, {abstract_problem.abstraction.name})
 
 
 class ArgumentTests(unittest.TestCase):

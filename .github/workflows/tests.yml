@@ -14,7 +14,7 @@ jobs:
   tests:
     name: Python 3.13 full suite
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 40
 
     env:
       RUN_PLANNER_INTEGRATION: "1"

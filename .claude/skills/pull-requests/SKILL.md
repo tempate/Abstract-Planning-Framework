@@ -91,7 +91,7 @@ abstract rows the run's manifest lists, as the `cluster-benchmarks` skill explai
 For a run over a subset of problems, report on the problems the subset was meant to
 cover, not on whatever extra the submission swept in.
 
-`experiments.figure` draws the paper's sat, opt or htg figure, problems solved
+`experiments.figure` draws a figure for the sat, opt or htg tracks, problems solved
 over time and runtime per problem with every mode, for the base and the branch
 side by side:
 
@@ -253,9 +253,9 @@ branch a worktree has checked out cannot be deleted, and `git worktree prune` cl
 the entries whose directories are gone.
 
 For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
-with the merged results. `experiments.paper` writes `main`'s results into every column of
-the per-domain table, `tab:ipc`, and draws the three figures again as the PDFs
-`main.tex` includes from `figures/`:
+with the merged results. `experiments.paper` writes `main`'s results into the IPC rows of
+the per-domain table, `tab:ipc`, and draws `figures/runtimes.pdf` again. It leaves the
+summary table, `tab:summary`, and the HTG rows of `tab:ipc` alone, so update those by hand:
 
 ```bash
 python -m experiments.paper

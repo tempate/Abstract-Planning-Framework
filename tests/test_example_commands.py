@@ -1,10 +1,7 @@
-import os
-import subprocess
 import sys
 import unittest
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
-from pathlib import Path
 from unittest.mock import patch
 
 from core.pipeline import pipeline
@@ -14,17 +11,6 @@ from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.utilities.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
 from core.utilities.plan import PlanAction
 from experiments.collect import _values
-
-# Each example runs the planner mode it is named after.
-EXAMPLES = ("asp", "lama", "abs-asp", "abs-lama")
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-
-
-def _argument_after(command, option):
-    """Return the value the echoed example command passed for one option."""
-    tokens = command.split()
-    return tokens[tokens.index(option) + 1]
 
 
 class PlannerOutputTests(unittest.TestCase):
@@ -45,51 +31,6 @@ class PlannerOutputTests(unittest.TestCase):
             self.assertEqual(values[f"{name}_seconds"], 0.25, name)
         for name in COUNTER_LABELS:
             self.assertEqual(values[name], 3, name)
-
-
-class ShellExampleTests(unittest.TestCase):
-    def _run(self, example, argument=None, python_bin=None):
-        environment = os.environ.copy()
-        if python_bin is not None:
-            environment["PYTHON_BIN"] = python_bin
-        command = [f"examples/{example}.sh"]
-        if argument is not None:
-            command.append(argument)
-        return subprocess.run(command, cwd=PROJECT_ROOT, env=environment, capture_output=True, text=True, check=False)
-
-    def test_examples_support_help(self):
-        for example in EXAMPLES:
-            with self.subTest(example=example):
-                result = self._run(example, "--help")
-
-                self.assertEqual(result.returncode, 0, result.stderr)
-                self.assertEqual(result.stdout.strip(), f"Usage: examples/{example}.sh")
-
-    def test_examples_reject_positional_arguments(self):
-        for example in EXAMPLES:
-            with self.subTest(example=example):
-                result = self._run(example, "unexpected", "/bin/echo")
-
-                self.assertEqual(result.returncode, 2)
-                self.assertIn("Usage:", result.stderr)
-
-    def test_examples_run_every_mode_on_one_comparable_task(self):
-        commands = {}
-        for example in EXAMPLES:
-            result = self._run(example, python_bin="/bin/echo")
-            self.assertEqual(result.returncode, 0, result.stderr)
-            commands[example] = result.stdout
-
-        for example, command in commands.items():
-            with self.subTest(example=example):
-                self.assertIn(f"-m scripts.planner {example}", command)
-                self.assertTrue(_argument_after(command, "--domain").endswith(".pddl"))
-
-        # The README compares the runs, so they have to solve the same task.
-        self.assertEqual(len({_argument_after(command, "--problem") for command in commands.values()}), 1)
-        # The abstraction examples demonstrate automatic symmetry selection.
-        for example in ("abs-asp", "abs-lama"):
-            self.assertNotIn("--objects-to-abstract", commands[example])
 
 
 class PlannerExitStatusTests(unittest.TestCase):
@@ -153,8 +94,6 @@ class PlannerExitStatusTests(unittest.TestCase):
                     "--objects-to-abstract",
                     "a",
                     "b",
-                    "--abstract-name",
-                    "combined",
                 ]
             )
 
@@ -162,7 +101,6 @@ class PlannerExitStatusTests(unittest.TestCase):
         self.assertEqual(status, 0)
         self.assertEqual(config.domain_path, "domain.pddl")
         self.assertEqual(config.objects_to_abstract, ("a", "b"))
-        self.assertEqual(config.abstract_name, "combined")
 
     def test_the_planner_passes_the_abstraction_source_on(self):
         argv = ["planner", "abs-lama", "--domain", "d.pddl", "--problem", "p.pddl", "--abstraction-source", "resources"]

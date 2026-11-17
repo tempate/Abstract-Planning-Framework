@@ -1,6 +1,7 @@
 """Argument types shared by planner command-line entry points."""
 
 import argparse
+from pathlib import Path
 
 from core.utilities.config import ABSTRACTION_SOURCES, SYMMETRIES, AbstractPlanningConfig, PlanningConfig
 
@@ -16,7 +17,7 @@ def positive_int(value):
 def task_arguments():
     """Parent parser for the concrete PDDL task every entry point takes."""
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--domain", required=True, default=argparse.SUPPRESS, help="Concrete domain PDDL")
+    parser.add_argument("--domain", help="Concrete domain PDDL; omit to use the domain file beside the problem")
     parser.add_argument("--problem", required=True, default=argparse.SUPPRESS, help="Concrete problem PDDL")
     return parser
 
@@ -24,10 +25,8 @@ def task_arguments():
 def abstraction_arguments():
     """Parent parser for the options that choose the collapsed object class."""
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("--objects-to-abstract", nargs="+", help="Objects to collapse; omit to use PDDL Symmetries")
-    parser.add_argument("--abstract-name", help="Name of the collapsed object")
     parser.add_argument(
-        "--symmetry-time-limit", type=positive_int, default=300, help="Symmetry discovery time limit in seconds"
+        "--objects-to-abstract", nargs="+", help="Objects to collapse; omit to take them from the abstraction source"
     )
     parser.add_argument(
         "--symmetries-before-grounding",
@@ -63,20 +62,42 @@ def optimize_arguments():
 def planning_config(args):
     """The configuration the task arguments describe."""
     optimize = getattr(args, "optimize", False)
-    return PlanningConfig(args.domain, args.problem, planner=args.mode, optimize=optimize)
+    return PlanningConfig(_domain(args), args.problem, planner=args.mode, optimize=optimize)
 
 
 def abstract_planning_config(args):
     """The configuration the task and abstraction arguments describe."""
+    # An optimal abstract plan is wasted on a refinement with gaps, so abs-lmcut always optimizes.
+    optimize = args.mode == "abs-lmcut" or getattr(args, "optimize", False)
     return AbstractPlanningConfig(
-        args.domain,
+        _domain(args),
         args.problem,
         planner=args.mode.removeprefix("abs-"),
-        optimize=getattr(args, "optimize", False),
+        optimize=optimize,
         objects_to_abstract=args.objects_to_abstract,
-        abstract_name=args.abstract_name,
-        symmetry_time_limit=args.symmetry_time_limit,
         symmetries_before_grounding=args.symmetries_before_grounding,
         abstraction_source=args.abstraction_source,
         class_rank=args.class_rank,
     )
+
+
+def _domain(args):
+    return args.domain if args.domain is not None else find_domain(Path(args.problem))
+
+
+def find_domain(problem):
+    """Find the domain file using the naming conventions of the benchmark collections."""
+    candidates = [
+        "domain.pddl",
+        f"{problem.stem}-domain{problem.suffix}",
+        f"{problem.name[:3]}-domain.pddl",
+        f"domain_{problem.name}",
+        f"domain-{problem.name}",
+    ]
+
+    for name in candidates:
+        domain = problem.parent / name
+        if domain.is_file():
+            return domain
+
+    raise FileNotFoundError(f"No domain file found for {problem}")

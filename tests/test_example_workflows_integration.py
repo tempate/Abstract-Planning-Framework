@@ -11,13 +11,12 @@ RUN_INTEGRATION = os.environ.get("RUN_PLANNER_INTEGRATION") == "1"
 
 @unittest.skipUnless(RUN_INTEGRATION, "set RUN_PLANNER_INTEGRATION=1 to run the external planner toolchain")
 class ExampleWorkflowTests(unittest.TestCase):
-    def _run(self, example):
-        environment = os.environ.copy()
-        environment["PYTHON_BIN"] = sys.executable
+    def _run(self, mode):
+        problem = "experiments/benchmarks/downward-benchmarks/driverlog/p07.pddl"
         with tempfile.TemporaryDirectory(prefix="apf-example-") as directory:
-            environment["APF_TEMP_DIR"] = directory
+            environment = {**os.environ, "APF_TEMP_DIR": directory}
             return subprocess.run(
-                [f"examples/{example}.sh"],
+                [sys.executable, "-m", "scripts.planner", mode, "--problem", problem],
                 cwd=PROJECT_ROOT,
                 env=environment,
                 capture_output=True,
