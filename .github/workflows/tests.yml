@@ -40,6 +40,22 @@ jobs:
       - name: Check Black formatting
         run: python -m black --check .
 
+      # setup skips any build whose output exists, so a hit skips the compile.
+      # The key covers the submodule commits, the numeric Fast Downward patch and setup itself.
+      - name: Key the planner build
+        id: planner-build
+        run: echo "key=planners-${{ runner.os }}-$(git ls-tree HEAD lib | sha256sum | cut -c1-16)-${{ hashFiles('scripts/setup.py') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the planner build
+        uses: actions/cache@v6
+        with:
+          key: ${{ steps.planner-build.outputs.key }}
+          path: |
+            lib/pddl-symmetries/src/translate/pybliss-0.73/pybind11_blissmodule.so
+            lib/downward/builds/release/bin
+            lib/numeric-fast-downward/builds/release64/bin
+            lib/plasp/bin/plasp
+
       - name: Build what the planner needs
         run: python -m scripts.setup
 
