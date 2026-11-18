@@ -14,9 +14,6 @@ from experiments.ipc.sat import suite as sat
 # onto different revisions of it.
 EXPERIMENTS = Path(__file__).parent
 BENCHMARKS = EXPERIMENTS / "benchmarks"
-# PDDL Symmetries grounds the task before it searches for symmetries, and the
-# hard-to-ground problems run out of memory there, so they skip the grounding.
-HTG_ARGUMENTS = ("--symmetries-before-grounding",)
 
 
 @dataclass(frozen=True)
@@ -106,7 +103,6 @@ TRACKS = {
             suite=htg.SUITE,
             benchmarks_dir=BENCHMARKS / "htg-domains",
             modes=("abs-asp", "abs-lama", "asp", "lama"),
-            abstract_arguments=HTG_ARGUMENTS,
         ),
         # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
         Track(
@@ -115,7 +111,6 @@ TRACKS = {
             suite=htg_opt.SUITE,
             benchmarks_dir=BENCHMARKS / "htg-domains",
             modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
-            abstract_arguments=HTG_ARGUMENTS,
             optimizing_arguments=("--optimize",),
         ),
         # The optimal suite, refined without gaps so that every plan is optimal, with

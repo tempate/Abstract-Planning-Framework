@@ -34,8 +34,6 @@ class AbstractPlanningConfig(PlanningConfig):
     """Complete input configuration for an abstraction-based planning run."""
 
     objects_to_abstract: Sequence[str] | None = None
-    # Find the symmetries on the lifted task, for tasks too large to ground.
-    symmetries_before_grounding: bool = False
     abstraction_source: str = SYMMETRIES
     class_rank: int = 0
 
