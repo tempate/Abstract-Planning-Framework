@@ -25,6 +25,8 @@ PAIRS = {
     "sat": (("lama", r"\LAMA", r"\LAMAa"), ("asp", r"\ASP", r"\ASPa")),
     "opt": (("lmcut", r"\LMcut", r"\LMcuta"), ("asp", r"\ASP", r"\ASPa")),
 }
+# The color and mark of each solver's points in a runtime plot, in the order of its track's pairs.
+SOLVER_MARKS = (("conc", "*"), ("abst", "triangle*"))
 # Lifts a cactus plot's source title over the legend that sits just above the plot.
 ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
@@ -119,16 +121,15 @@ def paper_figures(revision):
 
 
 def _runtime_figure(tracks):
-    """The paper's runtime figure on HTG, a column per track, ASP on the top row and its planner below."""
+    """The paper's runtime figure on HTG, a plot per track with both its solvers."""
     # Every plot labels its own y axis, so the columns need the gap of the HTG figure.
     gap = "0.75in"
     titles = _joined([_track_title(TRACK_NAMES[kind], 1) for kind in tracks], gap)
-    rows = [
-        _joined([_runtime_plot(problems, PAIRS[kind][index], labelled=True) for kind, problems in tracks.items()], gap)
-        for index in (1, 0)
-    ]
+    plots = _joined(
+        [_runtime_plot(problems, PAIRS[kind], labelled=True, legend=True) for kind, problems in tracks.items()], gap
+    )
 
-    return _in_row(titles) + "\n\n\\vspace{0.4em}\n" + "\n\n\\medskip\n".join(_in_row(row) for row in rows)
+    return _in_row(titles) + "\n\n\\vspace{1.6em}\n" + _in_row(plots)
 
 
 def _panel(title, kind, tracks):
@@ -140,8 +141,8 @@ def _panel(title, kind, tracks):
         _in_row(_track_title(TRACK_NAMES[kind], len(tracks)))
         + "\n\n\\vspace{0.4em}\n"
         + _in_row(_joined(_cactus_plots(tracks, PAIRS[kind])))
-        + "\n\n\\medskip\n"
-        + "\n\n\\smallskip\n".join(_in_row(_joined(plots)) for plots in _runtime_rows(tracks, PAIRS[kind]))
+        + "\n\n\\vspace{1.6em}\n"
+        + _in_row(_joined(_runtime_plots(tracks, PAIRS[kind])))
     )
 
     return _titled(title, body, len(tracks))
@@ -157,7 +158,7 @@ def _htg_figure(tracks, row_gap):
         baseline = PAIRS[track][0]
         options = f"ylabel={{Problems solved}}, {CENTRED_LEGEND}"
         cactus_plots.append(_cactus_plot(TRACK_NAMES[track], problems, (baseline,), options, legend=True))
-        runtimes.append(_runtime_plot(problems, baseline, labelled=True))
+        runtimes.append(_runtime_plot(problems, (baseline,), labelled=True, legend=False))
 
     return _in_row(_joined(cactus_plots, gap)) + row_gap + _in_row(_joined(runtimes, gap))
 
@@ -196,19 +197,45 @@ def _cactus_plot(title, problems, pairs, options, legend):
     )
 
 
-def _runtime_rows(tracks, pairs):
-    """One track's runtime per problem, a row per solver and a plot per abstraction source in each."""
-    # The cactus plots above name the sources, so only the left plot labels its y axis.
+def _runtime_plots(tracks, pairs):
+    """One track's runtime per problem, a plot per abstraction source with every solver in it."""
+    # The cactus plots above name the sources, so only the left plot labels its y axis, and only the right
+    # one names the solvers, as the cactus plots do.
+    last = len(tracks) - 1
     return [
-        [_runtime_plot(problems, pair, labelled=index == 0) for index, problems in enumerate(tracks.values())]
-        for pair in pairs
+        _runtime_plot(problems, pairs, labelled=index == 0, legend=index == last)
+        for index, problems in enumerate(tracks.values())
     ]
 
 
-def _runtime_plot(problems, pair, labelled):
-    solver, label, abstract_label = pair
-    option = rf"ylabel={{{abstract_label}{{}} time (s)}}" if labelled else "yticklabels={}"
-    return rf"\runtimeplot[{option}]{{{label}}}{{{scatter(problems, solver, f'abs-{solver}')}}}"
+def _runtime_plot(problems, pairs, labelled, legend):
+    """Each solver's runtime per problem against its abstraction's, in the solver's own color and mark."""
+    options = r"ylabel={X\textsuperscript{$\alpha$} time (s)}" if labelled else "yticklabels={}"
+    if legend:
+        options += (
+            ", legend style={font=\\scriptsize, draw=none, fill=none, /tikz/every even column/.append style={column sep=4pt}}, "
+            + CENTRED_LEGEND
+        )
+
+    lines = []
+    for (solver, label, _abstract_label), (color, mark) in zip(pairs, SOLVER_MARKS):
+        points = scatter(problems, solver, f"abs-{solver}")
+        lines.append(
+            rf"\addplot[only marks, mark={mark}, mark size=1.2pt, color={color}, fill opacity=0.45, "
+            rf"draw opacity=0.6] coordinates {{{points}}};"
+        )
+        if legend:
+            lines.append(rf"\addlegendentry{{{label}}}")
+
+    return (
+        "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
+        + rf"\begin{{loglogaxis}}[bordered, xlabel={{X time (s)}}, {options}]"
+        + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
+        + "\\addplot[forget plot, black!35, dashed, no marks] coordinates {(1800,1) (1800,9000)};\n"
+        + "\\addplot[forget plot, black!35, dashed, no marks] coordinates {(1,1800) (9000,1800)};\n"
+        + "\n".join(lines)
+        + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
+    )
 
 
 def _track_title(name, columns):
