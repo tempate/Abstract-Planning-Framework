@@ -245,8 +245,6 @@ def _runtime_plot(problems, pairs, labelled, legend, title=""):
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
         + rf"\begin{{loglogaxis}}[bordered, xlabel={{X time (s)}}, {options}]"
         + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
-        + "\\addplot[forget plot, black!35, dashed, no marks] coordinates {(1800,1) (1800,9000)};\n"
-        + "\\addplot[forget plot, black!35, dashed, no marks] coordinates {(1,1800) (9000,1800)};\n"
         + "\n".join(lines)
         + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
     )
