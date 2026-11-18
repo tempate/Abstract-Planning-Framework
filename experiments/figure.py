@@ -116,20 +116,30 @@ def paper_figures(revision):
     """The paper's figures at a revision, by the file name main.tex includes, each the body of a PDF."""
     # Each PDF is as wide as the float main.tex includes it in, so it keeps the paper's sizes.
     return {
-        "runtimes": _minipage(r"\textwidth", _runtime_figure(load_tracks(revision, "htg", []))),
+        "runtimes": _minipage(r"\textwidth", _runtime_figure(revision)),
     }
 
 
-def _runtime_figure(tracks):
-    """The paper's runtime figure on HTG, a plot per track with both its solvers."""
+def _runtime_figure(revision):
+    """The paper's runtime figure, a column per track and a row per benchmark set, HTG first."""
     # Every plot labels its own y axis, so the columns need the gap of the HTG figure.
     gap = "0.75in"
-    titles = _joined([_track_title(TRACK_NAMES[kind], 1) for kind in tracks], gap)
-    plots = _joined(
-        [_runtime_plot(problems, PAIRS[kind], labelled=True, legend=True) for kind, problems in tracks.items()], gap
-    )
+    ipc = {kind: load_tracks(revision, kind, []) for kind in TRACK_NAMES}
+    benchmark_sets = {"HTG": load_tracks(revision, "htg", [])}
+    for source, name in SOURCES.items():
+        benchmark_sets[f"IPC {name}"] = {kind: sources[source] for kind, sources in ipc.items()}
 
-    return _in_row(titles) + "\n\n\\vspace{1.6em}\n" + _in_row(plots)
+    titles = _joined([_track_title(name, 1) for name in TRACK_NAMES.values()], gap)
+    rows = []
+    for index, (title, tracks) in enumerate(benchmark_sets.items()):
+        # Only the top row names the solvers, between its title and the plot.
+        plots = [
+            _runtime_plot(problems, PAIRS[kind], labelled=True, legend=index == 0, title=title)
+            for kind, problems in tracks.items()
+        ]
+        rows.append(_in_row(_joined(plots, gap)))
+
+    return _in_row(titles) + "\n\n\\vspace{0.8em}\n" + "\n\n\\vspace{1.2em}\n".join(rows)
 
 
 def _panel(title, kind, tracks):
@@ -208,9 +218,13 @@ def _runtime_plots(tracks, pairs):
     ]
 
 
-def _runtime_plot(problems, pairs, labelled, legend):
+def _runtime_plot(problems, pairs, labelled, legend, title=""):
     """Each solver's runtime per problem against its abstraction's, in the solver's own color and mark."""
     options = r"ylabel={X\textsuperscript{$\alpha$} time (s)}" if labelled else "yticklabels={}"
+    if title:
+        options += rf", title={{\small {title}}}"
+        if legend:
+            options += f", {ABOVE_LEGEND}"
     if legend:
         options += (
             ", legend style={font=\\scriptsize, draw=none, fill=none, /tikz/every even column/.append style={column sep=4pt}}, "
