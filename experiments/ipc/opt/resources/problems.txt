@@ -89,8 +89,6 @@ freecell/p15.pddl
 freecell/p16.pddl
 freecell/p17.pddl
 freecell/p18.pddl
-freecell/p19.pddl
-freecell/p20.pddl
 freecell/probfreecell-10-1.pddl
 freecell/probfreecell-10-2.pddl
 freecell/probfreecell-10-3.pddl
@@ -106,11 +104,6 @@ freecell/probfreecell-12-2.pddl
 freecell/probfreecell-12-3.pddl
 freecell/probfreecell-12-4.pddl
 freecell/probfreecell-12-5.pddl
-freecell/probfreecell-13-1.pddl
-freecell/probfreecell-13-2.pddl
-freecell/probfreecell-13-3.pddl
-freecell/probfreecell-13-4.pddl
-freecell/probfreecell-13-5.pddl
 freecell/probfreecell-2-1.pddl
 freecell/probfreecell-2-2.pddl
 freecell/probfreecell-2-3.pddl
@@ -162,12 +155,10 @@ mprime/prob08.pddl
 mprime/prob09.pddl
 mprime/prob11.pddl
 mprime/prob12.pddl
-mprime/prob15.pddl
 mprime/prob16.pddl
 mprime/prob17.pddl
 mprime/prob18.pddl
 mprime/prob19.pddl
-mprime/prob20.pddl
 mprime/prob21.pddl
 mprime/prob23.pddl
 mprime/prob24.pddl
@@ -190,7 +181,6 @@ mystery/prob05.pddl
 mystery/prob06.pddl
 mystery/prob08.pddl
 mystery/prob09.pddl
-mystery/prob10.pddl
 mystery/prob11.pddl
 mystery/prob12.pddl
 mystery/prob13.pddl

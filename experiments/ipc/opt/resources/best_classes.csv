@@ -175,10 +175,6 @@ freecell,p17.pddl,abs-asp,0
 freecell,p17.pddl,abs-lmcut,0
 freecell,p18.pddl,abs-asp,0
 freecell,p18.pddl,abs-lmcut,0
-freecell,p19.pddl,abs-asp,0
-freecell,p19.pddl,abs-lmcut,0
-freecell,p20.pddl,abs-asp,0
-freecell,p20.pddl,abs-lmcut,0
 freecell,probfreecell-10-1.pddl,abs-asp,0
 freecell,probfreecell-10-1.pddl,abs-lmcut,0
 freecell,probfreecell-10-2.pddl,abs-asp,0
@@ -209,16 +205,6 @@ freecell,probfreecell-12-4.pddl,abs-asp,0
 freecell,probfreecell-12-4.pddl,abs-lmcut,0
 freecell,probfreecell-12-5.pddl,abs-asp,0
 freecell,probfreecell-12-5.pddl,abs-lmcut,0
-freecell,probfreecell-13-1.pddl,abs-asp,0
-freecell,probfreecell-13-1.pddl,abs-lmcut,0
-freecell,probfreecell-13-2.pddl,abs-asp,0
-freecell,probfreecell-13-2.pddl,abs-lmcut,0
-freecell,probfreecell-13-3.pddl,abs-asp,0
-freecell,probfreecell-13-3.pddl,abs-lmcut,0
-freecell,probfreecell-13-4.pddl,abs-asp,0
-freecell,probfreecell-13-4.pddl,abs-lmcut,0
-freecell,probfreecell-13-5.pddl,abs-asp,0
-freecell,probfreecell-13-5.pddl,abs-lmcut,0
 freecell,probfreecell-2-1.pddl,abs-asp,0
 freecell,probfreecell-2-1.pddl,abs-lmcut,0
 freecell,probfreecell-2-2.pddl,abs-asp,0
@@ -321,8 +307,6 @@ mprime,prob11.pddl,abs-asp,0
 mprime,prob11.pddl,abs-lmcut,0
 mprime,prob12.pddl,abs-asp,0
 mprime,prob12.pddl,abs-lmcut,0
-mprime,prob15.pddl,abs-asp,0
-mprime,prob15.pddl,abs-lmcut,0
 mprime,prob16.pddl,abs-asp,0
 mprime,prob16.pddl,abs-lmcut,0
 mprime,prob17.pddl,abs-asp,0
@@ -331,8 +315,6 @@ mprime,prob18.pddl,abs-asp,0
 mprime,prob18.pddl,abs-lmcut,0
 mprime,prob19.pddl,abs-asp,0
 mprime,prob19.pddl,abs-lmcut,0
-mprime,prob20.pddl,abs-asp,0
-mprime,prob20.pddl,abs-lmcut,0
 mprime,prob21.pddl,abs-asp,0
 mprime,prob21.pddl,abs-lmcut,0
 mprime,prob23.pddl,abs-asp,0
@@ -377,8 +359,6 @@ mystery,prob08.pddl,abs-asp,4
 mystery,prob08.pddl,abs-lmcut,3
 mystery,prob09.pddl,abs-asp,1
 mystery,prob09.pddl,abs-lmcut,1
-mystery,prob10.pddl,abs-asp,0
-mystery,prob10.pddl,abs-lmcut,0
 mystery,prob11.pddl,abs-asp,4
 mystery,prob11.pddl,abs-lmcut,0
 mystery,prob12.pddl,abs-asp,1
