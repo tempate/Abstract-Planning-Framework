@@ -124,11 +124,11 @@ def _runtime_figure(revision):
     """The paper's runtime figure across both columns, a row per track and a column per benchmark set."""
     htg = load_tracks(revision, "htg", [])
     rows = []
-    for kind, name in TRACK_NAMES.items():
+    for row, (kind, name) in enumerate(TRACK_NAMES.items()):
         ipc = load_tracks(revision, kind, [])
         benchmark_sets = {"HTG": htg[kind], **{f"IPC {title}": ipc[source] for source, title in SOURCES.items()}}
         # Only the left plot labels its y axis, the middle one names the track's solvers, and the right one
-        # names the track down its side.
+        # names the track down its side. The top row alone names the benchmark sets.
         last = len(benchmark_sets) - 1
         plots = [
             _runtime_plot(
@@ -136,7 +136,7 @@ def _runtime_figure(revision):
                 PAIRS[kind],
                 labelled=index == 0,
                 legend=index == 1,
-                title=title,
+                title=title if row == 0 else "",
                 side_label=name if index == last else "",
             )
             for index, (title, problems) in enumerate(benchmark_sets.items())
@@ -144,7 +144,7 @@ def _runtime_figure(revision):
         rows.append(_in_row(_joined(plots)))
 
     # The figure spans the page, so its plots are larger than the paper's other plots.
-    return "\\setlength{\\plotsize}{1.65in}\n" + "\n\n\\vspace{0.8em}\n".join(rows)
+    return "\\setlength{\\plotsize}{1.65in}\n" + "\n\n\\vspace{1.8em}\n".join(rows)
 
 
 def _panel(title, kind, tracks):
