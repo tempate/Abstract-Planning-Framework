@@ -35,7 +35,7 @@ class ExampleWorkflowTests(unittest.TestCase):
         result = self._run("abs-asp")
 
         self._assert_success(result)
-        self.assertRegex(result.stdout, r"(?m)^    Refinement decrements +\d+$")
+        self.assertRegex(result.stdout, r"(?m)^    Switches turned off +\d+$")
 
 
 if __name__ == "__main__":

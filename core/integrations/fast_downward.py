@@ -119,7 +119,7 @@ def find_sas_plan(base_dir, sas_path, label, search):
     return _find_plan(command, label, plan_path)
 
 
-def parse_plan_actions(plan):
+def actions_from_plan_file(plan):
     """Convert the lines of a plan file into chronological plan actions, from step 1."""
     actions = []
     for time_step, line in enumerate(plan, 1):

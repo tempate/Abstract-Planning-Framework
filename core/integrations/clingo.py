@@ -6,7 +6,7 @@ from core.utilities.outcomes import IntegrationError
 from core.utilities.plan import PlanAction
 
 
-def parse_plan_actions(atoms):
+def actions_from_model(atoms):
     """Convert shown ``occurs/2`` atoms into chronological plan actions."""
     actions = []
     for atom in atoms:

@@ -42,13 +42,13 @@ class PlanningMetricsTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "stopped"):
             with metrics.measure("concrete_asp"):
                 raise RuntimeError("stopped")
-        metrics.set_counter("decrements", 1)
+        metrics.set_counter("switches_off", 1)
         metrics.set_counter("concrete_solve_calls", 2)
 
         # A phase that raised never completed, so only the first one is reported as done.
         completed = [event["phase"] for event, _snapshot in updates if event["kind"] == "phase_completed"]
         self.assertEqual(completed, ["concrete_fd"])
-        self.assertEqual(updates[-1][1]["counters"]["decrements"], 1)
+        self.assertEqual(updates[-1][1]["counters"]["switches_off"], 1)
 
 
 if __name__ == "__main__":

@@ -25,15 +25,12 @@ DURATION_LABELS = {
     "partial_asp": "Partial SAS-to-ASP",
     "partial_one_shot": "Partial one-shot solving",
     "guided_concrete_solving": "Guided concrete solving",
-    # No longer measured: the guided search now raises the horizon itself. Kept
-    # so collecting a run made before that still writes the column it recorded.
-    "extended_concrete_solving": "Extended concrete solving",
 }
 
 COUNTER_LABELS = {
     "relaxed_deletes": "Relaxed deletes",
     "relaxed_inequalities": "Relaxed inequalities",
-    "decrements": "Refinement decrements",
+    "switches_off": "Switches turned off",
     "increments": "Horizon increments",
     "abstract_horizon": "Abstract horizon",
     "concrete_horizon": "Concrete horizon",

@@ -92,10 +92,9 @@ def load_tracks(revision, kind, manifests, sources=None):
 def _sources(kind):
     """What the tracks of a kind abstract, such as symmetries and resources for sat."""
     sources = []
-    for name in TRACKS:
-        track_kind, _, source = name.partition("/")
-        if track_kind == kind:
-            sources.append(source)
+    for track in TRACKS.values():
+        if track.kind == kind:
+            sources.append(track.source)
     return sources
 
 

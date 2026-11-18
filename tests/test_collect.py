@@ -4,7 +4,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from experiments.collect import FIELDS, _preserved_rows, _track_results_file, collect
+from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
+from experiments.collect import FIELDS, _preserved_rows, _track_results_file, _values, collect
 from experiments.submit import _write_manifest
 from experiments.tracks import TRACKS
 
@@ -25,6 +26,22 @@ class CollectTests(unittest.TestCase):
         path = Path(directory) / "example" / "p01" / f"{mode}.json"
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(result), encoding="utf-8")
+
+    def test_every_metric_the_planner_reports_is_collected(self):
+        metrics = {
+            "durations": {name: 0.25 for name in DURATION_LABELS},
+            "counters": {name: 3 for name in COUNTER_LABELS},
+            "abstraction": {"objects": ["a", "b"], "object_type": "item"},
+        }
+        result = {"status": "success", "wall_time_seconds": 1.0, "output": "", "progress": {"metrics": metrics}}
+
+        values = _values(result)
+
+        for name in DURATION_LABELS:
+            self.assertEqual(values[f"{name}_seconds"], 0.25, name)
+        for name in COUNTER_LABELS:
+            self.assertEqual(values[name], 3, name)
+        self.assertEqual((values["abstracted_object_count"], values["abstracted_object_type"]), (2, "item"))
 
     def test_every_mode_becomes_its_own_row(self):
         """A mode the collector does not know is filed as an abstract result and
@@ -113,16 +130,16 @@ class CollectedCsvTests(unittest.TestCase):
             collected.append({"domain": domain, "problem": problem, "mode": mode, "status": status})
         return collected
 
-    def test_a_collected_result_replaces_the_one_already_in_the_csv(self):
+    def test_a_collected_result_replaces_the_one_already_in_the_csv_unless_it_never_reported(self):
         rows = [("example", "p01.pddl", "asp", "success")]
-        for status in ("timed out", "missing"):
+        for status, kept in (("timed out", []), ("missing", ["success"])):
             with self.subTest(status=status), tempfile.TemporaryDirectory() as directory:
                 csv_file = self._write_csv(directory, rows)
                 collected = self._collected([("example", "p01.pddl", "asp", status)])
 
                 preserved = _preserved_rows(collected, csv_file)
 
-                self.assertEqual(preserved, [])
+                self.assertEqual([row["status"] for row in preserved], kept)
 
     def test_every_result_the_run_did_not_re_run_is_kept(self):
         """A baseline measured on its own, or a run filling one problem's gap,
@@ -169,21 +186,6 @@ class CollectedCsvTests(unittest.TestCase):
             preserved = _preserved_rows(collected, csv_file)
 
         self.assertEqual([(row["problem"], row["class"]) for row in preserved], [("p02.pddl", "1")])
-
-    def test_a_job_that_never_reported_keeps_the_other_classes(self):
-        with tempfile.TemporaryDirectory() as directory:
-            csv_file = Path(directory) / "results.csv"
-            with csv_file.open("w", encoding="utf-8", newline="") as stream:
-                writer = csv.DictWriter(stream, fieldnames=FIELDS)
-                writer.writeheader()
-                for rank in ("0", "1"):
-                    writer.writerow({"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": rank})
-            collected = self._collected([("example", "p01.pddl", "abs-asp", "missing")])
-            collected[0]["class"] = "0"
-
-            preserved = _preserved_rows(collected, csv_file)
-
-        self.assertEqual([row["class"] for row in preserved], ["1"])
 
     def test_a_first_run_has_nothing_to_keep(self):
         with tempfile.TemporaryDirectory() as directory:

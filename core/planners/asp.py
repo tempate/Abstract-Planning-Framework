@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from core.integrations.clingo import parse_plan_actions
+from core.integrations.clingo import actions_from_model
 from core.integrations.fast_downward import pddl_to_sas
 from core.integrations.plasp import sas_to_asp
 from core.utilities.config import PlanningConfig
@@ -42,4 +42,4 @@ class Asp:
             solve_result = solver.search(on_attempt=record_attempt)
 
         metrics.set_counter("solve_calls", solve_result.attempts)
-        return parse_plan_actions(solve_result.plan)
+        return actions_from_model(solve_result.plan)

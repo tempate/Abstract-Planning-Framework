@@ -23,13 +23,13 @@ class _Reach:
     true_facts: list
 
 
-def _reach(problem, abstraction):
-    collapsed = frozenset(problem.object(name) for name in abstraction.objects)
+def _reach(problem, collapsed_set):
+    collapsed = frozenset(problem.object(name) for name in collapsed_set.objects)
     true_facts = [fluent for fluent, value in problem.explicit_initial_values.items() if value.is_true()]
-    return _Reach(collapsed, _collapsed_type(problem, abstraction), problem.get_static_fluents(), true_facts)
+    return _Reach(collapsed, _collapsed_type(problem, collapsed_set), problem.get_static_fluents(), true_facts)
 
 
-def split_actions(problem, abstraction):
+def split_actions(problem, collapsed_set):
     """Split each action on whether its collapsible parameters take a collapsed object.
 
     Relaxing a delete on the schema relaxes it in every grounding, including
@@ -38,17 +38,24 @@ def split_actions(problem, abstraction):
     collapsed object, so the relaxation that follows reaches only the groundings
     that need it.
     """
-    reach = _reach(problem, abstraction)
+    reach = _reach(problem, collapsed_set)
 
-    split_problem = problem.clone()
-    collapsed_marker, kept_marker = _add_markers(split_problem, abstraction, reach.collapsed)
-
-    split_problem.clear_actions()
+    split_parameters = {}
     for action in problem.actions:
         if SPLIT_SEPARATOR in action.name:
             raise ValueError(f"Action name already holds the split separator: {action.name}")
+        split_parameters[action.name] = _split_parameters(problem, action, reach)
 
-        parameters = _split_parameters(problem, action, reach)
+    # Without a split, the markers would be predicates no action reads.
+    if not any(split_parameters.values()):
+        return problem
+
+    split_problem = problem.clone()
+    collapsed_marker, kept_marker = _add_markers(split_problem, collapsed_set, reach.collapsed)
+
+    split_problem.clear_actions()
+    for action in problem.actions:
+        parameters = split_parameters[action.name]
         if not parameters:
             split_problem.add_action(action)
             continue
@@ -65,13 +72,13 @@ def split_actions(problem, abstraction):
     return split_problem
 
 
-def _add_markers(problem, abstraction, collapsed):
+def _add_markers(problem, collapsed_set, collapsed):
     """Static facts telling the collapsed objects apart from every other object of their type tree."""
-    root = _root_type(problem, abstraction)
+    root = _root_type(problem, collapsed_set)
 
     boolean = problem.environment.type_manager.BoolType()
-    collapsed_marker = Fluent(f"{abstraction.name}-collapsed", boolean, environment=problem.environment, x=root)
-    kept_marker = Fluent(f"{abstraction.name}-kept", boolean, environment=problem.environment, x=root)
+    collapsed_marker = Fluent(f"{collapsed_set.name}-collapsed", boolean, environment=problem.environment, x=root)
+    kept_marker = Fluent(f"{collapsed_set.name}-kept", boolean, environment=problem.environment, x=root)
     problem.add_fluent(collapsed_marker, default_initial_value=False)
     problem.add_fluent(kept_marker, default_initial_value=False)
 
@@ -126,12 +133,12 @@ def _with_preconditions(action, name, conditions):
     return copy
 
 
-def find_relaxable_deletes(problem, abstraction):
+def find_relaxable_deletes(problem, collapsed_set):
     """Find the deletes that could remove a fact other collapsed objects still hold.
 
     Returns them as (action name, effect) pairs.
     """
-    reach = _reach(problem, abstraction)
+    reach = _reach(problem, collapsed_set)
 
     relaxable = []
     for action in problem.actions:
@@ -220,7 +227,7 @@ def _binding(atom, fact, variable):
     return bound
 
 
-def relax_inequalities(problem, abstraction):
+def relax_inequalities(problem, collapsed_set):
     """Replace the inequalities the collapse would make false with a static distinct predicate.
 
     Collapsing two objects into one symbol makes (not (= ?x ?y)) false wherever
@@ -231,7 +238,7 @@ def relax_inequalities(problem, abstraction):
     objects still have to differ. Returns the relaxed problem and the
     (action name, inequality) pairs it replaced.
     """
-    reach = _reach(problem, abstraction)
+    reach = _reach(problem, collapsed_set)
 
     def can_be_collapsed(action, side):
         if side.is_object_exp():
@@ -240,9 +247,9 @@ def relax_inequalities(problem, abstraction):
 
     relaxed_problem = problem.clone()
 
-    root = _root_type(problem, abstraction)
+    root = _root_type(problem, collapsed_set)
     boolean = problem.environment.type_manager.BoolType()
-    distinct = Fluent(f"{abstraction.name}-distinct", boolean, environment=problem.environment, x=root, y=root)
+    distinct = Fluent(f"{collapsed_set.name}-distinct", boolean, environment=problem.environment, x=root, y=root)
 
     relaxed = []
     for action in relaxed_problem.actions:
@@ -313,12 +320,12 @@ def _is_variable_of(expression, collapsed_type):
     return collapsed_type.is_subtype(variable.type)
 
 
-def _root_type(problem, abstraction):
-    root = _collapsed_type(problem, abstraction)
+def _root_type(problem, collapsed_set):
+    root = _collapsed_type(problem, collapsed_set)
     while root.father is not None:
         root = root.father
     return root
 
 
-def _collapsed_type(problem, abstraction):
-    return problem.object(abstraction.objects[0]).type
+def _collapsed_type(problem, collapsed_set):
+    return problem.object(collapsed_set.objects[0]).type

@@ -21,25 +21,25 @@ from core.utilities.metrics import PlanningMetrics
 from core.utilities.outcomes import NoResourcesError, NoSymmetriesError
 from core.utilities.config import RESOURCES, AbstractPlanningConfig
 
-__all__ = ["Abstraction", "AbstractionError", "AbstractionResult", "NoSymmetriesError", "build_abstract_problem"]
+__all__ = ["AbstractTask", "AbstractionError", "CollapsedSet", "NoSymmetriesError", "build_abstract_task"]
 
 
 @dataclass(frozen=True)
-class Abstraction:
+class CollapsedSet:
     name: str
     objects: tuple[str, ...]
     object_type: str
 
 
 @dataclass(frozen=True)
-class AbstractionResult:
-    abstraction: Abstraction
+class AbstractTask:
+    collapsed_set: CollapsedSet
     problem: Problem
     relaxed_deletes: tuple
     relaxed_inequalities: tuple
 
 
-def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
+def build_abstract_task(config: AbstractPlanningConfig, metrics: PlanningMetrics | None = None):
     """Read one concrete task, select an object class, and abstract it."""
     metrics = metrics or PlanningMetrics()
 
@@ -54,15 +54,15 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
     # collapse, which would otherwise merge the values that price actions.
     problem = without_action_costs(problem)
 
-    abstraction = _choose_abstraction(problem, config, metrics)
+    collapsed_set = _choose_abstraction(problem, config, metrics)
 
     with metrics.measure("abstraction"):
         # The class has to be chosen before the inequalities can be relaxed,
         # and they have to be relaxed before the collapse makes them false.
         # Split before relaxing any delete, so that the relaxation sees which
         # groundings of an action can take a collapsed object.
-        problem = split_actions(problem, abstraction)
-        problem, relaxed_inequalities = relax_inequalities(problem, abstraction)
+        problem = split_actions(problem, collapsed_set)
+        problem, relaxed_inequalities = relax_inequalities(problem, collapsed_set)
 
     # Relaxing a delete is only an over-approximation while every condition is
     # positive, so reach PNF before any delete is relaxed.
@@ -74,11 +74,11 @@ def build_abstract_problem(config: AbstractPlanningConfig, metrics: PlanningMetr
             problem = to_positive_normal_form(problem)
 
     with metrics.measure("abstraction"):
-        relaxable_deletes = find_relaxable_deletes(problem, abstraction)
-        collapsed_problem, relaxed_deletes = collapse_objects(problem, abstraction, relaxable_deletes)
+        relaxable_deletes = find_relaxable_deletes(problem, collapsed_set)
+        collapsed_problem, relaxed_deletes = collapse_objects(problem, collapsed_set, relaxable_deletes)
 
-    return AbstractionResult(
-        abstraction=abstraction,
+    return AbstractTask(
+        collapsed_set=collapsed_set,
         problem=collapsed_problem,
         relaxed_deletes=relaxed_deletes,
         relaxed_inequalities=relaxed_inequalities,
@@ -144,7 +144,7 @@ def _select_abstraction(problem, candidate_classes, rank=0):
     if rank >= len(abstractions):
         raise AbstractionError(f"No class at rank {rank}: only {len(abstractions)} can be collapsed")
 
-    abstractions.sort(key=lambda abstraction: -len(abstraction.objects))
+    abstractions.sort(key=lambda collapsed_set: -len(collapsed_set.objects))
     return abstractions[rank]
 
 
@@ -174,7 +174,7 @@ def _create_abstraction(problem, object_names):
     if abstract_name.casefold() in reserved_names:
         raise AbstractionError(f"Abstract object name is already used: {abstract_name}")
 
-    return Abstraction(
+    return CollapsedSet(
         name=abstract_name,
         objects=tuple(item.name for item in objects_to_collapse),
         object_type=objects_to_collapse[0].type.name,
@@ -188,8 +188,8 @@ def report_abstraction(abstract_problem, metrics):
     metrics snapshot reaches the result file on every update, which is what
     survives a run killed at the benchmark timeout.
     """
-    abstraction = abstract_problem.abstraction
-    metrics.set_abstraction(abstraction.objects, abstraction.object_type)
+    collapsed_set = abstract_problem.collapsed_set
+    metrics.set_abstraction(collapsed_set.objects, collapsed_set.object_type)
     metrics.set_counters(
         {
             "relaxed_deletes": len(abstract_problem.relaxed_deletes),
@@ -197,7 +197,7 @@ def report_abstraction(abstract_problem, metrics):
         }
     )
 
-    print(f"Collapsed {sorted(abstraction.objects)} into {abstraction.name} (type={abstraction.object_type})")
+    print(f"Collapsed {sorted(collapsed_set.objects)} into {collapsed_set.name} (type={collapsed_set.object_type})")
 
 
 def write_abstract_problem(problem, base_dir):

@@ -11,13 +11,13 @@ class SolveResult:
     plan: list[str]
     horizon: int
     attempts: int = 0
-    dropped: int = 0  # assumptions given up before the program became satisfiable
+    switches_off: int = 0  # switches turned off before the program became satisfiable
 
 
 class Solver:
     """One Clingo control whose horizon can be raised without regrounding, and whose assumptions can be given up."""
 
-    def __init__(self, asp, init_horizon=0, optimize=True):
+    def __init__(self, asp, init_horizon=0, *, optimize):
         """Create the control, load the program, and ground it up to the initial horizon."""
         if init_horizon < 0:
             raise ValueError("Horizon must be nonnegative")
@@ -52,9 +52,9 @@ class Solver:
                 return [str(atom) for atom in model.symbols(shown=True)]
         return None
 
-    def search(self, symbols=(), on_attempt=None, dropped=0):
-        """Assume every symbol but the first `dropped`, give the rest up in the order given, then raise the horizon."""
-        assumptions = {symbol: index >= dropped for index, symbol in enumerate(symbols)}
+    def search(self, symbols=(), on_attempt=None, switches_off=0):
+        """Hold every switch but the first `switches_off`, turn the rest off in the order given, then raise the horizon."""
+        assumptions = {symbol: index >= switches_off for index, symbol in enumerate(symbols)}
         attempts = 0
 
         while True:
@@ -62,15 +62,15 @@ class Solver:
 
             # Allow callers to report progress while the search runs.
             if on_attempt is not None:
-                on_attempt(self.horizon, dropped, attempts)
+                on_attempt(self.horizon, switches_off, attempts)
 
             plan = self.solve(list(assumptions.items()))
             if plan is not None:
-                return SolveResult(plan, self.horizon, attempts, dropped)
+                return SolveResult(plan, self.horizon, attempts, switches_off)
 
-            if dropped < len(symbols):
-                assumptions[symbols[dropped]] = False
-                dropped += 1
+            if switches_off < len(symbols):
+                assumptions[symbols[switches_off]] = False
+                switches_off += 1
             else:
                 # Nothing constrains the search any more, so the only way left to
                 # satisfy the program is to give it another time step.

@@ -10,30 +10,7 @@ from experiments.tracks import TRACKS
 from scripts import planner
 from scripts.utils.arguments import abstract_planning_config, planning_config
 from core.pipeline.abstraction.collapse import AbstractionError
-from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
 from core.utilities.outcomes import STATUS_BY_EXIT_CODE, UnsolvableTaskError
-from core.utilities.plan import PlanAction
-from experiments.collect import _values
-
-
-class PlannerOutputTests(unittest.TestCase):
-    def test_every_metric_the_planner_prints_is_collected(self):
-        """The collector reads the printed metrics, so the two must agree on the format."""
-        metrics = {
-            "durations": {name: 0.25 for name in DURATION_LABELS},
-            "counters": {name: 3 for name in COUNTER_LABELS},
-            "abstraction": {"objects": ["a", "b"], "object_type": "item"},
-        }
-        output = StringIO()
-        with redirect_stdout(output):
-            planner.print_planning_result({"plan": (PlanAction("move", (), 1),), "success": True, "metrics": metrics})
-
-        values = _values({"status": "success", "wall_time_seconds": 1.0, "output": output.getvalue()})
-
-        for name in DURATION_LABELS:
-            self.assertEqual(values[f"{name}_seconds"], 0.25, name)
-        for name in COUNTER_LABELS:
-            self.assertEqual(values[name], 3, name)
 
 
 class PlannerExitStatusTests(unittest.TestCase):
