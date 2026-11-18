@@ -1,8 +1,8 @@
 # What ran where
 
-`results.csv` records no commit, so each row below goes back to the PR whose merge last changed its status or runtime. State of main at #238 on 2026-11-18.
+`results.csv` records no commit, so each row below goes back to the PR whose merge last changed its status or runtime. State of main at #239 on 2026-11-18.
 
-Latest code means main at #221. The PRs after #181 that change a result are #185 (opt fallback), #203 (fixed PDDL Symmetries seed, so the classes change), #206 (distinct inequalities, rerun on mprime and four HTG domains only) and #209 with #217 (one-shot on a partial grounding). #238 drops the 10 opt resources problems with no class to collapse, so their rows are gone rather than stale. The others since then are refactors or touch no track. Fast Downward has not moved since #12, so the LAMA and LMcut rows hold on any commit.
+Latest code means main at #221. The PRs after #181 that change a result are #185 (opt fallback), #203 (fixed PDDL Symmetries seed, so the classes change), #206 (distinct inequalities, rerun on mprime and four HTG domains only) and #209 with #217 (one-shot on a partial grounding). #238 drops the 10 opt resources problems with no class to collapse, so their rows are gone rather than stale. #239 finds symmetries before grounding on every track, which only the HTG rows did before. The others since then are refactors or touch no track. Fast Downward has not moved since #12, so the LAMA and LMcut rows hold on any commit.
 
 | Status | Meaning |
 |---|---|
@@ -32,12 +32,12 @@ Latest code means main at #221. The PRs after #181 that change a result are #185
 
 | Track | Mode | Status | Jobs | Classes (all / best) | Code | Partition | Lacks |
 |---|---|---|---|---|---|---|---|
-| sat | LAMAᵅ | ❌ **stale** | 2478 | best | #181, #206 | sunnycove | #203, #209 |
-| | ASPᵅ | ❌ **stale** | 2478 | best | #181, #206 | sunnycove | #203, #209 |
+| sat | LAMAᵅ | ❌ **stale** | 2478 | best | #181, #206 | sunnycove | #203, #209, #239 |
+| | ASPᵅ | ❌ **stale** | 2478 | best | #181, #206 | sunnycove | #203, #209, #239 |
 | | ASP | ✅ **current** | 557 | | #181 | sunnycove | |
 | | LAMA | ✅ **current** | 557 | | #95 | sunnycove | |
-| opt | LMcutᵅ | ❌ **stale** | 2334 | best | #181, #206 | sunnycove | #185, #203, #209 |
-| | ASPᵅ | ❌ **stale** | 2334 | best | #181, #206 | sunnycove | #185, #203, #209 |
+| opt | LMcutᵅ | ❌ **stale** | 2334 | best | #181, #206 | sunnycove | #185, #203, #209, #239 |
+| | ASPᵅ | ❌ **stale** | 2334 | best | #181, #206 | sunnycove | #185, #203, #209, #239 |
 | | ASP | ✅ **current** | 518 | | #181 | sunnycove | |
 | | LMcut | ✅ **current** | 518 | | #124 | sunnycove | |
 

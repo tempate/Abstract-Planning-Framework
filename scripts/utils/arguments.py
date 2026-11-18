@@ -29,11 +29,6 @@ def abstraction_arguments():
         "--objects-to-abstract", nargs="+", help="Objects to collapse; omit to take them from the abstraction source"
     )
     parser.add_argument(
-        "--symmetries-before-grounding",
-        action="store_true",
-        help="Find the symmetries on the lifted task, without grounding it first",
-    )
-    parser.add_argument(
         "--abstraction-source",
         choices=ABSTRACTION_SOURCES,
         default=SYMMETRIES,
@@ -75,7 +70,6 @@ def abstract_planning_config(args):
         planner=args.mode.removeprefix("abs-"),
         optimize=optimize,
         objects_to_abstract=args.objects_to_abstract,
-        symmetries_before_grounding=args.symmetries_before_grounding,
         abstraction_source=args.abstraction_source,
         class_rank=args.class_rank,
     )

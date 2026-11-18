@@ -90,12 +90,11 @@ ORDERING_PROBLEM = """
 
 def _stub_symmetry_inputs(directory):
     root = Path(directory)
-    translator = root / "translate.py"
     domain = root / "domain.pddl"
     problem = root / "problem.pddl"
-    for path in (translator, domain, problem):
+    for path in (domain, problem):
         path.write_text("", encoding="utf-8")
-    return translator, domain, problem
+    return domain, problem
 
 
 class SymmetrySelectionTests(unittest.TestCase):
@@ -197,8 +196,8 @@ class SymmetrySelectionTests(unittest.TestCase):
             args=[], returncode=0, stdout="Non-trivial symmetric object sets: [['b', 'a'], ['x', 'y']]\n", stderr=""
         )
         with tempfile.TemporaryDirectory() as directory:
-            translator, domain, problem = _stub_symmetry_inputs(directory)
-            result = find_symmetric_object_sets(domain, problem, 17, translator)
+            domain, problem = _stub_symmetry_inputs(directory)
+            result = find_symmetric_object_sets(domain, problem, 17)
 
         self.assertEqual(result, [["b", "a"], ["x", "y"]])
 
@@ -220,10 +219,10 @@ class SymmetrySelectionTests(unittest.TestCase):
                 run.return_value, run.side_effect = (
                     (None, outcome) if isinstance(outcome, Exception) else (outcome, None)
                 )
-                translator, domain, problem = _stub_symmetry_inputs(directory)
+                domain, problem = _stub_symmetry_inputs(directory)
 
                 with self.assertRaises(error):
-                    find_symmetric_object_sets(domain, problem, 10, translator)
+                    find_symmetric_object_sets(domain, problem, 10)
 
 
 @unittest.skipUnless(
@@ -245,9 +244,7 @@ class RealSymmetryIntegrationTests(unittest.TestCase):
         for seed in ("1", "2"):
             with patch.dict(os.environ, {"PYTHONHASHSEED": seed}):
                 found.append(
-                    find_symmetric_object_sets(
-                        ORGANIC_SYNTHESIS / "domain.pddl", ORGANIC_SYNTHESIS / "prob04.pddl", before_grounding=True
-                    )
+                    find_symmetric_object_sets(ORGANIC_SYNTHESIS / "domain.pddl", ORGANIC_SYNTHESIS / "prob04.pddl")
                 )
         self.assertEqual(found[0], found[1])
 
