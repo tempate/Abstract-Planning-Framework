@@ -1,8 +1,8 @@
 # What ran where
 
-`results.csv` records no commit, so each row below goes back to the PR whose merge last changed its status or runtime. State of main at #221 on 2026-11-17.
+`results.csv` records no commit, so each row below goes back to the PR whose merge last changed its status or runtime. State of main at #238 on 2026-11-18.
 
-Latest code means main at #221. The PRs after #181 that change a result are #185 (opt fallback), #203 (fixed PDDL Symmetries seed, so the classes change), #206 (distinct inequalities, rerun on mprime and four HTG domains only) and #209 with #217 (one-shot on a partial grounding). The others since then are refactors or touch no track. Fast Downward has not moved since #12, so the LAMA and LMcut rows hold on any commit.
+Latest code means main at #221. The PRs after #181 that change a result are #185 (opt fallback), #203 (fixed PDDL Symmetries seed, so the classes change), #206 (distinct inequalities, rerun on mprime and four HTG domains only) and #209 with #217 (one-shot on a partial grounding). #238 drops the 10 opt resources problems with no class to collapse, so their rows are gone rather than stale. The others since then are refactors or touch no track. Fast Downward has not moved since #12, so the LAMA and LMcut rows hold on any commit.
 
 | Status | Meaning |
 |---|---|
@@ -49,7 +49,7 @@ Latest code means main at #221. The PRs after #181 that change a result are #185
 | | ASPᵅ | ❌ **stale** | 544 | best | #181 | sunnycove | #209 |
 | | ASP | ✅ **current** | 330 | | #181 | sunnycove | |
 | | LAMA | ✅ **current** | 330 | | #85 | sunnycove | |
-| opt | LMcutᵅ | ❌ **stale** | 598 | best | #181 | sunnycove | #185, #209 |
-| | ASPᵅ | ❌ **stale** | 598 | best | #181 | sunnycove | #185, #209 |
-| | ASP | ✅ **current** | 373 | | #181 | sunnycove | |
-| | LMcut | ✅ **current** | 373 | | #124 | sunnycove | |
+| opt | LMcutᵅ | ❌ **stale** | 588 | best | #181 | sunnycove | #185, #209 |
+| | ASPᵅ | ❌ **stale** | 588 | best | #181 | sunnycove | #185, #209 |
+| | ASP | ✅ **current** | 363 | | #181 | sunnycove | |
+| | LMcut | ✅ **current** | 363 | | #124 | sunnycove | |
