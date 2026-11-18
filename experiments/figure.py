@@ -127,12 +127,21 @@ def _runtime_figure(revision):
     for kind, name in TRACK_NAMES.items():
         ipc = load_tracks(revision, kind, [])
         benchmark_sets = {"HTG": htg[kind], **{f"IPC {title}": ipc[source] for source, title in SOURCES.items()}}
-        # Only the left plot labels its y axis, and the middle one names the track's solvers.
+        # Only the left plot labels its y axis, the middle one names the track's solvers, and the right one
+        # names the track down its side.
+        last = len(benchmark_sets) - 1
         plots = [
-            _runtime_plot(problems, PAIRS[kind], labelled=index == 0, legend=index == 1, title=title)
+            _runtime_plot(
+                problems,
+                PAIRS[kind],
+                labelled=index == 0,
+                legend=index == 1,
+                title=title,
+                side_label=name if index == last else "",
+            )
             for index, (title, problems) in enumerate(benchmark_sets.items())
         ]
-        rows.append(_in_row(_track_title(name, len(plots))) + "\n\n\\vspace{0.9em}\n" + _in_row(_joined(plots)))
+        rows.append(_in_row(_joined(plots)))
 
     # The figure spans the page, so its plots are larger than the paper's other plots.
     return "\\setlength{\\plotsize}{1.65in}\n" + "\n\n\\vspace{0.8em}\n".join(rows)
@@ -214,7 +223,7 @@ def _runtime_plots(tracks, pairs):
     ]
 
 
-def _runtime_plot(problems, pairs, labelled, legend, title=""):
+def _runtime_plot(problems, pairs, labelled, legend, title="", side_label=""):
     """Each solver's runtime per problem against its abstraction's, in the solver's own color and mark."""
     options = r"ylabel={X\textsuperscript{$\alpha$} time (s)}" if labelled else "yticklabels={}"
     if title:
@@ -236,12 +245,21 @@ def _runtime_plot(problems, pairs, labelled, legend, title=""):
         if legend:
             lines.append(rf"\addlegendentry{{{label}}}")
 
+    # Drawn after the axis, which would clip it, down the right side of the plot.
+    side_node = ""
+    if side_label:
+        side_node = (
+            rf"\node[rotate=-90, anchor=south, font=\small, xshift=6pt] at (current axis.east) {{{side_label}}};"
+        )
+
     return (
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
         + rf"\begin{{loglogaxis}}[bordered, xlabel={{X time (s)}}, {options}]"
         + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
         + "\n".join(lines)
-        + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
+        + "\n\\end{loglogaxis}\n"
+        + side_node
+        + "\n\\end{tikzpicture}"
     )
 
 
