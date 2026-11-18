@@ -112,79 +112,23 @@ def _results_at(revision, kind, source):
 
 def paper_figures(revision):
     """The paper's figures at a revision, by the file name main.tex includes, each the body of a PDF."""
-    ipc = {kind: load_tracks(revision, kind, []) for kind in TRACK_NAMES}
-    rows = [
-        ("HTG Symmetries", load_tracks(revision, "htg", [])),
-        *(
-            (f"IPC {name}", {kind: ipc[kind][source] for kind in TRACK_NAMES if source in ipc[kind]})
-            for source, name in SOURCES.items()
-        ),
-    ]
-
     # Each PDF is as wide as the float main.tex includes it in, so it keeps the paper's sizes.
     return {
-        "runtimes": _minipage(r"\textwidth", _runtime_figure(rows)),
+        "runtimes": _minipage(r"\textwidth", _runtime_figure(load_tracks(revision, "htg", []))),
     }
 
 
-def _runtime_figure(rows):
-    """The paper's runtime figure as Table 1 lays it out, a row per benchmark set and a column per track's solver."""
-    kinds = ("sat", "opt")
-    plot_gap = "%\n\\hspace{0.3in}%\n"
-    track_gap = "%\n\\hspace{0.4in}%\n"
+def _runtime_figure(tracks):
+    """The paper's runtime figure on HTG, a column per track, ASP on the top row and its planner below."""
+    # Every plot labels its own y axis, so the columns need the gap of the HTG figure.
+    gap = "0.75in"
+    titles = _joined([_track_title(TRACK_NAMES[kind], 1) for kind in tracks], gap)
+    rows = [
+        _joined([_runtime_plot(problems, PAIRS[kind][index], labelled=True) for kind, problems in tracks.items()], gap)
+        for index in (1, 0)
+    ]
 
-    # Room on the left for the y label, which names the row's benchmark set over its axis.
-    margin = "\\hspace*{0.6in}"
-    titles = track_gap.join(_track_title(TRACK_NAMES[kind], len(PAIRS[kind])) for kind in kinds)
-
-    # Table 1 puts ASP before the Fast Downward planner.
-    columns = [(kind, solver) for kind in kinds for solver, _, _ in reversed(PAIRS[kind])]
-    labels = track_gap.join(
-        plot_gap.join(rf"\parbox{{\plotsize}}{{\centering\small {label}}}" for _, label, _ in reversed(PAIRS[kind]))
-        for kind in kinds
-    )
-
-    lines = [margin + titles + "\\\\[-0.4em]\n" + margin + labels]
-    for name, tracks in rows:
-        ylabel = rf"ylabel={{{name}\\X$^\alpha$ time (s)}}, ylabel style={{align=center}}"
-        plots, ticked = {}, False
-
-        for kind, solver in columns:
-            problems = tracks.get(kind)
-            if problems and solver in problems[0]:
-                # The row's first drawn plot carries its tick labels, even after an empty slot.
-                if not plots:
-                    options = ylabel
-                elif ticked:
-                    options = "yticklabels={}"
-                else:
-                    options = ""
-
-                ticked = True
-                plots[kind, solver] = rf"\runtimeplot[{options}]{{X}}{{{scatter(problems, solver, f'abs-{solver}')}}}"
-            else:
-                # A set the solver never ran leaves its slot empty, but the row still needs its y label.
-                plots[kind, solver] = _blank_plot(ylabel) if not plots else r"\hspace{\plotsize}"
-
-        cells = track_gap.join(
-            plot_gap.join(plots[kind, solver] for solver, _, _ in reversed(PAIRS[kind])) for kind in kinds
-        )
-        lines.append(margin + cells)
-
-    return "\\begin{tabular}{@{}l@{}}\n" + "\\\\[0.6em]\n".join(lines) + "\n\\end{tabular}"
-
-
-def _blank_plot(options):
-    # An invisible axis of a runtime plot's size, so a y label lines up with the other rows'.
-    hidden = (
-        "axis line style={draw=none}, tick style={draw=none}, tick label style={opacity=0}, xlabel style={opacity=0}"
-    )
-
-    return (
-        "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
-        + rf"\begin{{loglogaxis}}[bordered, xlabel={{X time (s)}}, {options}, {hidden}]"
-        + "\n\\addplot[draw=none] coordinates {(1,1)};\n\\end{loglogaxis}\n\\end{tikzpicture}"
-    )
+    return _in_row(titles) + "\n\n\\vspace{0.4em}\n" + "\n\n\\medskip\n".join(_in_row(row) for row in rows)
 
 
 def _panel(title, kind, tracks):
