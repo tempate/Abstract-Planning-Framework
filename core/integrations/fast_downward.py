@@ -33,6 +33,18 @@ class Search:
 
 # Satisficing
 LAMA = Search(driver=("--alias", "lama-first"))
+# lama-first with orbit space search, which lib/structural-symmetries.patch adds to lazy search.
+LAMA_SYMMETRY_PRUNING = Search(
+    options=(
+        "--search",
+        "let(hlm,landmark_sum(lm_factory=lm_reasonable_orders_hps(lm_rhw()),transform=adapt_costs(one),pref=false),"
+        "let(hff,ff(transform=adapt_costs(one)),"
+        "lazy_greedy([hff,hlm],preferred=[hff,hlm],cost_type=one,reopen_closed=false,"
+        "symmetries=structural_symmetries(search_symmetries=oss,time_bound=0))))",
+    ),
+    script=STRUCTURAL_SYMMETRIES_SCRIPT,
+    unsolvable_exit_codes=(_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE, _SEARCH_UNSOLVED_INCOMPLETE),
+)
 # Optimal
 LMCUT = Search(options=("--search", "astar(eval_modify_costs(lmcut(),cost_type=one),cost_type=one)"))
 # The same, with orbit space search pruning every state symmetric to one already generated.
