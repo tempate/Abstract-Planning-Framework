@@ -16,6 +16,7 @@ DURATION_LABELS = {
     "concrete_fd": "Concrete Fast Downward",
     "abstract_fd": "Abstract Fast Downward",
     "fd_search": "Fast Downward search",
+    "cpddl_search": "cpddl search",
     "concrete_asp": "Concrete SAS-to-ASP",
     "concrete_solving": "Concrete plan solving",
     "abstract_asp": "Abstract SAS-to-ASP",
