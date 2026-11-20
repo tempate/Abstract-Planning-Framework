@@ -2,7 +2,7 @@
 
 An experimental framework for comparing classical planning with and without
 abstraction across classical-planning benchmarks, built on Fast Downward, plasp,
-and Clingo.
+Clingo and Powerlifted.
 
 ## Setup
 
@@ -14,7 +14,7 @@ python -m scripts.setup
 ```
 
 `scripts.setup` initializes the submodules and builds the four things pip does
-not install: the pybliss extension, the Fast Downward release build, numeric Fast
+not install: the pybliss extension, the Fast Downward and Powerlifted release builds, numeric Fast
 Downward for resource detection, and the pinned plasp binary. Numeric Fast Downward
 needs COIN's Clp and Osi, found through `DOWNWARD_COIN_ROOT`, or resource detection
 has no LP solver. Skipping it fails at planning time rather than at setup
@@ -52,6 +52,7 @@ python -m scripts.planner --help
 | `lama` | Fast Downward's lama-first | `abs-lama` |
 | `lmcut` | Fast Downward's A* with LM-cut, length-optimal | `abs-lmcut` |
 | `asp` | ASP, length-optimal with `--optimize` | `abs-asp` |
+| `powerlifted` | Powerlifted, which never grounds the task: alternating BFWS with h^FF, or A* with h^max under `--optimize` | `abs-powerlifted` |
 
 An abstract mode collapses an object class, plans the abstract task with its
 planner, and refines that plan with ASP. `abs-lmcut` always refines optimally, and
@@ -92,6 +93,7 @@ python -m experiments.figure sat --base origin/main --out before-after.png
   submodule, with the sat track's modes.
 - `--track opt-htg` submits `experiments/htg/opt/` over the same benchmarks,
   with `labyrinth/OPT` in place of `labyrinth/SAT`, and the opt track's modes.
+  Both HTG tracks also run `powerlifted` and `abs-powerlifted`.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
 - `collect` rewrites the `results.csv` of the track the run's manifest names,

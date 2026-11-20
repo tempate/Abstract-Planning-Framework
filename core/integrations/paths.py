@@ -18,5 +18,7 @@ PARTIAL_GROUNDING_TRANSLATOR = _project_path("lib", "downward-partial-grounding"
 
 PDDL_SYMMETRIES_TRANSLATOR = _project_path("lib", "pddl-symmetries", "src", "translate", "translate.py")
 
+POWERLIFTED_SCRIPT = _project_path("lib", "powerlifted", "powerlifted.py")
+
 NUMERIC_FAST_DOWNWARD_SCRIPT = _project_path("lib", "numeric-fast-downward", "fast-downward.py")
 NUMERIC_FAST_DOWNWARD_BIN = _project_path("lib", "numeric-fast-downward", "builds", "release64", "bin", "downward")

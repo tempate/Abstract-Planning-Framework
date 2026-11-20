@@ -55,6 +55,7 @@ jobs:
             lib/downward/builds/release/bin
             lib/numeric-fast-downward/builds/release64/bin
             lib/plasp/bin/plasp
+            lib/powerlifted/builds/release/search/search
 
       - name: Build what the planner needs
         run: python -m scripts.setup

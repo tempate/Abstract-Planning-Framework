@@ -19,7 +19,7 @@ its results are pushed, and ready from then on (see **Closing the loop**).
 
 Every run has its own checkout, a worktree of the bare repo `~/apf/.bare` at
 `~/apf/<branch>`. Its `lib/downward`, `lib/pddl-symmetries`, `lib/plasp/bin`,
-`experiments/benchmarks/downward-benchmarks` and, where vendored,
+`lib/powerlifted`, `experiments/benchmarks/downward-benchmarks` and, where vendored,
 `lib/numeric-fast-downward` are symlinks into `~/apf/.shared`, the only built copy.
 Nothing is built per checkout, so a branch that moved a submodule pointer would
 silently run the shared version. No branch here moves one.
@@ -50,6 +50,7 @@ and names what is missing, rather than queueing jobs that all die the same way:
 | `pybind11_blissmodule.so` | every abstract job dies in symmetry discovery |
 | `lib/downward/builds/release` | exit code 36, `Could not find build 'release'` |
 | `lib/plasp/bin/plasp` | `plasp binary not found`, before any solving |
+| `lib/powerlifted/builds/release/search/search` | submitting refuses, since setup lists it, though only the powerlifted modes run it |
 | `lib/numeric-fast-downward/builds/release64` | `numeric-fast-downward binary not found`, on every resources-track job |
 | `lib/downward-partial-grounding` | refinement grounds the whole task, which no row records |
 
@@ -81,6 +82,7 @@ python -m experiments.submit --track sat --abstraction-source symmetries
 |---|---|---|
 | `sat` | `asp`, `abs-asp`, `lama`, `abs-lama` | `lama`, Fast Downward's lama-first |
 | `opt` | `asp`, `abs-asp`, `lmcut`, `abs-lmcut` | `lmcut`, A* with LM-cut |
+| `sat-htg`, `opt-htg` | the sat or opt modes, plus `powerlifted`, `abs-powerlifted` | as sat or opt; Powerlifted runs alternating BFWS, or A* with h^max on opt |
 
 `--abstraction-source resources` collapses resources instead of symmetric objects.
 `--track sat-htg` and `--track opt-htg` run the hard-to-ground benchmarks, with
