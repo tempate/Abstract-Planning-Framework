@@ -61,10 +61,15 @@ def collapse_objects(problem, collapsed_set, relaxable_deletes):
     )
 
     abstract_object = Object(collapsed_set.name, objects_to_collapse[0].type, problem.environment)
-    object_substitutions = {item: abstract_object for item in objects_to_collapse}
+    expressions = problem.environment.expression_manager
+    abstract_expression = expressions.ObjectExp(abstract_object)
+    object_substitutions = {expressions.ObjectExp(item): abstract_expression for item in objects_to_collapse}
+    substituter = problem.environment.substituter
 
+    # Expression.substitute converts every entry of its map on each call, which
+    # makes the collapse quadratic in the class size, so convert the map once.
     def rewrite(expression):
-        return expression.substitute(object_substitutions).simplify()
+        return substituter.walk(expression, subs=object_substitutions).simplify()
 
     for fluent in problem.fluents:
         collapsed_problem.add_fluent(fluent, default_initial_value=problem.fluents_defaults.get(fluent))
