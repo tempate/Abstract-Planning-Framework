@@ -16,6 +16,7 @@ SOLVER_LABELS = {
     "asp": "ASP",
     "lama": "LAMA",
     "lmcut": "LMcut",
+    "lmcut-symmetry-pruning": "LMcut-symmetry-pruning",
 }
 # Each abstraction is named after the solver of its abstract task, marked with an alpha.
 MODE_LABELS = {**SOLVER_LABELS, **{f"{ABSTRACTION_PREFIX}{mode}": f"{label}ᵅ" for mode, label in SOLVER_LABELS.items()}}

@@ -3,6 +3,7 @@
 
 import hashlib
 import io
+import os
 import platform
 import subprocess
 import sys
@@ -24,6 +25,10 @@ DOWNWARD_BUILD = ROOT / "lib" / "downward" / "builds" / "release"
 NUMERIC_DOWNWARD = ROOT / "lib" / "numeric-fast-downward"
 NUMERIC_DOWNWARD_PATCH = ROOT / "lib" / "numeric-fast-downward.patch"
 NUMERIC_DOWNWARD_BUILD = NUMERIC_DOWNWARD / "builds" / "release64"
+STRUCTURAL_SYMMETRIES_BUILD = ROOT / "lib" / "structural-symmetries" / "builds" / "release"
+# The fork dates from 2023. CMake 4 refuses its minimum version and GCC 14 its bundled
+# optional.hh, and older versions of both ignore these two settings.
+STRUCTURAL_SYMMETRIES_BUILD_ENV = {"CMAKE_POLICY_VERSION_MINIMUM": "3.5", "CXXFLAGS": "-Wno-template-body"}
 
 # Each of these fails silently at run time rather than at setup time: a missing
 # pybliss kills every abstract run in symmetry discovery, a missing Fast
@@ -32,6 +37,7 @@ NUMERIC_DOWNWARD_BUILD = NUMERIC_DOWNWARD / "builds" / "release64"
 ARTIFACTS = {
     "pybliss extension": PYBLISS_MODULE,
     "Fast Downward release build": DOWNWARD_BUILD,
+    "structural symmetries release build": STRUCTURAL_SYMMETRIES_BUILD,
     "plasp binary": PLASP_BIN,
     "numeric Fast Downward release64 build": NUMERIC_DOWNWARD_BUILD,
 }
@@ -42,6 +48,7 @@ def main():
     _build_pybliss()
     _build_fast_downward()
     _build_numeric_fast_downward()
+    _build_structural_symmetries()
     _install_plasp()
     _verify()
 
@@ -82,6 +89,16 @@ def _build_numeric_fast_downward():
     if patch_is_applied.returncode != 0:
         _run(["git", "apply", str(NUMERIC_DOWNWARD_PATCH)], cwd=NUMERIC_DOWNWARD)
     _run([sys.executable, "build.py", "release64"], cwd=NUMERIC_DOWNWARD)
+
+
+def _build_structural_symmetries():
+    print("== Fast Downward with structural symmetries")
+    if STRUCTURAL_SYMMETRIES_BUILD.is_dir():
+        print(f"already built at {STRUCTURAL_SYMMETRIES_BUILD}")
+        return
+
+    environment = {**os.environ, **STRUCTURAL_SYMMETRIES_BUILD_ENV}
+    _run([sys.executable, "build.py", "release"], cwd=ROOT / "lib" / "structural-symmetries", env=environment)
 
 
 def _install_plasp():
@@ -140,8 +157,8 @@ def _verify():
     print("setup complete")
 
 
-def _run(command, cwd):
-    completed = subprocess.run(command, cwd=cwd)
+def _run(command, cwd, env=None):
+    completed = subprocess.run(command, cwd=cwd, env=env)
     if completed.returncode != 0:
         raise SystemExit(f"{command[0]} failed with exit code {completed.returncode}")
 

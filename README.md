@@ -13,9 +13,9 @@ python -m pip install -e ".[dev]"
 python -m scripts.setup
 ```
 
-`scripts.setup` initializes the submodules and builds the four things pip does
-not install: the pybliss extension, the Fast Downward release build, numeric Fast
-Downward for resource detection, and the pinned plasp binary. Numeric Fast Downward
+`scripts.setup` initializes the submodules and builds the five things pip does
+not install: the pybliss extension, the Fast Downward release build, Silvan Sievers' structural
+symmetries fork of it, numeric Fast Downward for resource detection, and the pinned plasp binary. Numeric Fast Downward
 needs COIN's Clp and Osi, found through `DOWNWARD_COIN_ROOT`, or resource detection
 has no LP solver. Skipping it fails at planning time rather than at setup
 time.
@@ -84,7 +84,8 @@ python -m experiments.figure sat --base origin/main --out before-after.png
   class.
 - `--track opt` submits `experiments/ipc/opt/symmetries/`, the problems of the optimal
   suite with a symmetry class, refined without gaps so that every plan is optimal, with
-  `asp` and `lmcut` as the baselines, and `abs-lmcut` in place of `abs-lama`.
+  `asp` and `lmcut` as the baselines, and `abs-lmcut` in place of `abs-lama`. `lmcut-symmetry-pruning` and
+  `abs-lmcut-symmetry-pruning` add orbit space search to both.
   `--abstraction-source resources` submits `experiments/ipc/opt/resources/` instead, whose list
   `python -m experiments.scan --track opt/resources` writes.
 - `--track sat-htg` submits `experiments/htg/sat/` over the hard-to-ground

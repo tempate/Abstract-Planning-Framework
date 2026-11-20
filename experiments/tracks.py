@@ -110,7 +110,7 @@ TRACKS = {
             directory=EXPERIMENTS / "htg" / "opt",
             suite=htg_opt.SUITE,
             benchmarks_dir=BENCHMARKS / "htg-domains",
-            modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "abs-lmcut-symmetry-pruning", "lmcut-symmetry-pruning"),
             optimizing_arguments=("--optimize",),
         ),
         # The optimal suite, refined without gaps so that every plan is optimal, with
@@ -120,7 +120,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "opt" / "symmetries",
             suite=opt.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "abs-lmcut-symmetry-pruning", "lmcut-symmetry-pruning"),
             optimizing_arguments=("--optimize",),
         ),
         Track(
@@ -128,7 +128,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "opt" / "resources",
             suite=opt.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "abs-lmcut-symmetry-pruning", "lmcut-symmetry-pruning"),
             abstract_arguments=("--abstraction-source", "resources"),
             optimizing_arguments=("--optimize",),
         ),
