@@ -61,15 +61,7 @@ def collapse_objects(problem, collapsed_set, relaxable_deletes):
     )
 
     abstract_object = Object(collapsed_set.name, objects_to_collapse[0].type, problem.environment)
-    expressions = problem.environment.expression_manager
-    abstract_expression = expressions.ObjectExp(abstract_object)
-    object_substitutions = {expressions.ObjectExp(item): abstract_expression for item in objects_to_collapse}
-    substituter = problem.environment.substituter
-
-    # Expression.substitute converts every entry of its map on each call, which
-    # makes the collapse quadratic in the class size, so convert the map once.
-    def rewrite(expression):
-        return substituter.walk(expression, subs=object_substitutions).simplify()
+    rewrite = _create_collapse(problem, objects_to_collapse, abstract_object)
 
     for fluent in problem.fluents:
         collapsed_problem.add_fluent(fluent, default_initial_value=problem.fluents_defaults.get(fluent))
@@ -85,6 +77,24 @@ def collapse_objects(problem, collapsed_set, relaxable_deletes):
     _copy_quality_metric(problem, collapsed_problem)
 
     return collapsed_problem, relaxed_deletes
+
+
+def _create_collapse(problem, objects_to_collapse, abstract_object):
+    expr = problem.environment.expression_manager
+    abstract_expr = expr.ObjectExp(abstract_object)
+    object_subs = {}
+    for item in objects_to_collapse:
+        concrete_expr = expr.ObjectExp(item)
+        object_subs[concrete_expr] = abstract_expr
+
+    # Expression.substitute converts every entry of its map on each call, which
+    # makes the collapse quadratic in the class size, so convert the map once.
+    substituter = problem.environment.substituter
+
+    def rewrite(expression):
+        return substituter.walk(expression, subs=object_subs).simplify()
+
+    return rewrite
 
 
 def _copy_actions(problem, collapsed_problem, rewrite, deletes_to_relax):
