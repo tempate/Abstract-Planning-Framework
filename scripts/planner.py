@@ -76,6 +76,12 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
+        "powerlifted",
+        parents=[shared, optimize],
+        help="Solve the task without grounding it, with Powerlifted's alternating BFWS, or A* and h^max to optimize",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
         "abs-asp",
         parents=[shared, abstract, optimize],
         help="Find an abstract plan with ASP, then refine it with ASP",
@@ -93,6 +99,12 @@ def _argument_parser():
         "abs-lmcut",
         parents=[shared, abstract],
         help="Find an optimal abstract plan with Fast Downward's A* and LM-cut, then refine it optimally with ASP",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
+        "abs-powerlifted",
+        parents=[shared, abstract, optimize],
+        help="Find an abstract plan with Powerlifted, without grounding the abstract task, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     return parser

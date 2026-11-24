@@ -3,6 +3,7 @@
 
 import hashlib
 import io
+import os
 import platform
 import subprocess
 import sys
@@ -24,6 +25,7 @@ DOWNWARD_BUILD = ROOT / "lib" / "downward" / "builds" / "release"
 NUMERIC_DOWNWARD = ROOT / "lib" / "numeric-fast-downward"
 NUMERIC_DOWNWARD_PATCH = ROOT / "lib" / "numeric-fast-downward.patch"
 NUMERIC_DOWNWARD_BUILD = NUMERIC_DOWNWARD / "builds" / "release64"
+POWERLIFTED_SEARCH = ROOT / "lib" / "powerlifted" / "builds" / "release" / "search" / "search"
 
 # Each of these fails silently at run time rather than at setup time: a missing
 # pybliss kills every abstract run in symmetry discovery, a missing Fast
@@ -34,6 +36,7 @@ ARTIFACTS = {
     "Fast Downward release build": DOWNWARD_BUILD,
     "plasp binary": PLASP_BIN,
     "numeric Fast Downward release64 build": NUMERIC_DOWNWARD_BUILD,
+    "Powerlifted release build": POWERLIFTED_SEARCH,
 }
 
 
@@ -42,6 +45,7 @@ def main():
     _build_pybliss()
     _build_fast_downward()
     _build_numeric_fast_downward()
+    _build_powerlifted()
     _install_plasp()
     _verify()
 
@@ -82,6 +86,18 @@ def _build_numeric_fast_downward():
     if patch_is_applied.returncode != 0:
         _run(["git", "apply", str(NUMERIC_DOWNWARD_PATCH)], cwd=NUMERIC_DOWNWARD)
     _run([sys.executable, "build.py", "release64"], cwd=NUMERIC_DOWNWARD)
+
+
+def _build_powerlifted():
+    print("== Powerlifted")
+    if POWERLIFTED_SEARCH.exists():
+        print(f"already built at {POWERLIFTED_SEARCH}")
+        return
+
+    # Compilers that default to C++20 lack the allocator rebind Powerlifted uses, and
+    # GCC 16 reports a spurious overflow in it that Powerlifted's -Werror makes fatal.
+    flags = {**os.environ, "CXXFLAGS": "-std=c++17 -Wno-error=stringop-overflow"}
+    _run([sys.executable, "build.py"], cwd=ROOT / "lib" / "powerlifted", env=flags)
 
 
 def _install_plasp():
@@ -140,8 +156,8 @@ def _verify():
     print("setup complete")
 
 
-def _run(command, cwd):
-    completed = subprocess.run(command, cwd=cwd)
+def _run(command, cwd, env=None):
+    completed = subprocess.run(command, cwd=cwd, env=env)
     if completed.returncode != 0:
         raise SystemExit(f"{command[0]} failed with exit code {completed.returncode}")
 

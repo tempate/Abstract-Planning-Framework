@@ -14,6 +14,7 @@ from core.utilities.metrics import PlanningMetrics
 from core.planners import fd
 from core.planners.asp import Asp
 from core.pipeline.solve import solve
+from core.planners.powerlifted import Powerlifted
 from core.utilities.config import AbstractPlanningConfig, PlanningConfig
 from core.utilities.plan import one_action_per_step
 
@@ -34,10 +35,32 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
     def test_an_abstract_task_without_a_plan_proves_the_concrete_one_unsolvable(self, _find_sas_plan):
         collapsed_set = SimpleNamespace(collapsed_set=None)
         with (
-            patch("core.pipeline.solve._abstract", return_value=(collapsed_set, "abstract.sas", {})),
+            patch("core.pipeline.solve._abstract", return_value=(collapsed_set, "domain.pddl", "problem.pddl", {})),
+            patch("core.pipeline.solve.pddl_to_sas", return_value="abstract.sas"),
             self.assertRaises(UnsolvableTaskError),
         ):
             solve(AbstractPlanningConfig("domain.pddl", "problem.pddl", planner="lama"))
+
+    def test_a_powerlifted_plan_reads_as_the_actions_it_lists(self):
+        with tempfile.TemporaryDirectory() as directory:
+            plan_file = Path(directory, "powerlifted.plan")
+            plan_file.write_text(
+                "1: (pick ball1 rooma left ) ;[created objects: ]\n"
+                "2: (move rooma roomb ) ;[created objects: ]\n"
+                "; cost = 2 (unit cost)\n"
+            )
+
+            def search(command, **_kwargs):
+                Path(command[command.index("--plan-file") + 1]).write_text(plan_file.read_text())
+                return subprocess.CompletedProcess(command, 0, "", "")
+
+            with patch("core.integrations.powerlifted.subprocess.run", side_effect=search):
+                result = Powerlifted(PlanningConfig("domain.pddl", "problem.pddl")).solve()
+
+        self.assertEqual(
+            [(action.name, action.args) for action in result["plan"]],
+            [("pick", ("ball1", "rooma", "left")), ("move", ("rooma", "roomb"))],
+        )
 
     @patch("core.planners.fd.find_pddl_plan")
     def test_an_unsolvable_task_is_not_a_plan(self, find_pddl_plan):

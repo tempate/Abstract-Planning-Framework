@@ -16,6 +16,7 @@ SOLVER_LABELS = {
     "asp": "ASP",
     "lama": "LAMA",
     "lmcut": "LMcut",
+    "powerlifted": "Powerlifted",
 }
 # Each abstraction is named after the solver of its abstract task, marked with an alpha.
 MODE_LABELS = {**SOLVER_LABELS, **{f"{ABSTRACTION_PREFIX}{mode}": f"{label}ᵅ" for mode, label in SOLVER_LABELS.items()}}
@@ -35,6 +36,7 @@ DIED_AFTER = {
     # The concrete task is grounded only once there is an abstract plan to refine.
     "abstract_solving": "Translating the task",
     "abstract_fd_search": "Translating the task",
+    "abstract_powerlifted_search": "Translating the task",
     "partial_fd": "Translating the task to ASP",
     "partial_asp": "Guided concrete search",
     # The partial one-shot failed, so the whole task is grounded next.
@@ -298,6 +300,9 @@ def _timeout_phases(problems, abstractions, labels):
         for row in timeouts:
             completed = row["last_completed_phase"]
             phase = DIED_AFTER.get(completed, completed)
+            # Powerlifted translates and searches the abstract task in one step, which it measures as its search.
+            if mode == "abs-powerlifted" and completed == "abstract_pddl_writing":
+                phase = "Abstract search"
 
             # The extended search is no longer a phase of its own. A guided search that
             # has switched off every abstract action is what used to enter it.

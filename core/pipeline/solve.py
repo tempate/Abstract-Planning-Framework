@@ -5,6 +5,7 @@ import os
 from core.integrations.fast_downward import pddl_to_sas
 from core.pipeline.abstraction.abstract_task import build_abstract_task, report_abstraction, write_abstract_problem
 from core.utilities.outcomes import UnsolvableTaskError
+from core.planners.powerlifted import Powerlifted
 from core.planners.registry import PLANNERS
 from core.utilities.config import AbstractPlanningConfig
 from core.utilities.execution import planning_run
@@ -15,10 +16,11 @@ from core.pipeline.refinement.refine import RefinementContext, refine
 def solve(config: AbstractPlanningConfig, on_update=None):
     """Abstract one concrete task, plan it with the config's planner, and refine that plan with ASP."""
     with planning_run("abstract", on_update) as run:
-        abstract_task, abstract_sas, renamings = _abstract(config, run.base_dir, run.metrics)
+        abstract_task, domain_path, problem_path, renamings = _abstract(config, run.base_dir, run.metrics)
 
         planner = PLANNERS[config.planner](config)
-        actions = planner.plan_sas(abstract_sas, run.metrics.prefixed("abstract_"))
+        abstract_dir = os.path.join(run.base_dir, "abstract")
+        actions = _plan_abstract(planner, abstract_dir, domain_path, problem_path, run.metrics)
 
         # The abstraction over-approximates, so an abstract task without a plan
         # proves the concrete one has none either.
@@ -49,8 +51,17 @@ def _abstract(config, base_dir, metrics):
     with metrics.measure("abstract_pddl_writing"):
         domain_path, problem_path, renamings = write_abstract_problem(abstract_task.problem, base_dir)
 
+    return abstract_task, domain_path, problem_path, renamings
+
+
+def _plan_abstract(planner, abstract_dir, domain_path, problem_path, metrics):
+    abstract_metrics = metrics.prefixed("abstract_")
+
+    # Powerlifted searches the lifted task, so only the other planners need it grounded.
+    if isinstance(planner, Powerlifted):
+        return planner.plan_pddl(abstract_dir, domain_path, problem_path, abstract_metrics)
+
     with metrics.measure("abstract_fd"):
-        abstract_dir = os.path.join(base_dir, "abstract")
         abstract_sas = pddl_to_sas(abstract_dir, domain_path, problem_path, "abstract")
 
-    return abstract_task, abstract_sas, renamings
+    return planner.plan_sas(abstract_sas, abstract_metrics)
