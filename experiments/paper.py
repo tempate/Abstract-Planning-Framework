@@ -8,7 +8,7 @@ from pathlib import Path
 from experiments.figure import DEFAULT_PAPER, SOURCES, TRACK_NAMES, load_tracks, paper_figures, render_pdf
 from experiments.report import solved
 
-# The modes each track counts, in the order of its columns. A set without a mode's results shows -- in its columns.
+# The modes each track counts, each planner before its abstraction. A set without a mode's results shows --.
 MODES = {
     "sat": ("asp", "abs-asp", "lama", "abs-lama", "powerlifted", "abs-powerlifted"),
     "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut", "powerlifted", "abs-powerlifted"),
