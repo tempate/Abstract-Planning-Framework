@@ -17,7 +17,7 @@ MODES = {
 DOMAIN_TABLES = {"sat": "tab:sat-domains", "opt": "tab:opt-domains"}
 # Each summary table, by its label, with the benchmark sets it gives a column per track.
 SUMMARY_TABLES = {"tab:ipc-summary": ("IPC Symmetries", "IPC Resources")}
-# The HTG table, a row per domain and a block of columns per track.
+# The HTG table, a section of rows per track, each a row per domain and a total.
 HTG_TABLE = "tab:htg"
 # The mode each row of a summary table names, in the order of the track's modes.
 SUMMARY_LABELS = (r"\ASP", r"\ASPa", r"\textsc{FD}", r"\textsc{FD}\textsuperscript{$\alpha$}", r"\PL", r"\PLa")
@@ -137,27 +137,28 @@ def update_summary(tex, table, columns):
         rows[label] = [cells[index] for cells in bolded]
     # A mode that never ran on the table's benchmark sets may go without a row.
     optional = {label for label, cells in rows.items() if all(cell == "--" for cell in cells)}
-    return _write_rows(tex, table, rows, optional)
+
+    start = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{table}}}"))
+    end = tex.index(r"\end{tabular}", start)
+    return tex[:start] + _write_rows(tex[start:end], table, rows, optional) + tex[end:]
 
 
 def update_htg_table(tex, counts):
-    """Write the HTG table, each domain's problems and solved counts per track, the better of each pair in bold."""
-    domains = {name for track in counts.values() for name in track}
-    rows = {}
-    for name in sorted(domains) + ["Total"]:
-        cells = []
-        for kind in MODES:
-            count, *solved = _total(counts[kind]) if name == "Total" else counts[kind][name]
-            cells += [str(count), *_bold_pairs(solved)]
-        rows[name] = cells
-    return _write_rows(tex, HTG_TABLE, rows)
+    """Write the HTG table, a section per track with each domain's problems and solved counts, the better of each pair in bold."""
+    for kind, track in counts.items():
+        rows = {}
+        for name, (count, *solved) in [*sorted(track.items()), ("Total", _total(track))]:
+            rows[name] = [str(count), *_bold_pairs(solved)]
+
+        section = TRACK_NAMES[kind]
+        start, end = _section(tex, HTG_TABLE, section)
+        tex = tex[:start] + _write_rows(tex[start:end], f"{HTG_TABLE} {section}", rows) + tex[end:]
+    return tex
 
 
-def _write_rows(tex, table, rows, optional=()):
+def _write_rows(text, table, rows, optional=()):
     """Replace the cells of each row of a table its label names, and stop on a row the table lacks."""
-    start = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{table}}}"))
-    end = tex.index(r"\end{tabular}", start)
-    lines = tex[start:end].split("\n")
+    lines = text.split("\n")
 
     for index, line in enumerate(lines):
         label = line.split("&")[0].strip()
@@ -168,7 +169,7 @@ def _write_rows(tex, table, rows, optional=()):
     if missing:
         raise SystemExit(f"The table {table} has no row for {', '.join(missing)}")
 
-    return tex[:start] + "\n".join(lines) + tex[end:]
+    return "\n".join(lines)
 
 
 def _total(counts):

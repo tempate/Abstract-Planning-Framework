@@ -25,15 +25,21 @@ Problems & 1 & 1 \\
 \label{tab:ipc-summary}
 \end{table}
 """
-HTG = r"""\begin{table*}
-\begin{tabular}{lrrrrrrrrrrrrr}
-Domain & \# & \ASP & \ASPa & \LAMA & \LAMAa & \PL & \PLa & \# & \ASP & \ASPa & \LMcut & \LMcuta & \PL & \PLa \\
-blocksworld & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-rovers & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-Total & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+HTG = r"""\begin{table}
+\begin{tabular}{lrrrrrrr}
+Domain & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \PL & \PLa \\
+\multicolumn{8}{l}{\emph{Satisficing}} \\
+blocksworld & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+rovers & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+Total & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\multicolumn{8}{l}{\emph{Optimal}} \\
+blocksworld & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+rovers & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+Total & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\bottomrule
 \end{tabular}
 \label{tab:htg}
-\end{table*}
+\end{table}
 """
 
 
@@ -73,7 +79,7 @@ class PaperTableTests(unittest.TestCase):
         tex = update_summary(without_pl, "tab:ipc-summary", [[1] * 5 + [None] * 2] * 2)
         self.assertNotIn("\\PL", tex)
 
-    def test_the_htg_table_gives_each_domain_both_tracks_and_a_total(self):
+    def test_the_htg_table_gives_each_track_a_row_per_domain_and_a_total(self):
         counts = {
             "sat": {"blocksworld": [40, 11, 19, 12, 40, 20, 40], "rovers": [35, 8, 6, 10, 10, 35, 18]},
             "opt": {"blocksworld": [40, 11, 20, 12, 40, 0, 40], "rovers": [10, 4, 3, 3, 3, 1, 1]},
@@ -81,12 +87,10 @@ class PaperTableTests(unittest.TestCase):
         tex = update_htg_table(HTG, counts)
 
         # Each planner and its abstraction form a pair, and ties bold both.
-        self.assertIn(
-            r"rovers & 35 & \textbf{8} & 6 & \textbf{10} & \textbf{10} & \textbf{35} & 18"
-            r" & 10 & \textbf{4} & 3 & \textbf{3} & \textbf{3} & \textbf{1} & \textbf{1} \\",
-            tex,
-        )
-        self.assertIn(r"Total & 75 & 19 & \textbf{25} & 22 & \textbf{50} & 55 & \textbf{58} & 50", tex)
+        sat, opt = tex.split("Optimal")
+        self.assertIn(r"rovers & 35 & \textbf{8} & 6 & \textbf{10} & \textbf{10} & \textbf{35} & 18 \\", sat)
+        self.assertIn(r"Total & 75 & 19 & \textbf{25} & 22 & \textbf{50} & 55 & \textbf{58} \\", sat)
+        self.assertIn(r"rovers & 10 & \textbf{4} & 3 & \textbf{3} & \textbf{3} & \textbf{1} & \textbf{1} \\", opt)
 
         with self.assertRaises(SystemExit):
             update_htg_table(HTG.replace("rovers", "tpp"), counts)
