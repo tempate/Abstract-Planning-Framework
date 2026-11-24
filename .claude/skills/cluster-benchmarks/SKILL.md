@@ -253,6 +253,34 @@ When a watch reports a run done, do all of this without being asked:
 4. Push, and mark the PR ready with `gh pr ready <n>` in the same step.
 5. Rewrite the description around the run's numbers and figures, following **Experiment PRs** in the `pull-requests` skill, and drop numbers from earlier runs.
 
+## Cleaning up after a PR
+
+Keep the cluster clean. When a PR merges or closes, removing what it left on the cluster
+is part of finishing it, not an optional extra.
+
+1. List everything the PR left. That means every checkout it ran from (the branch's own
+   and its `<branch>-<track>` copies), their branches in `~/apf/.bare`, and any file
+   created for it outside a checkout, such as smoke logs, skip lists, manifests,
+   scripts and backups.
+2. Check that none of those checkouts has a queued job or local changes.
+3. Show Daniel the list and ask once, since removing files changes the cluster (see
+   **Caution first**). For a closed PR, say that its raw runs are the only copy left.
+4. Remove exactly what he approved, in the background, then list `~/apf` again to
+   show nothing is left.
+
+```bash
+ssh -o BatchMode=yes copperhead 'squeue -u dquilez -h -o "%Z" | grep -c "/<branch>"; ls -A ~/apf'
+ssh -o BatchMode=yes copperhead 'for b in <branch> <branch>-<track>; do
+  git -C ~/apf/.bare worktree remove --force ~/apf/$b && git -C ~/apf/.bare branch -D $b; done'
+```
+
+Leave the checkouts of PRs that are still open, and `~/apf/main`.
+
+Avoid leftovers in the first place. Keep a run's helper files, smoke logs included,
+inside its checkout, so removing the checkout removes them too. A file that has to live
+elsewhere, such as a backup in `~/apf/.shared`, goes on the PR's cleanup list the moment
+it is created.
+
 ## Rebuilding numeric-fast-downward
 
 `~/apf/.shared/numeric-fast-downward` is the vendored source at `fac7ce0` with
