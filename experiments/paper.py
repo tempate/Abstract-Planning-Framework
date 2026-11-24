@@ -13,11 +13,11 @@ MODES = {
     "sat": ("asp", "abs-asp", "lama", "abs-lama", "powerlifted", "abs-powerlifted"),
     "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut", "powerlifted", "abs-powerlifted"),
 }
-# Where each track's columns start in a row of the per-domain table.
-DOMAIN_TABLE_COLUMN = {"sat": 1, "opt": 8}
-# The summary table's groups of rows, each with where its first mode sits in a track's totals,
+# Each track's per-domain table, by its label.
+DOMAIN_TABLES = {"sat": "tab:sat-domains", "opt": "tab:opt-domains"}
+# The summary table's groups of rows, each with where its first mode sits in a track's solved counts,
 # which alternate each planner with its abstraction.
-SUMMARY_GROUPS = {"Baselines": 1, "Our pipeline": 2}
+SUMMARY_GROUPS = {"Baselines": 0, "Our pipeline": 1}
 # The planner each row of a summary group names, in the order of the track's modes.
 SUMMARY_LABELS = (r"\ASP", r"\textsc{FD}", r"\PL")
 # HTG names a domain by the collection it comes from; the paper by the domain.
@@ -90,29 +90,29 @@ def domain_counts(problems, kind, htg=False):
 
 
 def update_table(tex, section, kind, counts):
-    """Write one track's columns of one section of the per-domain table, bolding the better mode of each pair."""
-    first = DOMAIN_TABLE_COLUMN[kind]
-    start, end = _section(tex, "tab:ipc", section)
+    """Write one section of a track's per-domain table, baselines before their abstractions and each row's best in bold."""
+    start, end = _section(tex, DOMAIN_TABLES[kind], section)
     lines = tex[start:end].split("\n")
 
     width = len(MODES[kind]) + 1
     changed = []
     written = set()
     for index, line in enumerate(lines):
-        cells = line.rstrip().removesuffix("\\\\").split("&")
-        if len(cells) < first + width or cells[first].strip() == "--":
+        cells = [cell.strip() for cell in line.rstrip().removesuffix("\\\\").split("&")]
+        if len(cells) < width + 1:
             continue
 
-        name = cells[0].strip()
+        name = cells[0]
         if name not in counts:
             raise SystemExit(f"No {section} {kind} results for the paper's row {name}")
 
-        row = _cells(counts[name])
-        if row != [cell.strip() for cell in cells[first : first + width]]:
+        count, *solved = counts[name]
+        bold = _bold_best(solved)
+        row = [str(count), *bold[0::2], *bold[1::2]]
+        if row != cells[1:]:
             changed.append(name)
 
-        cells[first : first + width] = [f" {cell} " for cell in row]
-        lines[index] = "&".join(cells).rstrip() + " \\\\"
+        lines[index] = " & ".join([name, *row]) + " \\\\"
         written.add(name)
 
     missing = sorted(set(counts) - written)
@@ -125,9 +125,10 @@ def update_table(tex, section, kind, counts):
 def update_summary(tex, columns):
     """Write the summary table, a column per benchmark set and track, the most solved of each column in bold."""
     rows = {(None, "Problems"): [str(column[0]) for column in columns]}
+    bolded = [_bold_best(column[1:]) for column in columns]
     for group, first in SUMMARY_GROUPS.items():
         for pair, label in enumerate(SUMMARY_LABELS):
-            rows[group, label] = [_summary_cell(column, first + 2 * pair) for column in columns]
+            rows[group, label] = [cells[first + 2 * pair] for cells in bolded]
 
     start = tex.rindex(r"\begin{table", 0, tex.index(r"\label{tab:summary}"))
     end = tex.index(r"\end{tabular}", start)
@@ -151,15 +152,6 @@ def update_summary(tex, columns):
     return tex[:start] + "\n".join(lines) + tex[end:]
 
 
-def _summary_cell(column, index):
-    solved = column[index]
-    if solved is None:
-        return "--"
-
-    best = max(count for count in column[1:] if count is not None)
-    return f"\\textbf{{{solved}}}" if solved == best else str(solved)
-
-
 def _section(tex, label, section):
     """Where one section of a table starts, at its title, and ends, at the next title or the end of the table."""
     table = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{label}}}"))
@@ -168,15 +160,17 @@ def _section(tex, label, section):
     return start, end
 
 
-def _cells(row):
-    """The problem count, then each mode's count, the better of each concrete and abstract pair in bold."""
-    cells = [str(row[0])]
-    for concrete, abstract in zip(row[1::2], row[2::2]):
-        if concrete is None:
-            cells += ["--", "--"]
-            continue
-        cells.append(f"\\textbf{{{concrete}}}" if concrete > abstract else str(concrete))
-        cells.append(f"\\textbf{{{abstract}}}" if abstract > concrete else str(abstract))
+def _bold_best(solved_counts):
+    """Each mode's count, -- for a mode without results, and the most solved in bold unless none solves any."""
+    best = max((solved for solved in solved_counts if solved is not None), default=0)
+    cells = []
+    for solved in solved_counts:
+        if solved is None:
+            cells.append("--")
+        elif solved == best and best > 0:
+            cells.append(f"\\textbf{{{solved}}}")
+        else:
+            cells.append(str(solved))
     return cells
 
 

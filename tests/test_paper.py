@@ -3,10 +3,11 @@ import unittest
 from experiments.paper import _htg_name, update_summary, update_table
 
 TABLE = r"""\begin{table*}
-\multicolumn{15}{l}{\emph{IPC Resources}} \\
-nomystery & 19 & \textbf{4} & 2 & \textbf{12} & 10 & -- & -- & 20 & 10 & 12 & 18 & 17 & -- & -- \\
+\multicolumn{8}{l}{\emph{IPC Resources}} \\
+nomystery & 19 & 1 & 1 & 1 & 1 & 1 & 1 \\
+mystery & 26 & 0 & 0 & 0 & 0 & 0 & 0 \\
 \bottomrule
-\label{tab:ipc}
+\label{tab:sat-domains}
 \end{table*}
 """
 SUMMARY = r"""\begin{table}
@@ -29,15 +30,18 @@ Problems & 1 & 1 \\
 
 
 class PaperTableTests(unittest.TestCase):
-    def test_a_track_s_columns_take_the_counts_and_bold_the_better_of_each_pair(self):
-        tex, changed = update_table(TABLE, "IPC Resources", "sat", {"nomystery": [19, 4, 6, 9, 10, None, None]})
+    def test_a_domain_row_puts_the_baselines_first_and_bolds_its_most_solved(self):
+        counts = {"nomystery": [19, 4, 6, 12, 10, None, None], "mystery": [26, 0, 0, 0, 0, None, None]}
+        tex, changed = update_table(TABLE, "IPC Resources", "sat", counts)
 
-        # A pair without results reads --, and the opt columns stay as they were.
-        self.assertIn(r"nomystery & 19 & 4 & \textbf{6} & 9 & \textbf{10} & -- & -- & 20 & 10 & 12", tex)
-        self.assertEqual(changed, ["nomystery"])
+        # A planner without results reads --, and a row nobody solves anything in bolds nothing.
+        self.assertIn(r"nomystery & 19 & 4 & \textbf{12} & -- & 6 & 10 & -- \\", tex)
+        self.assertIn(r"mystery & 26 & 0 & 0 & -- & 0 & 0 & -- \\", tex)
+        self.assertEqual(changed, ["nomystery", "mystery"])
 
     def test_a_row_the_results_lack_or_a_domain_the_paper_lacks_stops_the_update(self):
-        for counts in ({}, {"nomystery": [19, 4, 6, 9, 10, None, None], "tpp": [1, 0, 0, 1, 1, None, None]}):
+        row = [1, 0, 0, 1, 1, None, None]
+        for counts in ({"nomystery": row}, {"nomystery": row, "mystery": row, "tpp": row}):
             with self.subTest(counts=sorted(counts)), self.assertRaises(SystemExit):
                 update_table(TABLE, "IPC Resources", "sat", counts)
 
