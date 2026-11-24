@@ -24,7 +24,7 @@ Problems & 1 & 1 \\
 \textsc{FD} & 1 & 1 \\
 \PL & 1 & 1 \\
 \end{tabular}
-\label{tab:summary}
+\label{tab:ipc-summary}
 \end{table}
 """
 
@@ -47,7 +47,9 @@ class PaperTableTests(unittest.TestCase):
 
     def test_the_summary_gives_each_track_a_column_and_bolds_its_most_solved(self):
         # Each column holds the problems, then each planner and its abstraction: ASP, FD and PL.
-        tex = update_summary(SUMMARY, [[330, 88, 92, 305, 122, None, None], [363, 122, 120, 207, 132, 35, 86]])
+        tex = update_summary(
+            SUMMARY, "tab:ipc-summary", [[330, 88, 92, 305, 122, None, None], [363, 122, 120, 207, 132, 35, 86]]
+        )
 
         self.assertIn(r"Problems & 330 & 363 \\", tex)
         self.assertIn(
@@ -56,9 +58,13 @@ class PaperTableTests(unittest.TestCase):
         )
         self.assertIn("Our pipeline}} \\\\\n\\ASP & 92 & 120 \\\\\n\\textsc{FD} & 122 & 132 \\\\\n\\PL & -- & 86", tex)
 
-    def test_a_summary_row_the_paper_lacks_stops_the_update(self):
+    def test_a_summary_row_the_paper_lacks_stops_the_update_unless_its_planner_never_ran(self):
+        without_pl = SUMMARY.replace("\\PL & 1 & 1 \\\\\n", "")
         with self.assertRaises(SystemExit):
-            update_summary(SUMMARY.replace("\\PL & 1 & 1 \\\\\n\\end", "\\end"), [[1] * 7, [1] * 7])
+            update_summary(without_pl, "tab:ipc-summary", [[1] * 7, [1] * 7])
+
+        tex = update_summary(without_pl, "tab:ipc-summary", [[1] * 5 + [None] * 2] * 2)
+        self.assertNotIn("\\PL", tex)
 
     def test_an_htg_problem_is_counted_under_the_domain_the_paper_names(self):
         names = {
