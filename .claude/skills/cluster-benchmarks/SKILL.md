@@ -35,7 +35,14 @@ action. Ask before any of these.
 
 An approval covers the action it names and nothing more. When carrying it out needs
 another step, such as a smoke test, new checkouts or a different partition, name the
-step and ask before starting. Never run anything heavy on the login node.
+step and ask before starting.
+
+copperhead is the submit node, and it is only for submitting jobs. Never run anything
+heavy on it, such as tests, smoke tests, builds, compiling or archiving. Run those on a
+compute node instead, as a Slurm job (`srun` or a one-task `sbatch`), which still needs
+Daniel's go-ahead. The cluster wiki explains how to get an interactive shell on a compute
+node. Light commands stay fine on copperhead: queue queries, git in a checkout, listing
+and reading files, `experiments.submit`, and the rsync `experiments.fetch` runs.
 
 ## Checkouts
 
@@ -77,12 +84,16 @@ and names what is missing, rather than queueing jobs that all die the same way:
 | `lib/downward-partial-grounding` | refinement grounds the whole task, which no row records |
 
 Smoke-test a branch that changes the pipeline, which the checks above cannot
-judge. Run each mode it touches on a problem it solves fast and expect a valid plan:
+judge. Run each mode it touches on a problem it solves fast and expect a valid plan.
+Run it as a one-task job on a compute node, never on copperhead itself, and keep its
+log in the checkout so that removing the checkout removes it. `sbatch --wrap` runs under
+`sh`, so call the env's Python directly:
 
 ```bash
-python -m scripts.planner abs-asp \
+cd ~/apf/<branch> && sbatch --partition=sunnycove --time=0:15:00 --mem=8G \
+  --output=smoke-%j.log --wrap "~/miniconda3/envs/apf/bin/python -m scripts.planner abs-asp \
   --domain experiments/benchmarks/downward-benchmarks/gripper/domain.pddl \
-  --problem experiments/benchmarks/downward-benchmarks/gripper/prob01.pddl
+  --problem experiments/benchmarks/downward-benchmarks/gripper/prob01.pddl"
 ```
 
 Removing a checkout needs `--force`, since the symlinks read as local changes:
@@ -289,12 +300,14 @@ which the cluster lacks.
 
 COIN lives in its own prefix, `~/apf/.shared/coin`, not in the `apf` env, where
 installing would disturb running jobs. `FindOSI.cmake` reads `DOWNWARD_COIN_ROOT`,
-and `build.py` has a bare `python` shebang that does not resolve here:
+and `build.py` has a bare `python` shebang that does not resolve here. Install and
+build on a compute node, never on copperhead:
 
 ```bash
-conda create -y -p ~/apf/.shared/coin -c conda-forge coin-or-osi coin-or-clp coin-or-utils
-export DOWNWARD_COIN_ROOT=~/apf/.shared/coin
-cd ~/apf/.shared/numeric-fast-downward && python3 ./build.py release64 -j4
+srun --partition=sunnycove --cpus-per-task=4 --mem=8G --time=1:00:00 bash -c '
+  conda create -y -p ~/apf/.shared/coin -c conda-forge coin-or-osi coin-or-clp coin-or-utils
+  export DOWNWARD_COIN_ROOT=~/apf/.shared/coin
+  cd ~/apf/.shared/numeric-fast-downward && python3 ./build.py release64 -j4'
 ```
 
 `ldd` on the binary must resolve the COIN libraries through RPATH, or the jobs need
