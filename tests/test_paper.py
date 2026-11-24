@@ -43,16 +43,17 @@ class PaperTableTests(unittest.TestCase):
             with self.subTest(counts=sorted(counts)), self.assertRaises(SystemExit):
                 update_table(TABLE, "IPC Resources", "sat", counts)
 
-    def test_the_summary_gives_each_track_a_column_and_bolds_its_most_solved(self):
+    def test_the_summary_gives_each_track_a_column_and_bolds_the_better_of_each_pair(self):
         # Each column holds the problems, then each planner and its abstraction: ASP, FD and PL.
         tex = update_summary(
             SUMMARY, "tab:ipc-summary", [[330, 88, 92, 305, 122, None, None], [363, 122, 120, 207, 132, 35, 86]]
         )
 
         self.assertIn(r"Problems & 330 & 363 \\", tex)
+        self.assertIn(r"\ASP & 88 & \textbf{122} \\", tex)
+        self.assertIn(r"\ASPa & \textbf{92} & 120 \\", tex)
         self.assertIn(r"\textsc{FD} & \textbf{305} & \textbf{207} \\", tex)
-        self.assertIn(r"\textsc{FD}\textsuperscript{$\alpha$} & 122 & 132 \\", tex)
-        self.assertIn(r"\PLa & -- & 86 \\", tex)
+        self.assertIn(r"\PLa & -- & \textbf{86} \\", tex)
 
     def test_a_summary_row_the_paper_lacks_stops_the_update_unless_its_planner_never_ran(self):
         without_pl = SUMMARY.replace("\\PL & 1 & 1 \\\\\n", "").replace("\\PLa & 1 & 1 \\\\\n", "")

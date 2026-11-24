@@ -124,9 +124,15 @@ def update_table(tex, section, kind, counts):
 
 
 def update_summary(tex, table, columns):
-    """Write one summary table, a column per benchmark set and track, the most solved of each column in bold."""
+    """Write one summary table, a column per benchmark set and track, the better of each planner and its abstraction in bold."""
     rows = {"Problems": [str(column[0]) for column in columns]}
-    bolded = [_bold_best(column[1:]) for column in columns]
+    bolded = []
+    for column in columns:
+        # The solved counts alternate a planner with its abstraction.
+        cells = []
+        for pair in range(1, len(column), 2):
+            cells += _bold_best(column[pair : pair + 2])
+        bolded.append(cells)
     for index, label in enumerate(SUMMARY_LABELS):
         rows[label] = [cells[index] for cells in bolded]
     # A mode that never ran on the table's benchmark sets may go without a row.
