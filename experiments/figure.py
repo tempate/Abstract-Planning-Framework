@@ -25,10 +25,10 @@ PAIRS = {
     "sat": (("lama", r"\LAMA", r"\LAMAa"), ("asp", r"\ASP", r"\ASPa")),
     "opt": (("lmcut", r"\LMcut", r"\LMcuta"), ("asp", r"\ASP", r"\ASPa")),
 }
-# The hard-to-ground tracks draw Powerlifted instead of the baseline once their results hold it.
+# Powerlifted, which only the hard-to-ground tracks run, against its abstraction.
 POWERLIFTED = ("powerlifted", r"\textsc{Powerlifted}", r"\textsc{Powerlifted}\textsuperscript{$\alpha$}")
 # The color and mark of each solver's points in a runtime plot, in the order of its track's pairs.
-SOLVER_MARKS = (("conc", "*"), ("abst", "triangle*"))
+SOLVER_MARKS = (("conc", "*"), ("abst", "triangle*"), ("ext0", "diamond*"))
 # Orange means abstract in the other figures, so Powerlifted takes another color.
 POWERLIFTED_MARKS = (("ext0", "triangle*"),)
 # Lifts a cactus plot's source title over the legend that sits just above the plot.
@@ -130,6 +130,9 @@ def _runtime_figure(revision):
     rows = []
     for row, (kind, name) in enumerate(TRACK_NAMES.items()):
         ipc = load_tracks(revision, kind, [])
+        pairs = PAIRS[kind]
+        if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
+            pairs += (POWERLIFTED,)
         benchmark_sets = {"HTG": htg[kind], **{f"IPC {title}": ipc[source] for source, title in SOURCES.items()}}
         # Only the left plot labels its y axis, the middle one names the track's solvers, and the right one
         # names the track down its side. The top row alone names the benchmark sets.
@@ -137,7 +140,7 @@ def _runtime_figure(revision):
         plots = [
             _runtime_plot(
                 problems,
-                PAIRS[kind],
+                pairs,
                 labelled=index == 0,
                 legend=index == 1,
                 title=title if row == 0 else "",
@@ -235,15 +238,21 @@ def _runtime_plot(problems, pairs, labelled, legend, title="", side_label="", ma
         options += (
             ", legend style={font=\\scriptsize, draw=none, fill=none, /tikz/every even column/.append style={column sep=4pt}}, "
             + CENTRED_LEGEND
+            # Every solver in one row, which a third solver would otherwise wrap into the title.
+            + f", legend columns={len(pairs)}"
         )
 
     lines = []
     for (solver, label, _abstract_label), (color, mark) in zip(pairs, marks):
+        style = rf"only marks, mark={mark}, mark size=1.2pt, color={color}, fill opacity=0.45, draw opacity=0.6"
+        # A solver that ran on another benchmark set only, such as Powerlifted on HTG, still names its mark here.
+        if problems and solver not in problems[0]:
+            if legend:
+                lines += [rf"\addlegendimage{{{style}}}", rf"\addlegendentry{{{label}}}"]
+            continue
+
         points = scatter(problems, solver, f"abs-{solver}")
-        lines.append(
-            rf"\addplot[only marks, mark={mark}, mark size=1.2pt, color={color}, fill opacity=0.45, "
-            rf"draw opacity=0.6] coordinates {{{points}}};"
-        )
+        lines.append(rf"\addplot[{style}] coordinates {{{points}}};")
         if legend:
             lines.append(rf"\addlegendentry{{{label}}}")
 

@@ -8,13 +8,13 @@ from pathlib import Path
 from experiments.figure import DEFAULT_PAPER, SOURCES, TRACK_NAMES, load_tracks, paper_figures, render_pdf
 from experiments.report import solved
 
-# The modes each track counts, in the order of its columns.
+# The modes each track counts, in the order of its columns. A set without a mode's results shows -- in its columns.
 MODES = {
-    "sat": ("asp", "abs-asp", "lama", "abs-lama"),
-    "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut"),
+    "sat": ("asp", "abs-asp", "lama", "abs-lama", "powerlifted", "abs-powerlifted"),
+    "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut", "powerlifted", "abs-powerlifted"),
 }
 # Where each track's columns start in a row of the per-domain table.
-DOMAIN_TABLE_COLUMN = {"sat": 1, "opt": 6}
+DOMAIN_TABLE_COLUMN = {"sat": 1, "opt": 8}
 # HTG names a domain by the collection it comes from; the paper by the domain.
 HTG_DOMAINS = {
     "blocksworld-large-simple": "blocksworld",
@@ -38,7 +38,8 @@ def main():
         for kind, problems in tracks.items():
             counts = domain_counts(problems, kind, htg=section.startswith("HTG"))
             tex, changed = update_table(tex, section, kind, counts)
-            tex = update_summary(tex, section, kind, [sum(column) for column in zip(*counts.values())])
+            totals = [None if None in column else sum(column) for column in zip(*counts.values())]
+            tex = update_summary(tex, section, kind, totals)
             print(f"{section}, {TRACK_NAMES[kind]}: {', '.join(changed) or 'no domain row'} changed")
     paper.write_text(tex)
 
@@ -58,14 +59,17 @@ def benchmark_sets(revision):
 def domain_counts(problems, kind, htg=False):
     """Each domain's row of the table for one track, problems first, under the name the paper gives it."""
     modes = MODES[kind]
-    rows = defaultdict(lambda: [0] * (len(modes) + 1))
+    # A mode the results lack counts None, which the table shows as --.
+    ran = set(problems[0]) if problems else set()
+    rows = defaultdict(lambda: [0] + [0 if mode in ran else None for mode in modes])
 
     for problem in problems:
         domain = next(iter(problem.values()))["domain"]
         row = rows[_htg_name(domain) if htg else _short(domain)]
         row[0] += 1
         for index, mode in enumerate(modes, 1):
-            row[index] += solved(problem[mode])
+            if mode in ran:
+                row[index] += solved(problem[mode])
 
     if htg:
         return dict(rows)
@@ -138,6 +142,9 @@ def _cells(row):
     """The problem count, then each mode's count, the better of each concrete and abstract pair in bold."""
     cells = [str(row[0])]
     for concrete, abstract in zip(row[1::2], row[2::2]):
+        if concrete is None:
+            cells += ["--", "--"]
+            continue
         cells.append(f"\\textbf{{{concrete}}}" if concrete > abstract else str(concrete))
         cells.append(f"\\textbf{{{abstract}}}" if abstract > concrete else str(abstract))
     return cells
