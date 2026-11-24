@@ -269,7 +269,8 @@ Leave the prose itself to Daniel. When a claim no longer holds, tell him rather 
 rewrite it. Compile the paper, then make one local commit, named after the PR such as
 `Update the resource results with #147`, with no Claude trailer. Never push it.
 
-Then clean the cluster. Remove every checkout the PR ran from, the branch's own and
+Then clean the cluster, after asking Daniel, since removing checkouts changes it (see
+**Caution first** in the `cluster-benchmarks` skill). Remove every checkout the PR ran from, the branch's own and
 its `<branch>-<track>` copies, together with their branches in the bare repo. Their
 results are in `main` by now, so only the raw run directories go with them. Check
 first that none of their jobs is queued and that none has local changes:

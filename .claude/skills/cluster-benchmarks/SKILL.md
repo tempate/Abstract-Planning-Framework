@@ -15,6 +15,28 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate apf
 A run belongs to a PR. The PR is a draft from the moment its run is submitted until
 its results are pushed, and ready from then on (see **Closing the loop**).
 
+## Caution first
+
+copperhead is a shared, sensitive system, and Daniel answers for everything that
+happens on it, every action Claude takes included. Be extremely careful there. Do
+nothing on the cluster you have any doubt about, and ask Daniel first whenever in
+doubt.
+
+Reading the cluster needs no approval. That covers `squeue`, `sacct`, `sinfo`, reading
+logs, results and manifests, and pulling a finished run with `experiments.fetch`.
+
+Everything that changes the cluster waits for Daniel's explicit go-ahead for that
+action. Ask before any of these.
+
+- submitting jobs, smoke tests and one-task `sbatch` jobs included
+- `scancel`, `scontrol` and any other change to queued or running jobs
+- creating, recreating or removing checkouts, and branches in `~/apf/.bare`
+- changing `~/apf/.shared`, building or installing anything, or touching files outside `~/apf`
+
+An approval covers the action it names and nothing more. When carrying it out needs
+another step, such as a smoke test, new checkouts or a different partition, name the
+step and ask before starting. Never run anything heavy on the login node.
+
 ## Checkouts
 
 Every run has its own checkout, a worktree of the bare repo `~/apf/.bare` at
