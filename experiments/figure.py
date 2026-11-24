@@ -25,8 +25,12 @@ PAIRS = {
     "sat": (("lama", r"\LAMA", r"\LAMAa"), ("asp", r"\ASP", r"\ASPa")),
     "opt": (("lmcut", r"\LMcut", r"\LMcuta"), ("asp", r"\ASP", r"\ASPa")),
 }
+# The hard-to-ground tracks draw Powerlifted instead of the baseline once their results hold it.
+POWERLIFTED = ("powerlifted", r"\textsc{Powerlifted}", r"\textsc{Powerlifted}\textsuperscript{$\alpha$}")
 # The color and mark of each solver's points in a runtime plot, in the order of its track's pairs.
 SOLVER_MARKS = (("conc", "*"), ("abst", "triangle*"))
+# Orange means abstract in the other figures, so Powerlifted takes another color.
+POWERLIFTED_MARKS = (("ext0", "triangle*"),)
 # Lifts a cactus plot's source title over the legend that sits just above the plot.
 ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
@@ -150,7 +154,7 @@ def _runtime_figure(revision):
 def _panel(title, kind, tracks):
     """One track's half of a PR's figure, under a title."""
     if kind == "htg":
-        return _titled(title, _htg_figure(tracks, "\n\n\\medskip\n"), 2)
+        return _titled(title, _htg_figure(tracks), 2)
 
     body = (
         _in_row(_track_title(TRACK_NAMES[kind], len(tracks)))
@@ -163,19 +167,17 @@ def _panel(title, kind, tracks):
     return _titled(title, body, len(tracks))
 
 
-def _htg_figure(tracks, row_gap):
-    """Both hard-to-ground tracks, each with its baseline alone and its own legend."""
-    # Both plots label their own y axis, so they need more room between them than the paper's rows.
-    gap = "0.75in"
-    cactus_plots, runtimes = [], []
-
+def _htg_figure(tracks):
+    """Both hard-to-ground tracks' runtime per problem, Powerlifted's or else the baseline's against its abstraction."""
+    plots = []
     for track, problems in tracks.items():
-        baseline = PAIRS[track][0]
-        options = f"ylabel={{Problems solved}}, {CENTRED_LEGEND}"
-        cactus_plots.append(_cactus_plot(TRACK_NAMES[track], problems, (baseline,), options, legend=True))
-        runtimes.append(_runtime_plot(problems, (baseline,), labelled=True, legend=False))
+        pairs, marks = (PAIRS[track][0],), SOLVER_MARKS
+        if problems and POWERLIFTED[0] in problems[0]:
+            pairs, marks = (POWERLIFTED,), POWERLIFTED_MARKS
+        plots.append(_runtime_plot(problems, pairs, labelled=True, legend=True, title=TRACK_NAMES[track], marks=marks))
 
-    return _in_row(_joined(cactus_plots, gap)) + row_gap + _in_row(_joined(runtimes, gap))
+    # Both plots label their own y axis, so they need more room between them than the paper's rows.
+    return _in_row(_joined(plots, "0.75in"))
 
 
 def _cactus_plots(tracks, pairs):
@@ -223,7 +225,7 @@ def _runtime_plots(tracks, pairs):
     ]
 
 
-def _runtime_plot(problems, pairs, labelled, legend, title="", side_label=""):
+def _runtime_plot(problems, pairs, labelled, legend, title="", side_label="", marks=SOLVER_MARKS):
     """Each solver's runtime per problem against its abstraction's, in the solver's own color and mark."""
     options = r"ylabel={X\textsuperscript{$\alpha$} time (s)}" if labelled else "yticklabels={}"
     if title:
@@ -236,7 +238,7 @@ def _runtime_plot(problems, pairs, labelled, legend, title="", side_label=""):
         )
 
     lines = []
-    for (solver, label, _abstract_label), (color, mark) in zip(pairs, SOLVER_MARKS):
+    for (solver, label, _abstract_label), (color, mark) in zip(pairs, marks):
         points = scatter(problems, solver, f"abs-{solver}")
         lines.append(
             rf"\addplot[only marks, mark={mark}, mark size=1.2pt, color={color}, fill opacity=0.45, "
