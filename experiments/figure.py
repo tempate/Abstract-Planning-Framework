@@ -30,7 +30,7 @@ POWERLIFTED = ("powerlifted", r"\textsc{Powerlifted}", r"\textsc{Powerlifted}\te
 # The color and mark of each solver's points in a runtime plot, in the order of its track's pairs.
 SOLVER_MARKS = (("conc", "*"), ("abst", "triangle*"), ("ext0", "diamond*"))
 # Orange means abstract in the other figures, so Powerlifted takes another color.
-POWERLIFTED_MARKS = (("ext0", "triangle*"),)
+POWERLIFTED_MARKS = SOLVER_MARKS[2:]
 # Lifts a cactus plot's source title over the legend that sits just above the plot.
 ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.

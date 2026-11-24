@@ -91,9 +91,9 @@ abstract rows the run's manifest lists, as the `cluster-benchmarks` skill explai
 For a run over a subset of problems, report on the problems the subset was meant to
 cover, not on whatever extra the submission swept in.
 
-`experiments.figure` draws a figure for the sat, opt or htg tracks, problems solved
-over time and runtime per problem with every mode, for the base and the branch
-side by side:
+`experiments.figure` draws a figure for the sat, opt or htg tracks, for the base and the
+branch side by side. A sat or opt figure shows problems solved over time and runtime per
+problem with every mode:
 
 ```bash
 python -m experiments.figure opt --base origin/main --branch HEAD \
@@ -102,7 +102,8 @@ python -m experiments.figure opt --base origin/main --branch HEAD \
 ```
 
 `--manifests` limits the branch's abstract modes to the classes its runs submitted.
-`htg` draws the hard-to-ground sat and opt tracks in one figure, without ASP modes. Pass
+`htg` draws only the runtime per problem of the hard-to-ground sat and opt tracks, for
+Powerlifted where the results hold it and for LAMA or LM-cut where they do not. Pass
 `--no-base` for a track the base does not hold yet, to draw the branch alone.
 Pass `--sources resources` or `--sources symmetries` for a PR that changes one abstraction source only.
 For a stacked PR, pass `--base <the base branch> --base-label '#<n>'` and the base's
