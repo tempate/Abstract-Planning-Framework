@@ -10,10 +10,19 @@ nomystery & 19 & \textbf{4} & 2 & \textbf{12} & 10 & -- & -- & 20 & 10 & 12 & 18
 \end{table*}
 """
 SUMMARY = r"""\begin{table}
-\multicolumn{8}{l}{\emph{IPC Resources}} \\
-Satisficing & 330 & 88 & \textbf{92} & \textbf{305} & 122 & -- & -- \\
-Optimal & 373 & \textbf{125} & 120 & \textbf{209} & 132 & -- & -- \\
-\bottomrule
+\begin{tabular}{lrr}
+ & Sat & Opt \\
+\midrule
+Problems & 1 & 1 \\
+\multicolumn{3}{l}{\emph{Baselines}} \\
+\ASP & 1 & 1 \\
+\textsc{FD} & 1 & 1 \\
+\PL & 1 & 1 \\
+\multicolumn{3}{l}{\emph{Our pipeline}} \\
+\ASP & 1 & 1 \\
+\textsc{FD} & 1 & 1 \\
+\PL & 1 & 1 \\
+\end{tabular}
 \label{tab:summary}
 \end{table}
 """
@@ -32,11 +41,20 @@ class PaperTableTests(unittest.TestCase):
             with self.subTest(counts=sorted(counts)), self.assertRaises(SystemExit):
                 update_table(TABLE, "IPC Resources", "sat", counts)
 
-    def test_the_summary_takes_one_track_s_totals(self):
-        tex = update_summary(SUMMARY, "IPC Resources", "opt", [373, 120, 125, 209, 132, None, None])
+    def test_the_summary_gives_each_track_a_column_and_bolds_its_most_solved(self):
+        # Each column holds the problems, then each planner and its abstraction: ASP, FD and PL.
+        tex = update_summary(SUMMARY, [[330, 88, 92, 305, 122, None, None], [363, 122, 120, 207, 132, 35, 86]])
 
-        self.assertIn(r"Optimal & 373 & 120 & \textbf{125} & \textbf{209} & 132 & -- & -- \\", tex)
-        self.assertIn(r"Satisficing & 330 & 88 & \textbf{92} & \textbf{305} & 122 & -- & -- \\", tex)
+        self.assertIn(r"Problems & 330 & 363 \\", tex)
+        self.assertIn(
+            "Baselines}} \\\\\n\\ASP & 88 & 122 \\\\\n\\textsc{FD} & \\textbf{305} & \\textbf{207} \\\\\n\\PL & -- & 35",
+            tex,
+        )
+        self.assertIn("Our pipeline}} \\\\\n\\ASP & 92 & 120 \\\\\n\\textsc{FD} & 122 & 132 \\\\\n\\PL & -- & 86", tex)
+
+    def test_a_summary_row_the_paper_lacks_stops_the_update(self):
+        with self.assertRaises(SystemExit):
+            update_summary(SUMMARY.replace("\\PL & 1 & 1 \\\\\n\\end", "\\end"), [[1] * 7, [1] * 7])
 
     def test_an_htg_problem_is_counted_under_the_domain_the_paper_names(self):
         names = {

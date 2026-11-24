@@ -15,6 +15,11 @@ MODES = {
 }
 # Where each track's columns start in a row of the per-domain table.
 DOMAIN_TABLE_COLUMN = {"sat": 1, "opt": 8}
+# The summary table's groups of rows, each with where its first mode sits in a track's totals,
+# which alternate each planner with its abstraction.
+SUMMARY_GROUPS = {"Baselines": 1, "Our pipeline": 2}
+# The planner each row of a summary group names, in the order of the track's modes.
+SUMMARY_LABELS = (r"\ASP", r"\textsc{FD}", r"\PL")
 # HTG names a domain by the collection it comes from; the paper by the domain.
 HTG_DOMAINS = {
     "blocksworld-large-simple": "blocksworld",
@@ -34,14 +39,14 @@ def main():
     paper = Path(args.paper)
     tex = paper.read_text()
 
+    totals = {}
     for section, tracks in benchmark_sets(args.revision).items():
         for kind, problems in tracks.items():
             counts = domain_counts(problems, kind, htg=section.startswith("HTG"))
             tex, changed = update_table(tex, section, kind, counts)
-            totals = [None if None in column else sum(column) for column in zip(*counts.values())]
-            tex = update_summary(tex, section, kind, totals)
+            totals[section, kind] = [None if None in column else sum(column) for column in zip(*counts.values())]
             print(f"{section}, {TRACK_NAMES[kind]}: {', '.join(changed) or 'no domain row'} changed")
-    paper.write_text(tex)
+    paper.write_text(update_summary(tex, list(totals.values())))
 
     for name, body in paper_figures(args.revision).items():
         render_pdf(paper, body, paper.parent / "figures" / f"{name}.pdf")
@@ -117,17 +122,42 @@ def update_table(tex, section, kind, counts):
     return tex[:start] + "\n".join(lines) + tex[end:], changed
 
 
-def update_summary(tex, section, kind, totals):
-    """Write one track's row of one section of the summary table, bolding the better mode of each pair."""
-    start, end = _section(tex, "tab:summary", section)
+def update_summary(tex, columns):
+    """Write the summary table, a column per benchmark set and track, the most solved of each column in bold."""
+    rows = {(None, "Problems"): [str(column[0]) for column in columns]}
+    for group, first in SUMMARY_GROUPS.items():
+        for pair, label in enumerate(SUMMARY_LABELS):
+            rows[group, label] = [_summary_cell(column, first + 2 * pair) for column in columns]
+
+    start = tex.rindex(r"\begin{table", 0, tex.index(r"\label{tab:summary}"))
+    end = tex.index(r"\end{tabular}", start)
     lines = tex[start:end].split("\n")
 
+    # The problem counts come before the first group.
+    group = None
     for index, line in enumerate(lines):
-        if line.strip().startswith(TRACK_NAMES[kind]):
-            lines[index] = " & ".join([TRACK_NAMES[kind], *_cells(totals)]) + " \\\\"
-            return tex[:start] + "\n".join(lines) + tex[end:]
+        for name in SUMMARY_GROUPS:
+            if rf"\emph{{{name}}}" in line:
+                group = name
 
-    raise SystemExit(f"The summary table's {section} section has no {TRACK_NAMES[kind]} row")
+        label = line.split("&")[0].strip()
+        if (group, label) in rows:
+            lines[index] = " & ".join([label, *rows.pop((group, label))]) + " \\\\"
+
+    if rows:
+        missing = ", ".join(f"{group or 'top'}: {label}" for group, label in rows)
+        raise SystemExit(f"The summary table has no row for {missing}")
+
+    return tex[:start] + "\n".join(lines) + tex[end:]
+
+
+def _summary_cell(column, index):
+    solved = column[index]
+    if solved is None:
+        return "--"
+
+    best = max(count for count in column[1:] if count is not None)
+    return f"\\textbf{{{solved}}}" if solved == best else str(solved)
 
 
 def _section(tex, label, section):
