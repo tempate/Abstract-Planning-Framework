@@ -2,7 +2,7 @@
 
 `results.csv` records no commit, so each row below goes back to the PR whose merge last changed its status or runtime. State of main at #226 on 2026-11-25.
 
-Latest code means main at #221. The PRs after #181 that change a result are #185 (opt fallback), #203 (fixed PDDL Symmetries seed, so the classes change), #206 (distinct inequalities, rerun on mprime and four HTG domains only) and #209 with #217 (one-shot on a partial grounding). #238 drops the 10 opt resources problems with no class to collapse, so their rows are gone rather than stale. #239 finds symmetries before grounding on every track, which only the HTG rows did before. #223 adds the Powerlifted rows. #245 rescans the IPC classes and reruns the IPC baselines on the new lists. The others since then are refactors or touch no track. Fast Downward has not moved since #12, so the LAMA and LMcut rows hold on any commit. Broadwell is the default partition since 2026-11-25, so every row that ran on sunnycove is stale.
+Latest code means main at #221. The PRs after #181 that change a result are #185 (opt fallback), #203 (fixed PDDL Symmetries seed, so the classes change), #206 (distinct inequalities, rerun on mprime and four HTG domains only) and #209 with #217 (one-shot on a partial grounding). #238 drops the 10 opt resources problems with no class to collapse, so their rows are gone rather than stale. #239 finds symmetries before grounding on every track, which only the HTG rows did before. #223 adds the Powerlifted rows, #226 the rnd-g rows. #245 rescans the IPC classes and reruns the IPC baselines on the new lists. The others since then are refactors or touch no track. Fast Downward has not moved since #12, so the LAMA and LMcut rows hold on any commit. Broadwell is the default partition since 2026-11-25, so every row that ran on sunnycove is stale.
 
 | Status | Meaning |
 |---|---|
@@ -25,14 +25,14 @@ Latest code means main at #221. The PRs after #181 that change a result are #185
 | | LAMA | ⚠️ **partly stale** | 443 | | #157, #196 | broadwell, sunnycove | |
 | | Powerliftedᵅ | ✅ **current** | 3406 | all | #223 | broadwell | |
 | | Powerlifted | ✅ **current** | 443 | | #223 | broadwell | |
-| | rnd-g | ❌ **stale** | 443 | | #226 | sunnycove | |
+| | rnd-g | ✅ **current** | 443 | | #226 | broadwell | |
 | opt | LMcutᵅ | ❌ **stale** | 3406 | 2 / 239 | #209, #196–#206 | sunnycove | #209 |
 | | ASPᵅ | ❌ **stale** | 3406 | best | #212 | sunnycove | #209 |
 | | ASP | ❌ **stale** | 443 | | #212 | sunnycove | |
 | | LMcut | ❌ **stale** | 443 | | #157, #196 | sunnycove | |
 | | Powerliftedᵅ | ✅ **current** | 3406 | all | #223 | broadwell | |
 | | Powerlifted | ✅ **current** | 443 | | #223 | broadwell | |
-| | rnd-g | ❌ **stale** | 443 | | #226 | sunnycove | |
+| | rnd-g | ✅ **current** | 443 | | #226 | broadwell | |
 
 ## IPC symmetries
 
