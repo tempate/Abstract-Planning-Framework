@@ -3,11 +3,11 @@ import unittest
 from experiments.paper import _htg_name, update_htg_table, update_summary, update_table
 
 TABLE = r"""\begin{table*}
-\multicolumn{6}{l}{\emph{IPC Resources}} \\
-nomystery & 19 & 1 & 1 & 1 & 1 \\
-mystery & 26 & 0 & 0 & 0 & 0 \\
+\multicolumn{11}{l}{\emph{IPC Resources}} \\
+nomystery & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
+thoughtful & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
 \bottomrule
-\label{tab:sat-domains}
+\label{tab:ipc-domains}
 \end{table*}
 """
 SUMMARY = r"""\begin{table}
@@ -44,20 +44,24 @@ Total & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
 
 
 class PaperTableTests(unittest.TestCase):
-    def test_a_domain_row_puts_the_baselines_first_and_bolds_its_most_solved(self):
-        counts = {"nomystery": [19, 4, 6, 12, 10, None, None], "mystery": [26, 0, 0, 0, 0, None, None]}
-        tex, changed = update_table(TABLE, "IPC Resources", "sat", counts)
+    def test_a_domain_row_pairs_each_planner_with_its_abstraction_on_both_tracks(self):
+        counts = {
+            "sat": {"nomystery": [19, 4, 6, 12, 10, None, None], "thoughtful": [20, 5, 5, 15, 5, None, None]},
+            "opt": {"nomystery": [19, 0, 0, 0, 0, None, None]},
+        }
+        tex, changed = update_table(TABLE, "IPC Resources", counts)
 
-        # Powerlifted, which IPC does not run, gets no column, and a row nobody solves anything in bolds nothing.
-        self.assertIn(r"nomystery & 19 & 4 & \textbf{12} & 6 & 10 \\", tex)
-        self.assertIn(r"mystery & 26 & 0 & 0 & 0 & 0 \\", tex)
-        self.assertEqual(changed, ["nomystery"])
+        # Powerlifted, which IPC does not run, gets no column, ties bold both, and a pair that solves nothing bolds nothing.
+        self.assertIn(r"nomystery & 19 & 4 & \textbf{6} & \textbf{12} & 10 & 19 & 0 & 0 & 0 & 0 \\", tex)
+        # A domain only one track has reads -- on the other.
+        self.assertIn(r"thoughtful & 20 & \textbf{5} & \textbf{5} & \textbf{15} & 5 & -- & -- & -- & -- & -- \\", tex)
+        self.assertEqual(changed, ["nomystery", "thoughtful"])
 
     def test_a_row_the_results_lack_or_a_domain_the_paper_lacks_stops_the_update(self):
         row = [1, 0, 0, 1, 1, None, None]
-        for counts in ({"nomystery": row}, {"nomystery": row, "mystery": row, "tpp": row}):
-            with self.subTest(counts=sorted(counts)), self.assertRaises(SystemExit):
-                update_table(TABLE, "IPC Resources", "sat", counts)
+        for sat in ({"nomystery": row}, {"nomystery": row, "thoughtful": row, "tpp": row}):
+            with self.subTest(domains=sorted(sat)), self.assertRaises(SystemExit):
+                update_table(TABLE, "IPC Resources", {"sat": sat, "opt": {}})
 
     def test_the_summary_gives_each_track_a_column_and_bolds_the_better_of_each_pair(self):
         # Each column holds the problems, then each planner and its abstraction: ASP, FD and PL.

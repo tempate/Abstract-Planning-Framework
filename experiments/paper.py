@@ -13,9 +13,9 @@ MODES = {
     "sat": ("asp", "abs-asp", "lama", "abs-lama", "powerlifted", "abs-powerlifted"),
     "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut", "powerlifted", "abs-powerlifted"),
 }
-# Each track's per-domain table, by its label.
-DOMAIN_TABLES = {"sat": "tab:sat-domains", "opt": "tab:opt-domains"}
-# The modes the per-domain tables show. They hold IPC alone, which Powerlifted does not run.
+# The IPC per-domain table, a section of rows per benchmark set and a block of columns per track.
+DOMAIN_TABLE = "tab:ipc-domains"
+# The modes the per-domain table shows, each planner before its abstraction. Powerlifted does not run on IPC.
 DOMAIN_MODES = {"sat": ("asp", "abs-asp", "lama", "abs-lama"), "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut")}
 # Each summary table, by its label, with the benchmark sets it gives a column per track.
 SUMMARY_TABLES = {"tab:ipc-summary": ("IPC Symmetries", "IPC Resources")}
@@ -43,18 +43,17 @@ def main():
     tex = paper.read_text()
 
     totals = {}
-    htg = {}
     for section, tracks in benchmark_sets(args.revision).items():
-        for kind, problems in tracks.items():
-            # HTG has its own table, so the per-domain tables hold IPC alone.
-            if section.startswith("HTG"):
-                htg[kind] = domain_counts(problems, kind, htg=True)
-                continue
-            counts = domain_counts(problems, kind)
-            tex, changed = update_table(tex, section, kind, counts)
-            totals[section, kind] = _total(counts)
-            print(f"{section}, {TRACK_NAMES[kind]}: {', '.join(changed) or 'no domain row'} changed")
-    tex = update_htg_table(tex, htg)
+        htg = section.startswith("HTG")
+        counts = {kind: domain_counts(problems, kind, htg=htg) for kind, problems in tracks.items()}
+        if htg:
+            tex = update_htg_table(tex, counts)
+            continue
+
+        tex, changed = update_table(tex, section, counts)
+        for kind, track in counts.items():
+            totals[section, kind] = _total(track)
+        print(f"{section}: {', '.join(changed) or 'no domain row'} changed")
     for label, sections in SUMMARY_TABLES.items():
         tex = update_summary(tex, label, [totals[section, kind] for section in sections for kind in MODES])
     paper.write_text(tex)
@@ -100,13 +99,13 @@ def domain_counts(problems, kind, htg=False):
     return counts
 
 
-def update_table(tex, section, kind, counts):
-    """Write one section of a track's per-domain table, baselines before their abstractions and each row's best in bold."""
-    start, end = _section(tex, DOMAIN_TABLES[kind], section)
+def update_table(tex, section, counts):
+    """Write one section of the per-domain table, a block of columns per track, the better of each pair in bold."""
+    start, end = _section(tex, DOMAIN_TABLE, section)
     lines = tex[start:end].split("\n")
 
-    shown = [MODES[kind].index(mode) for mode in DOMAIN_MODES[kind]]
-    width = len(shown) + 1
+    width = sum(len(DOMAIN_MODES[kind]) + 1 for kind in counts)
+    domains = {name for track in counts.values() for name in track}
     changed = []
     written = set()
     for index, line in enumerate(lines):
@@ -115,21 +114,27 @@ def update_table(tex, section, kind, counts):
             continue
 
         name = cells[0]
-        if name not in counts:
-            raise SystemExit(f"No {section} {kind} results for the paper's row {name}")
+        if name not in domains:
+            raise SystemExit(f"No {section} results for the paper's row {name}")
 
-        count, *solved = counts[name]
-        bold = _bold_best([solved[index] for index in shown])
-        row = [str(count), *bold[0::2], *bold[1::2]]
+        row = []
+        for kind, track in counts.items():
+            # A domain only the other track has reads -- here.
+            if name not in track:
+                row += ["--"] * (len(DOMAIN_MODES[kind]) + 1)
+                continue
+            count, *solved = track[name]
+            shown = [solved[MODES[kind].index(mode)] for mode in DOMAIN_MODES[kind]]
+            row += [str(count), *_bold_pairs(shown)]
         if row != cells[1:]:
             changed.append(name)
 
         lines[index] = " & ".join([name, *row]) + " \\\\"
         written.add(name)
 
-    missing = sorted(set(counts) - written)
+    missing = sorted(domains - written)
     if missing:
-        raise SystemExit(f"The paper's {section} section has no {kind} row for {', '.join(missing)}")
+        raise SystemExit(f"The paper's {section} section has no row for {', '.join(missing)}")
 
     return tex[:start] + "\n".join(lines) + tex[end:], changed
 

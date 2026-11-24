@@ -255,8 +255,7 @@ the entries whose directories are gone.
 
 For an experiment PR, then update the paper, `../paper/planpilot_abstractions/icaps27/main.tex`,
 with the merged results. `experiments.paper` writes `main`'s results into the summary tables,
-`tab:ipc-summary`, the HTG per-domain table, `tab:htg`, and every row of each track's per-domain table, `tab:sat-domains` and
-`tab:opt-domains`, and draws
+`tab:ipc-summary`, the HTG per-domain table, `tab:htg`, and every row of the IPC per-domain table, `tab:ipc-domains`, and draws
 `figures/runtimes.pdf` again. It stops on a paper row with no results and on results with
 no paper row:
 
