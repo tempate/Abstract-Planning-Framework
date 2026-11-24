@@ -17,11 +17,8 @@ MODES = {
 DOMAIN_TABLES = {"sat": "tab:sat-domains", "opt": "tab:opt-domains"}
 # Each summary table, by its label, with the benchmark sets it gives a column per track.
 SUMMARY_TABLES = {"tab:htg-summary": ("HTG Symmetries",), "tab:ipc-summary": ("IPC Symmetries", "IPC Resources")}
-# The summary table's groups of rows, each with where its first mode sits in a track's solved counts,
-# which alternate each planner with its abstraction.
-SUMMARY_GROUPS = {"Baselines": 0, "Our pipeline": 1}
-# The planner each row of a summary group names, in the order of the track's modes.
-SUMMARY_LABELS = (r"\ASP", r"\textsc{FD}", r"\PL")
+# The mode each row of a summary table names, in the order of the track's modes.
+SUMMARY_LABELS = (r"\ASP", r"\ASPa", r"\textsc{FD}", r"\textsc{FD}\textsuperscript{$\alpha$}", r"\PL", r"\PLa")
 # HTG names a domain by the collection it comes from; the paper by the domain.
 HTG_DOMAINS = {
     "blocksworld-large-simple": "blocksworld",
@@ -128,35 +125,25 @@ def update_table(tex, section, kind, counts):
 
 def update_summary(tex, table, columns):
     """Write one summary table, a column per benchmark set and track, the most solved of each column in bold."""
-    rows = {(None, "Problems"): [str(column[0]) for column in columns]}
+    rows = {"Problems": [str(column[0]) for column in columns]}
     bolded = [_bold_best(column[1:]) for column in columns]
-    # A planner that never ran on the table's benchmark sets may go without a row.
-    optional = set()
-    for group, first in SUMMARY_GROUPS.items():
-        for pair, label in enumerate(SUMMARY_LABELS):
-            rows[group, label] = [cells[first + 2 * pair] for cells in bolded]
-            if all(cell == "--" for cell in rows[group, label]):
-                optional.add((group, label))
+    for index, label in enumerate(SUMMARY_LABELS):
+        rows[label] = [cells[index] for cells in bolded]
+    # A mode that never ran on the table's benchmark sets may go without a row.
+    optional = {label for label, cells in rows.items() if all(cell == "--" for cell in cells)}
 
     start = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{table}}}"))
     end = tex.index(r"\end{tabular}", start)
     lines = tex[start:end].split("\n")
 
-    # The problem counts come before the first group.
-    group = None
     for index, line in enumerate(lines):
-        for name in SUMMARY_GROUPS:
-            if rf"\emph{{{name}}}" in line:
-                group = name
-
         label = line.split("&")[0].strip()
-        if (group, label) in rows:
-            lines[index] = " & ".join([label, *rows.pop((group, label))]) + " \\\\"
+        if label in rows:
+            lines[index] = " & ".join([label, *rows.pop(label)]) + " \\\\"
 
-    missing = [key for key in rows if key not in optional]
+    missing = [label for label in rows if label not in optional]
     if missing:
-        names = ", ".join(f"{group or 'top'}: {label}" for group, label in missing)
-        raise SystemExit(f"The summary table {table} has no row for {names}")
+        raise SystemExit(f"The summary table {table} has no row for {', '.join(missing)}")
 
     return tex[:start] + "\n".join(lines) + tex[end:]
 

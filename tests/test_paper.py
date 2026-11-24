@@ -15,14 +15,12 @@ SUMMARY = r"""\begin{table}
  & Sat & Opt \\
 \midrule
 Problems & 1 & 1 \\
-\multicolumn{3}{l}{\emph{Baselines}} \\
 \ASP & 1 & 1 \\
+\ASPa & 1 & 1 \\
 \textsc{FD} & 1 & 1 \\
+\textsc{FD}\textsuperscript{$\alpha$} & 1 & 1 \\
 \PL & 1 & 1 \\
-\multicolumn{3}{l}{\emph{Our pipeline}} \\
-\ASP & 1 & 1 \\
-\textsc{FD} & 1 & 1 \\
-\PL & 1 & 1 \\
+\PLa & 1 & 1 \\
 \end{tabular}
 \label{tab:ipc-summary}
 \end{table}
@@ -52,14 +50,12 @@ class PaperTableTests(unittest.TestCase):
         )
 
         self.assertIn(r"Problems & 330 & 363 \\", tex)
-        self.assertIn(
-            "Baselines}} \\\\\n\\ASP & 88 & 122 \\\\\n\\textsc{FD} & \\textbf{305} & \\textbf{207} \\\\\n\\PL & -- & 35",
-            tex,
-        )
-        self.assertIn("Our pipeline}} \\\\\n\\ASP & 92 & 120 \\\\\n\\textsc{FD} & 122 & 132 \\\\\n\\PL & -- & 86", tex)
+        self.assertIn(r"\textsc{FD} & \textbf{305} & \textbf{207} \\", tex)
+        self.assertIn(r"\textsc{FD}\textsuperscript{$\alpha$} & 122 & 132 \\", tex)
+        self.assertIn(r"\PLa & -- & 86 \\", tex)
 
     def test_a_summary_row_the_paper_lacks_stops_the_update_unless_its_planner_never_ran(self):
-        without_pl = SUMMARY.replace("\\PL & 1 & 1 \\\\\n", "")
+        without_pl = SUMMARY.replace("\\PL & 1 & 1 \\\\\n", "").replace("\\PLa & 1 & 1 \\\\\n", "")
         with self.assertRaises(SystemExit):
             update_summary(without_pl, "tab:ipc-summary", [[1] * 7, [1] * 7])
 
