@@ -12,7 +12,8 @@ from core.utilities.outcomes import tool_failure
 _SUCCESS = 0
 _UNSOLVABLE = 11
 _UNSOLVED_INCOMPLETE = 12
-_OUT_OF_MEMORY = (22,)
+# 247 is the driver passing on its search killed by SIGKILL, which only the memory limit sends.
+_OUT_OF_MEMORY = (22, 247)
 
 
 @dataclass(frozen=True)
