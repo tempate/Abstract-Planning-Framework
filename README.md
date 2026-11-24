@@ -67,8 +67,7 @@ in cpddl, as an external baseline. It searches the lifted task, guided by a
 heuristic on the grounded delete relaxation of a smaller task, which merges
 random objects of the same type but never goal objects. It runs their best
 configurations: GBFS with h^FF at 75% of the objects removed, or under
-`--optimize` A* with LM-cut at 95%. LM-cut there uses action costs, so it
-optimizes cost, not length, on the four HTG domains that have costs.
+`--optimize` A* with LM-cut at 95%, on unit costs like the other optimal planners.
 
 
 ## Benchmark suite

@@ -36,6 +36,8 @@ def find_plan(base_dir, domain_path, problem_path, search):
     command = [
         CPDDL_BIN,
         "lplan",
+        # Unit costs, like lmcut's cost_type=one, so that A* with LM-cut finds a shortest plan.
+        "--pddl-unit-cost",
         "--homo-type",
         "rnd-objs",
         "--homo-rm-ratio",

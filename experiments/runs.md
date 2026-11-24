@@ -25,14 +25,14 @@ Latest code means main at #221. The PRs after #181 that change a result are #185
 | | LAMA | ⚠️ **partly stale** | 443 | | #157, #196 | broadwell, sunnycove | |
 | | Powerliftedᵅ | ✅ **current** | 3406 | all | #223 | broadwell | |
 | | Powerlifted | ✅ **current** | 443 | | #223 | broadwell | |
-| | rnd-g | ✅ **current** | 443 | | #226 | broadwell | |
+| | rnd-g | ❌ **stale** | 443 | | #226 | broadwell | unit costs |
 | opt | LMcutᵅ | ❌ **stale** | 3406 | 2 / 239 | #209, #196–#206 | sunnycove | #209 |
 | | ASPᵅ | ❌ **stale** | 3406 | best | #212 | sunnycove | #209 |
 | | ASP | ❌ **stale** | 443 | | #212 | sunnycove | |
 | | LMcut | ❌ **stale** | 443 | | #157, #196 | sunnycove | |
 | | Powerliftedᵅ | ✅ **current** | 3406 | all | #223 | broadwell | |
 | | Powerlifted | ✅ **current** | 443 | | #223 | broadwell | |
-| | rnd-g | ✅ **current** | 443 | | #226 | broadwell | |
+| | rnd-g | ❌ **stale** | 443 | | #226 | broadwell | unit costs |
 
 ## IPC symmetries
 
