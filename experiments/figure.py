@@ -35,6 +35,9 @@ POWERLIFTED_MARKS = SOLVER_MARKS[2:]
 ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
+# The paper's runtime plots and the gap between them, in inches.
+PAPER_PLOT_SIZE = 1.65
+PAPER_PLOT_GAP = 0.3
 DEFAULT_PAPER = PROJECT_ROOT.parent / "paper" / "planpilot_abstractions" / "icaps27" / "main.tex"
 
 
@@ -118,40 +121,48 @@ def _results_at(revision, kind, source):
 
 def paper_figures(revision):
     """The paper's figures at a revision, by the file name main.tex includes, each the body of a PDF."""
-    # Each PDF is as wide as the float main.tex includes it in, so it keeps the paper's sizes.
+    # The paper's plots are larger than its other plots, and main.tex scales each PDF to its column.
+    size = f"\\setlength{{\\plotsize}}{{{PAPER_PLOT_SIZE}in}}\n"
     return {
-        "runtimes": _minipage(r"\textwidth", _runtime_figure(revision)),
+        "runtimes-htg": _minipage(r"\textwidth", size + _htg_runtime_figure(revision)),
+        "runtimes-ipc": _minipage(r"\textwidth", size + _ipc_runtime_figure(revision)),
     }
 
 
-def _runtime_figure(revision):
-    """The paper's runtime figure across both columns, a row per track and a column per benchmark set."""
+def _htg_runtime_figure(revision):
+    """The paper's HTG runtime figure, a plot per track side by side, each naming its own solvers."""
     htg = load_tracks(revision, "htg", [])
-    rows = []
-    for row, (kind, name) in enumerate(TRACK_NAMES.items()):
-        ipc = load_tracks(revision, kind, [])
+    plots = []
+    for index, (kind, name) in enumerate(TRACK_NAMES.items()):
         pairs = PAIRS[kind]
         if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
             pairs += (POWERLIFTED,)
-        benchmark_sets = {"HTG": htg[kind], **{f"IPC {title}": ipc[source] for source, title in SOURCES.items()}}
-        # Only the left plot labels its y axis, the middle one names the track's solvers, and the right one
-        # names the track down its side. The top row alone names the benchmark sets.
-        last = len(benchmark_sets) - 1
+        plots.append(_runtime_plot(htg[kind], pairs, labelled=index == 0, legend=True, title=name))
+    return _in_row(_joined(plots))
+
+
+def _ipc_runtime_figure(revision):
+    """The paper's IPC runtime figure, a row per track and a column per abstraction source."""
+    # The left plot of a row labels its y axis and carries the row's legend, centred over both plots, and
+    # the right one names the track down its side. The top row alone names the sources.
+    between = 1 + PAPER_PLOT_GAP / 2 / PAPER_PLOT_SIZE
+    rows = []
+    for row, (kind, name) in enumerate(TRACK_NAMES.items()):
+        tracks = load_tracks(revision, kind, [])
         plots = [
             _runtime_plot(
-                problems,
-                pairs,
+                tracks[source],
+                PAIRS[kind],
                 labelled=index == 0,
-                legend=index == 1,
+                legend=index == 0,
                 title=title if row == 0 else "",
-                side_label=name if index == last else "",
+                side_label=name if index == len(SOURCES) - 1 else "",
+                legend_x=between,
             )
-            for index, (title, problems) in enumerate(benchmark_sets.items())
+            for index, (source, title) in enumerate(SOURCES.items())
         ]
-        rows.append(_in_row(_joined(plots)))
-
-    # The figure spans the page, so its plots are larger than the paper's other plots.
-    return "\\setlength{\\plotsize}{1.65in}\n" + "\n\n\\vspace{1.8em}\n".join(rows)
+        rows.append(_in_row(_joined(plots, f"{PAPER_PLOT_GAP}in")))
+    return "\n\n\\vspace{1.8em}\n".join(rows)
 
 
 def _panel(title, kind, tracks):
@@ -228,7 +239,7 @@ def _runtime_plots(tracks, pairs):
     ]
 
 
-def _runtime_plot(problems, pairs, labelled, legend, title="", side_label="", marks=SOLVER_MARKS):
+def _runtime_plot(problems, pairs, labelled, legend, title="", side_label="", marks=SOLVER_MARKS, legend_x=0.5):
     """Each solver's runtime per problem against its abstraction's, in the solver's own color and mark."""
     options = r"ylabel={X\textsuperscript{$\alpha$} time (s)}" if labelled else "yticklabels={}"
     if title:
@@ -240,6 +251,8 @@ def _runtime_plot(problems, pairs, labelled, legend, title="", side_label="", ma
             + CENTRED_LEGEND
             # Every solver in one row, which a third solver would otherwise wrap into the title.
             + f", legend columns={len(pairs)}"
+            # Where the legend centres, as a fraction of the plot's width.
+            + f", legend style={{at={{({legend_x:.3f},1.04)}}}}"
         )
 
     lines = []
