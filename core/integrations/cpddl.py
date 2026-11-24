@@ -9,6 +9,8 @@ from core.utilities.outcomes import OutOfMemoryError, tool_failure
 
 # cpddl panics with exit code 255 on every error, out of memory included.
 _OUT_OF_MEMORY_MESSAGE = "Allocation of memory failed"
+# A SIGKILL, which only the cluster's memory limit sends, before cpddl notices itself.
+_KILLED = (-9,)
 
 
 @dataclass(frozen=True)
@@ -52,7 +54,7 @@ def find_plan(base_dir, domain_path, problem_path, search):
     if completed.returncode != 0:
         if _OUT_OF_MEMORY_MESSAGE in completed.stdout + completed.stderr:
             raise OutOfMemoryError(f"cpddl ran out of memory\n{completed.stderr.strip()}")
-        raise tool_failure("cpddl", completed, ())
+        raise tool_failure("cpddl", completed, _KILLED)
 
     # cpddl exits 0 on an unsolvable task too, and then writes no plan.
     if not os.path.exists(plan_path):
