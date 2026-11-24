@@ -44,12 +44,14 @@ def main():
     htg = {}
     for section, tracks in benchmark_sets(args.revision).items():
         for kind, problems in tracks.items():
-            counts = domain_counts(problems, kind, htg=section.startswith("HTG"))
+            # HTG has its own table, so the per-domain tables hold IPC alone.
+            if section.startswith("HTG"):
+                htg[kind] = domain_counts(problems, kind, htg=True)
+                continue
+            counts = domain_counts(problems, kind)
             tex, changed = update_table(tex, section, kind, counts)
             totals[section, kind] = _total(counts)
             print(f"{section}, {TRACK_NAMES[kind]}: {', '.join(changed) or 'no domain row'} changed")
-            if section.startswith("HTG"):
-                htg[kind] = counts
     tex = update_htg_table(tex, htg)
     for label, sections in SUMMARY_TABLES.items():
         tex = update_summary(tex, label, [totals[section, kind] for section in sections for kind in MODES])
