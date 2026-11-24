@@ -16,7 +16,9 @@ MODES = {
 # Each track's per-domain table, by its label.
 DOMAIN_TABLES = {"sat": "tab:sat-domains", "opt": "tab:opt-domains"}
 # Each summary table, by its label, with the benchmark sets it gives a column per track.
-SUMMARY_TABLES = {"tab:htg-summary": ("HTG Symmetries",), "tab:ipc-summary": ("IPC Symmetries", "IPC Resources")}
+SUMMARY_TABLES = {"tab:ipc-summary": ("IPC Symmetries", "IPC Resources")}
+# The HTG table, a row per domain and a block of columns per track.
+HTG_TABLE = "tab:htg"
 # The mode each row of a summary table names, in the order of the track's modes.
 SUMMARY_LABELS = (r"\ASP", r"\ASPa", r"\textsc{FD}", r"\textsc{FD}\textsuperscript{$\alpha$}", r"\PL", r"\PLa")
 # HTG names a domain by the collection it comes from; the paper by the domain.
@@ -39,12 +41,16 @@ def main():
     tex = paper.read_text()
 
     totals = {}
+    htg = {}
     for section, tracks in benchmark_sets(args.revision).items():
         for kind, problems in tracks.items():
             counts = domain_counts(problems, kind, htg=section.startswith("HTG"))
             tex, changed = update_table(tex, section, kind, counts)
-            totals[section, kind] = [None if None in column else sum(column) for column in zip(*counts.values())]
+            totals[section, kind] = _total(counts)
             print(f"{section}, {TRACK_NAMES[kind]}: {', '.join(changed) or 'no domain row'} changed")
+            if section.startswith("HTG"):
+                htg[kind] = counts
+    tex = update_htg_table(tex, htg)
     for label, sections in SUMMARY_TABLES.items():
         tex = update_summary(tex, label, [totals[section, kind] for section in sections for kind in MODES])
     paper.write_text(tex)
@@ -126,18 +132,29 @@ def update_table(tex, section, kind, counts):
 def update_summary(tex, table, columns):
     """Write one summary table, a column per benchmark set and track, the better of each planner and its abstraction in bold."""
     rows = {"Problems": [str(column[0]) for column in columns]}
-    bolded = []
-    for column in columns:
-        # The solved counts alternate a planner with its abstraction.
-        cells = []
-        for pair in range(1, len(column), 2):
-            cells += _bold_best(column[pair : pair + 2])
-        bolded.append(cells)
+    bolded = [_bold_pairs(column[1:]) for column in columns]
     for index, label in enumerate(SUMMARY_LABELS):
         rows[label] = [cells[index] for cells in bolded]
     # A mode that never ran on the table's benchmark sets may go without a row.
     optional = {label for label, cells in rows.items() if all(cell == "--" for cell in cells)}
+    return _write_rows(tex, table, rows, optional)
 
+
+def update_htg_table(tex, counts):
+    """Write the HTG table, each domain's problems and solved counts per track, the better of each pair in bold."""
+    domains = {name for track in counts.values() for name in track}
+    rows = {}
+    for name in sorted(domains) + ["Total"]:
+        cells = []
+        for kind in MODES:
+            count, *solved = _total(counts[kind]) if name == "Total" else counts[kind][name]
+            cells += [str(count), *_bold_pairs(solved)]
+        rows[name] = cells
+    return _write_rows(tex, HTG_TABLE, rows)
+
+
+def _write_rows(tex, table, rows, optional=()):
+    """Replace the cells of each row of a table its label names, and stop on a row the table lacks."""
     start = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{table}}}"))
     end = tex.index(r"\end{tabular}", start)
     lines = tex[start:end].split("\n")
@@ -149,9 +166,22 @@ def update_summary(tex, table, columns):
 
     missing = [label for label in rows if label not in optional]
     if missing:
-        raise SystemExit(f"The summary table {table} has no row for {', '.join(missing)}")
+        raise SystemExit(f"The table {table} has no row for {', '.join(missing)}")
 
     return tex[:start] + "\n".join(lines) + tex[end:]
+
+
+def _total(counts):
+    """The column sums of a track's domain rows, None for a mode without results."""
+    return [None if None in column else sum(column) for column in zip(*counts.values())]
+
+
+def _bold_pairs(solved_counts):
+    """The solved counts, which alternate a planner with its abstraction, the better of each pair in bold."""
+    cells = []
+    for pair in range(0, len(solved_counts), 2):
+        cells += _bold_best(solved_counts[pair : pair + 2])
+    return cells
 
 
 def _section(tex, label, section):

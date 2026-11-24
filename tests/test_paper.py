@@ -1,6 +1,6 @@
 import unittest
 
-from experiments.paper import _htg_name, update_summary, update_table
+from experiments.paper import _htg_name, update_htg_table, update_summary, update_table
 
 TABLE = r"""\begin{table*}
 \multicolumn{8}{l}{\emph{IPC Resources}} \\
@@ -24,6 +24,16 @@ Problems & 1 & 1 \\
 \end{tabular}
 \label{tab:ipc-summary}
 \end{table}
+"""
+HTG = r"""\begin{table*}
+\begin{tabular}{lrrrrrrrrrrrrr}
+Domain & \# & \ASP & \ASPa & \LAMA & \LAMAa & \PL & \PLa & \# & \ASP & \ASPa & \LMcut & \LMcuta & \PL & \PLa \\
+blocksworld & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+rovers & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+Total & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\end{tabular}
+\label{tab:htg}
+\end{table*}
 """
 
 
@@ -62,6 +72,24 @@ class PaperTableTests(unittest.TestCase):
 
         tex = update_summary(without_pl, "tab:ipc-summary", [[1] * 5 + [None] * 2] * 2)
         self.assertNotIn("\\PL", tex)
+
+    def test_the_htg_table_gives_each_domain_both_tracks_and_a_total(self):
+        counts = {
+            "sat": {"blocksworld": [40, 11, 19, 12, 40, 20, 40], "rovers": [35, 8, 6, 10, 10, 35, 18]},
+            "opt": {"blocksworld": [40, 11, 20, 12, 40, 0, 40], "rovers": [10, 4, 3, 3, 3, 1, 1]},
+        }
+        tex = update_htg_table(HTG, counts)
+
+        # Each planner and its abstraction form a pair, and ties bold both.
+        self.assertIn(
+            r"rovers & 35 & \textbf{8} & 6 & \textbf{10} & \textbf{10} & \textbf{35} & 18"
+            r" & 10 & \textbf{4} & 3 & \textbf{3} & \textbf{3} & \textbf{1} & \textbf{1} \\",
+            tex,
+        )
+        self.assertIn(r"Total & 75 & 19 & \textbf{25} & 22 & \textbf{50} & 55 & \textbf{58} & 50", tex)
+
+        with self.assertRaises(SystemExit):
+            update_htg_table(HTG.replace("rovers", "tpp"), counts)
 
     def test_an_htg_problem_is_counted_under_the_domain_the_paper_names(self):
         names = {
