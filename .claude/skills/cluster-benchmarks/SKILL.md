@@ -48,10 +48,12 @@ and reading files, `experiments.submit`, and the rsync `experiments.fetch` runs.
 
 Every run has its own checkout, a worktree of the bare repo `~/apf/.bare` at
 `~/apf/<branch>`. Its `lib/downward`, `lib/pddl-symmetries`, `lib/plasp/bin`,
-`lib/powerlifted`, `experiments/benchmarks/downward-benchmarks` and, where vendored,
-`lib/numeric-fast-downward` are symlinks into `~/apf/.shared`, the only built copy.
-Nothing is built per checkout, so a branch that moved a submodule pointer would
-silently run the shared version. No branch here moves one.
+`lib/downward-partial-grounding`, the benchmarks and every other tool the branch
+vendors (`lib/powerlifted`, `lib/numeric-fast-downward`, `lib/cpddl`,
+`lib/structural-symmetries`) are symlinks into `~/apf/.shared`, the only built copy.
+`new-worktree.sh` links whichever of them the branch has. Nothing is built per
+checkout, so a branch that moved a submodule pointer would silently run the shared
+version. No branch here moves one.
 
 ```bash
 ssh -o BatchMode=yes copperhead '~/apf/new-worktree.sh <branch>'
@@ -96,6 +98,12 @@ cd ~/apf/<branch> && sbatch --partition=sunnycove --time=0:15:00 --mem=8G \
   --problem experiments/benchmarks/downward-benchmarks/gripper/prob01.pddl"
 ```
 
+A checkout cannot follow a force-pushed branch, such as one rebased onto a newer
+`main`. When it has no queued jobs, remove it and make it again with `new-worktree.sh`,
+after asking. A plain fast-forward that moves a submodule pointer fails with
+`Could not access submodule`. Merge with `git -c submodule.recurse=false merge --ff-only`,
+then replace the empty directory it leaves with the symlink again.
+
 Removing a checkout needs `--force`, since the symlinks read as local changes:
 
 ```bash
@@ -126,9 +134,10 @@ results in `experiments/htg/<sat|opt>/`. Submit runs every mode of the track unl
 mode left out of a run shrinks every table. Leave a mode out only when its results
 from an earlier run still hold, such as the baselines under a refinement change.
 
-Runs go to `sunnycove`, one CPU generation, so timings compare across runs. Pass
-`--partition any` only to fill a queue whose timings you will not publish. It spans
-two CPU generations and caps each job at one hour.
+Runs go to `sunnycove` by default, one CPU generation, so timings compare across runs.
+Daniel picks the partition when a run goes elsewhere, and broadwell rows count as
+⚠️ in `runs.md`. Pass `--partition any` only to fill a queue whose timings you will not
+publish. It spans two CPU generations and caps each job at one hour.
 
 An abstract mode runs, by default, the class it did best with in the track's
 `results.csv`, plus every class `classes.txt` lists for a problem without a result.
@@ -171,7 +180,7 @@ Pending jobs start by priority. Fairshare and job size are equal across your own
 jobs, so among them the one that has waited longest starts first. Two things bend
 that order. Backfill starts a later job early when it fits a gap. A requeued task
 restarts its age and falls behind. To put one run ahead of your others, lower the
-others, which only touches your own jobs:
+others, which only touches your own jobs. It changes queued jobs, so ask first:
 
 ```bash
 scontrol update job=<array job id> nice=300
@@ -184,9 +193,12 @@ refusing to start a finished task twice, and their stdout says
 ## Watching a run
 
 Every run in the queue gets a background watch without being asked, including runs
-submitted in an earlier session. One watch per PR, polling every hour while the run likely
-has three hours or more left, and every 15 minutes after that. Open a fresh ssh for each poll,
-and treat a failed ssh as no answer, never as an empty queue:
+submitted in an earlier session. Keep one watch for all queued runs, which exits as soon
+as any run drains and names it. Pull that run, then start the watch again for the rest.
+Poll every hour while a run likely has three hours or more left, and every 15 minutes
+after that. Open a fresh ssh for each poll, and treat a failed ssh as no answer, never as
+an empty queue. When Daniel asks to stop a watch, stop it and do not restart it unasked
+until new runs go in:
 
 ```bash
 while true; do
@@ -223,8 +235,15 @@ python -m experiments.fetch --remote-dir '~/apf/<checkout>/runs/'
 `fetch` refuses while the run still has jobs queued, rsyncs it into a fresh
 temporary directory, and collects it into the CSV of the track the manifest names.
 It prints the producing commit and the directory, which holds the run's
-`manifest.json`. The rsync can take minutes, so pull in the background too.
+`manifest.json`. That directory sits in `/tmp`, so copy the manifest somewhere lasting
+while the PR still needs it. The rsync can take minutes, so pull in the background too.
 `--remote-dir` defaults to the checkout named after the current branch.
+
+`runs.md` needs the partition the run used, which the manifest does not record:
+
+```bash
+ssh copperhead 'sacct -u dquilez -S <date> -X -n -P -o WorkDir,Partition | grep "/<checkout>/" | cut -d"|" -f2 | sort | uniq -c'
+```
 
 `fetch` collects only into a checkout whose code matches the commit that produced
 the run. Commits that touch only `results.csv`, `report.md` or `best_classes.csv` do not count. When the
@@ -249,10 +268,16 @@ awk -F, '$5=="running"' experiments/ipc/<track>/<source>/results.csv experiments
 
 A `running` row is a job killed without a terminal status, not live work. Report the
 run as partial rather than averaging over them. `interrupted` is runsolver's memory
-limit and `out of memory` is Fast Downward's own. Both are results. Check `status`
+limit and `out of memory` is a tool's own. Both are results. Check `status`
 for `error` and `killed (signal 9)` too, since one domain can contribute nothing
 while the totals look healthy. In a CSV collected before #101, a crash reads
 `no plan found` and a memory kill `running`.
+
+A task gets `--mem-per-cpu` times `--cpus-per-task`, 2731 MB × 3 = 8 GB, the same as
+runsolver's limit. Slurm counts the Python wrapper too, so it can kill a fast-growing
+tool before runsolver notices. That shows as an `error` whose message names exit 247
+or −9, with `oom-kill` in the task's `slurm_logs/*_stderr.log`. Treat it as out of
+memory, teach the integration its exit code, and relabel the rows without a rerun.
 
 ## Closing the loop
 
