@@ -1,8 +1,8 @@
 # What ran where
 
-`results.csv` records no commit, so each row below goes back to the PR whose merge last changed its status or runtime. State of main at #239 on 2026-11-18.
+`results.csv` records no commit, so each row below goes back to the PR whose merge last changed its status or runtime. State of main at #223 on 2026-11-24.
 
-Latest code means main at #221. The PRs after #181 that change a result are #185 (opt fallback), #203 (fixed PDDL Symmetries seed, so the classes change), #206 (distinct inequalities, rerun on mprime and four HTG domains only) and #209 with #217 (one-shot on a partial grounding). #238 drops the 10 opt resources problems with no class to collapse, so their rows are gone rather than stale. #239 finds symmetries before grounding on every track, which only the HTG rows did before. The others since then are refactors or touch no track. Fast Downward has not moved since #12, so the LAMA and LMcut rows hold on any commit.
+Latest code means main at #221. The PRs after #181 that change a result are #185 (opt fallback), #203 (fixed PDDL Symmetries seed, so the classes change), #206 (distinct inequalities, rerun on mprime and four HTG domains only) and #209 with #217 (one-shot on a partial grounding). #238 drops the 10 opt resources problems with no class to collapse, so their rows are gone rather than stale. #239 finds symmetries before grounding on every track, which only the HTG rows did before. #223 adds the Powerlifted rows. The others since then are refactors or touch no track. Fast Downward has not moved since #12, so the LAMA and LMcut rows hold on any commit.
 
 | Status | Meaning |
 |---|---|
@@ -23,10 +23,14 @@ Latest code means main at #221. The PRs after #181 that change a result are #185
 | | ASPᵅ | ❌ **stale** | 3406 | best | #212 | sunnycove | #209 |
 | | ASP | ✅ **current** | 443 | | #212 | sunnycove | |
 | | LAMA | ⚠️ **partly stale** | 443 | | #157, #196 | broadwell, sunnycove | |
+| | Powerliftedᵅ | ⚠️ **partly stale** | 3406 | all | #223 | broadwell | |
+| | Powerlifted | ⚠️ **partly stale** | 443 | | #223 | broadwell | |
 | opt | LMcutᵅ | ❌ **stale** | 3406 | 2 / 239 | #209, #196–#206 | sunnycove | #209 |
 | | ASPᵅ | ❌ **stale** | 3406 | best | #212 | sunnycove | #209 |
 | | ASP | ✅ **current** | 443 | | #212 | sunnycove | |
 | | LMcut | ✅ **current** | 443 | | #157, #196 | sunnycove | |
+| | Powerliftedᵅ | ⚠️ **partly stale** | 3406 | all | #223 | broadwell | |
+| | Powerlifted | ⚠️ **partly stale** | 443 | | #223 | broadwell | |
 
 ## IPC symmetries
 
