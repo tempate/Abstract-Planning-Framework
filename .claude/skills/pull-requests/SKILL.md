@@ -37,7 +37,7 @@ never add a paragraph interpreting the numbers.
 
 - No H1, since the title is the heading.
 - Write the prose without passive voice, colons or semicolons.
-- Name the modes ASP, ASPᵅ, LAMA, LAMAᵅ, LMcut and LMcutᵅ, as the paper does.
+- Name the modes ASP, ASPᵅ, LAMA, LAMAᵅ, LMcut, LMcutᵅ, Powerlifted and Powerliftedᵅ, as the reports do.
 - Keep the `🤖 Generated with [Claude Code](https://claude.com/claude-code)` footer.
 - Draft the body in the scratchpad and apply it with `gh pr edit <n> --body-file <draft>`. Never commit it to the repo.
 - Daniel edits descriptions too, so fetch the live body with `gh pr view <n> --json body -q .body` before every edit and change only your part.
@@ -56,6 +56,9 @@ small tables, as #146 and #147 do:
 2. **Median runtime.** The same rows and columns. Each cell reads `base → PR` in seconds
    with one decimal, the median over the problems both sides solve.
 
+A PR that adds a mode has no base for it, so its cells read the PR's number alone, and
+the runtime table compares the new mode with its abstraction over the problems both solve.
+
 ```markdown
 | Plans found | sat resources | opt resources |
 |---|---|---|
@@ -71,7 +74,7 @@ small tables, as #146 and #147 do:
 ```
 
 `experiments.compare` prints both tables for every track the manifests name, ready to
-paste:
+paste. `fetch` leaves each manifest in `/tmp`, so pass the copies you kept when those are gone:
 
 ```bash
 python -m experiments.compare --base origin/main --branch HEAD \
@@ -148,8 +151,9 @@ A commit that exists only locally, such as one Daniel said not to push yet, does
 reach `main` through the merge. Ask whether to push it first.
 
 Ask once. When asking whether to merge, ask in the same question whether to delete
-the branch and clean the cluster afterwards. The harness blocks a deletion that was not
-asked for in so many words, so one yes has to cover all three.
+the branch and clean the cluster afterwards, and list what the cluster cleanup would
+remove (see **Cleaning up after a PR** in the `cluster-benchmarks` skill). The harness
+blocks a deletion that was not asked for in so many words, so one yes has to cover all three.
 
 `--delete-branch` is safe only when no open PR uses the branch as its base. If one
 does, merge with `gh stack merge` below, since deleting a base cannot be undone.
@@ -269,15 +273,5 @@ Leave the prose itself to Daniel. When a claim no longer holds, tell him rather 
 rewrite it. Compile the paper, then make one local commit, named after the PR such as
 `Update the resource results with #147`, with no Claude trailer. Never push it.
 
-Then clean the cluster. Remove every checkout the PR ran from, the branch's own and
-its `<branch>-<track>` copies, together with their branches in the bare repo. Their
-results are in `main` by now, so only the raw run directories go with them. Check
-first that none of their jobs is queued and that none has local changes:
-
-```bash
-ssh -o BatchMode=yes copperhead 'squeue -u dquilez -h | wc -l; git -C ~/apf/.bare worktree list'
-ssh -o BatchMode=yes copperhead 'for b in <branch> <branch>-<track>; do
-  git -C ~/apf/.bare worktree remove --force ~/apf/$b && git -C ~/apf/.bare branch -D $b; done'
-```
-
-Leave the checkouts of PRs that are still open, and `~/apf/main`.
+Then clean the cluster, as **Cleaning up after a PR** in the `cluster-benchmarks` skill
+describes.

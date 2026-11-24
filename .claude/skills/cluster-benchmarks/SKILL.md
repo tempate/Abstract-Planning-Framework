@@ -15,14 +15,47 @@ source ~/miniconda3/etc/profile.d/conda.sh && conda activate apf
 A run belongs to a PR. The PR is a draft from the moment its run is submitted until
 its results are pushed, and ready from then on (see **Closing the loop**).
 
+## Caution first
+
+copperhead is a shared, sensitive system, and Daniel answers for everything that
+happens on it, every action Claude takes included. Be extremely careful there. Do
+nothing on the cluster you have any doubt about, and ask Daniel first whenever in
+doubt.
+
+Reading the cluster needs no approval. That covers `squeue`, `sacct`, `sinfo`, reading
+logs, results and manifests, and pulling a finished run with `experiments.fetch`.
+
+Everything that changes the cluster waits for Daniel's explicit go-ahead for that
+action. Ask before any of these.
+
+- submitting jobs, smoke tests and one-task `sbatch` jobs included
+- `scancel`, `scontrol` and any other change to queued or running jobs
+- creating, recreating or removing checkouts, and branches in `~/apf/.bare`
+- changing `~/apf/.shared`, building or installing anything, or touching files outside `~/apf`
+
+An approval covers the action it names and nothing more. When carrying it out needs
+another step, such as a smoke test, new checkouts or a different partition, name the
+step and ask before starting.
+
+copperhead is the submit node, and it is only for submitting jobs. Never run anything
+heavy on it, such as tests, smoke tests, builds, compiling or archiving. Run those on a
+compute node instead, as a Slurm job (`srun` or a one-task `sbatch`), which still needs
+Daniel's go-ahead. The cluster wiki explains how to get an interactive shell on a compute
+node. Light commands stay fine on copperhead: queue queries, git in a checkout, listing
+and reading files, `experiments.submit`, and the rsync `experiments.fetch` runs.
+
 ## Checkouts
 
 Every run has its own checkout, a worktree of the bare repo `~/apf/.bare` at
 `~/apf/<branch>`. Its `lib/downward`, `lib/pddl-symmetries`, `lib/plasp/bin`,
-`lib/powerlifted`, `experiments/benchmarks/downward-benchmarks` and, where vendored,
-`lib/numeric-fast-downward` are symlinks into `~/apf/.shared`, the only built copy.
-Nothing is built per checkout, so a branch that moved a submodule pointer would
-silently run the shared version. No branch here moves one.
+`lib/downward-partial-grounding`, the benchmarks and every other tool the branch
+vendors (`lib/powerlifted`, `lib/numeric-fast-downward`, `lib/cpddl`,
+`lib/structural-symmetries`) are symlinks into `~/apf/.shared`, the only built copy.
+`new-worktree.sh` links whichever of them the branch has. Nothing is built per
+checkout, so a branch that moves a submodule pointer still runs the shared build.
+Before submitting such a branch, compare its pointer (`git ls-tree HEAD lib/<tool>`)
+with the commit `.shared/<tool>` was built from. When they differ, the shared tool
+needs a rebuild first (see **Shared tools**).
 
 ```bash
 ssh -o BatchMode=yes copperhead '~/apf/new-worktree.sh <branch>'
@@ -55,13 +88,23 @@ and names what is missing, rather than queueing jobs that all die the same way:
 | `lib/downward-partial-grounding` | refinement grounds the whole task, which no row records |
 
 Smoke-test a branch that changes the pipeline, which the checks above cannot
-judge. Run each mode it touches on a problem it solves fast and expect a valid plan:
+judge. Run each mode it touches on a problem it solves fast and expect a valid plan.
+Run it as a one-task job on a compute node, never on copperhead itself, and keep its
+log in the checkout so that removing the checkout removes it. `sbatch --wrap` runs under
+`sh`, so call the env's Python directly:
 
 ```bash
-python -m scripts.planner abs-asp \
+cd ~/apf/<branch> && sbatch --partition=sunnycove --time=0:15:00 --mem=8G \
+  --output=smoke-%j.log --wrap "~/miniconda3/envs/apf/bin/python -m scripts.planner abs-asp \
   --domain experiments/benchmarks/downward-benchmarks/gripper/domain.pddl \
-  --problem experiments/benchmarks/downward-benchmarks/gripper/prob01.pddl
+  --problem experiments/benchmarks/downward-benchmarks/gripper/prob01.pddl"
 ```
+
+A checkout cannot follow a force-pushed branch, such as one rebased onto a newer
+`main`. When it has no queued jobs, remove it and make it again with `new-worktree.sh`,
+after asking. A plain fast-forward that moves a submodule pointer fails with
+`Could not access submodule`. Merge with `git -c submodule.recurse=false merge --ff-only`,
+then replace the empty directory it leaves with the symlink again.
 
 Removing a checkout needs `--force`, since the symlinks read as local changes:
 
@@ -69,8 +112,9 @@ Removing a checkout needs `--force`, since the symlinks read as local changes:
 ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare worktree remove --force ~/apf/<branch>'
 ```
 
-Setting up checkouts, smoke-testing and submitting can take minutes. Chain them in
-one background command.
+Setting up checkouts, smoke-testing and submitting can take minutes. Name each step
+first, and once Daniel has approved all of them, chain them in one background command.
+Never chain in a step he has not approved.
 
 ## Submitting
 
@@ -93,9 +137,10 @@ results in `experiments/htg/<sat|opt>/`. Submit runs every mode of the track unl
 mode left out of a run shrinks every table. Leave a mode out only when its results
 from an earlier run still hold, such as the baselines under a refinement change.
 
-Runs go to `sunnycove`, one CPU generation, so timings compare across runs. Pass
-`--partition any` only to fill a queue whose timings you will not publish. It spans
-two CPU generations and caps each job at one hour.
+Runs go to `sunnycove` by default, one CPU generation, so timings compare across runs.
+Daniel picks the partition when a run goes elsewhere, and broadwell rows count as
+⚠️ in `runs.md`. Pass `--partition any` only to fill a queue whose timings you will not
+publish. It spans two CPU generations and caps each job at one hour.
 
 An abstract mode runs, by default, the class it did best with in the track's
 `results.csv`, plus every class `classes.txt` lists for a problem without a result.
@@ -138,7 +183,7 @@ Pending jobs start by priority. Fairshare and job size are equal across your own
 jobs, so among them the one that has waited longest starts first. Two things bend
 that order. Backfill starts a later job early when it fits a gap. A requeued task
 restarts its age and falls behind. To put one run ahead of your others, lower the
-others, which only touches your own jobs:
+others, which only touches your own jobs. It changes queued jobs, so ask first:
 
 ```bash
 scontrol update job=<array job id> nice=300
@@ -151,9 +196,12 @@ refusing to start a finished task twice, and their stdout says
 ## Watching a run
 
 Every run in the queue gets a background watch without being asked, including runs
-submitted in an earlier session. One watch per PR, polling every hour while the run likely
-has three hours or more left, and every 15 minutes after that. Open a fresh ssh for each poll,
-and treat a failed ssh as no answer, never as an empty queue:
+submitted in an earlier session. Keep one watch for all queued runs, which exits as soon
+as any run drains and names it. Pull that run, then start the watch again for the rest.
+Poll every hour while a run likely has three hours or more left, and every 15 minutes
+after that. Open a fresh ssh for each poll, and treat a failed ssh as no answer, never as
+an empty queue. When Daniel asks to stop a watch, stop it and do not restart it unasked
+until new runs go in:
 
 ```bash
 while true; do
@@ -172,7 +220,7 @@ The run's name is the `run-<timestamp>` directory submit wrote. For progress, co
 states per run:
 
 ```bash
-ssh copperhead 'sacct -u dquilez -S <date> -X -n -P --name=<run-name> -o State | sort | uniq -c'
+ssh -o BatchMode=yes copperhead 'sacct -u dquilez -S <date> -X -n -P --name=<run-name> -o State | sort | uniq -c'
 ```
 
 `python -m experiments.status` reports the run's queued and running jobs and what
@@ -190,8 +238,15 @@ python -m experiments.fetch --remote-dir '~/apf/<checkout>/runs/'
 `fetch` refuses while the run still has jobs queued, rsyncs it into a fresh
 temporary directory, and collects it into the CSV of the track the manifest names.
 It prints the producing commit and the directory, which holds the run's
-`manifest.json`. The rsync can take minutes, so pull in the background too.
+`manifest.json`. That directory sits in `/tmp`, so copy the manifest somewhere lasting
+while the PR still needs it. The rsync can take minutes, so pull in the background too.
 `--remote-dir` defaults to the checkout named after the current branch.
+
+`runs.md` needs the partition the run used, which the manifest does not record:
+
+```bash
+ssh -o BatchMode=yes copperhead 'sacct -u dquilez -S <date> -X -n -P -o WorkDir,Partition | grep "/<checkout>/" | cut -d"|" -f2 | sort | uniq -c'
+```
 
 `fetch` collects only into a checkout whose code matches the commit that produced
 the run. Commits that touch only `results.csv`, `report.md` or `best_classes.csv` do not count. When the
@@ -216,10 +271,16 @@ awk -F, '$5=="running"' experiments/ipc/<track>/<source>/results.csv experiments
 
 A `running` row is a job killed without a terminal status, not live work. Report the
 run as partial rather than averaging over them. `interrupted` is runsolver's memory
-limit and `out of memory` is Fast Downward's own. Both are results. Check `status`
+limit and `out of memory` is a tool's own. Both are results. Check `status`
 for `error` and `killed (signal 9)` too, since one domain can contribute nothing
 while the totals look healthy. In a CSV collected before #101, a crash reads
 `no plan found` and a memory kill `running`.
+
+A task gets `--mem-per-cpu` times `--cpus-per-task`, 2731 MB × 3 = 8 GB, the same as
+runsolver's limit. Slurm counts the Python wrapper too, so it can kill a fast-growing
+tool before runsolver notices. That shows as an `error` whose message names exit 247
+or −9, with `oom-kill` in the task's `slurm_logs/*_stderr.log`. Treat it as out of
+memory, teach the integration its exit code, and relabel the rows without a rerun.
 
 ## Closing the loop
 
@@ -231,7 +292,49 @@ When a watch reports a run done, do all of this without being asked:
 4. Push, and mark the PR ready with `gh pr ready <n>` in the same step.
 5. Rewrite the description around the run's numbers and figures, following **Experiment PRs** in the `pull-requests` skill, and drop numbers from earlier runs.
 
-## Rebuilding numeric-fast-downward
+## Cleaning up after a PR
+
+Keep the cluster clean. When a PR merges or closes, removing what it left on the cluster
+is part of finishing it, not an optional extra.
+
+1. List everything the PR left. That means every checkout it ran from (the branch's own
+   and its `<branch>-<track>` copies), their branches in `~/apf/.bare`, and any file
+   created for it outside a checkout, such as smoke logs, skip lists, manifests,
+   scripts and backups.
+2. Check that none of those checkouts has a queued job or local changes.
+3. Show Daniel the list and ask once, since removing files changes the cluster (see
+   **Caution first**). For a closed PR, say that its raw runs are the only copy left.
+4. Remove exactly what he approved, in the background, then list `~/apf` again to
+   show nothing is left.
+
+```bash
+ssh -o BatchMode=yes copperhead 'squeue -u dquilez -h -o "%Z" | grep -c "/<branch>"; ls -A ~/apf'
+ssh -o BatchMode=yes copperhead 'for b in <branch> <branch>-<track>; do
+  git -C ~/apf/.bare worktree remove --force ~/apf/$b && git -C ~/apf/.bare branch -D $b; done'
+```
+
+Leave the checkouts of PRs that are still open, and `~/apf/main`.
+
+Avoid leftovers in the first place. Keep a run's helper files, smoke logs included,
+inside its checkout, so removing the checkout removes them too. A file that has to live
+elsewhere, such as a backup in `~/apf/.shared`, goes on the PR's cleanup list the moment
+it is created.
+
+## Shared tools
+
+Every checkout runs the one build in `~/apf/.shared`, so changing it changes every
+queued and running job at once. Building or replacing anything there needs Daniel's
+go-ahead (see **Caution first**) and runs on a compute node.
+
+- **Rebuilding a tool jobs use.** Check `squeue` first. While any job could run it,
+  build into a new directory and move it into place only once Daniel agrees, or wait until
+  the queue is empty.
+- **A PR that vendors a new tool**, as Powerlifted, cpddl and structural-symmetries did,
+  needs its build in `.shared` and a block in `~/apf/new-worktree.sh` that links it and
+  checks its binary, before its first run. Both are cluster changes, so ask first. When
+  that PR closes without merging, the build and the block go on its cleanup list.
+
+### Rebuilding numeric-fast-downward
 
 `~/apf/.shared/numeric-fast-downward` is the vendored source at `fac7ce0` with
 `lib/numeric-fast-downward.patch` applied. The patch makes it build without CPLEX,
@@ -239,12 +342,17 @@ which the cluster lacks.
 
 COIN lives in its own prefix, `~/apf/.shared/coin`, not in the `apf` env, where
 installing would disturb running jobs. `FindOSI.cmake` reads `DOWNWARD_COIN_ROOT`,
-and `build.py` has a bare `python` shebang that does not resolve here:
+and `build.py` has a bare `python` shebang that does not resolve here. Install and
+build on a compute node, never on copperhead. Nobody has checked that the compute
+nodes reach conda-forge, so expect `conda create` to fail there and ask Daniel how to
+proceed if it does:
 
 ```bash
-conda create -y -p ~/apf/.shared/coin -c conda-forge coin-or-osi coin-or-clp coin-or-utils
-export DOWNWARD_COIN_ROOT=~/apf/.shared/coin
-cd ~/apf/.shared/numeric-fast-downward && python3 ./build.py release64 -j4
+srun --partition=sunnycove --cpus-per-task=4 --mem=8G --time=1:00:00 bash -c '
+  source ~/miniconda3/etc/profile.d/conda.sh
+  conda create -y -p ~/apf/.shared/coin -c conda-forge coin-or-osi coin-or-clp coin-or-utils
+  export DOWNWARD_COIN_ROOT=~/apf/.shared/coin
+  cd ~/apf/.shared/numeric-fast-downward && python3 ./build.py release64 -j4'
 ```
 
 `ldd` on the binary must resolve the COIN libraries through RPATH, or the jobs need
