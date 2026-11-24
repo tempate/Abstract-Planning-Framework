@@ -15,6 +15,8 @@ MODES = {
 }
 # Each track's per-domain table, by its label.
 DOMAIN_TABLES = {"sat": "tab:sat-domains", "opt": "tab:opt-domains"}
+# The modes the per-domain tables show. They hold IPC alone, which Powerlifted does not run.
+DOMAIN_MODES = {"sat": ("asp", "abs-asp", "lama", "abs-lama"), "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut")}
 # Each summary table, by its label, with the benchmark sets it gives a column per track.
 SUMMARY_TABLES = {"tab:ipc-summary": ("IPC Symmetries", "IPC Resources")}
 # The HTG table, a section of rows per track, each a row per domain and a total.
@@ -103,7 +105,8 @@ def update_table(tex, section, kind, counts):
     start, end = _section(tex, DOMAIN_TABLES[kind], section)
     lines = tex[start:end].split("\n")
 
-    width = len(MODES[kind]) + 1
+    shown = [MODES[kind].index(mode) for mode in DOMAIN_MODES[kind]]
+    width = len(shown) + 1
     changed = []
     written = set()
     for index, line in enumerate(lines):
@@ -116,7 +119,7 @@ def update_table(tex, section, kind, counts):
             raise SystemExit(f"No {section} {kind} results for the paper's row {name}")
 
         count, *solved = counts[name]
-        bold = _bold_best(solved)
+        bold = _bold_best([solved[index] for index in shown])
         row = [str(count), *bold[0::2], *bold[1::2]]
         if row != cells[1:]:
             changed.append(name)

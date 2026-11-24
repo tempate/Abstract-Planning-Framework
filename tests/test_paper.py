@@ -3,9 +3,9 @@ import unittest
 from experiments.paper import _htg_name, update_htg_table, update_summary, update_table
 
 TABLE = r"""\begin{table*}
-\multicolumn{8}{l}{\emph{IPC Resources}} \\
-nomystery & 19 & 1 & 1 & 1 & 1 & 1 & 1 \\
-mystery & 26 & 0 & 0 & 0 & 0 & 0 & 0 \\
+\multicolumn{6}{l}{\emph{IPC Resources}} \\
+nomystery & 19 & 1 & 1 & 1 & 1 \\
+mystery & 26 & 0 & 0 & 0 & 0 \\
 \bottomrule
 \label{tab:sat-domains}
 \end{table*}
@@ -48,10 +48,10 @@ class PaperTableTests(unittest.TestCase):
         counts = {"nomystery": [19, 4, 6, 12, 10, None, None], "mystery": [26, 0, 0, 0, 0, None, None]}
         tex, changed = update_table(TABLE, "IPC Resources", "sat", counts)
 
-        # A planner without results reads --, and a row nobody solves anything in bolds nothing.
-        self.assertIn(r"nomystery & 19 & 4 & \textbf{12} & -- & 6 & 10 & -- \\", tex)
-        self.assertIn(r"mystery & 26 & 0 & 0 & -- & 0 & 0 & -- \\", tex)
-        self.assertEqual(changed, ["nomystery", "mystery"])
+        # Powerlifted, which IPC does not run, gets no column, and a row nobody solves anything in bolds nothing.
+        self.assertIn(r"nomystery & 19 & 4 & \textbf{12} & 6 & 10 \\", tex)
+        self.assertIn(r"mystery & 26 & 0 & 0 & 0 & 0 \\", tex)
+        self.assertEqual(changed, ["nomystery"])
 
     def test_a_row_the_results_lack_or_a_domain_the_paper_lacks_stops_the_update(self):
         row = [1, 0, 0, 1, 1, None, None]
