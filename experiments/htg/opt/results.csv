@@ -1181,7 +1181,7 @@ childsnack-contents/parsize3-cham3,contentam3-p0.pddl,abs-powerlifted,place-2-f2
 childsnack-contents/parsize3-cham3,contentam3-p0.pddl,asp,,success,131.83148459345102,total,129.893064,,,,,,,0.53989,,,,0.192794,,,,,,,,,,129.120994,,,,,,,,12,,13,,,
 childsnack-contents/parsize3-cham3,contentam3-p0.pddl,lmcut,,timed out,1800.0317938178778,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize3-cham3,contentam3-p0.pddl,powerlifted,,timed out,1800.1112753376365,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-childsnack-contents/parsize3-cham3,contentam3-p0.pddl,rnd-g,,error (exit code 2),1393.0373230986297,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize3-cham3,contentam3-p0.pddl,rnd-g,,out of memory,1393.0373230986297,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize3-cham3,contentam3-p10.pddl,abs-asp,sandwich-3-4f0ba7,timed out,1800.388783827424,guided_concrete_solving,,0.20183592289686203,8.066743612289429e-05,0.12481025233864784,,0.01789296790957451,0.0159834623336792,31.03633639961481,9.739683948457241,,,14.083766836673021,,4.338884565979242,31.496513411402702,,,,,,,34.48796288669109,3,0,8,0,,,8,,9,9,3,sandwich,
 childsnack-contents/parsize3-cham3,contentam3-p10.pddl,abs-lmcut,sandwich-3-4f0ba7,timed out,1800.2409083209932,concrete_asp,,0.19110408797860146,5.759298801422119e-05,0.10949470475316048,,0.017298366874456406,0.014877118170261383,29.85662978887558,8.889376401901245,,,13.890390127897263,,,,947.9876771494746,,,2.2329451628029346,0.007997468113899231,0.017570860683918,,3,0,8,0,,,8,,,9,3,sandwich,
 childsnack-contents/parsize3-cham3,contentam3-p10.pddl,abs-powerlifted,content-portion-15-ef3522,timed out,1800.023942001164,abstract_pddl_writing,,0.2539016120135784,0.000167064368724823,0.12852012366056442,,0.03856007754802704,0.029936738312244415,,,,,,,,,,,,,,,,12,0,,,,,,,,,15,content-portion,
@@ -1260,7 +1260,7 @@ childsnack-contents/parsize3-cham3,contentam5-p0.pddl,abs-powerlifted,place-2-f2
 childsnack-contents/parsize3-cham3,contentam5-p0.pddl,asp,,success,202.11897848173976,total,199.398303,,,,,,,0.823708,,,,0.354423,,,,,,,,,,198.168365,,,,,,,,12,,13,,,
 childsnack-contents/parsize3-cham3,contentam5-p0.pddl,lmcut,,success,1270.634843185544,total,1267.702826,,,,,,,,,1267.69464,,,,,,,,,,,,,,,,,,,,12,,,,,
 childsnack-contents/parsize3-cham3,contentam5-p0.pddl,powerlifted,,timed out,1800.1109482449829,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-childsnack-contents/parsize3-cham3,contentam5-p0.pddl,rnd-g,,error (exit code 2),806.2440209127963,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize3-cham3,contentam5-p0.pddl,rnd-g,,out of memory,806.2440209127963,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize3-cham3,contentam5-p10.pddl,abs-asp,content-portion-6-651a1f,timed out,1800.2747816331685,abstract_asp,,0.21045809984207153,0.00015874579548835754,0.1553022302687168,,0.05203184857964516,0.02540188655257225,,31.852835152298212,,,,,16.48993620276451,,,,,,,,,12,0,,,,,5,,6,,6,content-portion,
 childsnack-contents/parsize3-cham3,contentam5-p10.pddl,abs-lmcut,content-portion-6-651a1f,timed out,1800.111466012895,abstract_fd,,0.20863672345876694,0.00016178563237190247,0.13880813494324684,,0.05220912769436836,0.025273460894823074,,30.720116637647152,,,,,,,,,,,,,,12,0,,,,,,,,,6,content-portion,
 childsnack-contents/parsize3-cham3,contentam5-p10.pddl,abs-powerlifted,content-portion-11-7892e8,timed out,1800.1105288602412,abstract_pddl_writing,,0.2694763094186783,0.00016824156045913696,0.14316769689321518,,0.04003289341926575,0.030058663338422775,,,,,,,,,,,,,,,,12,0,,,,,,,,,11,content-portion,
@@ -1573,7 +1573,7 @@ childsnack-contents/parsize3-cham7,contentam3-p6.pddl,abs-powerlifted,child-2-3c
 childsnack-contents/parsize3-cham7,contentam3-p6.pddl,asp,,interrupted,220.83321020752192,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize3-cham7,contentam3-p6.pddl,lmcut,,interrupted,220.83321020752192,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize3-cham7,contentam3-p6.pddl,powerlifted,,timed out,1800.1122234426439,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-childsnack-contents/parsize3-cham7,contentam3-p6.pddl,rnd-g,,error (exit code 2),110.6153815202415,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize3-cham7,contentam3-p6.pddl,rnd-g,,out of memory,110.6153815202415,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize3-cham7,contentam3-p8.pddl,abs-asp,content-portion-36-93bef4,timed out,1800.2464860603213,abstract_asp,,0.3438248559832573,0.000192299485206604,0.2034507542848587,,0.2109486423432827,0.027413148432970047,,86.46911568194628,,,,,12.757080934941769,,,,,,,,,12,0,,,,,10,,11,,36,content-portion,
 childsnack-contents/parsize3-cham7,contentam3-p8.pddl,abs-lmcut,content-portion-36-93bef4,timed out,1800.1545675247908,abstract_fd,,0.35405097529292107,0.00016990303993225098,0.1922215297818184,,0.20872635766863823,0.027556370943784714,,86.09090357273817,,,,,,,,,,,,,,12,0,,,,,,,,,36,content-portion,
 childsnack-contents/parsize3-cham7,contentam3-p8.pddl,abs-lmcut,content-portion-21-a0f10b,timed out,1800.112131781876,abstract_fd,,0.31580208614468575,0.0001591034233570099,0.157694760710001,,0.14430668577551842,0.027871619910001755,,197.51630840450525,,,,,,,,,,,,,,12,0,,,,,,,,,21,content-portion,
@@ -1789,7 +1789,7 @@ childsnack-contents/parsize4-cham3,contentam6-p0.pddl,abs-powerlifted,place-2-f2
 childsnack-contents/parsize4-cham3,contentam6-p0.pddl,asp,,timed out,1800.1895957179368,concrete_asp,,,,,,,,15.394378397613764,,,,7.874325551092625,,,,,,,,,,,,,,,,,,,,10,,,
 childsnack-contents/parsize4-cham3,contentam6-p0.pddl,lmcut,,timed out,1800.11039166525,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham3,contentam6-p0.pddl,powerlifted,,timed out,1800.111024968326,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-childsnack-contents/parsize4-cham3,contentam6-p0.pddl,rnd-g,,error (exit code 2),1669.5231374539435,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize4-cham3,contentam6-p0.pddl,rnd-g,,out of memory,1669.5231374539435,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize4-cham3,contentam6-p1.pddl,abs-asp,place-2-f21732,timed out,1800.2419337444007,abstract_asp,,0.18971777707338333,8.818879723548889e-05,0.12370723113417625,,0.015163324773311615,0.019090712070465088,,36.032799798995256,,,,,18.842136215418577,,,,,,,,,2,0,,,,,5,,6,,2,place,
 childsnack-contents/parsize4-cham3,contentam6-p1.pddl,abs-lmcut,place-2-f21732,timed out,1800.1104201916605,abstract_fd,,0.18874863907694817,8.473172783851624e-05,0.12489224597811699,,0.014649001881480217,0.01847495511174202,,34.33334994316101,,,,,,,,,,,,,,2,0,,,,,,,,,2,place,
 childsnack-contents/parsize4-cham3,contentam6-p1.pddl,abs-powerlifted,bread-portion-3-5a10ae,timed out,1800.039375409484,abstract_pddl_writing,,0.24574203044176102,6.67870044708252e-05,0.12746475636959076,,0.010444659739732742,0.019300300627946854,,,,,,,,,,,,,,,,1,0,,,,,,,,,3,bread-portion,
@@ -1805,7 +1805,7 @@ childsnack-contents/parsize4-cham3,contentam6-p1.pddl,abs-powerlifted,place-2-f2
 childsnack-contents/parsize4-cham3,contentam6-p1.pddl,asp,,timed out,1800.2567856833339,concrete_asp,,,,,,,,35.9556672424078,,,,19.080019185319543,,,,,,,,,,,,,,,,,,,,6,,,
 childsnack-contents/parsize4-cham3,contentam6-p1.pddl,lmcut,,timed out,1800.1114377006888,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham3,contentam6-p1.pddl,powerlifted,,timed out,1800.1120085902512,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-childsnack-contents/parsize4-cham3,contentam6-p1.pddl,rnd-g,,error (exit code 2),1595.104751124978,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize4-cham3,contentam6-p1.pddl,rnd-g,,out of memory,1595.104751124978,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize4-cham3,contentam6-p2.pddl,abs-asp,tray-3-cbaed5,timed out,1800.3913932442665,abstract_asp,,0.20469804480671883,7.397308945655823e-05,0.1553027182817459,,0.01432555541396141,0.01661834493279457,,79.16431297361851,,,,,42.13590732961893,,,,,,,,,2,0,,,,,5,,6,,3,tray,
 childsnack-contents/parsize4-cham3,contentam6-p2.pddl,abs-lmcut,tray-3-cbaed5,timed out,1800.1087657772005,abstract_fd,,0.1912575252354145,6.433576345443726e-05,0.12979896739125252,,0.013844378292560577,0.015997014939785004,,73.16394547000527,,,,,,,,,,,,,,2,0,,,,,,,,,3,tray,
 childsnack-contents/parsize4-cham3,contentam6-p2.pddl,abs-powerlifted,bread-portion-3-5a10ae,timed out,1800.0190714485943,abstract_pddl_writing,,0.2478989101946354,6.351619958877563e-05,0.13072040304541588,,0.01133633777499199,0.019652903079986572,,,,,,,,,,,,,,,,1,0,,,,,,,,,3,bread-portion,
@@ -2125,7 +2125,7 @@ childsnack-contents/parsize4-cham7,contentam4-p5.pddl,abs-powerlifted,child-2-3c
 childsnack-contents/parsize4-cham7,contentam4-p5.pddl,asp,,interrupted,98.24769147858024,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam4-p5.pddl,lmcut,,interrupted,98.24769147858024,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam4-p5.pddl,powerlifted,,interrupted,54.4314229413867,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-childsnack-contents/parsize4-cham7,contentam4-p5.pddl,rnd-g,,error (exit code 2),102.68677697703242,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize4-cham7,contentam4-p5.pddl,rnd-g,,out of memory,102.68677697703242,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize4-cham7,contentam6-p0.pddl,abs-asp,bread-portion-7-eff1f6,interrupted,421.6080484986305,abstract_fd,,0.2298155575990677,8.791312575340271e-05,0.15986081212759018,,0.026929236948490143,0.023606158792972565,,288.7223095074296,,,,,,,,,,,,,,1,0,,,,,,,,,7,bread-portion,
 childsnack-contents/parsize4-cham7,contentam6-p0.pddl,abs-lmcut,bread-portion-7-eff1f6,timed out,1800.1111911330372,abstract_fd,,0.2435063049197197,8.206069469451904e-05,0.1520179882645607,,0.026726365089416504,0.023322977125644684,,273.7800384275615,,,,,,,,,,,,,,1,0,,,,,,,,,7,bread-portion,
 childsnack-contents/parsize4-cham7,contentam6-p0.pddl,abs-lmcut,sandwich-7-b333a3,timed out,1800.110951030627,abstract_fd,,0.24165255017578602,9.527988731861115e-05,0.15428192727267742,,0.026939433068037033,0.0227779820561409,,272.4395013563335,,,,,,,,,,,,,,3,0,,,,,,,,,7,sandwich,
@@ -2169,7 +2169,7 @@ childsnack-contents/parsize4-cham7,contentam6-p2.pddl,abs-powerlifted,child-2-f3
 childsnack-contents/parsize4-cham7,contentam6-p2.pddl,asp,,interrupted,97.16965427994728,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p2.pddl,lmcut,,interrupted,97.16965427994728,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p2.pddl,powerlifted,,out of memory,31.436170883476734,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Powerlifted failed with exit code 247
-childsnack-contents/parsize4-cham7,contentam6-p2.pddl,rnd-g,,error (exit code 2),68.20444783568382,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize4-cham7,contentam6-p2.pddl,rnd-g,,out of memory,68.20444783568382,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,abs-powerlifted,content-portion-10-2d151e,interrupted,210.14377917349339,abstract_pddl_writing,,0.3816715329885483,0.00043060630559921265,0.1651815101504326,,0.1173698678612709,0.050279781222343445,,,,,,,,,,,,,,,,32,0,,,,,,,,,10,content-portion,
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,abs-powerlifted,content-portion-9-51d1c8,interrupted,179.92339180409908,abstract_pddl_writing,,0.3754598945379257,0.00039949268102645874,0.17143431305885315,,0.10510868206620216,0.050431206822395325,,,,,,,,,,,,,,,,32,0,,,,,,,,,9,content-portion,
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,abs-powerlifted,child-2-3c9685,interrupted,46.90269606560469,abstract_pddl_writing,,0.3732431121170521,7.670745253562927e-05,0.1764707788825035,,0.024519316852092743,0.02427944540977478,,,,,,,,,,,,,,,,0,0,,,,,,,,,2,child,
@@ -2184,7 +2184,7 @@ childsnack-contents/parsize4-cham7,contentam6-p3.pddl,abs-powerlifted,child-2-f3
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,asp,,interrupted,98.66356033273041,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,lmcut,,interrupted,98.66356033273041,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,powerlifted,,interrupted,44.651575312018394,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-childsnack-contents/parsize4-cham7,contentam6-p3.pddl,rnd-g,,error (exit code 2),77.67350301891565,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize4-cham7,contentam6-p3.pddl,rnd-g,,out of memory,77.67350301891565,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize4-cham7,contentam6-p4.pddl,abs-powerlifted,content-portion-12-3a40ac,out of memory,88.36563711240888,abstract_pddl_writing,,0.38347844034433365,0.00042801350355148315,0.17260196432471275,,0.0978628620505333,0.050415027886629105,,,,,,,,,,,,,,,,32,0,,,,,,,,,12,content-portion,Powerlifted failed with exit code 247
 childsnack-contents/parsize4-cham7,contentam6-p4.pddl,abs-powerlifted,content-portion-10-2d151e,out of memory,41.1036919541657,abstract_pddl_writing,,0.38097481802105904,0.0003924928605556488,0.17523467913269997,,0.09791786223649979,0.050412725657224655,,,,,,,,,,,,,,,,32,0,,,,,,,,,10,content-portion,Powerlifted failed with exit code 247
 childsnack-contents/parsize4-cham7,contentam6-p4.pddl,abs-powerlifted,child-2-3c9685,interrupted,67.83734309696592,abstract_pddl_writing,,0.3821211170288734,7.730303332209587e-05,0.17955589696066454,,0.026000071957241744,0.02457054198021069,,,,,,,,,,,,,,,,0,0,,,,,,,,,2,child,
@@ -2214,7 +2214,7 @@ childsnack-contents/parsize4-cham7,contentam6-p5.pddl,abs-powerlifted,child-2-f3
 childsnack-contents/parsize4-cham7,contentam6-p5.pddl,asp,,interrupted,97.02753669023514,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p5.pddl,lmcut,,interrupted,97.02753669023514,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p5.pddl,powerlifted,,interrupted,14.53342766314745,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-childsnack-contents/parsize4-cham7,contentam6-p5.pddl,rnd-g,,error (exit code 2),76.2967915572226,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize4-cham7,contentam6-p5.pddl,rnd-g,,out of memory,76.2967915572226,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 gnad-et-al-aaai19-large-instances/agricola-large,prob10-10-1.pddl,abs-asp,animal-3-bddcb3,interrupted,937.4548730496317,abstract_asp,,0.7237744815647602,0.6366424635052681,0.17369486764073372,,1.791647532954812,0.17080934531986713,,49.392930041998625,,,,,30.208482265472412,,,,,,,,,1,0,,,,,45,,46,,3,animal,
 gnad-et-al-aaai19-large-instances/agricola-large,prob10-10-1.pddl,abs-lmcut,animal-3-bddcb3,timed out,1800.1138173528016,abstract_fd,,0.6885423101484776,0.6123381666839123,0.1541924700140953,,1.7777003347873688,0.16855334863066673,,47.12189666926861,,,,,,,,,,,,,,1,0,,,,,,,,,3,animal,
 gnad-et-al-aaai19-large-instances/agricola-large,prob10-10-1.pddl,abs-powerlifted,room-8-fe57cf,timed out,1800.1136118844151,abstract_pddl_writing,,0.8711596615612507,0.774444006383419,0.1535339094698429,,1.4144595637917519,0.2180771380662918,,,,,,,,,,,,,,,,1,0,,,,,,,,,8,room,
@@ -4676,7 +4676,7 @@ organic-synthesis-original,prob09.pddl,abs-powerlifted,hydrogen-2-989361,timed o
 organic-synthesis-original,prob09.pddl,asp,,interrupted,76.80020673573017,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 organic-synthesis-original,prob09.pddl,lmcut,,interrupted,76.80020673573017,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 organic-synthesis-original,prob09.pddl,powerlifted,,interrupted,26.536199010908604,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-organic-synthesis-original,prob09.pddl,rnd-g,,error (exit code 2),40.75144995300798,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+organic-synthesis-original,prob09.pddl,rnd-g,,out of memory,40.75144995300798,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 organic-synthesis-original,prob10.pddl,abs-powerlifted,hydrogen-4-5fbd21,out of memory,463.49727322906256,abstract_pddl_writing,,2.9199306331574917,0.12167533114552498,0.39889370650053024,,405.81247874721885,14.994459364563227,,,,,,,,,,,,,,,,7212,8469,,,,,,,,,4,hydrogen,Powerlifted failed with exit code 247
 organic-synthesis-original,prob10.pddl,abs-powerlifted,hydrogen-3-021a08,out of memory,457.59101946279407,abstract_pddl_writing,,2.905554421246052,0.12115296721458435,0.4192235693335533,,400.06596310436726,14.39921447634697,,,,,,,,,,,,,,,,7212,8469,,,,,,,,,3,hydrogen,Powerlifted failed with exit code 247
 organic-synthesis-original,prob10.pddl,abs-powerlifted,lithium-2-396afc,interrupted,38.52731545642018,abstract_pddl_writing,,2.8797625601291656,0.0018942579627037048,0.4148789942264557,,0.8464549779891968,0.6884984746575356,,,,,,,,,,,,,,,,16,21,,,,,,,,,2,lithium,

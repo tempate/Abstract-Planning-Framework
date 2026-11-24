@@ -19,28 +19,28 @@ blocksworld-large-simple/goal-2,p-1300-2.pddl,abs-powerlifted,object-1297-d93be0
 blocksworld-large-simple/goal-2,p-1300-2.pddl,asp,,interrupted,159.002530220896,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-2,p-1300-2.pddl,lama,,interrupted,159.002530220896,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-2,p-1300-2.pddl,powerlifted,,success,43.21214200183749,total,41.44747609645128,,,,,,,,,,,,,,,,41.441448133438826,,,,,,,,,,,,,4,,,,,
-blocksworld-large-simple/goal-2,p-1300-2.pddl,rnd-g,,error (exit code 2),29.72146598249674,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-2,p-1300-2.pddl,rnd-g,,out of memory,29.72146598249674,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-2,p-1500-2.pddl,abs-asp,object-1497-eecc83,interrupted,270.1257303394377,abstract_solving,,2.164367951452732,9.952858090400696e-05,17.81122512742877,,81.73772804811597,0.015491575002670288,,0.19413089379668236,,,,,0.006340041756629944,0.03850578889250755,,,,,,,,12,0,0,0,,,4,,4,1,1497,object,
 blocksworld-large-simple/goal-2,p-1500-2.pddl,abs-lama,object-1497-eecc83,success,107.53444955870509,total,104.424128,2.136227,9.9e-05,17.164796,,81.933699,0.015145,,0.189034,,,,,,,0.082328,,,2.79247,0.007013,0.017953,,12,0,0,0,,,4,4,,1,1497,object,
 blocksworld-large-simple/goal-2,p-1500-2.pddl,abs-powerlifted,object-1497-eecc83,success,32.780351758003235,total,29.949367079883814,2.5237040370702744,9.196251630783081e-05,22.817032609134912,,0.9246516562998295,0.01767086610198021,,,,,,,,,,,0.18405095860362053,3.4062838181853294,0.006374478340148926,0.020762361586093903,,12,0,0,0,,,4,4,,1,1497,object,
 blocksworld-large-simple/goal-2,p-1500-2.pddl,asp,,interrupted,167.111730851233,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-2,p-1500-2.pddl,lama,,interrupted,167.111730851233,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-2,p-1500-2.pddl,powerlifted,,success,42.51266837492585,total,39.884947177022696,,,,,,,,,,,,,,,,39.87865578755736,,,,,,,,,,,,,4,,,,,
-blocksworld-large-simple/goal-2,p-1500-2.pddl,rnd-g,,error (exit code 2),43.4986778839957,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-2,p-1500-2.pddl,rnd-g,,out of memory,43.4986778839957,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-2,p-1700-2.pddl,abs-asp,object-1697-5e6ba5,interrupted,313.0982314683497,abstract_solving,,2.397732514888048,0.00010474398732185364,23.070367626845837,,105.60024344921112,0.0156463161110878,,0.2871471382677555,,,,,0.005852360278367996,0.03474124148488045,,,,,,,,12,0,0,0,,,4,,4,1,1697,object,
 blocksworld-large-simple/goal-2,p-1700-2.pddl,abs-lama,object-1697-5e6ba5,success,137.7029162272811,total,134.463777,2.386224,0.000109,23.70886,,104.258021,0.015576,,0.302773,,,,,,,0.090514,,,3.594846,0.006518,0.017864,,12,0,0,0,,,4,4,,1,1697,object,
 blocksworld-large-simple/goal-2,p-1700-2.pddl,abs-powerlifted,object-1697-5e6ba5,success,40.857216749340296,total,38.43411162868142,2.8882133439183235,9.318068623542786e-05,29.702165190130472,,1.2709621414542198,0.017584990710020065,,,,,,,,,,,0.1727726086974144,4.297370560467243,0.005579940974712372,0.022390197962522507,,12,0,0,0,,,4,4,,1,1697,object,
 blocksworld-large-simple/goal-2,p-1700-2.pddl,asp,,interrupted,185.20785088837147,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-2,p-1700-2.pddl,lama,,interrupted,185.20785088837147,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-2,p-1700-2.pddl,powerlifted,,success,52.50687138363719,total,49.86330607533455,,,,,,,,,,,,,,,,49.85622185096145,,,,,,,,,,,,,4,,,,,
-blocksworld-large-simple/goal-2,p-1700-2.pddl,rnd-g,,error (exit code 2),63.085540633648634,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-2,p-1700-2.pddl,rnd-g,,out of memory,63.085540633648634,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-2,p-1900-2.pddl,abs-asp,object-1897-a77fa6,interrupted,358.63657407462597,abstract_solving,,2.861338697373867,0.0001049526035785675,30.051132049411535,,130.50625569745898,0.014735162258148193,,0.19923167303204536,,,,,0.008901868015527725,0.037828873842954636,,,,,,,,12,0,0,0,,,4,,4,1,1897,object,
 blocksworld-large-simple/goal-2,p-1900-2.pddl,abs-lama,object-1897-a77fa6,success,170.8010230883956,total,167.713649,2.8855,0.000101,29.55237,,130.34521,0.014285,,0.270837,,,,,,,0.080565,,,4.445275,0.008184,0.01923,,12,0,0,0,,,4,4,,1,1897,object,
 blocksworld-large-simple/goal-2,p-1900-2.pddl,abs-powerlifted,object-1897-a77fa6,success,51.222975973039865,total,48.17910774797201,3.3072963878512383,9.194761514663696e-05,37.87939827516675,,1.3607190772891045,0.01705259084701538,,,,,,,,,,,0.1850796826183796,5.336762249469757,0.006727628409862518,0.02520732581615448,,12,0,0,0,,,4,4,,1,1897,object,
 blocksworld-large-simple/goal-2,p-1900-2.pddl,asp,,interrupted,193.63704477623105,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-2,p-1900-2.pddl,lama,,interrupted,193.63704477623105,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-2,p-1900-2.pddl,powerlifted,,success,71.4155566431582,total,69.65245974808931,,,,,,,,,,,,,,,,69.64687915891409,,,,,,,,,,,,,4,,,,,
-blocksworld-large-simple/goal-2,p-1900-2.pddl,rnd-g,,error (exit code 2),13.63882564008236,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-2,p-1900-2.pddl,rnd-g,,out of memory,13.63882564008236,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-2,p-300-2.pddl,abs-asp,object-297-ebf163,success,72.75323965400457,total,69.493884,0.509059,9.9e-05,0.705603,,3.573017,0.015119,28.455494,0.22671,,,10.323239,,0.007896,0.031147,,,,,,,25.512792,12,0,0,0,,,4,4,4,1,297,object,
 blocksworld-large-simple/goal-2,p-300-2.pddl,abs-lama,object-297-ebf163,success,7.165912788361311,total,5.318412,0.475409,9.5e-05,0.643588,,3.591017,0.014702,,0.181081,,,,,,,0.086127,,,0.254252,0.006947,0.010884,,12,0,0,0,,,4,4,,1,297,object,
 blocksworld-large-simple/goal-2,p-300-2.pddl,abs-powerlifted,object-297-ebf163,success,4.024778570979834,total,2.1630673743784428,0.5851686112582684,8.88332724571228e-05,0.9748199805617332,,0.1031690314412117,0.017800938338041306,,,,,,,,,,,0.161855049431324,0.26521551609039307,0.005130894482135773,0.012938104569911957,,12,0,0,0,,,4,4,,1,297,object,
@@ -89,21 +89,21 @@ blocksworld-large-simple/goal-3,p-1300-3.pddl,abs-powerlifted,object-1296-0de603
 blocksworld-large-simple/goal-3,p-1300-3.pddl,asp,,interrupted,157.74285615608096,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-3,p-1300-3.pddl,lama,,interrupted,157.74285615608096,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-3,p-1300-3.pddl,powerlifted,,success,44.777190413326025,total,42.07858053594828,,,,,,,,,,,,,,,,42.072307500988245,,,,,,,,,,,,,6,,,,,
-blocksworld-large-simple/goal-3,p-1300-3.pddl,rnd-g,,error (exit code 2),29.41753040999174,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-3,p-1300-3.pddl,rnd-g,,out of memory,29.41753040999174,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-3,p-1500-3.pddl,abs-asp,object-1496-897344,interrupted,273.7009758390486,abstract_solving,,2.150790046900511,0.0001084059476852417,17.91776254400611,,83.69069574773312,0.015694450587034225,,0.2362789660692215,,,,,0.008871730417013168,0.0644969791173935,,,,,,,,12,0,0,0,,,8,,5,1,1496,object,
 blocksworld-large-simple/goal-3,p-1500-3.pddl,abs-lama,object-1496-897344,success,108.60790699720383,total,105.47614,2.159142,0.000101,17.303953,,82.731015,0.015806,,0.19523,,,,,,,0.079715,,,2.888439,0.004928,0.025262,,12,0,0,0,,,10,10,,1,1496,object,
 blocksworld-large-simple/goal-3,p-1500-3.pddl,abs-powerlifted,object-1496-897344,success,32.834543373435736,total,30.02875616401434,2.490114364773035,9.386613965034485e-05,22.871831465512514,,0.9295430779457092,0.017967339605093002,,,,,,,,,,,0.19096338376402855,3.437399134039879,0.007180243730545044,0.032365068793296814,,12,0,0,0,,,10,10,,1,1496,object,
 blocksworld-large-simple/goal-3,p-1500-3.pddl,asp,,interrupted,161.77892082184553,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-3,p-1500-3.pddl,lama,,interrupted,161.77892082184553,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-3,p-1500-3.pddl,powerlifted,,timed out,1800.1105891800253,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-blocksworld-large-simple/goal-3,p-1500-3.pddl,rnd-g,,error (exit code 2),43.41116737946868,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-3,p-1500-3.pddl,rnd-g,,out of memory,43.41116737946868,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-3,p-1700-3.pddl,abs-asp,object-1696-b2eaac,interrupted,319.73259035125375,abstract_solving,,2.435012549161911,0.00010609626770019531,23.810454308986664,,105.6683754734695,0.015876170247793198,,0.2998635992407799,,,,,0.010717663913965225,0.06746361404657364,,,,,,,,12,0,0,0,,,6,,5,1,1696,object,
 blocksworld-large-simple/goal-3,p-1700-3.pddl,abs-lama,object-1696-b2eaac,success,133.99733690544963,total,132.044432,2.294244,9.1e-05,21.466675,,104.23322,0.015369,,0.28549,,,,,,,0.079667,,,3.562091,0.007649,0.026181,,12,0,0,0,,,10,10,,1,1696,object,
 blocksworld-large-simple/goal-3,p-1700-3.pddl,abs-powerlifted,object-1696-b2eaac,success,40.563654985278845,total,38.417763255536556,2.846017088741064,0.00010409951210021973,29.693253129720688,,1.2617353275418282,0.017976436764001846,,,,,,,,,,,0.18500902131199837,4.323606714606285,0.005744673311710358,0.03277475759387016,,12,0,0,0,,,10,10,,1,1696,object,
 blocksworld-large-simple/goal-3,p-1700-3.pddl,asp,,interrupted,191.1894848383963,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-3,p-1700-3.pddl,lama,,interrupted,191.1894848383963,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-3,p-1700-3.pddl,powerlifted,,timed out,1800.0602434538305,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-blocksworld-large-simple/goal-3,p-1700-3.pddl,rnd-g,,error (exit code 2),62.60980686917901,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-3,p-1700-3.pddl,rnd-g,,out of memory,62.60980686917901,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-3,p-1900-3.pddl,abs-asp,object-1896-aeb093,interrupted,368.86582676693797,abstract_solving,,2.8637906722724438,0.00013830885291099548,32.07330822572112,,133.14221253991127,0.01582101359963417,,0.24231797829270363,,,,,0.007861800491809845,0.07758864015340805,,,,,,,,12,0,0,0,,,6,,5,1,1896,object,
 blocksworld-large-simple/goal-3,p-1900-3.pddl,abs-lama,object-1896-aeb093,success,170.62658123113215,total,167.633859,3.097078,0.000101,29.462895,,130.196223,0.015078,,0.243944,,,,,,,0.084073,,,4.420196,0.006657,0.027243,,12,0,0,0,,,10,10,,1,1896,object,
 blocksworld-large-simple/goal-3,p-1900-3.pddl,abs-powerlifted,object-1896-aeb093,success,51.097469575703144,total,48.01026305556297,3.3174227066338062,9.542703628540039e-05,37.5241831690073,,1.3548097871243954,0.01767141744494438,,,,,,,,,,,0.2292986884713173,5.461420081555843,0.007240749895572662,0.034080870449543,,12,0,0,0,,,10,10,,1,1896,object,
@@ -159,28 +159,28 @@ blocksworld-large-simple/goal-4,p-1300-4.pddl,abs-powerlifted,object-1295-1976ef
 blocksworld-large-simple/goal-4,p-1300-4.pddl,asp,,interrupted,156.23040611296892,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-4,p-1300-4.pddl,lama,,interrupted,156.23040611296892,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-4,p-1300-4.pddl,powerlifted,,timed out,1800.0520300380886,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-blocksworld-large-simple/goal-4,p-1300-4.pddl,rnd-g,,error (exit code 2),28.98916380800074,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-4,p-1300-4.pddl,rnd-g,,out of memory,28.98916380800074,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-4,p-1500-4.pddl,abs-asp,object-1495-ad76a5,interrupted,268.25422463193536,abstract_solving,,2.163704965263605,0.00010074302554130554,17.694998517632484,,81.77409810945392,0.01580585539340973,,0.20434308424592018,,,,,0.011454753577709198,0.08615095540881157,,,,,,,,12,0,0,0,,,8,,5,1,1495,object,
 blocksworld-large-simple/goal-4,p-1500-4.pddl,abs-lama,object-1495-ad76a5,success,107.31961517035961,total,104.774157,2.17063,0.000106,17.258896,,82.081616,0.016139,,0.230682,,,,,,,0.088042,,,2.811913,0.006937,0.029055,,12,0,0,0,,,12,12,,1,1495,object,
 blocksworld-large-simple/goal-4,p-1500-4.pddl,abs-powerlifted,object-1495-ad76a5,success,32.890238754451275,total,30.052488259971142,2.5244739912450314,9.521842002868652e-05,22.865184854716063,,0.9249739609658718,0.018439020961523056,,,,,,,,,,,0.19216355681419373,3.432338371872902,0.007376082241535187,0.03731459006667137,,12,0,0,0,,,12,12,,1,1495,object,
 blocksworld-large-simple/goal-4,p-1500-4.pddl,asp,,interrupted,166.22292102500796,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-4,p-1500-4.pddl,lama,,interrupted,166.22292102500796,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-4,p-1500-4.pddl,powerlifted,,timed out,1800.040056038648,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-blocksworld-large-simple/goal-4,p-1500-4.pddl,rnd-g,,error (exit code 2),42.740462984889746,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-4,p-1500-4.pddl,rnd-g,,out of memory,42.740462984889746,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-4,p-1700-4.pddl,abs-asp,object-1695-1fd93e,interrupted,311.631943654269,abstract_solving,,2.438133917748928,0.00010408461093902588,23.323263827711344,,105.62883967906237,0.01637532189488411,,0.24692882969975471,,,,,0.01026659831404686,0.07776540145277977,,,,,,,,12,0,0,0,,,8,,5,1,1695,object,
 blocksworld-large-simple/goal-4,p-1700-4.pddl,abs-lama,object-1695-1fd93e,success,141.08416712284088,total,138.169034,2.515722,0.000124,24.980337,,106.637739,0.016987,,0.214198,,,,,,,0.095834,,,3.588309,0.007944,0.031585,,12,0,0,0,,,12,12,,1,1695,object,
 blocksworld-large-simple/goal-4,p-1700-4.pddl,abs-powerlifted,object-1695-1fd93e,success,40.776811737567186,total,38.612641509622335,2.8736834414303303,9.403005242347717e-05,29.774732872843742,,1.265062764286995,0.018329288810491562,,,,,,,,,,,0.18632805347442627,4.406945094466209,0.005972955375909805,0.03149011358618736,,12,0,0,0,,,8,8,,1,1695,object,
 blocksworld-large-simple/goal-4,p-1700-4.pddl,asp,,interrupted,181.23847108706832,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-4,p-1700-4.pddl,lama,,interrupted,181.23847108706832,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-4,p-1700-4.pddl,powerlifted,,timed out,1800.112189102918,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-blocksworld-large-simple/goal-4,p-1700-4.pddl,rnd-g,,error (exit code 2),62.94021661952138,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-4,p-1700-4.pddl,rnd-g,,out of memory,62.94021661952138,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-4,p-1900-4.pddl,abs-asp,object-1895-bd500a,interrupted,375.1447741314769,abstract_solving,,2.99015954695642,0.0001361798495054245,33.69902911968529,,131.90178286284208,0.015904638916254044,,0.34942478500306606,,,,,0.011296715587377548,0.08954489231109619,,,,,,,,12,0,0,0,,,8,,5,1,1895,object,
 blocksworld-large-simple/goal-4,p-1900-4.pddl,abs-lama,object-1895-bd500a,success,169.79793728142977,total,167.54898,2.81836,0.000103,29.809731,,130.056021,0.015211,,0.206974,,,,,,,0.085085,,,4.437728,0.004861,0.031583,,12,0,0,0,,,12,12,,1,1895,object,
 blocksworld-large-simple/goal-4,p-1900-4.pddl,abs-powerlifted,object-1895-bd500a,success,51.02339495701017,total,47.93464569700882,3.348614843969699,0.00010653596837073565,37.595325834990945,,1.3456049589440227,0.017808349977713078,,,,,,,,,,,0.18271645304048434,5.335409205988981,0.007777140010148287,0.03915177402086556,,12,0,0,0,,,12,12,,1,1895,object,
 blocksworld-large-simple/goal-4,p-1900-4.pddl,asp,,interrupted,192.009320018813,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-4,p-1900-4.pddl,lama,,interrupted,192.009320018813,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-4,p-1900-4.pddl,powerlifted,,timed out,1800.111262349994,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-blocksworld-large-simple/goal-4,p-1900-4.pddl,rnd-g,,error (exit code 2),13.795457269996405,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-4,p-1900-4.pddl,rnd-g,,out of memory,13.795457269996405,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-4,p-300-4.pddl,abs-asp,object-295-a38564,success,73.24876407161355,total,69.632565,0.502111,0.000104,0.70168,,3.502887,0.015634,28.474346,0.195756,,,10.272216,,0.008635,0.078792,,,,,,,25.728639,12,0,0,0,,,8,8,5,1,295,object,
 blocksworld-large-simple/goal-4,p-300-4.pddl,abs-lama,object-295-a38564,success,7.0573547929525375,total,5.419369,0.465193,0.000112,0.630226,,3.528557,0.015436,,0.186749,,,,,,,0.078146,,,0.223381,0.004052,0.02198,,12,0,0,0,,,12,12,,1,295,object,
 blocksworld-large-simple/goal-4,p-300-4.pddl,abs-powerlifted,object-295-a38564,success,4.34360046684742,total,2.2149134390056133,0.5875378921627998,9.416043758392334e-05,0.9766543172299862,,0.1030561812222004,0.017675012350082397,,,,,,,,,,,0.18663585558533669,0.2637415677309036,0.006320226937532425,0.03613527491688728,,12,0,0,0,,,16,16,,1,295,object,
@@ -229,21 +229,21 @@ blocksworld-large-simple/goal-5,p-1300-5.pddl,abs-powerlifted,object-1294-fc5a06
 blocksworld-large-simple/goal-5,p-1300-5.pddl,asp,,interrupted,158.11601811647415,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-5,p-1300-5.pddl,lama,,interrupted,158.11601811647415,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-5,p-1300-5.pddl,powerlifted,,timed out,1800.0529059171677,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-blocksworld-large-simple/goal-5,p-1300-5.pddl,rnd-g,,error (exit code 2),28.810317929834127,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-5,p-1300-5.pddl,rnd-g,,out of memory,28.810317929834127,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-5,p-1500-5.pddl,abs-asp,object-1494-22fc28,interrupted,264.900677960366,abstract_solving,,2.164422493427992,0.00010382756590843201,17.710140086710453,,81.42531065642834,0.0163339301943779,,0.20583010092377663,,,,,0.011036094278097153,0.8553494960069656,,,,,,,,12,0,0,0,,,16,,6,1,1494,object,
 blocksworld-large-simple/goal-5,p-1500-5.pddl,abs-lama,object-1494-22fc28,success,107.41523378714919,total,104.248969,2.15443,0.000112,17.482453,,81.230032,0.016294,,0.311283,,,,,,,0.091153,,,2.83245,0.00814,0.046419,,12,0,0,0,,,22,22,,1,1494,object,
 blocksworld-large-simple/goal-5,p-1500-5.pddl,abs-powerlifted,object-1494-22fc28,success,32.2038132622838,total,30.10682823881507,2.509622436016798,9.308010339736938e-05,22.817841190844774,,0.9223389513790607,0.01852109655737877,,,,,,,,,,,0.22832297161221504,3.482139777392149,0.00742127001285553,0.06636267900466919,,12,0,0,0,,,26,26,,1,1494,object,
 blocksworld-large-simple/goal-5,p-1500-5.pddl,asp,,interrupted,165.7390011511743,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-5,p-1500-5.pddl,lama,,interrupted,165.7390011511743,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-5,p-1500-5.pddl,powerlifted,,timed out,1800.0267704352736,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-blocksworld-large-simple/goal-5,p-1500-5.pddl,rnd-g,,error (exit code 2),42.714780528098345,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-5,p-1500-5.pddl,rnd-g,,out of memory,42.714780528098345,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-5,p-1700-5.pddl,abs-asp,object-1694-d9a7a6,interrupted,324.8922994695604,abstract_solving,,2.497252896428108,0.0001463666558265686,26.413558077067137,,105.40928058698773,0.01729496568441391,,0.34269271418452263,,,,,0.014523163437843323,0.3915160968899727,,,,,,,,12,0,0,0,,,14,,6,1,1694,object,
 blocksworld-large-simple/goal-5,p-1700-5.pddl,abs-lama,object-1694-d9a7a6,success,138.91340152919292,total,136.377267,2.452845,0.000104,23.542892,,106.28195,0.016355,,0.232148,,,,,,,0.090232,,,3.632228,0.008037,0.047035,,12,0,0,0,,,22,22,,1,1694,object,
 blocksworld-large-simple/goal-5,p-1700-5.pddl,abs-powerlifted,object-1694-d9a7a6,success,41.46191927790642,total,38.55937525629997,2.8781922720372677,9.736418724060059e-05,29.631875436753035,,1.2626589387655258,0.01864340528845787,,,,,,,,,,,0.2878427505493164,4.357401296496391,0.008373063057661057,0.06030068174004555,,12,0,0,0,,,22,22,,1,1694,object,
 blocksworld-large-simple/goal-5,p-1700-5.pddl,asp,,interrupted,180.2981748841703,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-5,p-1700-5.pddl,lama,,interrupted,180.2981748841703,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 blocksworld-large-simple/goal-5,p-1700-5.pddl,powerlifted,,timed out,1800.1125446259975,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-blocksworld-large-simple/goal-5,p-1700-5.pddl,rnd-g,,error (exit code 2),62.60045997053385,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+blocksworld-large-simple/goal-5,p-1700-5.pddl,rnd-g,,out of memory,62.60045997053385,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 blocksworld-large-simple/goal-5,p-1900-5.pddl,abs-asp,object-1894-908fc8,interrupted,374.75483771786094,abstract_solving,,2.9843125343322754,0.00013887137174606323,33.57075038552284,,129.7283186763525,0.015861772000789642,,0.34908998757600784,,,,,0.01404755562543869,0.43662552535533905,,,,,,,,12,0,0,0,,,16,,6,1,1894,object,
 blocksworld-large-simple/goal-5,p-1900-5.pddl,abs-lama,object-1894-908fc8,success,170.42357407137752,total,167.256751,2.913445,0.00011,29.296055,,130.186299,0.015578,,0.189742,,,,,,,0.081494,,,4.452097,0.006263,0.042589,,12,0,0,0,,,18,18,,1,1894,object,
 blocksworld-large-simple/goal-5,p-1900-5.pddl,abs-powerlifted,object-1894-908fc8,success,50.891436830163,total,47.85466546565294,3.3169255033135414,9.605288505554199e-05,37.29675468429923,,1.363616794347763,0.018198464065790176,,,,,,,,,,,0.20924031734466553,5.528262704610825,0.008216451853513718,0.0535467192530632,,12,0,0,0,,,18,18,,1,1894,object,
@@ -2355,7 +2355,7 @@ childsnack-contents/parsize4-cham7,contentam6-p2.pddl,abs-powerlifted,child-2-f3
 childsnack-contents/parsize4-cham7,contentam6-p2.pddl,asp,,interrupted,97.99009151384234,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p2.pddl,lama,,interrupted,97.99009151384234,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p2.pddl,powerlifted,,out of memory,32.34151432290673,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Powerlifted failed with exit code 247
-childsnack-contents/parsize4-cham7,contentam6-p2.pddl,rnd-g,,error (exit code 2),69.21740552783012,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize4-cham7,contentam6-p2.pddl,rnd-g,,out of memory,69.21740552783012,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,abs-asp,bread-portion-7-eff1f6,interrupted,90.96107384189963,abstract_pddl_writing,,0.3230106122791767,8.71419906616211e-05,0.15916721522808075,,0.035038795322179794,0.019419312477111816,,,,,,,,,,,,,,,,1,0,,,,,,,,,7,bread-portion,
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,abs-lama,content-portion-10-2d151e,interrupted,92.55619563907385,abstract_pddl_writing,,0.30621935054659843,0.0003865435719490051,0.15441881865262985,,0.12674887105822563,0.04229704290628433,,,,,,,,,,,,,,,,32,0,,,,,,,,,10,content-portion,
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,abs-lama,content-portion-9-51d1c8,interrupted,94.07156451418996,abstract_pddl_writing,,0.3073987141251564,0.0003536231815814972,0.1871008165180683,,0.12147858366370201,0.0417526550590992,,,,,,,,,,,,,,,,32,0,,,,,,,,,9,content-portion,
@@ -2382,7 +2382,7 @@ childsnack-contents/parsize4-cham7,contentam6-p3.pddl,abs-powerlifted,child-2-f3
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,asp,,interrupted,97.95448713377118,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,lama,,interrupted,97.95448713377118,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p3.pddl,powerlifted,,interrupted,43.353036258369684,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
-childsnack-contents/parsize4-cham7,contentam6-p3.pddl,rnd-g,,error (exit code 2),76.45061438903213,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize4-cham7,contentam6-p3.pddl,rnd-g,,out of memory,76.45061438903213,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize4-cham7,contentam6-p4.pddl,abs-asp,content-portion-10-2d151e,interrupted,98.9730416610837,abstract_pddl_writing,,0.33864743262529373,0.00036579743027687073,0.18419645354151726,,0.13417208939790726,0.042459990829229355,,,,,,,,,,,,,,,,32,0,,,,,,,,,10,content-portion,
 childsnack-contents/parsize4-cham7,contentam6-p4.pddl,abs-lama,content-portion-12-3a40ac,interrupted,92.33947762846947,abstract_pddl_writing,,0.3295494057238102,0.0003683231770992279,0.17184871435165405,,0.14405982196331024,0.041798919439315796,,,,,,,,,,,,,,,,32,0,,,,,,,,,12,content-portion,
 childsnack-contents/parsize4-cham7,contentam6-p4.pddl,abs-lama,content-portion-10-2d151e,interrupted,98.45078247413039,abstract_pddl_writing,,0.970796775072813,0.0003636851906776428,0.17644836008548737,,0.13345403596758842,0.04228341206908226,,,,,,,,,,,,,,,,32,0,,,,,,,,,10,content-portion,
@@ -2409,7 +2409,7 @@ childsnack-contents/parsize4-cham7,contentam6-p4.pddl,abs-powerlifted,child-2-f3
 childsnack-contents/parsize4-cham7,contentam6-p4.pddl,asp,,interrupted,100.06562276557088,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p4.pddl,lama,,interrupted,100.06562276557088,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p4.pddl,powerlifted,,out of memory,65.0249980315566,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Powerlifted failed with exit code 247
-childsnack-contents/parsize4-cham7,contentam6-p4.pddl,rnd-g,,error (exit code 2),78.97634268552065,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize4-cham7,contentam6-p4.pddl,rnd-g,,out of memory,78.97634268552065,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 childsnack-contents/parsize4-cham7,contentam6-p5.pddl,abs-asp,content-portion-10-66c0b3,interrupted,101.72072792798281,abstract_pddl_writing,,0.3102804385125637,0.0003411136567592621,0.17576511576771736,,0.14098859950900078,0.04631775990128517,,,,,,,,,,,,,,,,32,0,,,,,,,,,10,content-portion,
 childsnack-contents/parsize4-cham7,contentam6-p5.pddl,abs-lama,content-portion-15-b156ed,interrupted,93.97071944922209,abstract_pddl_writing,,0.3418993055820465,0.00036060065031051636,0.17971455305814743,,0.16716841608285904,0.04674672707915306,,,,,,,,,,,,,,,,32,0,,,,,,,,,15,content-portion,
 childsnack-contents/parsize4-cham7,contentam6-p5.pddl,abs-lama,content-portion-12-dc780d,interrupted,98.04603493958712,abstract_pddl_writing,,0.3381856493651867,0.0003844127058982849,0.2082672119140625,,0.15253830328583717,0.04794945567846298,,,,,,,,,,,,,,,,32,0,,,,,,,,,12,content-portion,
@@ -2436,7 +2436,7 @@ childsnack-contents/parsize4-cham7,contentam6-p5.pddl,abs-powerlifted,child-2-f3
 childsnack-contents/parsize4-cham7,contentam6-p5.pddl,asp,,interrupted,97.32735374942422,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p5.pddl,lama,,interrupted,97.32735374942422,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
 childsnack-contents/parsize4-cham7,contentam6-p5.pddl,powerlifted,,out of memory,15.360065553337336,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,Powerlifted failed with exit code 247
-childsnack-contents/parsize4-cham7,contentam6-p5.pddl,rnd-g,,error (exit code 2),76.88425523787737,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
+childsnack-contents/parsize4-cham7,contentam6-p5.pddl,rnd-g,,out of memory,76.88425523787737,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,cpddl failed with exit code -9
 gnad-et-al-aaai19-large-instances/agricola-large,prob10-10-1.pddl,abs-asp,animal-3-bddcb3,interrupted,513.5890304110944,abstract_asp,,0.7071727775037289,0.631723266094923,0.16397405788302422,,1.8017676994204521,0.1824309155344963,,49.34864580258727,,,,,30.811582174152136,,,,,,,,,1,0,,,,,16,,6,,3,animal,
 gnad-et-al-aaai19-large-instances/agricola-large,prob10-10-1.pddl,abs-lama,animal-3-bddcb3,success,90.78153163939714,total,88.423581,0.751809,0.64113,0.139811,,1.780746,0.173715,,50.706059,,,,,,,31.400064,,,0.197329,0.022664,2.515512,,1,0,0,0,,,145,145,,1,3,animal,
 gnad-et-al-aaai19-large-instances/agricola-large,prob10-10-1.pddl,abs-powerlifted,room-8-fe57cf,success,11.091709196567535,total,8.85452389717102,0.8766358941793442,0.7557353600859642,0.17923220619559288,,1.4018479473888874,0.20672757178544998,,,,,,,,,,,2.6443770714104176,0.2148338332772255,0.03649640455842018,2.467191871255636,,1,0,0,0,,,152,152,,1,8,room,
