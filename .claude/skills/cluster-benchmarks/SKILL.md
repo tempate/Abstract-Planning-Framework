@@ -349,6 +349,7 @@ proceed if it does:
 
 ```bash
 srun --partition=sunnycove --cpus-per-task=4 --mem=8G --time=1:00:00 bash -c '
+  source ~/miniconda3/etc/profile.d/conda.sh
   conda create -y -p ~/apf/.shared/coin -c conda-forge coin-or-osi coin-or-clp coin-or-utils
   export DOWNWARD_COIN_ROOT=~/apf/.shared/coin
   cd ~/apf/.shared/numeric-fast-downward && python3 ./build.py release64 -j4'

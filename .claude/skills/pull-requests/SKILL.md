@@ -74,7 +74,7 @@ the runtime table compares the new mode with its abstraction over the problems b
 ```
 
 `experiments.compare` prints both tables for every track the manifests name, ready to
-paste:
+paste. `fetch` leaves each manifest in `/tmp`, so pass the copies you kept when those are gone:
 
 ```bash
 python -m experiments.compare --base origin/main --branch HEAD \
