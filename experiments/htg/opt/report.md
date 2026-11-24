@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-24 13:08 — experiments/htg/opt/results.csv
+2026-11-24 13:29 — experiments/htg/opt/results.csv
 
 329 problems compared over asp, abs-asp, abs-lmcut, lmcut, abs-powerlifted, powerlifted; 114 dropped as unfinished
 
@@ -11,8 +11,8 @@ Metric                                  ASP         ASPᵅ       LMcutᵅ       
 ------------------------------------------------------------------------------------------------------------
 Plans found                      62 (18.8%)   80 (24.3%)  116 (35.3%)   58 (17.6%)   86 (26.1%)   35 (10.6%)
 Timeouts                        121 (36.8%)  139 (42.2%)  193 (58.7%)  199 (60.5%)  237 (72.0%)  292 (88.8%)
-Out of memory                   146 (44.4%)  110 (33.4%)    20 (6.1%)   72 (21.9%)     1 (0.3%)     2 (0.6%)
-Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     5 (1.5%)     0 (0.0%)
+Out of memory                   146 (44.4%)  110 (33.4%)    20 (6.1%)   72 (21.9%)     6 (1.8%)     2 (0.6%)
+Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
 Total problems                          329          329          329          329          329          329
 ```
 
