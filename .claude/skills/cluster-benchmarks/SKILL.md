@@ -52,8 +52,10 @@ Every run has its own checkout, a worktree of the bare repo `~/apf/.bare` at
 vendors (`lib/powerlifted`, `lib/numeric-fast-downward`, `lib/cpddl`,
 `lib/structural-symmetries`) are symlinks into `~/apf/.shared`, the only built copy.
 `new-worktree.sh` links whichever of them the branch has. Nothing is built per
-checkout, so a branch that moved a submodule pointer would silently run the shared
-version. No branch here moves one.
+checkout, so a branch that moves a submodule pointer still runs the shared build.
+Before submitting such a branch, compare its pointer (`git ls-tree HEAD lib/<tool>`)
+with the commit `.shared/<tool>` was built from. When they differ, the shared tool
+needs a rebuild first (see **Shared tools**).
 
 ```bash
 ssh -o BatchMode=yes copperhead '~/apf/new-worktree.sh <branch>'
@@ -110,8 +112,9 @@ Removing a checkout needs `--force`, since the symlinks read as local changes:
 ssh -o BatchMode=yes copperhead 'git -C ~/apf/.bare worktree remove --force ~/apf/<branch>'
 ```
 
-Setting up checkouts, smoke-testing and submitting can take minutes. Chain them in
-one background command.
+Setting up checkouts, smoke-testing and submitting can take minutes. Name each step
+first, and once Daniel has approved all of them, chain them in one background command.
+Never chain in a step he has not approved.
 
 ## Submitting
 
@@ -217,7 +220,7 @@ The run's name is the `run-<timestamp>` directory submit wrote. For progress, co
 states per run:
 
 ```bash
-ssh copperhead 'sacct -u dquilez -S <date> -X -n -P --name=<run-name> -o State | sort | uniq -c'
+ssh -o BatchMode=yes copperhead 'sacct -u dquilez -S <date> -X -n -P --name=<run-name> -o State | sort | uniq -c'
 ```
 
 `python -m experiments.status` reports the run's queued and running jobs and what
@@ -242,7 +245,7 @@ while the PR still needs it. The rsync can take minutes, so pull in the backgrou
 `runs.md` needs the partition the run used, which the manifest does not record:
 
 ```bash
-ssh copperhead 'sacct -u dquilez -S <date> -X -n -P -o WorkDir,Partition | grep "/<checkout>/" | cut -d"|" -f2 | sort | uniq -c'
+ssh -o BatchMode=yes copperhead 'sacct -u dquilez -S <date> -X -n -P -o WorkDir,Partition | grep "/<checkout>/" | cut -d"|" -f2 | sort | uniq -c'
 ```
 
 `fetch` collects only into a checkout whose code matches the commit that produced
@@ -317,7 +320,21 @@ inside its checkout, so removing the checkout removes them too. A file that has 
 elsewhere, such as a backup in `~/apf/.shared`, goes on the PR's cleanup list the moment
 it is created.
 
-## Rebuilding numeric-fast-downward
+## Shared tools
+
+Every checkout runs the one build in `~/apf/.shared`, so changing it changes every
+queued and running job at once. Building or replacing anything there needs Daniel's
+go-ahead (see **Caution first**) and runs on a compute node.
+
+- **Rebuilding a tool jobs use.** Check `squeue` first. While any job could run it,
+  build into a new directory and move it into place only once Daniel agrees, or wait until
+  the queue is empty.
+- **A PR that vendors a new tool**, as Powerlifted, cpddl and structural-symmetries did,
+  needs its build in `.shared` and a block in `~/apf/new-worktree.sh` that links it and
+  checks its binary, before its first run. Both are cluster changes, so ask first. When
+  that PR closes without merging, the build and the block go on its cleanup list.
+
+### Rebuilding numeric-fast-downward
 
 `~/apf/.shared/numeric-fast-downward` is the vendored source at `fac7ce0` with
 `lib/numeric-fast-downward.patch` applied. The patch makes it build without CPLEX,
@@ -326,7 +343,9 @@ which the cluster lacks.
 COIN lives in its own prefix, `~/apf/.shared/coin`, not in the `apf` env, where
 installing would disturb running jobs. `FindOSI.cmake` reads `DOWNWARD_COIN_ROOT`,
 and `build.py` has a bare `python` shebang that does not resolve here. Install and
-build on a compute node, never on copperhead:
+build on a compute node, never on copperhead. Nobody has checked that the compute
+nodes reach conda-forge, so expect `conda create` to fail there and ask Daniel how to
+proceed if it does:
 
 ```bash
 srun --partition=sunnycove --cpus-per-task=4 --mem=8G --time=1:00:00 bash -c '
