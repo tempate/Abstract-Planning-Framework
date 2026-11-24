@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-24 13:29 — experiments/htg/opt/results.csv
+2026-11-24 13:38 — experiments/htg/opt/results.csv
 
 329 problems compared over asp, abs-asp, abs-lmcut, lmcut, abs-powerlifted, powerlifted; 114 dropped as unfinished
 
@@ -37,8 +37,7 @@ Total plan length                       451          451          397          3
 ```
 Killed during                          ASPᵅ       LMcutᵅ Powerliftedᵅ
 ---------------------------------------------------------------------
-Translating the abstract task        0 (0%)       0 (0%)   236 (100%)
-Abstract search                    83 (60%)    136 (70%)       0 (0%)
+Abstract search                    83 (60%)    136 (70%)   236 (100%)
 Guided concrete search               0 (0%)     38 (20%)       0 (0%)
 Unguided concrete search             0 (0%)     19 (10%)       1 (0%)
 Extended concrete search           56 (40%)       0 (0%)       0 (0%)

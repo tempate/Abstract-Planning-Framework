@@ -300,6 +300,9 @@ def _timeout_phases(problems, abstractions, labels):
         for row in timeouts:
             completed = row["last_completed_phase"]
             phase = DIED_AFTER.get(completed, completed)
+            # Powerlifted translates and searches the abstract task in one step, which it measures as its search.
+            if mode == "abs-powerlifted" and completed == "abstract_pddl_writing":
+                phase = "Abstract search"
 
             # The extended search is no longer a phase of its own. A guided search that
             # has switched off every abstract action is what used to enter it.

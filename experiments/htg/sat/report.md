@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-24 13:29 — experiments/htg/sat/results.csv
+2026-11-24 13:38 — experiments/htg/sat/results.csv
 
 443 problems compared over asp, abs-asp, abs-lama, lama, abs-powerlifted, powerlifted
 
@@ -37,8 +37,7 @@ Total plan length                       968          991        8,583        8,4
 ```
 Killed during                          ASPᵅ        LAMAᵅ Powerliftedᵅ
 ---------------------------------------------------------------------
-Translating the abstract task        0 (0%)       0 (0%)     10 (77%)
-Abstract search                  106 (100%)     20 (71%)       0 (0%)
+Abstract search                  106 (100%)     20 (71%)     10 (77%)
 Guided concrete search               0 (0%)      5 (18%)      2 (15%)
 Translating the task                 0 (0%)       2 (7%)       1 (8%)
 Translating the task to ASP          0 (0%)       1 (4%)       0 (0%)
