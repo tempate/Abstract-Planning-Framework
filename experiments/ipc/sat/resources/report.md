@@ -1,8 +1,8 @@
 # Benchmark report
 
-2026-11-09 09:01 — experiments/ipc/sat/resources/results.csv
+2026-11-25 15:42 — experiments/ipc/sat/resources/results.csv
 
-330 problems compared over asp, abs-asp, abs-lama, lama
+330 problems compared over asp, abs-asp, abs-lama, lama; 1 dropped as unfinished
 
 ## Coverage
 
@@ -22,10 +22,10 @@ Total problems                          330          330          330          3
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
 Plans found by both                      85           85          122          122
-Faster                           51 (60.0%)   34 (40.0%)     4 (3.3%)  118 (96.7%)
+Faster                           53 (62.4%)   32 (37.6%)     3 (2.5%)  119 (97.5%)
 Found when the other did not              3            7            0          183
-Median runtime                       8.89 s      10.04 s      10.49 s       3.10 s
-Total runtime                    6,673.30 s   3,546.61 s   7,008.55 s     651.79 s
+Median runtime                       8.47 s      10.04 s      10.49 s       2.68 s
+Total runtime                    6,559.83 s   3,546.61 s   7,008.55 s     533.77 s
 Shorter plan                     31 (36.5%)   12 (14.1%)   17 (13.9%)   68 (55.7%)
 Same plan length                 42 (49.4%)   42 (49.4%)   37 (30.3%)   37 (30.3%)
 Median plan length                        8           11           20           18
