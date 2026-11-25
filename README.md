@@ -68,6 +68,7 @@ heuristic on the grounded delete relaxation of a smaller task, which merges
 random objects of the same type but never goal objects. It runs their best
 configurations: GBFS with h^FF at 75% of the objects removed, or under
 `--optimize` A* with LM-cut at 95%, on unit costs like the other optimal planners.
+Every track runs it.
 
 
 ## Benchmark suite
@@ -100,7 +101,7 @@ python -m experiments.figure sat --base origin/main --out before-after.png
   submodule, with the sat track's modes.
 - `--track opt-htg` submits `experiments/htg/opt/` over the same benchmarks,
   with `labyrinth/OPT` in place of `labyrinth/SAT`, and the opt track's modes.
-  Both HTG tracks also run `powerlifted`, `abs-powerlifted` and `rnd-g`.
+  Both HTG tracks also run `powerlifted` and `abs-powerlifted`.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
 - `collect` rewrites the `results.csv` of the track the run's manifest names,

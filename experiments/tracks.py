@@ -85,7 +85,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "sat" / "symmetries",
             suite=sat.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lama", "asp", "lama"),
+            modes=("abs-asp", "abs-lama", "asp", "lama", "rnd-g"),
         ),
         # The same suite, restricted to the problems numeric-fast-downward finds a
         # resource for, and planned from that resource's objects.
@@ -94,7 +94,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "sat" / "resources",
             suite=sat.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lama", "asp", "lama"),
+            modes=("abs-asp", "abs-lama", "asp", "lama", "rnd-g"),
             abstract_arguments=("--abstraction-source", "resources"),
         ),
         # The hard-to-ground benchmarks, refined with gaps like sat/symmetries.
@@ -121,7 +121,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "opt" / "symmetries",
             suite=opt.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "rnd-g"),
             optimizing_arguments=("--optimize",),
         ),
         Track(
@@ -129,7 +129,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "opt" / "resources",
             suite=opt.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lmcut", "asp", "lmcut"),
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "rnd-g"),
             abstract_arguments=("--abstraction-source", "resources"),
             optimizing_arguments=("--optimize",),
         ),
