@@ -4,9 +4,11 @@ import argparse
 import csv
 import io
 import json
+import re
 import shutil
 import subprocess
 import tempfile
+from collections import defaultdict
 from pathlib import Path
 
 from experiments.collect import result_key
@@ -35,6 +37,77 @@ POWERLIFTED_MARKS = SOLVER_MARKS[2:]
 ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
+# The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled.
+HTG_PLOT_SIZE = 1.25
+# The IPC figures' plots, drawn at the size they print, as main.tex includes them unscaled.
+IPC_PLOT_SIZE = 1.05
+# Every plot colored by domain numbers and labels its own y axis, which sit in the gap before it, in inches.
+DOMAIN_PLOT_GAP = 0.6
+# The IPC figures' legends, in lines of this many domains to fit a column.
+IPC_LEGEND_COLUMNS = 3
+# The order of every runtime figure's plots, as in the tables.
+PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
+# Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
+# palettes at the size of a cross. A domain both papers show keeps its color there, and tpp takes a tenth color.
+DOMAIN_COLORS = {
+    "agricola": "black",
+    "blocksworld": "blue",
+    "childsnack": "purple",
+    "depots": "olive",
+    "logistics": "brown",
+    "organic-synthesis": "cyan",
+    "pipesworld-tankage": "orange",
+    "rovers": "teal",
+    "satellite": "violet",
+    "tpp": "green!60!black",
+}
+# IPC domains that are one domain under several names, each by the name the IPC figures give it.
+IPC_FAMILIES = {
+    "logistics00": "logistics",
+    "logistics98": "logistics",
+    "mprime": "mystery",
+    "pipesworld-notankage": "pipesworld",
+    "pipesworld-tankage": "pipesworld",
+}
+# The Symmetries figure colors the seven IPC domains with the most problems, each with at least 58 to the others'
+# 40 or fewer, a domain the HTG figure shows in its color there, and draws the rest in grey.
+OTHER_DOMAINS = "other"
+SYMMETRIES_DOMAIN_COLORS = {
+    "barman": "cyan",
+    "logistics": "brown",
+    "mystery": "red",
+    "openstacks": "blue",
+    "pipesworld": "orange",
+    "satellite": "violet",
+    "tpp": "green!60!black",
+    OTHER_DOMAINS: "black!35",
+}
+# Resources has ten domains, so its figure colors them all, a domain the Symmetries figure colors in the same color.
+RESOURCES_DOMAIN_COLORS = {
+    "data-network": "olive",
+    "elevators": "black",
+    "freecell": "teal",
+    "mystery": "red",
+    "nomystery": "orange",
+    "openstacks": "blue",
+    "thoughtful": "brown",
+    "tpp": "green!60!black",
+    "transport": "cyan",
+    "visitall": "magenta",
+}
+IPC_DOMAIN_COLORS = {"symmetries": SYMMETRIES_DOMAIN_COLORS, "resources": RESOURCES_DOMAIN_COLORS}
+# HTG names a domain by the collection it comes from; the paper by the domain.
+HTG_DOMAINS = {
+    "blocksworld-large-simple": "blocksworld",
+    "childsnack-contents": "childsnack",
+    "logistics-large-simple": "logistics",
+    "organic-synthesis-alkene": "organic-synthesis",
+    "organic-synthesis-MIT": "organic-synthesis",
+    "organic-synthesis-original": "organic-synthesis",
+    "pipesworld-tankage-nosplit": "pipesworld-tankage",
+    "rovers-large-simple": "rovers",
+}
+HTG_COLLECTION = "gnad-et-al-aaai19-large-instances"
 DEFAULT_PAPER = PROJECT_ROOT.parent / "paper" / "planpilot_abstractions" / "icaps27" / "main.tex"
 
 
@@ -118,40 +191,125 @@ def _results_at(revision, kind, source):
 
 def paper_figures(revision):
     """The paper's figures at a revision, by the file name main.tex includes, each the body of a PDF."""
-    # Each PDF is as wide as the float main.tex includes it in, so it keeps the paper's sizes.
     return {
-        "runtimes": _minipage(r"\textwidth", _runtime_figure(revision)),
+        "runtimes-htg": _minipage(
+            r"\textwidth", f"\\setlength{{\\plotsize}}{{{HTG_PLOT_SIZE}in}}\n" + _htg_runtime_figure(revision)
+        ),
+        **{
+            f"runtimes-ipc-{source}": _minipage(
+                r"\textwidth",
+                f"\\setlength{{\\plotsize}}{{{IPC_PLOT_SIZE}in}}\n"
+                + _ipc_runtime_figure(problems, IPC_DOMAIN_COLORS[source]),
+            )
+            for source, problems in _ipc_sources(revision).items()
+        },
     }
 
 
-def _runtime_figure(revision):
-    """The paper's runtime figure across both columns, a row per track and a column per benchmark set."""
+def _htg_runtime_figure(revision):
+    """The paper's HTG runtime figure, a row per track under its name, a plot per planner, and a domain legend."""
     htg = load_tracks(revision, "htg", [])
+    domains = sorted({_htg_problem_domain(problem) for problems in htg.values() for problem in problems})
+
+    # Each row a cell of one table, its title over its plots, with room on the left for the y label.
     rows = []
-    for row, (kind, name) in enumerate(TRACK_NAMES.items()):
-        ipc = load_tracks(revision, kind, [])
+    for kind, name in TRACK_NAMES.items():
         pairs = PAIRS[kind]
         if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
             pairs += (POWERLIFTED,)
-        benchmark_sets = {"HTG": htg[kind], **{f"IPC {title}": ipc[source] for source, title in SOURCES.items()}}
-        # Only the left plot labels its y axis, the middle one names the track's solvers, and the right one
-        # names the track down its side. The top row alone names the benchmark sets.
-        last = len(benchmark_sets) - 1
-        plots = [
-            _runtime_plot(
-                problems,
-                pairs,
-                labelled=index == 0,
-                legend=index == 1,
-                title=title if row == 0 else "",
-                side_label=name if index == last else "",
-            )
-            for index, (title, problems) in enumerate(benchmark_sets.items())
-        ]
-        rows.append(_in_row(_joined(plots)))
+        pairs = sorted(pairs, key=lambda pair: PLANNER_ORDER.index(pair[0]))
+        plots = [_domain_runtime_plot(htg[kind], pair, _htg_problem_domain, DOMAIN_COLORS) for pair in pairs]
+        rows.append(
+            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
+            + "\n\\hspace*{0.42in}"
+            + _joined(plots, f"{DOMAIN_PLOT_GAP}in")
+        )
+    plot_table = "\\begin{tabular}[c]{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
 
-    # The figure spans the page, so its plots are larger than the paper's other plots.
-    return "\\setlength{\\plotsize}{1.65in}\n" + "\n\n\\vspace{1.8em}\n".join(rows)
+    # The domains in one column to the right of the plots, where the page has room to spare.
+    entries = [_legend_entry(DOMAIN_COLORS[domain], domain) for domain in domains]
+    legend = r"{\small\begin{tabular}[c]{@{}l@{}}" + " \\\\\n".join(entries) + r"\end{tabular}}"
+    return "\\noindent\\makebox[\\linewidth][c]{%\n" + plot_table + "%\n\\hspace{1.5em}%\n" + legend + "}"
+
+
+def _ipc_sources(revision):
+    """Each IPC abstraction source's finished problems, by track."""
+    tracks = {kind: load_tracks(revision, kind, []) for kind in TRACK_NAMES}
+    return {source: {kind: tracks[kind][source] for kind in TRACK_NAMES} for source in SOURCES}
+
+
+def _ipc_runtime_figure(tracks, colors):
+    """One IPC source's runtime figure, a row per track under its name, a plot per planner, and a domain legend."""
+
+    def domain_of(problem):
+        return _ipc_problem_domain(problem, colors)
+
+    rows = []
+    for kind, name in TRACK_NAMES.items():
+        pairs = sorted(PAIRS[kind], key=lambda pair: PLANNER_ORDER.index(pair[0]))
+        plots = [_domain_runtime_plot(tracks[kind], pair, domain_of, colors) for pair in pairs]
+        rows.append(
+            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
+            + "\n\\hspace*{0.42in}"
+            + _joined(plots, f"{DOMAIN_PLOT_GAP}in")
+        )
+    plot_table = "\\begin{tabular}{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
+
+    # The domains this source has under the plots, the grey of the other domains last.
+    present = {domain_of(problem) for problems in tracks.values() for problem in problems}
+    entries = [_legend_entry(color, domain) for domain, color in colors.items() if domain in present]
+    lines = [
+        " & ".join(entries[start : start + IPC_LEGEND_COLUMNS]) for start in range(0, len(entries), IPC_LEGEND_COLUMNS)
+    ]
+    legend = (
+        rf"{{\small\begin{{tabular}}{{@{{}}{'l' * IPC_LEGEND_COLUMNS}@{{}}}}"
+        + " \\\\\n".join(lines)
+        + r"\end{tabular}}"
+    )
+    return "\\noindent\\makebox[\\linewidth][c]{%\n" + plot_table + "}" + "\n\n\\vspace{0.8em}\n" + _in_row(legend)
+
+
+def _legend_entry(color, domain):
+    return rf"\mbox{{\tikz[baseline=-0.5ex, color={color}]\pgfuseplotmark{{x}};~{domain}}}"
+
+
+def _domain_runtime_plot(problems, pair, domain_of, colors):
+    """One planner's runtime per problem against its abstraction's, a cross per problem in its domain's color."""
+    solver, label, abstract_label = pair
+    by_domain = defaultdict(list)
+    for problem in problems:
+        by_domain[domain_of(problem)].append(problem)
+
+    lines = []
+    for domain, group in sorted(by_domain.items()):
+        points = scatter(group, solver, f"abs-{solver}")
+        # A domain neither mode solves anything in has no point to draw.
+        if points:
+            style = f"only marks, mark=x, mark size=1.4pt, color={colors[domain]}"
+            lines.append(rf"\addplot[{style}] coordinates {{{points}}};")
+
+    # The paper's footnote size for the numbers and a size above it for the labels.
+    options = r"label style={font=\small}, tick label style={font=\footnotesize}"
+    # A light line at every power of ten, as in Horcik et al. (2022).
+    options += r", grid=major, grid style={black!30, thin}"
+    return (
+        "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
+        + rf"\begin{{loglogaxis}}[bordered, xlabel={{{label}{{}} time (s)}}, ylabel={{{abstract_label}{{}} time (s)}}, {options}]"
+        + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
+        + "\n".join(lines)
+        + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
+    )
+
+
+def _htg_problem_domain(problem):
+    return htg_domain(next(iter(problem.values()))["domain"])
+
+
+def _ipc_problem_domain(problem, colors):
+    """The domain the IPC figures color a problem by, its name without track or year, or the other domains."""
+    name = re.sub(r"-(sat|opt)\d\d-strips$", "", next(iter(problem.values()))["domain"])
+    name = IPC_FAMILIES.get(name, name)
+    return name if name in colors else OTHER_DOMAINS
 
 
 def _panel(title, kind, tracks):
@@ -228,7 +386,7 @@ def _runtime_plots(tracks, pairs):
     ]
 
 
-def _runtime_plot(problems, pairs, labelled, legend, title="", side_label="", marks=SOLVER_MARKS):
+def _runtime_plot(problems, pairs, labelled, legend, title="", marks=SOLVER_MARKS):
     """Each solver's runtime per problem against its abstraction's, in the solver's own color and mark."""
     options = r"ylabel={X\textsuperscript{$\alpha$} time (s)}" if labelled else "yticklabels={}"
     if title:
@@ -256,21 +414,12 @@ def _runtime_plot(problems, pairs, labelled, legend, title="", side_label="", ma
         if legend:
             lines.append(rf"\addlegendentry{{{label}}}")
 
-    # Drawn after the axis, which would clip it, down the right side of the plot.
-    side_node = ""
-    if side_label:
-        side_node = (
-            rf"\node[rotate=-90, anchor=south, font=\small, xshift=6pt] at (current axis.east) {{{side_label}}};"
-        )
-
     return (
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
         + rf"\begin{{loglogaxis}}[bordered, xlabel={{X time (s)}}, {options}]"
         + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
         + "\n".join(lines)
-        + "\n\\end{loglogaxis}\n"
-        + side_node
-        + "\n\\end{tikzpicture}"
+        + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
     )
 
 
@@ -302,6 +451,14 @@ def _titled(title, body, columns):
 
 def _minipage(width, body):
     return f"\\noindent\\begin{{minipage}}{{{width}}}\\centering\n{body}\n\\end{{minipage}}"
+
+
+def htg_domain(domain):
+    """The domain the paper names an HTG problem by, such as organic-synthesis for organic-synthesis-MIT."""
+    collection, _, subdirectory = domain.partition("/")
+    if collection == HTG_COLLECTION:
+        return subdirectory.removesuffix("-large")
+    return HTG_DOMAINS[collection]
 
 
 def cactus(problems, mode):
