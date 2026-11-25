@@ -43,8 +43,8 @@ HTG_PLOT_SIZE = 1.25
 IPC_PLOT_SIZE = 1.05
 # Every plot colored by domain numbers and labels its own y axis, which sit in the gap before it, in inches.
 DOMAIN_PLOT_GAP = 0.6
-# The wider gap between the IPC figure's tracks, in inches.
-IPC_TRACK_GAP = 0.75
+# The wider gap between the IPC figure's sources, which holds the left source's name, in inches.
+IPC_SOURCE_GAP = 0.85
 # The order of the HTG figure's plots, as in the tables.
 HTG_PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
@@ -216,31 +216,32 @@ def _htg_runtime_figure(revision):
 
 
 def _ipc_runtime_figure(revision):
-    """The paper's IPC runtime figure, a row per source named down its right side, a pair of plots per track under its
-    name, and a domain legend."""
-    tracks = {kind: load_tracks(revision, kind, []) for kind in TRACK_NAMES}
-    pairs = {kind: sorted(PAIRS[kind], key=lambda pair: HTG_PLANNER_ORDER.index(pair[0])) for kind in TRACK_NAMES}
-
-    # The tracks name their pairs of plots once, over the top row.
-    pair_width = rf"\dimexpr2\plotsize+{DOMAIN_PLOT_GAP}in\relax"
-    titles = [rf"\makebox[{pair_width}]{{\small {name}}}" for name in TRACK_NAMES.values()]
-    header = r"\hspace*{0.42in}" + f"\\hspace{{{IPC_TRACK_GAP}in}}".join(titles) + r" \\[0.4em]"
-
+    """The paper's IPC runtime figure, a row per track under its name, a pair of plots per source named down its right
+    side, and a domain legend."""
     rows = []
-    for source, name in SOURCES.items():
+    for kind, name in TRACK_NAMES.items():
+        tracks = load_tracks(revision, kind, [])
+        pairs = sorted(PAIRS[kind], key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
         groups = []
-        for kind in TRACK_NAMES:
-            plots = []
-            for pair in pairs[kind]:
-                # The last plot of the row names its source down its right side.
-                last = kind == list(TRACK_NAMES)[-1] and pair == pairs[kind][-1]
-                plot = _domain_runtime_plot(
-                    tracks[kind][source], pair, _ipc_problem_domain, IPC_DOMAIN_COLORS, side_label=name if last else ""
+        for source, source_name in SOURCES.items():
+            # The right plot of each pair names its source down its right side.
+            plots = [
+                _domain_runtime_plot(
+                    tracks[source],
+                    pair,
+                    _ipc_problem_domain,
+                    IPC_DOMAIN_COLORS,
+                    side_label=source_name if pair == pairs[-1] else "",
                 )
-                plots.append(plot)
+                for pair in pairs
+            ]
             groups.append(_joined(plots, f"{DOMAIN_PLOT_GAP}in"))
-        rows.append(r"\hspace*{0.42in}" + _joined(groups, f"{IPC_TRACK_GAP}in"))
-    plot_table = "\\begin{tabular}{@{}c@{}}\n" + header + "\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
+        rows.append(
+            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
+            + "\n\\hspace*{0.42in}"
+            + _joined(groups, f"{IPC_SOURCE_GAP}in")
+        )
+    plot_table = "\\begin{tabular}{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
 
     # The domains under the plots in two lines of five, the grey of the other domains last.
     entries = [_legend_entry(color, domain) for domain, color in IPC_DOMAIN_COLORS.items()]
