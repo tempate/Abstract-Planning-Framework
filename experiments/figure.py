@@ -69,10 +69,10 @@ IPC_FAMILIES = {
     "pipesworld-notankage": "pipesworld",
     "pipesworld-tankage": "pipesworld",
 }
-# The IPC figures color the nine domains with the most problems, a domain the HTG figure shows in its color there,
-# and draws the rest in grey.
+# The Symmetries figure colors the nine IPC domains with the most problems, a domain the HTG figure shows in its color
+# there, and draws the rest in grey.
 OTHER_DOMAINS = "other"
-IPC_DOMAIN_COLORS = {
+SYMMETRIES_DOMAIN_COLORS = {
     "barman": "violet",
     "elevators": "black",
     "freecell": "teal",
@@ -84,6 +84,21 @@ IPC_DOMAIN_COLORS = {
     "transport": "cyan",
     OTHER_DOMAINS: "black!35",
 }
+# Resources has ten domains, so its figure colors them all, each in its Symmetries color or else one no other
+# Resources domain takes.
+RESOURCES_DOMAIN_COLORS = {
+    "data-network": "olive",
+    "elevators": "black",
+    "freecell": "teal",
+    "mystery": "purple",
+    "nomystery": "orange",
+    "openstacks": "blue",
+    "thoughtful": "brown",
+    "tpp": "green!60!black",
+    "transport": "cyan",
+    "visitall": "violet",
+}
+IPC_DOMAIN_COLORS = {"symmetries": SYMMETRIES_DOMAIN_COLORS, "resources": RESOURCES_DOMAIN_COLORS}
 # HTG names a domain by the collection it comes from; the paper by the domain.
 HTG_DOMAINS = {
     "blocksworld-large-simple": "blocksworld",
@@ -185,7 +200,9 @@ def paper_figures(revision):
         ),
         **{
             f"runtimes-ipc-{source}": _minipage(
-                r"\textwidth", f"\\setlength{{\\plotsize}}{{{IPC_PLOT_SIZE}in}}\n" + _ipc_runtime_figure(problems)
+                r"\textwidth",
+                f"\\setlength{{\\plotsize}}{{{IPC_PLOT_SIZE}in}}\n"
+                + _ipc_runtime_figure(problems, IPC_DOMAIN_COLORS[source]),
             )
             for source, problems in _ipc_sources(revision).items()
         },
@@ -224,12 +241,16 @@ def _ipc_sources(revision):
     return {source: {kind: tracks[kind][source] for kind in TRACK_NAMES} for source in SOURCES}
 
 
-def _ipc_runtime_figure(tracks):
+def _ipc_runtime_figure(tracks, colors):
     """One IPC source's runtime figure, a row per track under its name, a plot per planner, and a domain legend."""
+
+    def domain_of(problem):
+        return _ipc_problem_domain(problem, colors)
+
     rows = []
     for kind, name in TRACK_NAMES.items():
         pairs = sorted(PAIRS[kind], key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
-        plots = [_domain_runtime_plot(tracks[kind], pair, _ipc_problem_domain, IPC_DOMAIN_COLORS) for pair in pairs]
+        plots = [_domain_runtime_plot(tracks[kind], pair, domain_of, colors) for pair in pairs]
         rows.append(
             rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
             + "\n\\hspace*{0.42in}"
@@ -238,8 +259,8 @@ def _ipc_runtime_figure(tracks):
     plot_table = "\\begin{tabular}{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
 
     # The domains this source has under the plots, the grey of the other domains last.
-    present = {_ipc_problem_domain(problem) for problems in tracks.values() for problem in problems}
-    entries = [_legend_entry(color, domain) for domain, color in IPC_DOMAIN_COLORS.items() if domain in present]
+    present = {domain_of(problem) for problems in tracks.values() for problem in problems}
+    entries = [_legend_entry(color, domain) for domain, color in colors.items() if domain in present]
     lines = [
         " & ".join(entries[start : start + IPC_LEGEND_COLUMNS]) for start in range(0, len(entries), IPC_LEGEND_COLUMNS)
     ]
@@ -287,11 +308,11 @@ def _htg_problem_domain(problem):
     return htg_domain(next(iter(problem.values()))["domain"])
 
 
-def _ipc_problem_domain(problem):
+def _ipc_problem_domain(problem, colors):
     """The domain the IPC figures color a problem by, its name without track or year, or the other domains."""
     name = re.sub(r"-(sat|opt)\d\d-strips$", "", next(iter(problem.values()))["domain"])
     name = IPC_FAMILIES.get(name, name)
-    return name if name in IPC_DOMAIN_COLORS else OTHER_DOMAINS
+    return name if name in colors else OTHER_DOMAINS
 
 
 def _panel(title, kind, tracks):
