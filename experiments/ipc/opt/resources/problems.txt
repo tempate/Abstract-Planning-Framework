@@ -1,4 +1,4 @@
-# Problems with a resource variable the detector found objects for.
+# Problems with a class to collapse.
 # Regenerate with:
 #   python -m experiments.scan --track opt/resources
 data-network-opt18-strips/p01.pddl
@@ -269,6 +269,26 @@ openstacks-opt11-strips/p17.pddl
 openstacks-opt11-strips/p18.pddl
 openstacks-opt11-strips/p19.pddl
 openstacks-opt11-strips/p20.pddl
+openstacks-opt14-strips/p20_1.pddl
+openstacks-opt14-strips/p20_2.pddl
+openstacks-opt14-strips/p20_3.pddl
+openstacks-opt14-strips/p25_1.pddl
+openstacks-opt14-strips/p25_3.pddl
+openstacks-opt14-strips/p30_1.pddl
+openstacks-opt14-strips/p30_2.pddl
+openstacks-opt14-strips/p30_3.pddl
+openstacks-opt14-strips/p35_1.pddl
+openstacks-opt14-strips/p35_2.pddl
+openstacks-opt14-strips/p35_3.pddl
+openstacks-opt14-strips/p40_1.pddl
+openstacks-opt14-strips/p40_2.pddl
+openstacks-opt14-strips/p40_3.pddl
+openstacks-opt14-strips/p45_1.pddl
+openstacks-opt14-strips/p45_2.pddl
+openstacks-opt14-strips/p45_3.pddl
+openstacks-opt14-strips/p50_1.pddl
+openstacks-opt14-strips/p50_2.pddl
+openstacks-opt14-strips/p50_3.pddl
 tpp/p01.pddl
 tpp/p02.pddl
 tpp/p03.pddl

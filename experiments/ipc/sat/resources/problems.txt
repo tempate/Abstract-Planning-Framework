@@ -1,4 +1,4 @@
-# Problems with a resource variable the detector found objects for.
+# Problems with a class to collapse.
 # Regenerate with:
 #   python -m experiments.scan --track sat/resources
 data-network-sat18-strips/p01.pddl
@@ -196,6 +196,7 @@ nomystery-sat11-strips/p05.pddl
 nomystery-sat11-strips/p06.pddl
 nomystery-sat11-strips/p07.pddl
 nomystery-sat11-strips/p08.pddl
+nomystery-sat11-strips/p09.pddl
 nomystery-sat11-strips/p10.pddl
 nomystery-sat11-strips/p11.pddl
 nomystery-sat11-strips/p12.pddl

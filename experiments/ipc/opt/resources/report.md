@@ -1,16 +1,16 @@
 # Benchmark report
 
-2026-11-18 14:36 — experiments/ipc/opt/resources/results.csv
+2026-11-25 15:42 — experiments/ipc/opt/resources/results.csv
 
-363 problems compared over asp, abs-asp, abs-lmcut, lmcut
+363 problems compared over asp, abs-asp, abs-lmcut, lmcut; 20 dropped as unfinished
 
 ## Coverage
 
 ```
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
 ----------------------------------------------------------------------------------
-Plans found                     122 (33.6%)  120 (33.1%)  132 (36.4%)  207 (57.0%)
-Timeouts                        241 (66.4%)  243 (66.9%)  231 (63.6%)  154 (42.4%)
+Plans found                     122 (33.6%)  120 (33.1%)  132 (36.4%)  206 (56.7%)
+Timeouts                        241 (66.4%)  243 (66.9%)  231 (63.6%)  155 (42.7%)
 Out of memory                      0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
 Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     2 (0.6%)
 Total problems                          363          363          363          363
@@ -22,10 +22,10 @@ Total problems                          363          363          363          3
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
 ----------------------------------------------------------------------------------
 Plans found by both                     117          117          125          125
-Faster                           91 (77.8%)   26 (22.2%)   20 (16.0%)  105 (84.0%)
-Found when the other did not              5            3            7           82
-Median runtime                       8.09 s      12.71 s       7.79 s       2.67 s
-Total runtime                    9,836.43 s   9,810.49 s  11,626.07 s   6,787.84 s
+Faster                           92 (78.6%)   25 (21.4%)   23 (18.4%)  102 (81.6%)
+Found when the other did not              5            3            7           81
+Median runtime                       7.15 s      12.71 s       7.79 s       2.94 s
+Total runtime                    9,460.61 s   9,810.49 s  11,626.07 s   7,260.11 s
 Shorter plan                       0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
 Same plan length               117 (100.0%) 117 (100.0%) 125 (100.0%) 125 (100.0%)
 Median plan length                        9            9           11           11
@@ -75,7 +75,7 @@ Domain (problems)                  ASP      ASPᵅ    LMcutᵅ     LMcut
 data-network-opt18-strips (20)        16        15        15        20
 elevators-opt08-strips (30)          9         8         9        26
 elevators-opt11-strips (20)          7         6         7        20
-freecell (73)                       10        10         9        28
+freecell (73)                       10        10         9        27
 mprime (29)                         29        29        24        23
 mystery (26)                        17        17        17        16
 nomystery-opt11-strips (20)         10         8        12        18
@@ -86,5 +86,5 @@ transport-opt08-strips (30)          9        10        15        14
 transport-opt11-strips (20)          4         5         9        10
 transport-opt14-strips (20)          3         4         7         9
 visitall-opt11-strips (1)            1         1         1         1
-Total (363)                        122       120       132       207
+Total (363)                        122       120       132       206
 ```
