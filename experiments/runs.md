@@ -36,12 +36,12 @@ Latest code means main at #221. The PRs after #181 that change a result are #185
 
 | Track | Mode | Status | Jobs | Classes (all / best) | Code | Partition | Lacks |
 |---|---|---|---|---|---|---|---|
-| sat | LAMAᵅ | ❌ **stale** | 5544 | best | #181, #206 | sunnycove | #203, #209, #239, #245 |
-| | ASPᵅ | ❌ **stale** | 5544 | best | #181, #206 | sunnycove | #203, #209, #239, #245 |
+| sat | LAMAᵅ | ❌ **stale** | 2478 | best | #181, #206 | sunnycove | #203, #209, #239, #245 |
+| | ASPᵅ | ❌ **stale** | 2478 | best | #181, #206 | sunnycove | #203, #209, #239, #245 |
 | | ASP | ✅ **current** | 677 | | #245 | sunnycove | |
 | | LAMA | ✅ **current** | 677 | | #245 | sunnycove | |
-| opt | LMcutᵅ | ❌ **stale** | 5276 | best | #181, #206 | sunnycove | #185, #203, #209, #239, #245 |
-| | ASPᵅ | ❌ **stale** | 5276 | best | #181, #206 | sunnycove | #185, #203, #209, #239, #245 |
+| opt | LMcutᵅ | ❌ **stale** | 2334 | best | #181, #206 | sunnycove | #185, #203, #209, #239, #245 |
+| | ASPᵅ | ❌ **stale** | 2334 | best | #181, #206 | sunnycove | #185, #203, #209, #239, #245 |
 | | ASP | ✅ **current** | 661 | | #245 | sunnycove | |
 | | LMcut | ✅ **current** | 661 | | #245 | sunnycove | |
 
@@ -49,11 +49,11 @@ Latest code means main at #221. The PRs after #181 that change a result are #185
 
 | Track | Mode | Status | Jobs | Classes (all / best) | Code | Partition | Lacks |
 |---|---|---|---|---|---|---|---|
-| sat | LAMAᵅ | ❌ **stale** | 1090 | best | #181 | sunnycove | #209, #245 |
-| | ASPᵅ | ❌ **stale** | 1090 | best | #181 | sunnycove | #209, #245 |
+| sat | LAMAᵅ | ❌ **stale** | 544 | best | #181 | sunnycove | #209, #245 |
+| | ASPᵅ | ❌ **stale** | 544 | best | #181 | sunnycove | #209, #245 |
 | | ASP | ✅ **current** | 331 | | #245 | sunnycove | |
 | | LAMA | ✅ **current** | 331 | | #245 | sunnycove | |
-| opt | LMcutᵅ | ❌ **stale** | 1216 | best | #181 | sunnycove | #185, #209, #245 |
-| | ASPᵅ | ❌ **stale** | 1216 | best | #181 | sunnycove | #185, #209, #245 |
+| opt | LMcutᵅ | ❌ **stale** | 588 | best | #181 | sunnycove | #185, #209, #245 |
+| | ASPᵅ | ❌ **stale** | 588 | best | #181 | sunnycove | #185, #209, #245 |
 | | ASP | ✅ **current** | 383 | | #245 | sunnycove | |
 | | LMcut | ✅ **current** | 383 | | #245 | sunnycove | |
