@@ -12,16 +12,12 @@ thoughtful & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
 \end{table*}
 """
 SUMMARY = r"""\begin{table}
-\begin{tabular}{lrr}
- & Sat & Opt \\
-\midrule
-Problems & 1 & 1 \\
-\ASP & 1 & 1 \\
-\ASPa & 1 & 1 \\
-\textsc{FD} & 1 & 1 \\
-\textsc{FD}\textsuperscript{$\alpha$} & 1 & 1 \\
-\PL & 1 & 1 \\
-\PLa & 1 & 1 \\
+\begin{tabular}{lrrrrr}
+ & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} \\
+\multicolumn{6}{l}{\emph{Resources}} \\
+Satisficing & 1 & 1 & 1 & 1 & 1 \\
+Optimal & 1 & 1 & 1 & 1 & 1 \\
+\bottomrule
 \end{tabular}
 \label{tab:ipc-summary}
 \end{table}
@@ -59,25 +55,19 @@ class PaperTableTests(unittest.TestCase):
             with self.subTest(domains=sorted(sat)), self.assertRaises(SystemExit):
                 update_table(TABLE, "IPC Resources", {"sat": sat, "opt": {}})
 
-    def test_the_summary_gives_each_track_a_column_and_bolds_the_better_of_each_pair(self):
-        # Each column holds the problems, then each planner and its abstraction: ASP, FD and PL.
-        tex = update_summary(
-            SUMMARY, "tab:ipc-summary", [[330, 88, 92, 305, 122, None, None], [363, 122, 120, 207, 132, 35, 86]]
-        )
+    def test_the_summary_gives_each_track_a_row_and_bolds_the_better_of_each_pair(self):
+        # Each track holds the problems, then each planner and its abstraction: ASP, FD and PL, which IPC never runs.
+        tracks = {"sat": [330, 88, 92, 305, 122, None, None], "opt": [363, 122, 120, 207, 132, None, None]}
+        tex = update_summary(SUMMARY, "tab:ipc-summary", {"Resources": tracks})
 
-        self.assertIn(r"Problems & 330 & 363 \\", tex)
-        self.assertIn(r"\ASP & 88 & \textbf{122} \\", tex)
-        self.assertIn(r"\ASPa & \textbf{92} & 120 \\", tex)
-        self.assertIn(r"\textsc{FD} & \textbf{305} & \textbf{207} \\", tex)
-        self.assertIn(r"\PLa & -- & \textbf{86} \\", tex)
+        self.assertIn(r"Satisficing & 330 & 88 & \textbf{92} & \textbf{305} & 122 \\", tex)
+        self.assertIn(r"Optimal & 363 & \textbf{122} & 120 & \textbf{207} & 132 \\", tex)
 
-    def test_a_summary_row_the_paper_lacks_stops_the_update_unless_its_planner_never_ran(self):
-        without_pl = SUMMARY.replace("\\PL & 1 & 1 \\\\\n", "").replace("\\PLa & 1 & 1 \\\\\n", "")
+    def test_a_track_the_summary_lacks_stops_the_update(self):
+        without_optimal = SUMMARY.replace("Optimal & 1 & 1 & 1 & 1 & 1 \\\\\n", "")
+        tracks = {"sat": [1] * 5 + [None] * 2, "opt": [1] * 5 + [None] * 2}
         with self.assertRaises(SystemExit):
-            update_summary(without_pl, "tab:ipc-summary", [[1] * 7, [1] * 7])
-
-        tex = update_summary(without_pl, "tab:ipc-summary", [[1] * 5 + [None] * 2] * 2)
-        self.assertNotIn("\\PL", tex)
+            update_summary(without_optimal, "tab:ipc-summary", {"Resources": tracks})
 
     def test_the_htg_table_gives_each_domain_and_the_total_a_row_with_a_block_per_track(self):
         counts = {

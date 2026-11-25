@@ -5,7 +5,7 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from experiments.figure import DEFAULT_PAPER, SOURCES, htg_domain, load_tracks, paper_figures, render_pdf
+from experiments.figure import DEFAULT_PAPER, SOURCES, TRACK_NAMES, htg_domain, load_tracks, paper_figures, render_pdf
 from experiments.report import solved
 
 # The modes each track counts, each planner before its abstraction. A set without a mode's results shows --.
@@ -17,12 +17,10 @@ MODES = {
 DOMAIN_TABLE = "tab:ipc-domains"
 # The modes the per-domain table shows, each planner before its abstraction. Powerlifted does not run on IPC.
 DOMAIN_MODES = {"sat": ("asp", "abs-asp", "lama", "abs-lama"), "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut")}
-# Each summary table, by its label, with the benchmark sets it gives a column per track.
-SUMMARY_TABLES = {"tab:ipc-summary": ("IPC Symmetries", "IPC Resources")}
+# Each summary table, by its label, with the benchmark set each of its sections shows, by the section's title.
+SUMMARY_TABLES = {"tab:ipc-summary": {"Symmetries": "IPC Symmetries", "Resources": "IPC Resources"}}
 # The HTG table, a row per domain and a total, and a block of columns per track.
 HTG_TABLE = "tab:htg"
-# The mode each row of a summary table names, in the order of the track's modes.
-SUMMARY_LABELS = (r"\ASP", r"\ASPa", r"\textsc{FD}", r"\textsc{FD}\textsuperscript{$\alpha$}", r"\PL", r"\PLa")
 
 
 def main():
@@ -43,7 +41,8 @@ def main():
             totals[section, kind] = _total(track)
         print(f"{section}: {', '.join(changed) or 'no domain row'} changed")
     for label, sections in SUMMARY_TABLES.items():
-        tex = update_summary(tex, label, [totals[section, kind] for section in sections for kind in MODES])
+        sets = {title: {kind: totals[section, kind] for kind in MODES} for title, section in sections.items()}
+        tex = update_summary(tex, label, sets)
     paper.write_text(tex)
 
     for name, body in paper_figures(args.revision).items():
@@ -127,18 +126,21 @@ def update_table(tex, section, counts):
     return tex[:start] + "\n".join(lines) + tex[end:], changed
 
 
-def update_summary(tex, table, columns):
-    """Write one summary table, a column per benchmark set and track, the better of each planner and its abstraction in bold."""
-    rows = {"Problems": [str(column[0]) for column in columns]}
-    bolded = [_bold_pairs(column[1:]) for column in columns]
-    for index, label in enumerate(SUMMARY_LABELS):
-        rows[label] = [cells[index] for cells in bolded]
-    # A mode that never ran on the table's benchmark sets may go without a row.
-    optional = {label for label, cells in rows.items() if all(cell == "--" for cell in cells)}
+def update_summary(tex, table, sets):
+    """Write one summary table, a section per benchmark set with a row per track, the better of each planner and its
+    abstraction in bold."""
+    totals = [total for tracks in sets.values() for total in tracks.values()]
+    # A planner that never ran on the table's benchmark sets, such as Powerlifted on IPC, has no columns.
+    shown = [any(total[index] is not None for total in totals) for index in range(len(totals[0]))]
 
-    start = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{table}}}"))
-    end = tex.index(r"\end{tabular}", start)
-    return tex[:start] + _write_rows(tex[start:end], table, rows, optional) + tex[end:]
+    for title, tracks in sets.items():
+        rows = {}
+        for kind, (count, *solved) in tracks.items():
+            cells = [str(count), *_bold_pairs(solved)]
+            rows[TRACK_NAMES[kind]] = [cell for cell, show in zip(cells, shown) if show]
+        start, end = _section(tex, table, title)
+        tex = tex[:start] + _write_rows(tex[start:end], f"{table} {title}", rows) + tex[end:]
+    return tex
 
 
 def update_htg_table(tex, counts):
