@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-25 15:42 — experiments/ipc/sat/resources/results.csv
+2026-11-25 18:05 — experiments/ipc/sat/resources/results.csv
 
-330 problems compared over asp, abs-asp, abs-lama, lama; 1 dropped as unfinished
+330 problems compared over asp, abs-asp, abs-lama, lama, lama-symmetry-pruning; 1 dropped as unfinished
 
 ## Coverage
 
 ```
-Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
-----------------------------------------------------------------------------------
-Plans found                      88 (26.7%)   92 (27.9%)  122 (37.0%)  305 (92.4%)
-Timeouts                        242 (73.3%)  238 (72.1%)  181 (54.8%)    22 (6.7%)
-Out of memory                      0 (0.0%)     0 (0.0%)    27 (8.2%)     1 (0.3%)
-Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     2 (0.6%)
-Total problems                          330          330          330          330
+Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMALAMA-symmetry-pruning
+-------------------------------------------------------------------------------------------------------
+Plans found                      88 (26.7%)   92 (27.9%)  122 (37.0%)  305 (92.4%)  301 (91.2%)
+Timeouts                        242 (73.3%)  238 (72.1%)  181 (54.8%)    22 (6.7%)    26 (7.9%)
+Out of memory                      0 (0.0%)     0 (0.0%)    27 (8.2%)     1 (0.3%)     0 (0.0%)
+Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     2 (0.6%)     3 (0.9%)
+Total problems                          330          330          330          330          330
 ```
 
 ## Head to head, over the problems both solved
@@ -71,21 +71,21 @@ Total                                    85          114
 ## Plans found by domain
 
 ```
-Domain (problems)                  ASP      ASPᵅ     LAMAᵅ      LAMA
---------------------------------------------------------------------
-data-network-sat18-strips (15)         0         1         1        12
-elevators-sat08-strips (30)          2         6         7        30
-elevators-sat11-strips (14)          0         0         0        14
-freecell (73)                       15        13        10        72
-mprime (29)                         28        28        29        29
-mystery (26)                        17        17        17        17
-nomystery-sat11-strips (19)          4         4         6        12
-openstacks-sat08-strips (27)         5         6        24        27
-openstacks-sat11-strips (7)          0         0         4         7
-thoughtful-sat14-strips (20)         5         5         5        15
-tpp (24)                             6         6         6        24
-transport-sat08-strips (30)          6         6        13        30
-transport-sat11-strips (13)          0         0         0        13
-transport-sat14-strips (3)           0         0         0         3
-Total (330)                         88        92       122       305
+Domain (problems)                  ASP      ASPᵅ     LAMAᵅ      LAMALAMA-symmetry-pruning
+-----------------------------------------------------------------------------------------
+data-network-sat18-strips (15)         0         1         1        12        12
+elevators-sat08-strips (30)          2         6         7        30        30
+elevators-sat11-strips (14)          0         0         0        14        14
+freecell (73)                       15        13        10        72        72
+mprime (29)                         28        28        29        29        29
+mystery (26)                        17        17        17        17        16
+nomystery-sat11-strips (19)          4         4         6        12        11
+openstacks-sat08-strips (27)         5         6        24        27        26
+openstacks-sat11-strips (7)          0         0         4         7         6
+thoughtful-sat14-strips (20)         5         5         5        15        15
+tpp (24)                             6         6         6        24        24
+transport-sat08-strips (30)          6         6        13        30        30
+transport-sat11-strips (13)          0         0         0        13        13
+transport-sat14-strips (3)           0         0         0         3         3
+Total (330)                         88        92       122       305       301
 ```
