@@ -40,11 +40,11 @@ CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anch
 # The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled.
 HTG_PLOT_SIZE = 1.25
 # The IPC figure's plots, drawn at the size they print, as main.tex includes it unscaled.
-IPC_PLOT_SIZE = 1.15
+IPC_PLOT_SIZE = 1.05
 # Every plot colored by domain numbers and labels its own y axis, which sit in the gap before it, in inches.
-DOMAIN_PLOT_GAP = 0.5
+DOMAIN_PLOT_GAP = 0.6
 # The wider gap between the IPC figure's tracks, in inches.
-IPC_TRACK_GAP = 0.6
+IPC_TRACK_GAP = 0.75
 # The order of the HTG figure's plots, as in the tables.
 HTG_PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
