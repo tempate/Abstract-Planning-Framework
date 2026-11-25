@@ -5,7 +5,7 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from experiments.figure import DEFAULT_PAPER, SOURCES, TRACK_NAMES, load_tracks, paper_figures, render_pdf
+from experiments.figure import DEFAULT_PAPER, SOURCES, load_tracks, paper_figures, render_pdf
 from experiments.report import solved
 
 # The modes each track counts, each planner before its abstraction. A set without a mode's results shows --.
@@ -19,7 +19,7 @@ DOMAIN_TABLE = "tab:ipc-domains"
 DOMAIN_MODES = {"sat": ("asp", "abs-asp", "lama", "abs-lama"), "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut")}
 # Each summary table, by its label, with the benchmark sets it gives a column per track.
 SUMMARY_TABLES = {"tab:ipc-summary": ("IPC Symmetries", "IPC Resources")}
-# The HTG table, a section of rows per track, each a row per domain and a total.
+# The HTG table, a row per domain and a total, and a block of columns per track.
 HTG_TABLE = "tab:htg"
 # The mode each row of a summary table names, in the order of the track's modes.
 SUMMARY_LABELS = (r"\ASP", r"\ASPa", r"\textsc{FD}", r"\textsc{FD}\textsuperscript{$\alpha$}", r"\PL", r"\PLa")
@@ -154,16 +154,19 @@ def update_summary(tex, table, columns):
 
 
 def update_htg_table(tex, counts):
-    """Write the HTG table, a section per track with each domain's problems and solved counts, the better of each pair in bold."""
-    for kind, track in counts.items():
-        rows = {}
-        for name, (count, *solved) in [*sorted(track.items()), ("Total", _total(track))]:
-            rows[name] = [str(count), *_bold_pairs(solved)]
+    """Write the HTG table, a row per domain and a total with a block of columns per track, the better of each pair in bold."""
+    tracks = [{**track, "Total": _total(track)} for track in counts.values()]
+    rows = {}
+    for name in [*sorted(counts["sat"]), "Total"]:
+        rows[name] = []
+        for track in tracks:
+            count, *solved = track[name]
+            rows[name] += [str(count), *_bold_pairs(solved)]
 
-        section = TRACK_NAMES[kind]
-        start, end = _section(tex, HTG_TABLE, section)
-        tex = tex[:start] + _write_rows(tex[start:end], f"{HTG_TABLE} {section}", rows) + tex[end:]
-    return tex
+    start = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{HTG_TABLE}}}"))
+    # The table runs the full text width as a tabular*.
+    end = tex.index(r"\end{tabular", start)
+    return tex[:start] + _write_rows(tex[start:end], HTG_TABLE, rows) + tex[end:]
 
 
 def _write_rows(text, table, rows, optional=()):
