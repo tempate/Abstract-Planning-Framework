@@ -41,6 +41,8 @@ PAPER_PLOT_SIZE = 1.65
 PAPER_PLOT_GAP = 0.3
 # The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled.
 HTG_PLOT_SIZE = 1.25
+# Every HTG plot numbers and labels its own y axis, which sit in the gap before it, in inches.
+HTG_PLOT_GAP = 0.5
 # The order of the HTG figure's plots, as in the tables.
 HTG_PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
@@ -174,12 +176,9 @@ def _htg_runtime_figure(revision):
         if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
             pairs += (POWERLIFTED,)
         pairs = sorted(pairs, key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
-        # Only the left plot of a row numbers its y axis.
-        plots = [_domain_runtime_plot(htg[kind], pair, ticks=index == 0) for index, pair in enumerate(pairs)]
+        plots = [_domain_runtime_plot(htg[kind], pair) for pair in pairs]
         rows.append(
-            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
-            + "\n\\hspace*{0.42in}"
-            + _joined(plots, f"{PAPER_PLOT_GAP}in")
+            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]" + "\n\\hspace*{0.42in}" + _joined(plots, f"{HTG_PLOT_GAP}in")
         )
     plot_table = "\\begin{tabular}[c]{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
 
@@ -191,7 +190,7 @@ def _htg_runtime_figure(revision):
     return "\\noindent\\makebox[\\linewidth][c]{%\n" + plot_table + "%\n\\hspace{1.5em}%\n" + legend + "}"
 
 
-def _domain_runtime_plot(problems, pair, ticks):
+def _domain_runtime_plot(problems, pair):
     """One planner's runtime per problem against its abstraction's, a cross per problem in its domain's color."""
     solver, label, abstract_label = pair
     by_domain = defaultdict(list)
@@ -210,8 +209,6 @@ def _domain_runtime_plot(problems, pair, ticks):
     options = r"label style={font=\small}, tick label style={font=\footnotesize}"
     # A light line at every power of ten, as in Horcik et al. (2022).
     options += r", grid=major, grid style={black!30, thin}"
-    if not ticks:
-        options += ", yticklabels={}"
     return (
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
         + rf"\begin{{loglogaxis}}[bordered, xlabel={{{label}{{}} time (s)}}, ylabel={{{abstract_label}{{}} time (s)}}, {options}]"
