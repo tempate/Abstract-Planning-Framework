@@ -1,14 +1,14 @@
 # Benchmark report
 
-2026-11-25 18:05 — experiments/ipc/opt/symmetries/results.csv
+2026-11-25 18:16 — experiments/ipc/opt/symmetries/results.csv
 
 518 problems compared over asp, abs-asp, abs-lmcut, lmcut, lmcut-symmetry-pruning; 143 dropped as unfinished
 
 ## Coverage
 
 ```
-Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcutLMcut-symmetry-pruning
---------------------------------------------------------------------------------------------------------
+Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut       LMcut+
+-----------------------------------------------------------------------------------------------
 Plans found                     125 (24.1%)  126 (24.3%)  135 (26.1%)  193 (37.3%)  224 (43.2%)
 Timeouts                        392 (75.7%)  391 (75.5%)  382 (73.7%)  324 (62.5%)  292 (56.4%)
 Out of memory                      1 (0.2%)     1 (0.2%)     0 (0.0%)     0 (0.0%)     1 (0.2%)
@@ -70,8 +70,8 @@ Total                                    84           95
 ## Plans found by domain
 
 ```
-Domain (problems)                  ASP      ASPᵅ    LMcutᵅ     LMcutLMcut-symmetry-pruning
-------------------------------------------------------------------------------------------
+Domain (problems)                  ASP      ASPᵅ    LMcutᵅ     LMcut    LMcut+
+------------------------------------------------------------------------------
 agricola-opt18-strips (20)           7        11         0         0         0
 airport (19)                        11        11        19        19        19
 barman-opt11-strips (20)             0         0         0         4         8

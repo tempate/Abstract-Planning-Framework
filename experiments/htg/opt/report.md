@@ -1,14 +1,14 @@
 # Benchmark report
 
-2026-11-25 18:05 — experiments/htg/opt/results.csv
+2026-11-25 18:16 — experiments/htg/opt/results.csv
 
 329 problems compared over asp, abs-asp, abs-lmcut, lmcut, abs-powerlifted, powerlifted, lmcut-symmetry-pruning; 114 dropped as unfinished
 
 ## Coverage
 
 ```
-Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut Powerliftedᵅ  PowerliftedLMcut-symmetry-pruning
-----------------------------------------------------------------------------------------------------------------------------------
+Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut Powerliftedᵅ  Powerlifted       LMcut+
+-------------------------------------------------------------------------------------------------------------------------
 Plans found                      62 (18.8%)   80 (24.3%)  116 (35.3%)   58 (17.6%)   86 (26.1%)   35 (10.6%)  121 (36.8%)
 Timeouts                        121 (36.8%)  139 (42.2%)  193 (58.7%)  199 (60.5%)  237 (72.0%)  292 (88.8%)  136 (41.3%)
 Out of memory                   146 (44.4%)  110 (33.4%)    20 (6.1%)   72 (21.9%)     6 (1.8%)     2 (0.6%)   72 (21.9%)
@@ -71,8 +71,8 @@ Total                                    70          106           82
 ## Plans found by domain
 
 ```
-Domain (problems)                 Size       ASP      ASPᵅ    LMcutᵅ     LMcutPowerliftedᵅPowerliftedLMcut-symmetry-pruning
----------------------------------------------------------------------------------------------------------------------------
+Domain (problems)                 Size       ASP      ASPᵅ    LMcutᵅ     LMcutPowerliftedᵅPowerlifted    LMcut+
+---------------------------------------------------------------------------------------------------------------
 blocksworld-large-simple (40)    goal-2         3         5        10         3        10         0         3
                                 goal-3         3         5        10         3        10         0         3
                                 goal-4         3         5        10         3        10         0         3
