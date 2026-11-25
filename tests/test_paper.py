@@ -1,6 +1,7 @@
 import unittest
 
-from experiments.paper import _htg_name, update_htg_table, update_summary, update_table
+from experiments.figure import htg_domain
+from experiments.paper import update_htg_table, update_summary, update_table
 
 TABLE = r"""\begin{table*}
 \multicolumn{11}{l}{\emph{IPC Resources}} \\
@@ -102,7 +103,7 @@ class PaperTableTests(unittest.TestCase):
         }
         for domain, name in names.items():
             with self.subTest(domain=domain):
-                self.assertEqual(_htg_name(domain), name)
+                self.assertEqual(htg_domain(domain), name)
 
 
 if __name__ == "__main__":

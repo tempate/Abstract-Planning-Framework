@@ -7,6 +7,7 @@ import json
 import shutil
 import subprocess
 import tempfile
+from collections import defaultdict
 from pathlib import Path
 
 from experiments.collect import result_key
@@ -38,6 +39,23 @@ CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anch
 # The paper's runtime plots and the gap between them, in inches.
 PAPER_PLOT_SIZE = 1.65
 PAPER_PLOT_GAP = 0.3
+# The order of the HTG figure's plots, as in the tables.
+HTG_PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
+# The HTG figure's domain legend columns, and the domains' colors in the order of their names, from Tableau 10.
+LEGEND_COLUMNS = 5
+DOMAIN_COLORS = ("4E79A7", "F28E2B", "E15759", "76B7B2", "59A14F", "EDC948", "B07AA1", "FF9DA7", "9C755F", "BAB0AC")
+# HTG names a domain by the collection it comes from; the paper by the domain.
+HTG_DOMAINS = {
+    "blocksworld-large-simple": "blocksworld",
+    "childsnack-contents": "childsnack",
+    "logistics-large-simple": "logistics",
+    "organic-synthesis-alkene": "organic-synthesis",
+    "organic-synthesis-MIT": "organic-synthesis",
+    "organic-synthesis-original": "organic-synthesis",
+    "pipesworld-tankage-nosplit": "pipesworld-tankage",
+    "rovers-large-simple": "rovers",
+}
+HTG_COLLECTION = "gnad-et-al-aaai19-large-instances"
 DEFAULT_PAPER = PROJECT_ROOT.parent / "paper" / "planpilot_abstractions" / "icaps27" / "main.tex"
 
 
@@ -130,15 +148,60 @@ def paper_figures(revision):
 
 
 def _htg_runtime_figure(revision):
-    """The paper's HTG runtime figure, a plot per track side by side, each naming its own solvers."""
+    """The paper's HTG runtime figure, a row per track under its name, a plot per planner, and a domain legend."""
     htg = load_tracks(revision, "htg", [])
-    plots = []
-    for index, (kind, name) in enumerate(TRACK_NAMES.items()):
+    domains = sorted({_problem_domain(problem) for problems in htg.values() for problem in problems})
+    colors = {domain: f"domain{index}" for index, domain in enumerate(domains)}
+    color_definitions = "".join(
+        rf"\definecolor{{{colors[domain]}}}{{HTML}}{{{color}}}" + "\n" for domain, color in zip(domains, DOMAIN_COLORS)
+    )
+
+    rows = []
+    for kind, name in TRACK_NAMES.items():
         pairs = PAIRS[kind]
         if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
             pairs += (POWERLIFTED,)
-        plots.append(_runtime_plot(htg[kind], pairs, labelled=index == 0, legend=True, title=name))
-    return _in_row(_joined(plots))
+        pairs = sorted(pairs, key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
+        # Only the left plot of a row numbers its y axis.
+        plots = [_domain_runtime_plot(htg[kind], pair, colors, ticks=index == 0) for index, pair in enumerate(pairs)]
+        title = _in_row(_track_title(name, len(plots)))
+        rows.append(title + "\n\n\\vspace{0.4em}\n" + _in_row(_joined(plots, f"{PAPER_PLOT_GAP}in")))
+
+    # The domains in a grid of LEGEND_COLUMNS columns, centred under the plots.
+    entries = [rf"\tikz[baseline=-0.5ex, color={colors[domain]}]\pgfuseplotmark{{x}};~{domain}" for domain in domains]
+    grid = [" & ".join(entries[start : start + LEGEND_COLUMNS]) for start in range(0, len(entries), LEGEND_COLUMNS)]
+    table = rf"{{\small\begin{{tabular}}{{{'l' * LEGEND_COLUMNS}}}" + " \\\\\n".join(grid) + r"\end{tabular}}"
+    legend = "\n\n\\vspace{0.8em}\n" + _in_row(table)
+    return color_definitions + "\n\n\\vspace{1.2em}\n".join(rows) + legend
+
+
+def _domain_runtime_plot(problems, pair, colors, ticks):
+    """One planner's runtime per problem against its abstraction's, a cross per problem in its domain's color."""
+    solver, label, abstract_label = pair
+    by_domain = defaultdict(list)
+    for problem in problems:
+        by_domain[_problem_domain(problem)].append(problem)
+
+    lines = []
+    for domain, group in sorted(by_domain.items()):
+        points = scatter(group, solver, f"abs-{solver}")
+        # A domain neither mode solves anything in has no point to draw.
+        if points:
+            style = f"only marks, mark=x, mark size=1.4pt, color={colors[domain]}, draw opacity=0.7"
+            lines.append(rf"\addplot[{style}] coordinates {{{points}}};")
+
+    ticks_option = "" if ticks else ", yticklabels={}"
+    return (
+        "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
+        + rf"\begin{{loglogaxis}}[bordered, xlabel={{{label}{{}} time (s)}}, ylabel={{{abstract_label}{{}} time (s)}}{ticks_option}]"
+        + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
+        + "\n".join(lines)
+        + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
+    )
+
+
+def _problem_domain(problem):
+    return htg_domain(next(iter(problem.values()))["domain"])
 
 
 def _ipc_runtime_figure(revision):
@@ -315,6 +378,14 @@ def _titled(title, body, columns):
 
 def _minipage(width, body):
     return f"\\noindent\\begin{{minipage}}{{{width}}}\\centering\n{body}\n\\end{{minipage}}"
+
+
+def htg_domain(domain):
+    """The domain the paper names an HTG problem by, such as organic-synthesis for organic-synthesis-MIT."""
+    collection, _, subdirectory = domain.partition("/")
+    if collection == HTG_COLLECTION:
+        return subdirectory.removesuffix("-large")
+    return HTG_DOMAINS[collection]
 
 
 def cactus(problems, mode):

@@ -5,7 +5,7 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from experiments.figure import DEFAULT_PAPER, SOURCES, load_tracks, paper_figures, render_pdf
+from experiments.figure import DEFAULT_PAPER, SOURCES, htg_domain, load_tracks, paper_figures, render_pdf
 from experiments.report import solved
 
 # The modes each track counts, each planner before its abstraction. A set without a mode's results shows --.
@@ -23,18 +23,6 @@ SUMMARY_TABLES = {"tab:ipc-summary": ("IPC Symmetries", "IPC Resources")}
 HTG_TABLE = "tab:htg"
 # The mode each row of a summary table names, in the order of the track's modes.
 SUMMARY_LABELS = (r"\ASP", r"\ASPa", r"\textsc{FD}", r"\textsc{FD}\textsuperscript{$\alpha$}", r"\PL", r"\PLa")
-# HTG names a domain by the collection it comes from; the paper by the domain.
-HTG_DOMAINS = {
-    "blocksworld-large-simple": "blocksworld",
-    "childsnack-contents": "childsnack",
-    "logistics-large-simple": "logistics",
-    "organic-synthesis-alkene": "organic-synthesis",
-    "organic-synthesis-MIT": "organic-synthesis",
-    "organic-synthesis-original": "organic-synthesis",
-    "pipesworld-tankage-nosplit": "pipesworld-tankage",
-    "rovers-large-simple": "rovers",
-}
-HTG_COLLECTION = "gnad-et-al-aaai19-large-instances"
 
 
 def main():
@@ -80,7 +68,7 @@ def domain_counts(problems, kind, htg=False):
 
     for problem in problems:
         domain = next(iter(problem.values()))["domain"]
-        row = rows[_htg_name(domain) if htg else _short(domain)]
+        row = rows[htg_domain(domain) if htg else _short(domain)]
         row[0] += 1
         for index, mode in enumerate(modes, 1):
             if mode in ran:
@@ -222,13 +210,6 @@ def _bold_best(solved_counts):
 
 def _short(domain):
     return re.sub(r"-(sat|opt)(\d\d)$", r"-\2", domain.removesuffix("-strips"))
-
-
-def _htg_name(domain):
-    collection, _, subdirectory = domain.partition("/")
-    if collection == HTG_COLLECTION:
-        return subdirectory.removesuffix("-large")
-    return HTG_DOMAINS[collection]
 
 
 def _without_year(name):
