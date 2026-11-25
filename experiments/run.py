@@ -30,7 +30,6 @@ MODES = (
     "lmcut",
     "abs-powerlifted",
     "powerlifted",
-    "abs-lmcut-symmetry-pruning",
     "lmcut-symmetry-pruning",
 )
 ABSTRACTION_PREFIX = "abs-"

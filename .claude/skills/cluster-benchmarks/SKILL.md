@@ -126,7 +126,7 @@ python -m experiments.submit --track sat --abstraction-source symmetries
 | track | modes | baseline |
 |---|---|---|
 | `sat` | `asp`, `abs-asp`, `lama`, `abs-lama` | `lama`, Fast Downward's lama-first |
-| `opt` | `asp`, `abs-asp`, `lmcut`, `abs-lmcut`, `lmcut-symmetry-pruning`, `abs-lmcut-symmetry-pruning` | `lmcut`, A* with LM-cut, and `lmcut-symmetry-pruning`, the same with orbit space search |
+| `opt` | `asp`, `abs-asp`, `lmcut`, `abs-lmcut`, `lmcut-symmetry-pruning` | `lmcut`, A* with LM-cut, and `lmcut-symmetry-pruning`, the same with orbit space search |
 | `sat-htg`, `opt-htg` | the sat or opt modes, plus `powerlifted`, `abs-powerlifted` | as sat or opt; Powerlifted runs alternating BFWS, or A* with h^max on opt |
 
 `--abstraction-source resources` collapses resources instead of symmetric objects.

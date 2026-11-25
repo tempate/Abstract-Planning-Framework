@@ -93,8 +93,8 @@ def _argument_parser():
         help="Find an abstract plan with ASP, then refine it with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    # Only abs-asp takes --optimize: lama-first's abstract plan
-    # need not be shortest, and both abs-lmcut modes always refine without gaps.
+    # Neither abs-lama nor abs-lmcut takes --optimize: lama-first's abstract plan
+    # need not be shortest, and abs-lmcut always refines without gaps.
     modes.add_parser(
         "abs-lama",
         parents=[shared, abstract],
@@ -111,12 +111,6 @@ def _argument_parser():
         "abs-powerlifted",
         parents=[shared, abstract, optimize],
         help="Find an abstract plan with Powerlifted, without grounding the abstract task, then refine it with ASP",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    modes.add_parser(
-        "abs-lmcut-symmetry-pruning",
-        parents=[shared, abstract],
-        help="Find an optimal abstract plan with A* and LM-cut, pruning symmetric states, then refine it optimally with ASP",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     return parser
