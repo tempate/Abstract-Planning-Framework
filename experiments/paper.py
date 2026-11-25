@@ -145,9 +145,15 @@ def update_summary(tex, table, sets):
 
 def update_htg_table(tex, counts):
     """Write the HTG table, a row per domain and a total with a block of columns per track, the better of each pair in bold."""
+    domains = {name for track in counts.values() for name in track}
+    for kind, track in counts.items():
+        lacking = sorted(domains - set(track))
+        if lacking:
+            raise SystemExit(f"No {TRACK_NAMES[kind]} HTG results for {', '.join(lacking)}")
+
     tracks = [{**track, "Total": _total(track)} for track in counts.values()]
     rows = {}
-    for name in [*sorted(counts["sat"]), "Total"]:
+    for name in [*sorted(domains), "Total"]:
         rows[name] = []
         for track in tracks:
             count, *solved = track[name]
@@ -159,18 +165,20 @@ def update_htg_table(tex, counts):
     return tex[:start] + _write_rows(tex[start:end], HTG_TABLE, rows) + tex[end:]
 
 
-def _write_rows(text, table, rows, optional=()):
-    """Replace the cells of each row of a table its label names, and stop on a row the table lacks."""
+def _write_rows(text, table, rows):
+    """Replace the cells of each row of a table its label names, and stop on a row either side lacks."""
     lines = text.split("\n")
 
     for index, line in enumerate(lines):
-        label = line.split("&")[0].strip()
+        label, *cells = [cell.strip() for cell in line.split("&")]
         if label in rows:
             lines[index] = " & ".join([label, *rows.pop(label)]) + " \\\\"
+        # A row of numbers opens with its problem count, unlike the table's headers.
+        elif cells and cells[0].isdigit():
+            raise SystemExit(f"No {table} results for the paper's row {label}")
 
-    missing = [label for label in rows if label not in optional]
-    if missing:
-        raise SystemExit(f"The table {table} has no row for {', '.join(missing)}")
+    if rows:
+        raise SystemExit(f"The table {table} has no row for {', '.join(rows)}")
 
     return "\n".join(lines)
 

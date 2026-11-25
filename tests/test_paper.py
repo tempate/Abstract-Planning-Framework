@@ -63,11 +63,14 @@ class PaperTableTests(unittest.TestCase):
         self.assertIn(r"Satisficing & 330 & 88 & \textbf{92} & \textbf{305} & 122 \\", tex)
         self.assertIn(r"Optimal & 363 & \textbf{122} & 120 & \textbf{207} & 132 \\", tex)
 
-    def test_a_track_the_summary_lacks_stops_the_update(self):
-        without_optimal = SUMMARY.replace("Optimal & 1 & 1 & 1 & 1 & 1 \\\\\n", "")
+    def test_a_track_the_summary_lacks_or_the_results_lack_stops_the_update(self):
         tracks = {"sat": [1] * 5 + [None] * 2, "opt": [1] * 5 + [None] * 2}
-        with self.assertRaises(SystemExit):
-            update_summary(without_optimal, "tab:ipc-summary", {"Resources": tracks})
+        for summary, results in (
+            (SUMMARY.replace("Optimal & 1 & 1 & 1 & 1 & 1 \\\\\n", ""), tracks),
+            (SUMMARY, {"sat": tracks["sat"]}),
+        ):
+            with self.subTest(results=sorted(results)), self.assertRaises(SystemExit):
+                update_summary(summary, "tab:ipc-summary", {"Resources": results})
 
     def test_the_htg_table_gives_each_domain_and_the_total_a_row_with_a_block_per_track(self):
         counts = {
@@ -82,8 +85,17 @@ class PaperTableTests(unittest.TestCase):
         self.assertIn(rf"rovers & {sat} & {opt} \\", tex)
         self.assertIn(r"Total & 75 & 19 & \textbf{25} & 22 & \textbf{50} & 55 & \textbf{58} & 50 &", tex)
 
-        with self.assertRaises(SystemExit):
-            update_htg_table(HTG.replace("rovers", "tpp"), counts)
+    def test_an_htg_domain_one_side_lacks_stops_the_update(self):
+        row = [1, 0, 0, 0, 0, 0, 0]
+        both = {"sat": {"blocksworld": row, "rovers": row}, "opt": {"blocksworld": row, "rovers": row}}
+        cases = {
+            "the paper": (HTG.replace("rovers &", "tpp &"), both),
+            "the results": (HTG, {"sat": {"blocksworld": row}, "opt": {"blocksworld": row}}),
+            "one track": (HTG, {"sat": both["sat"], "opt": {"blocksworld": row}}),
+        }
+        for lacking, (paper, counts) in cases.items():
+            with self.subTest(lacking=lacking), self.assertRaises(SystemExit):
+                update_htg_table(paper, counts)
 
     def test_an_htg_problem_is_counted_under_the_domain_the_paper_names(self):
         names = {
