@@ -164,7 +164,7 @@ def _htg_runtime_figure(revision):
         pairs = sorted(pairs, key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
         # Only the left plot of a row numbers its y axis.
         plots = [_domain_runtime_plot(htg[kind], pair, colors, ticks=index == 0) for index, pair in enumerate(pairs)]
-        title = _in_row(_track_title(name, len(plots)))
+        title = _in_row(rf"\small {name}")
         rows.append(title + "\n\n\\vspace{0.4em}\n" + _in_row(_joined(plots, f"{PAPER_PLOT_GAP}in")))
 
     # The domains in a grid of LEGEND_COLUMNS columns, centred under the plots.
