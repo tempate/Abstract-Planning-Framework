@@ -66,7 +66,7 @@ class CollectTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
             self._write_result(first, "asp")
             self._write_result(first, "abs-asp", status="timeout")
-            _write_manifest([("abs-asp", "example", Path("d.pddl"), Path("p01.pddl"), 0)], results_dir=first)
+            _write_manifest([("abs-asp", "example", Path("d.pddl"), Path("p01.pddl"), None)], results_dir=first)
             self._write_result(second, "abs-asp")
             _write_manifest([("lama", "example", Path("d.pddl"), Path("p01.pddl"), None)], results_dir=second)
 
@@ -89,7 +89,7 @@ class CollectTests(unittest.TestCase):
             with self.subTest(completed=completed), tempfile.TemporaryDirectory() as directory:
                 problem = Path("p01.pddl")
                 tasks = [
-                    ("abs-asp", "example", Path("domain.pddl"), problem, 0),
+                    ("abs-asp", "example", Path("domain.pddl"), problem, None),
                     ("asp", "example", Path("domain.pddl"), problem, None),
                 ]
                 _write_manifest(tasks, directory)
@@ -165,11 +165,11 @@ class CollectedCsvTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             csv_file = self._write_csv(directory, [("example", "p01.pddl", "abs-asp", "success")])
             collected = self._collected([("example", "p01.pddl", "abs-asp", "timed out")])
-            collected[0]["class"] = "1"
+            collected[0]["class"] = "item-2-0a1b2c"
 
             preserved = _preserved_rows(collected, csv_file)
 
-        self.assertEqual([(row["mode"], row["class"]) for row in preserved], [("abs-asp", "0")])
+        self.assertEqual([(row["mode"], row["class"]) for row in preserved], [("abs-asp", "")])
 
     def test_re_running_one_class_drops_the_classes_it_skipped(self):
         """A best-class run measures newer code, so the other classes' rows no longer describe it."""

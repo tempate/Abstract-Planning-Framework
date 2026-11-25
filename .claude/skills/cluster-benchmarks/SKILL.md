@@ -143,8 +143,11 @@ Daniel picks the partition when a run goes elsewhere, and broadwell rows count a
 publish. It spans two CPU generations and caps each job at one hour.
 
 An abstract mode runs, by default, the class it did best with in the track's
-`results.csv`, plus every class `classes.txt` lists for a problem without a result.
-`--classes all` runs every class.
+`results.csv`, plus every class `classes.txt` lists for a problem without a result
+or whose best class it no longer lists. `--classes all` runs every class. A class
+goes by an ID made of its type, size and objects, such as `room-8-a41c9e`, in
+`classes.txt`, the results and `best_classes.csv`, so a rescan never renames one.
+A job detects its classes itself and fails when its ID is not among them.
 
 To submit a subset, name it:
 
@@ -256,7 +259,7 @@ detached checkout of the producing commit and copy the CSVs to the branch tip.
 Collect replaces a row where the run holds its (domain, problem, mode, class). When
 the run re-ran a class the CSV already holds, it also drops the other classes of that
 problem and mode, since they measure older code. A run that only adds classes, as
-`--from-rank` does with `--classes all`, leaves the earlier rows alone. A job that never reported leaves
+`--skip-manifests` does with `--classes all`, leaves the earlier rows alone. A job that never reported leaves
 every row alone, its own included. Problems the run did
 not touch keep their rows. For the PR's numbers, keep only the
 abstract rows the run's manifest lists, and compare against the base on the same

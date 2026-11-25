@@ -20,7 +20,7 @@ from experiments.run import (
     MODES,
     PROJECT_ROOT,
     RESULTS_DIR,
-    class_rank,
+    class_key,
 )
 from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
 from experiments.tracks import DEFAULT_TRACK, TRACKS, is_domain_file
@@ -42,15 +42,12 @@ def main():
     # Each of these combinations would run, but one of its flags would change nothing.
     if args.best_class_of and args.classes == "all":
         parser.error("--best-class-of picks one class per problem, so it cannot run with --classes all")
-    if args.from_rank and args.classes == "best":
-        parser.error("--from-rank applies only with --classes all; --classes best runs each problem's best class")
     retry_ignores = [
         flag
         for flag, value in (
             ("--modes", args.modes),
             ("--domains", args.domains),
             ("--problems", args.problems),
-            ("--from-rank", args.from_rank),
             ("--best-class-of", args.best_class_of),
             ("--classes all", args.classes == "all"),
         )
@@ -62,8 +59,8 @@ def main():
     if args.retry_missing:
         # Exactly what the earlier run never got back, on its track and with the classes it submitted.
         track_name, missing = _missing_results(args.retry_missing)
-        modes = sorted({mode for _domain, _problem, mode, _rank in missing})
-        domains = sorted({domain for domain, _problem, _mode, _rank in missing})
+        modes = sorted({mode for _domain, _problem, mode, _class in missing})
+        domains = sorted({domain for domain, _problem, _mode, _class in missing})
         best = None
     else:
         track_name, missing = _track_name(args, parser), None
@@ -84,8 +81,7 @@ def main():
             modes=modes,
             domains=domains,
             problems=args.problems,
-            class_counts=track.class_counts(),
-            from_rank=args.from_rank,
+            class_ids=track.class_ids(),
             best=best,
             best_of=args.best_class_of,
             ungroundable=ungroundable(track_name) if args.groundable else None,
@@ -145,8 +141,8 @@ def _only(tasks, missing):
 
 
 def _task_key(task):
-    mode, domain_name, _domain, problem, rank = task
-    return domain_name, problem.name, mode, class_rank(mode, rank)
+    mode, domain_name, _domain, problem, class_id = task
+    return domain_name, problem.name, mode, class_key(mode, class_id)
 
 
 def _not_submitted(tasks, manifests):
@@ -220,8 +216,8 @@ def _set_aside_results_dir(results_dir=RESULTS_DIR):
 def _write_manifest(tasks, results_dir=RESULTS_DIR, track=DEFAULT_TRACK):
     """Record every result expected from a submitted benchmark run, and the code that runs it."""
     expected_results = [
-        {"domain": domain_name, "problem": problem.name, "mode": mode, "class": rank}
-        for mode, domain_name, _domain, problem, rank in tasks
+        {"domain": domain_name, "problem": problem.name, "mode": mode, "class": class_id}
+        for mode, domain_name, _domain, problem, class_id in tasks
     ]
 
     manifest = {"version": 1, "track": track, "commit": _head_commit(), "expected_results": expected_results}
@@ -258,12 +254,6 @@ def _argument_parser():
     )
     parser.add_argument(
         "--problems", nargs="+", help="Submit only these problem files, named p01.pddl or p01, within each domain"
-    )
-    parser.add_argument(
-        "--from-rank",
-        type=int,
-        default=0,
-        help="Run abstract modes only on the classes from this rank down, to skip those already collected",
     )
     parser.add_argument(
         "--skip-manifests",
@@ -335,14 +325,15 @@ def _write_copperbench_config(
         "$timeout",
         "--track",
         track,
-        "--class-rank",
+        "--class-id",
         "$5",
     ]
     configs_file.write_text(shlex.join(worker) + "\n", encoding="utf-8")
 
     instances = []
-    for mode, domain_name, domain, problem, rank in tasks:
-        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()} {rank or 0}")
+    # An empty fifth field leaves the job its largest class.
+    for mode, domain_name, domain, problem, class_id in tasks:
+        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()} {class_id or ''}")
     instances_file.write_text("\n".join(instances) + "\n", encoding="utf-8")
 
     config = {
@@ -367,17 +358,17 @@ def _benchmark_tasks(
     modes=("abs-asp",),
     domains=None,
     problems=None,
-    class_counts=None,
-    from_rank=0,
+    class_ids=None,
     best=None,
     best_of=None,
     ungroundable=None,
 ):
-    """One task per concrete mode and problem, and per abstract mode, problem and class rank.
+    """One task per concrete mode and problem, and per abstract mode, problem and class ID.
 
-    Without class counts, or for a problem they do not list, an abstract mode
+    Without class IDs, or for a problem they do not list, an abstract mode
     collapses the largest class only. With the best class of each abstract mode
-    and problem, it runs that one class instead, and every class where none is known.
+    and problem, it runs that one class instead, and every class where none is
+    known or the best is no longer listed.
     best_of looks the best class up under that mode instead of each mode's own,
     and skips the problem where that mode has none.
     Concrete modes skip the problems listed as ungroundable.
@@ -405,15 +396,15 @@ def _benchmark_tasks(
                         yield mode, domain_name, domain, problem, None
                     continue
 
-                count = 1 if class_counts is None else class_counts.get((domain_name, problem.name), 1)
-                ranks = range(from_rank, count)
-                best_key = (domain_name, problem.name, best_of or mode)
-                if best is not None and best_key in best:
-                    ranks = [best[best_key]]
+                listed = (class_ids or {}).get((domain_name, problem.name)) or [None]
+                chosen = listed
+                best_id = (best or {}).get((domain_name, problem.name, best_of or mode))
+                if best_id in listed:
+                    chosen = [best_id]
                 elif best_of is not None:
-                    ranks = []
-                for rank in ranks:
-                    yield mode, domain_name, domain, problem, rank
+                    chosen = []
+                for class_id in chosen:
+                    yield mode, domain_name, domain, problem, class_id
 
 
 if __name__ == "__main__":

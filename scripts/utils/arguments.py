@@ -35,10 +35,8 @@ def abstraction_arguments():
         help="Where the collapsed class comes from",
     )
     parser.add_argument(
-        "--class-rank",
-        type=int,
-        default=0,
-        help="Collapse the candidate class at this rank, counting from the largest (0)",
+        "--class-id",
+        help="Collapse the candidate class with this ID, as classes.txt lists it; omit to collapse the largest",
     )
     return parser
 
@@ -71,7 +69,7 @@ def abstract_planning_config(args):
         optimize=optimize,
         objects_to_abstract=args.objects_to_abstract,
         abstraction_source=args.abstraction_source,
-        class_rank=args.class_rank,
+        class_id=args.class_id,
     )
 
 

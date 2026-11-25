@@ -11,11 +11,13 @@ from core.pipeline.abstraction.abstract_task import (
     AbstractionError,
     NoSymmetriesError,
     _select_abstraction,
+    collapsible_classes,
     build_abstract_task,
 )
 from core.integrations.numeric_fast_downward import ResourceVariable
 from core.utilities.outcomes import NoResourcesError
 from core.utilities.outcomes import IntegrationError, OutOfMemoryError, SymmetryTimeoutError, UnsolvableTaskError
+from core.utilities.classes import class_id
 from core.utilities.config import AbstractPlanningConfig
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -110,20 +112,29 @@ class SymmetrySelectionTests(unittest.TestCase):
 
         self.assertEqual(set(selected.objects), {"gadget1", "gadget2", "gadget3"})
 
-    def test_a_rank_past_the_largest_takes_the_next_class_down(self):
+    def test_an_id_selects_its_class_whatever_order_the_classes_arrive_in(self):
         source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
         classes = [["item1", "item2"], ["gadget1", "gadget2", "gadget3"]]
+        items = next(found for found in collapsible_classes(source, classes) if "item1" in found.objects)
 
-        self.assertEqual(set(_select_abstraction(source, classes, rank=1).objects), {"item1", "item2"})
-        with self.assertRaisesRegex(AbstractionError, "No class at rank 2"):
-            _select_abstraction(source, classes, rank=2)
+        for arrived in (classes, list(reversed(classes))):
+            with self.subTest(first=arrived[0][0]):
+                self.assertEqual(set(_select_abstraction(source, arrived, items.id).objects), {"item1", "item2"})
 
-    def test_a_class_listed_twice_takes_one_rank(self):
+    def test_an_id_no_detected_class_has_stops_the_run(self):
         source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
-        classes = [["item1", "item2"], ["item2", "item1"]]
 
-        with self.assertRaisesRegex(AbstractionError, "No class at rank 1"):
-            _select_abstraction(source, classes, rank=1)
+        with self.assertRaisesRegex(AbstractionError, "No class item-5-abcdef"):
+            _select_abstraction(source, [["item1", "item2"]], "item-5-abcdef")
+
+    def test_a_class_listed_twice_is_one_class(self):
+        source = parse_problem(ORDERING_DOMAIN, ORDERING_PROBLEM)
+
+        self.assertEqual(len(collapsible_classes(source, [["item1", "item2"], ["item2", "item1"]])), 1)
+
+    def test_a_class_id_names_its_objects_not_their_order(self):
+        self.assertEqual(class_id("item", ["item2", "item1"]), class_id("item", ["item1", "item2"]))
+        self.assertNotEqual(class_id("item", ["item1", "item2"]), class_id("item", ["item1", "item3"]))
 
     def test_a_tie_is_settled_the_same_way_whatever_order_the_classes_arrive_in(self):
         # PDDL Symmetries prints its classes in a hash-dependent order, so a tie

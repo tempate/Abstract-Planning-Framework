@@ -1,17 +1,17 @@
 """Find the problems of a track that have a class to collapse, or every class they have.
 
 By default, run the track's detection on every problem of its suite and list the
-problems with a class in problems.txt, which submit runs. With --classes, rank
-every class the problems of problems.txt can collapse, largest first, in
-classes.txt, which submit runs each abstract mode once per line of. A run ranks
-its classes itself, from the same detection and the same ordering, so the file
-records what each rank collapses rather than telling the run.
+problems with a class in problems.txt, which submit runs. With --classes, list
+every class the problems of problems.txt can collapse in classes.txt, each under
+an ID made of its type, size and objects, which submit runs each abstract mode
+once per line of. A run detects its classes itself and collapses the one with
+its ID, so a rescan that finds other classes cannot hand it another one.
 
 Every problem is scanned in a child process, which a time and memory limit can
 stop, and logged as it finishes, so a stopped scan resumes where it left off.
 
 With --submit, the scan runs on the cluster instead, as one Slurm task per
-problem of the suite, each ranking that problem's classes. --collect then writes
+problem of the suite, each listing that problem's classes. --collect then writes
 both problems.txt and classes.txt from what the tasks found.
 """
 
@@ -23,13 +23,14 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+from core.utilities.classes import class_id
 from experiments import slurm
 from experiments.run import RESULTS_DIR
 from experiments.tracks import TRACKS, is_domain_file
 from scripts.utils.arguments import find_domain
 
 WORKERS = 1
-# Detection gets 300 seconds; reading and ranking the classes needs the rest.
+# Detection gets 300 seconds; reading and listing the classes needs the rest.
 TIMEOUT = 600
 MEMORY_LIMIT = 8 * 1024**3
 # A submitted task holds the child under MEMORY_LIMIT and the Python that waits on it.
@@ -42,7 +43,7 @@ PROBLEMS_HEADER = """# Problems with a class to collapse.
 # Regenerate with:
 #   python -m experiments.scan --track {track}
 """
-CLASSES_HEADER = """# Every class each problem can collapse, largest first: problem, rank, type, size, objects.
+CLASSES_HEADER = """# Every class each problem can collapse: problem, ID, type, size, objects.
 # Regenerate with:
 #   python -m experiments.scan --track {track} --classes
 """
@@ -64,7 +65,7 @@ print(f"{len(classes)} classes" if classes else "none")
 RANK = """
 import json, sys
 from core.pipeline.abstraction.collapse import validate_supported_problem
-from core.pipeline.abstraction.abstract_task import AbstractionError, _candidate_classes, _select_abstraction
+from core.pipeline.abstraction.abstract_task import _candidate_classes, collapsible_classes
 from core.integrations.unified_planning import read_problem, without_action_costs
 from core.utilities.metrics import PlanningMetrics
 from core.utilities.config import AbstractPlanningConfig
@@ -74,14 +75,8 @@ config = AbstractPlanningConfig(domain, problem, abstraction_source=source)
 task = without_action_costs(read_problem(domain, problem))
 validate_supported_problem(task)
 classes = _candidate_classes(config, PlanningMetrics())
-ranked = []
-while True:
-    try:
-        abstraction = _select_abstraction(task, classes, rank=len(ranked))
-    except AbstractionError:
-        break
-    ranked.append([abstraction.object_type, list(abstraction.objects)])
-print(json.dumps(ranked))
+found = [[abstraction.object_type, list(abstraction.objects)] for abstraction in collapsible_classes(task, classes)]
+print(json.dumps(found))
 """
 
 
@@ -124,7 +119,7 @@ def main():
 
 
 def _submit(track_name, track, domains, keep_classes=False):
-    """Submit one Slurm task per problem of the suite, each ranking the problem's classes."""
+    """Submit one Slurm task per problem of the suite, each listing the problem's classes."""
     suite = track.suite
     if domains:
         unknown = sorted(set(domains) - set(suite))
@@ -159,12 +154,12 @@ def _submit(track_name, track, domains, keep_classes=False):
 
 
 def _scan_task(track_name, track, index, source, timeout):
-    def rank(name):
+    def list_classes(name):
         domain_name, _, problem = name.rpartition("/")
         _, outcome = _scan(track.benchmarks_dir, domain_name, problem, RANK, source, timeout)
         return outcome
 
-    slurm.run_task(_task_dir(track_name), index, rank)
+    slurm.run_task(_task_dir(track_name), index, list_classes)
 
 
 def _collect(track_name, track):
@@ -181,7 +176,7 @@ def _collect(track_name, track):
                 if name in suite:
                     scanned.setdefault(name, outcome)
 
-    # A ranking that found no class lists none, which problems.txt leaves out.
+    # A scan that found no class lists none, which problems.txt leaves out.
     found = {name: "none" if outcome == "[]" else outcome for name, outcome in scanned.items()}
     _write_problems(track.runnable_file, found, track_name)
     _write_classes(track.classes_file, scanned, track_name)
@@ -256,8 +251,11 @@ def _write_classes(path, scanned, track):
     for name in sorted(scanned):
         if scanned[name].startswith("failed"):
             continue
-        for rank, (object_type, objects) in enumerate(json.loads(scanned[name])):
-            lines.append(f"{name}\t{rank}\t{object_type}\t{len(objects)}\t{' '.join(objects)}\n")
+        found = json.loads(scanned[name])
+        for object_type, objects in sorted(found, key=lambda found_class: class_id(*found_class)):
+            lines.append(
+                f"{name}\t{class_id(object_type, objects)}\t{object_type}\t{len(objects)}\t{' '.join(objects)}\n"
+            )
 
     path.write_text(CLASSES_HEADER.format(track=track) + "".join(lines), encoding="utf-8")
 

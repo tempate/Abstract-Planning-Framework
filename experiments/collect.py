@@ -8,7 +8,7 @@ import re
 from pathlib import Path
 
 from core.utilities.metrics import COUNTER_LABELS, DURATION_LABELS
-from experiments.run import MANIFEST_NAME, MODES, RESULTS_DIR, _human_status, class_rank
+from experiments.run import MANIFEST_NAME, MODES, RESULTS_DIR, _human_status, class_key
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
 DURATION_FIELDS = tuple(f"{name}_seconds" for name in DURATION_LABELS)
@@ -58,10 +58,10 @@ def collect(*results_dirs):
     keys.update(results)
 
     rows = []
-    for domain, problem, mode, rank in sorted(keys):
-        result = results.get((domain, problem, mode, rank))
+    for domain, problem, mode, class_id in sorted(keys):
+        result = results.get((domain, problem, mode, class_id))
         values = _missing_values() if result is None else _values(result)
-        rows.append({**values, "domain": domain, "problem": problem, "mode": mode, "class": rank})
+        rows.append({**values, "domain": domain, "problem": problem, "mode": mode, "class": class_id})
 
     return rows
 
@@ -119,7 +119,7 @@ def _error_message(result):
 
 
 def result_key(row):
-    return (row["domain"], row["problem"], row["mode"], class_rank(row["mode"], row.get("class")))
+    return (row["domain"], row["problem"], row["mode"], class_key(row["mode"], row.get("class")))
 
 
 def _preserved_rows(collected, csv_file):
@@ -133,7 +133,7 @@ def _preserved_rows(collected, csv_file):
 
     # A run that re-ran a class the CSV holds ran newer code on that problem, so
     # the classes it skipped measure code that no longer exists. A run that only
-    # adds classes, as --from-rank does, leaves the earlier ones alone, and a job
+    # adds classes, as --skip-manifests does, leaves the earlier ones alone, and a job
     # that never reported leaves every row alone, its own included.
     finished = {result_key(row) for row in collected if row["status"] != "missing"}
     replaced = {key[:3] for key in finished & {result_key(row) for row in rows}}

@@ -1,6 +1,6 @@
 """The benchmark tracks: the problems each one runs, and where the results go."""
 
-from collections import Counter
+from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -50,18 +50,19 @@ class Track:
     def classes_file(self):
         return self.directory / "classes.txt"
 
-    def class_counts(self):
-        """How many classes each problem can collapse, as classes.txt lists them, or None without one."""
+    def class_ids(self):
+        """The ID of every class each problem can collapse, as classes.txt lists them, or None without one."""
         if not self.classes_file.is_file():
             return None
 
-        counts = Counter()
+        ids = defaultdict(list)
         for line in self.classes_file.read_text(encoding="utf-8").splitlines():
             if line.strip() and not line.startswith("#"):
-                domain, _, problem = line.split("\t")[0].rpartition("/")
-                counts[(domain, problem)] += 1
+                name, class_id = line.split("\t")[:2]
+                domain, _, problem = name.rpartition("/")
+                ids[(domain, problem)].append(class_id)
 
-        return counts
+        return dict(ids)
 
     def runnable(self):
         """The (domain, problem) pairs worth submitting: those the runnable file lists."""

@@ -147,7 +147,7 @@ def select(rows, kind, source, manifests):
         for entry in manifest["expected_results"]:
             if entry["mode"].startswith(ABSTRACTION_PREFIX):
                 submitted.add(result_key(entry))
-    filtered_modes = {mode for _domain, _problem, mode, _rank in submitted}
+    filtered_modes = {mode for _domain, _problem, mode, _class in submitted}
 
     selected = []
     for row in rows:

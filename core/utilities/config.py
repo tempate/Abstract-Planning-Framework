@@ -35,7 +35,7 @@ class AbstractPlanningConfig(PlanningConfig):
 
     objects_to_abstract: Sequence[str] | None = None
     abstraction_source: str = SYMMETRIES
-    class_rank: int = 0
+    class_id: str | None = None
 
     def __post_init__(self):
         if self.objects_to_abstract is not None:
