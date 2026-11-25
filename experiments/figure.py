@@ -43,13 +43,15 @@ ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
 # The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled.
-HTG_PLOT_SIZE = 0.92
+HTG_PLOT_SIZE = 1.2
 # The IPC figures' plots, drawn at the size they print, as main.tex includes them unscaled.
 IPC_PLOT_SIZE = 1.05
 # Every plot colored by domain numbers and labels its own y axis, which sit in the gap before it, in inches.
 DOMAIN_PLOT_GAP = 0.5
 # The IPC figures' legends, in lines of this many domains to fit a column.
 IPC_LEGEND_COLUMNS = 3
+# The HTG figure's ten domains in two rows under its plots.
+HTG_LEGEND_COLUMNS = 5
 # The order of every runtime figure's plots, as in the tables.
 PLANNER_ORDER = ("asp", "lama", "lama-symmetry-pruning", "lmcut", "lmcut-symmetry-pruning", "powerlifted")
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
@@ -231,10 +233,9 @@ def _htg_runtime_figure(revision):
         )
     plot_table = "\\begin{tabular}[c]{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
 
-    # The domains in one column to the right of the plots, where the page has room to spare.
+    # The domains in rows under the plots.
     entries = [_legend_entry(DOMAIN_COLORS[domain], domain) for domain in domains]
-    legend = r"{\small\begin{tabular}[c]{@{}l@{}}" + " \\\\\n".join(entries) + r"\end{tabular}}"
-    return "\\noindent\\makebox[\\linewidth][c]{%\n" + plot_table + "%\n\\hspace{1.5em}%\n" + legend + "}"
+    return _with_legend_below(plot_table, entries, HTG_LEGEND_COLUMNS)
 
 
 def _ipc_sources(revision):
@@ -265,14 +266,13 @@ def _ipc_runtime_figure(tracks, colors):
     # The domains this source has under the plots, the grey of the other domains last.
     present = {domain_of(problem) for problems in tracks.values() for problem in problems}
     entries = [_legend_entry(color, domain) for domain, color in colors.items() if domain in present]
-    lines = [
-        " & ".join(entries[start : start + IPC_LEGEND_COLUMNS]) for start in range(0, len(entries), IPC_LEGEND_COLUMNS)
-    ]
-    legend = (
-        rf"{{\small\begin{{tabular}}{{@{{}}{'l' * IPC_LEGEND_COLUMNS}@{{}}}}"
-        + " \\\\\n".join(lines)
-        + r"\end{tabular}}"
-    )
+    return _with_legend_below(plot_table, entries, IPC_LEGEND_COLUMNS)
+
+
+def _with_legend_below(plot_table, entries, columns):
+    """The plots centred, then the legend entries in rows of so many columns under them."""
+    lines = [" & ".join(entries[start : start + columns]) for start in range(0, len(entries), columns)]
+    legend = rf"{{\small\begin{{tabular}}{{@{{}}{'l' * columns}@{{}}}}" + " \\\\\n".join(lines) + r"\end{tabular}}"
     return "\\noindent\\makebox[\\linewidth][c]{%\n" + plot_table + "}" + "\n\n\\vspace{0.8em}\n" + _in_row(legend)
 
 
