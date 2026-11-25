@@ -43,8 +43,20 @@ PAPER_PLOT_GAP = 0.3
 HTG_PLOT_SIZE = 1.25
 # The order of the HTG figure's plots, as in the tables.
 HTG_PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
-# The colors of the HTG figure's domains, in the order of their names, from Tableau 10.
-DOMAIN_COLORS = ("4E79A7", "F28E2B", "E15759", "76B7B2", "59A14F", "EDC948", "B07AA1", "FF9DA7", "9C755F", "BAB0AC")
+# Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
+# palettes at the size of a cross. A domain both papers show keeps its color there, and tpp takes a tenth color.
+DOMAIN_COLORS = {
+    "agricola": "black",
+    "blocksworld": "blue",
+    "childsnack": "purple",
+    "depots": "olive",
+    "logistics": "brown",
+    "organic-synthesis": "cyan",
+    "pipesworld-tankage": "orange",
+    "rovers": "teal",
+    "satellite": "violet",
+    "tpp": "green!60!black",
+}
 # HTG names a domain by the collection it comes from; the paper by the domain.
 HTG_DOMAINS = {
     "blocksworld-large-simple": "blocksworld",
@@ -154,10 +166,6 @@ def _htg_runtime_figure(revision):
     """The paper's HTG runtime figure, a row per track under its name, a plot per planner, and a domain legend."""
     htg = load_tracks(revision, "htg", [])
     domains = sorted({_problem_domain(problem) for problems in htg.values() for problem in problems})
-    colors = {domain: f"domain{index}" for index, domain in enumerate(domains)}
-    color_definitions = "".join(
-        rf"\definecolor{{{colors[domain]}}}{{HTML}}{{{color}}}" + "\n" for domain, color in zip(domains, DOMAIN_COLORS)
-    )
 
     # Each row a cell of one table, its title over its plots, with room on the left for the y label.
     rows = []
@@ -167,7 +175,7 @@ def _htg_runtime_figure(revision):
             pairs += (POWERLIFTED,)
         pairs = sorted(pairs, key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
         # Only the left plot of a row numbers its y axis.
-        plots = [_domain_runtime_plot(htg[kind], pair, colors, ticks=index == 0) for index, pair in enumerate(pairs)]
+        plots = [_domain_runtime_plot(htg[kind], pair, ticks=index == 0) for index, pair in enumerate(pairs)]
         rows.append(
             rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
             + "\n\\hspace*{0.42in}"
@@ -176,19 +184,14 @@ def _htg_runtime_figure(revision):
     plot_table = "\\begin{tabular}[c]{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
 
     # The domains in one column to the right of the plots, where the page has room to spare.
-    entries = [rf"\tikz[baseline=-0.5ex, color={colors[domain]}]\pgfuseplotmark{{x}};~{domain}" for domain in domains]
+    entries = [
+        rf"\tikz[baseline=-0.5ex, color={DOMAIN_COLORS[domain]}]\pgfuseplotmark{{x}};~{domain}" for domain in domains
+    ]
     legend = r"{\small\begin{tabular}[c]{@{}l@{}}" + " \\\\\n".join(entries) + r"\end{tabular}}"
-    return (
-        color_definitions
-        + "\\noindent\\makebox[\\linewidth][c]{%\n"
-        + plot_table
-        + "%\n\\hspace{1.5em}%\n"
-        + legend
-        + "}"
-    )
+    return "\\noindent\\makebox[\\linewidth][c]{%\n" + plot_table + "%\n\\hspace{1.5em}%\n" + legend + "}"
 
 
-def _domain_runtime_plot(problems, pair, colors, ticks):
+def _domain_runtime_plot(problems, pair, ticks):
     """One planner's runtime per problem against its abstraction's, a cross per problem in its domain's color."""
     solver, label, abstract_label = pair
     by_domain = defaultdict(list)
@@ -200,7 +203,7 @@ def _domain_runtime_plot(problems, pair, colors, ticks):
         points = scatter(group, solver, f"abs-{solver}")
         # A domain neither mode solves anything in has no point to draw.
         if points:
-            style = f"only marks, mark=x, mark size=1.4pt, color={colors[domain]}, draw opacity=0.7"
+            style = f"only marks, mark=x, mark size=1.4pt, color={DOMAIN_COLORS[domain]}"
             lines.append(rf"\addplot[{style}] coordinates {{{points}}};")
 
     # The paper's footnote size for the numbers and a size above it for the labels.
