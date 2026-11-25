@@ -18,6 +18,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RESULTS_DIR = PROJECT_ROOT / "runs"
 DEFAULT_TIMEOUT = 30 * 60
 MANIFEST_NAME = "manifest.json"
+# The class a job collapses when none is named, which no class ID can be.
+LARGEST_CLASS = "largest"
 # Every way one problem gets solved, in the order a report reads them. A mode
 # names the solver that finds the plan, or through an abstraction the abstract
 # plan, which ASP then refines.
@@ -45,7 +47,7 @@ def main():
         args.problem,
         timeout=args.timeout,
         track=args.track,
-        class_id=args.class_id or None,
+        class_id=None if args.class_id in (None, "", LARGEST_CLASS) else args.class_id,
     )
 
     print(f"{args.domain_name}/{args.problem.name}: {args.mode} {_human_status(result)}", flush=True)
@@ -84,7 +86,7 @@ def _run_task(
     mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK, class_id=None
 ):
     abstract = mode.startswith(ABSTRACTION_PREFIX)
-    name = f"{mode}-{class_id or 'largest'}" if abstract else mode
+    name = f"{mode}-{class_id or LARGEST_CLASS}" if abstract else mode
     result_file = Path(results_dir) / domain_name / problem.stem / f"{name}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
 

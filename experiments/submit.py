@@ -16,6 +16,7 @@ from experiments.report import best_classes
 from experiments.run import (
     ABSTRACTION_PREFIX,
     DEFAULT_TIMEOUT,
+    LARGEST_CLASS,
     MANIFEST_NAME,
     MODES,
     PROJECT_ROOT,
@@ -331,9 +332,9 @@ def _write_copperbench_config(
     configs_file.write_text(shlex.join(worker) + "\n", encoding="utf-8")
 
     instances = []
-    # An empty fifth field leaves the job its largest class.
+    # CopperBench refuses an instance without every field the worker names, so a job left its largest class names it.
     for mode, domain_name, domain, problem, class_id in tasks:
-        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()} {class_id or ''}")
+        instances.append(f"{mode} {domain_name} {domain.resolve()} {problem.resolve()} {class_id or LARGEST_CLASS}")
     instances_file.write_text("\n".join(instances) + "\n", encoding="utf-8")
 
     config = {
