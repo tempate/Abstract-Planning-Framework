@@ -43,8 +43,8 @@ HTG_PLOT_SIZE = 1.25
 IPC_PLOT_SIZE = 1.15
 # Every plot colored by domain numbers and labels its own y axis, which sit in the gap before it, in inches.
 DOMAIN_PLOT_GAP = 0.5
-# The wider gap between the IPC figure's sources, in inches.
-IPC_SOURCE_GAP = 0.8
+# The wider gap between the IPC figure's tracks, in inches.
+IPC_TRACK_GAP = 0.6
 # The order of the HTG figure's plots, as in the tables.
 HTG_PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
@@ -216,30 +216,31 @@ def _htg_runtime_figure(revision):
 
 
 def _ipc_runtime_figure(revision):
-    """The paper's IPC runtime figure, a row per track under its name, a pair of plots per source, and a domain legend."""
-    # The sources name their pairs of plots once, over the top row.
+    """The paper's IPC runtime figure, a row per source named down its right side, a pair of plots per track under its
+    name, and a domain legend."""
+    tracks = {kind: load_tracks(revision, kind, []) for kind in TRACK_NAMES}
+    pairs = {kind: sorted(PAIRS[kind], key=lambda pair: HTG_PLANNER_ORDER.index(pair[0])) for kind in TRACK_NAMES}
+
+    # The tracks name their pairs of plots once, over the top row.
     pair_width = rf"\dimexpr2\plotsize+{DOMAIN_PLOT_GAP}in\relax"
-    sources = [rf"\makebox[{pair_width}]{{\small {title}}}" for title in SOURCES.values()]
-    lines = [r"\hspace*{0.42in}" + f"\\hspace{{{IPC_SOURCE_GAP}in}}".join(sources) + r" \\[0.8em]"]
+    titles = [rf"\makebox[{pair_width}]{{\small {name}}}" for name in TRACK_NAMES.values()]
+    header = r"\hspace*{0.42in}" + f"\\hspace{{{IPC_TRACK_GAP}in}}".join(titles) + r" \\[0.4em]"
 
     rows = []
-    for kind, name in TRACK_NAMES.items():
-        tracks = load_tracks(revision, kind, [])
-        pairs = sorted(PAIRS[kind], key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
+    for source, name in SOURCES.items():
         groups = []
-        for source in SOURCES:
-            plots = [
-                _domain_runtime_plot(tracks[source], pair, _ipc_problem_domain, IPC_DOMAIN_COLORS) for pair in pairs
-            ]
+        for kind in TRACK_NAMES:
+            plots = []
+            for pair in pairs[kind]:
+                # The last plot of the row names its source down its right side.
+                last = kind == list(TRACK_NAMES)[-1] and pair == pairs[kind][-1]
+                plot = _domain_runtime_plot(
+                    tracks[kind][source], pair, _ipc_problem_domain, IPC_DOMAIN_COLORS, side_label=name if last else ""
+                )
+                plots.append(plot)
             groups.append(_joined(plots, f"{DOMAIN_PLOT_GAP}in"))
-        rows.append(
-            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
-            + "\n\\hspace*{0.42in}"
-            + _joined(groups, f"{IPC_SOURCE_GAP}in")
-        )
-    plot_table = (
-        "\\begin{tabular}{@{}c@{}}\n" + "\n".join(lines) + "\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
-    )
+        rows.append(r"\hspace*{0.42in}" + _joined(groups, f"{IPC_TRACK_GAP}in"))
+    plot_table = "\\begin{tabular}{@{}c@{}}\n" + header + "\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
 
     # The domains under the plots in two lines of five, the grey of the other domains last.
     entries = [_legend_entry(color, domain) for domain, color in IPC_DOMAIN_COLORS.items()]
@@ -253,7 +254,7 @@ def _legend_entry(color, domain):
     return rf"\mbox{{\tikz[baseline=-0.5ex, color={color}]\pgfuseplotmark{{x}};~{domain}}}"
 
 
-def _domain_runtime_plot(problems, pair, domain_of, colors):
+def _domain_runtime_plot(problems, pair, domain_of, colors, side_label=""):
     """One planner's runtime per problem against its abstraction's, a cross per problem in its domain's color."""
     solver, label, abstract_label = pair
     by_domain = defaultdict(list)
@@ -277,7 +278,14 @@ def _domain_runtime_plot(problems, pair, domain_of, colors):
         + rf"\begin{{loglogaxis}}[bordered, xlabel={{{label}{{}} time (s)}}, ylabel={{{abstract_label}{{}} time (s)}}, {options}]"
         + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
         + "\n".join(lines)
-        + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
+        + "\n\\end{loglogaxis}\n"
+        # Drawn after the axis, which would clip it, down the right side of the plot.
+        + (
+            rf"\node[rotate=-90, anchor=south, font=\small, xshift=4pt] at (current axis.east) {{{side_label}}};"
+            if side_label
+            else ""
+        )
+        + "\n\\end{tikzpicture}"
     )
 
 
