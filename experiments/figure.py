@@ -45,8 +45,8 @@ IPC_PLOT_SIZE = 1.05
 DOMAIN_PLOT_GAP = 0.6
 # The IPC figures' legends, in lines of this many domains to fit a column.
 IPC_LEGEND_COLUMNS = 3
-# The order of the HTG figure's plots, as in the tables.
-HTG_PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
+# The order of every runtime figure's plots, as in the tables.
+PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
 # palettes at the size of a cross. A domain both papers show keeps its color there, and tpp takes a tenth color.
 DOMAIN_COLORS = {
@@ -217,7 +217,7 @@ def _htg_runtime_figure(revision):
         pairs = PAIRS[kind]
         if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
             pairs += (POWERLIFTED,)
-        pairs = sorted(pairs, key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
+        pairs = sorted(pairs, key=lambda pair: PLANNER_ORDER.index(pair[0]))
         plots = [_domain_runtime_plot(htg[kind], pair, _htg_problem_domain, DOMAIN_COLORS) for pair in pairs]
         rows.append(
             rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
@@ -246,7 +246,7 @@ def _ipc_runtime_figure(tracks, colors):
 
     rows = []
     for kind, name in TRACK_NAMES.items():
-        pairs = sorted(PAIRS[kind], key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
+        pairs = sorted(PAIRS[kind], key=lambda pair: PLANNER_ORDER.index(pair[0]))
         plots = [_domain_runtime_plot(tracks[kind], pair, domain_of, colors) for pair in pairs]
         rows.append(
             rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
