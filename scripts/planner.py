@@ -108,12 +108,6 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
-        "abs-lama-symmetry-pruning",
-        parents=[shared, abstract],
-        help="Find an abstract plan with lama-first, pruning symmetric states, then refine it with ASP",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    modes.add_parser(
         "abs-lmcut",
         parents=[shared, abstract],
         help="Find an optimal abstract plan with Fast Downward's A* and LM-cut, then refine it optimally with ASP",
