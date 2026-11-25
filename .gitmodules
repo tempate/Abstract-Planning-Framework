@@ -18,3 +18,7 @@
 [submodule "lib/powerlifted"]
 	path = lib/powerlifted
 	url = https://github.com/abcorrea/powerlifted.git
+[submodule "lib/structural-symmetries"]
+	path = lib/structural-symmetries
+	url = https://github.com/silvansievers/structural-symmetries-pruning.git
+	branch = structural-symmetries-pruning

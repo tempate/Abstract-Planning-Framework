@@ -82,6 +82,12 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
+        "lmcut-symmetry-pruning",
+        parents=[shared],
+        help="Solve the task optimally with A* and LM-cut, pruning symmetric states by orbit space search",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
         "abs-asp",
         parents=[shared, abstract, optimize],
         help="Find an abstract plan with ASP, then refine it with ASP",

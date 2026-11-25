@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-25 15:42 — experiments/ipc/opt/symmetries/results.csv
+2026-11-25 18:16 — experiments/ipc/opt/symmetries/results.csv
 
-518 problems compared over asp, abs-asp, abs-lmcut, lmcut; 143 dropped as unfinished
+518 problems compared over asp, abs-asp, abs-lmcut, lmcut, lmcut-symmetry-pruning; 143 dropped as unfinished
 
 ## Coverage
 
 ```
-Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut
-----------------------------------------------------------------------------------
-Plans found                     125 (24.1%)  126 (24.3%)  135 (26.1%)  193 (37.3%)
-Timeouts                        392 (75.7%)  391 (75.5%)  382 (73.7%)  324 (62.5%)
-Out of memory                      1 (0.2%)     1 (0.2%)     0 (0.0%)     0 (0.0%)
-Others                             0 (0.0%)     0 (0.0%)     1 (0.2%)     1 (0.2%)
-Total problems                          518          518          518          518
+Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut       LMcut+
+-----------------------------------------------------------------------------------------------
+Plans found                     125 (24.1%)  126 (24.3%)  135 (26.1%)  193 (37.3%)  224 (43.2%)
+Timeouts                        392 (75.7%)  391 (75.5%)  382 (73.7%)  324 (62.5%)  292 (56.4%)
+Out of memory                      1 (0.2%)     1 (0.2%)     0 (0.0%)     0 (0.0%)     1 (0.2%)
+Others                             0 (0.0%)     0 (0.0%)     1 (0.2%)     1 (0.2%)     1 (0.2%)
+Total problems                          518          518          518          518          518
 ```
 
 ## Head to head, over the problems both solved
@@ -70,40 +70,40 @@ Total                                    84           95
 ## Plans found by domain
 
 ```
-Domain (problems)                  ASP      ASPᵅ    LMcutᵅ     LMcut
---------------------------------------------------------------------
-agricola-opt18-strips (20)           7        11         0         0
-airport (19)                        11        11        19        19
-barman-opt11-strips (20)             0         0         0         4
-barman-opt14-strips (14)             0         0         0         0
-childsnack-opt14-strips (20)         0         0         0         0
-depot (9)                            1         1         4         3
-driverlog (13)                       7         6         7        10
-elevators-opt08-strips (4)           0         0         0         3
-elevators-opt11-strips (2)           0         0         0         2
-gripper (20)                         3         3         3         7
-hiking-opt14-strips (20)            11        13        13         9
-logistics00 (19)                     8         8        12        15
-logistics98 (31)                     1         0         2         4
-miconic (11)                         1         1         1        11
-mprime (21)                         20        20        16        16
-mystery (16)                        10        10         8         8
-nomystery-opt11-strips (10)          4         2         2         8
-openstacks-opt08-strips (28)         0         0         0         8
-openstacks-opt11-strips (20)         0         0         0         5
-openstacks-opt14-strips (14)         0         0         0         0
-pipesworld-notankage (34)            9         9        10        13
-pipesworld-tankage (47)              8         8        10         9
-quantum-layout-opt23-strips (7)         4         4         4         4
-satellite (34)                       5         5         7        10
-sokoban-opt08-strips (3)             1         1         2         2
-sokoban-opt11-strips (2)             1         1         2         2
-tpp (29)                             4         4         4         6
-transport-opt08-strips (4)           3         3         3         3
-transport-opt14-strips (4)           1         1         1         2
-visitall-opt11-strips (1)            1         1         1         1
-woodworking-opt08-strips (5)         0         0         0         1
-woodworking-opt11-strips (4)         0         0         0         1
-zenotravel (13)                      4         3         4         7
-Total (518)                        125       126       135       193
+Domain (problems)                  ASP      ASPᵅ    LMcutᵅ     LMcut    LMcut+
+------------------------------------------------------------------------------
+agricola-opt18-strips (20)           7        11         0         0         0
+airport (19)                        11        11        19        19        19
+barman-opt11-strips (20)             0         0         0         4         8
+barman-opt14-strips (14)             0         0         0         0         3
+childsnack-opt14-strips (20)         0         0         0         0         6
+depot (9)                            1         1         4         3         3
+driverlog (13)                       7         6         7        10        10
+elevators-opt08-strips (4)           0         0         0         3         2
+elevators-opt11-strips (2)           0         0         0         2         2
+gripper (20)                         3         3         3         7        20
+hiking-opt14-strips (20)            11        13        13         9        13
+logistics00 (19)                     8         8        12        15        15
+logistics98 (31)                     1         0         2         4         4
+miconic (11)                         1         1         1        11        11
+mprime (21)                         20        20        16        16        15
+mystery (16)                        10        10         8         8         8
+nomystery-opt11-strips (10)          4         2         2         8         5
+openstacks-opt08-strips (28)         0         0         0         8         8
+openstacks-opt11-strips (20)         0         0         0         5         5
+openstacks-opt14-strips (14)         0         0         0         0         0
+pipesworld-notankage (34)            9         9        10        13        13
+pipesworld-tankage (47)              8         8        10         9        13
+quantum-layout-opt23-strips (7)         4         4         4         4         4
+satellite (34)                       5         5         7        10        11
+sokoban-opt08-strips (3)             1         1         2         2         2
+sokoban-opt11-strips (2)             1         1         2         2         2
+tpp (29)                             4         4         4         6         7
+transport-opt08-strips (4)           3         3         3         3         3
+transport-opt14-strips (4)           1         1         1         2         2
+visitall-opt11-strips (1)            1         1         1         1         1
+woodworking-opt08-strips (5)         0         0         0         1         1
+woodworking-opt11-strips (4)         0         0         0         1         1
+zenotravel (13)                      4         3         4         7         7
+Total (518)                        125       126       135       193       224
 ```
