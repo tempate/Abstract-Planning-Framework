@@ -1,14 +1,14 @@
 # Benchmark report
 
-2026-11-25 18:05 — experiments/htg/sat/results.csv
+2026-11-25 18:16 — experiments/htg/sat/results.csv
 
 443 problems compared over asp, abs-asp, abs-lama, lama, lama-symmetry-pruning, abs-powerlifted, powerlifted
 
 ## Coverage
 
 ```
-Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMALAMA-symmetry-pruning Powerliftedᵅ  Powerlifted
----------------------------------------------------------------------------------------------------------------------------------
+Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA        LAMA+ Powerliftedᵅ  Powerlifted
+-------------------------------------------------------------------------------------------------------------------------
 Plans found                      79 (17.8%)   99 (22.3%)  242 (54.6%)  219 (49.4%)  178 (40.2%)  288 (65.0%)  325 (73.4%)
 Timeouts                         89 (20.1%)  106 (23.9%)    28 (6.3%)    38 (8.6%)   77 (17.4%)    13 (2.9%)    41 (9.3%)
 Out of memory                   275 (62.1%)  238 (53.7%)  173 (39.1%)  186 (42.0%)  186 (42.0%)  142 (32.1%)   77 (17.4%)
@@ -71,8 +71,8 @@ Total                                    99          242          288
 ## Plans found by domain
 
 ```
-Domain (problems)                 Size       ASP      ASPᵅ     LAMAᵅ      LAMALAMA-symmetry-pruningPowerliftedᵅPowerlifted
---------------------------------------------------------------------------------------------------------------------------
+Domain (problems)                 Size       ASP      ASPᵅ     LAMAᵅ      LAMA     LAMA+PowerliftedᵅPowerlifted
+---------------------------------------------------------------------------------------------------------------
 blocksworld-large-simple (40)    goal-2         3         5        10         3         3        10        10
                                 goal-3         3         5        10         3         3        10         4
                                 goal-4         3         5        10         3         3        10         3

@@ -1,14 +1,14 @@
 # Benchmark report
 
-2026-11-25 18:05 — experiments/ipc/sat/resources/results.csv
+2026-11-25 18:16 — experiments/ipc/sat/resources/results.csv
 
 330 problems compared over asp, abs-asp, abs-lama, lama, lama-symmetry-pruning; 1 dropped as unfinished
 
 ## Coverage
 
 ```
-Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMALAMA-symmetry-pruning
--------------------------------------------------------------------------------------------------------
+Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA        LAMA+
+-----------------------------------------------------------------------------------------------
 Plans found                      88 (26.7%)   92 (27.9%)  122 (37.0%)  305 (92.4%)  301 (91.2%)
 Timeouts                        242 (73.3%)  238 (72.1%)  181 (54.8%)    22 (6.7%)    26 (7.9%)
 Out of memory                      0 (0.0%)     0 (0.0%)    27 (8.2%)     1 (0.3%)     0 (0.0%)
@@ -71,8 +71,8 @@ Total                                    85          114
 ## Plans found by domain
 
 ```
-Domain (problems)                  ASP      ASPᵅ     LAMAᵅ      LAMALAMA-symmetry-pruning
------------------------------------------------------------------------------------------
+Domain (problems)                  ASP      ASPᵅ     LAMAᵅ      LAMA     LAMA+
+------------------------------------------------------------------------------
 data-network-sat18-strips (15)         0         1         1        12        12
 elevators-sat08-strips (30)          2         6         7        30        30
 elevators-sat11-strips (14)          0         0         0        14        14
