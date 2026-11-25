@@ -1,8 +1,8 @@
 # What ran where
 
-`results.csv` records no commit, so each row below goes back to the PR whose merge last changed its status or runtime. State of main at #245 on 2026-11-25.
+`results.csv` records no commit, so each row below goes back to the PR whose merge last changed its status or runtime. State of main at #222 on 2026-11-25.
 
-Latest code means main at #221. The PRs after #181 that change a result are #185 (opt fallback), #203 (fixed PDDL Symmetries seed, so the classes change), #206 (distinct inequalities, rerun on mprime and four HTG domains only) and #209 with #217 (one-shot on a partial grounding). #238 drops the 10 opt resources problems with no class to collapse, so their rows are gone rather than stale. #239 finds symmetries before grounding on every track, which only the HTG rows did before. #223 adds the Powerlifted rows. #245 rescans the IPC classes and reruns the IPC baselines on the new lists. The others since then are refactors or touch no track. Fast Downward has not moved since #12, so the LAMA and LMcut rows hold on any commit. Broadwell is the default partition since 2026-11-25, so every row that ran on sunnycove is stale.
+Latest code means main at #221. The PRs after #181 that change a result are #185 (opt fallback), #203 (fixed PDDL Symmetries seed, so the classes change), #206 (distinct inequalities, rerun on mprime and four HTG domains only) and #209 with #217 (one-shot on a partial grounding). #238 drops the 10 opt resources problems with no class to collapse, so their rows are gone rather than stale. #239 finds symmetries before grounding on every track, which only the HTG rows did before. #223 adds the Powerlifted rows. #245 rescans the IPC classes and reruns the IPC baselines on the new lists, and #222 reruns the IPC abstractions on every class, except opt symmetries. The others since then are refactors or touch no track. Fast Downward has not moved since #12, so the LAMA and LMcut rows hold on any commit. Broadwell is the default partition since 2026-11-25, so every row that ran on sunnycove is stale.
 
 | Status | Meaning |
 |---|---|
@@ -36,8 +36,8 @@ Latest code means main at #221. The PRs after #181 that change a result are #185
 
 | Track | Mode | Status | Jobs | Classes (all / best) | Code | Partition | Lacks |
 |---|---|---|---|---|---|---|---|
-| sat | LAMAᵅ | ❌ **stale** | 2478 | best | #181, #206 | sunnycove | #203, #209, #239, #245 |
-| | ASPᵅ | ❌ **stale** | 2478 | best | #181, #206 | sunnycove | #203, #209, #239, #245 |
+| sat | LAMAᵅ | ❌ **stale** | 5544 | all | #222 | sunnycove | |
+| | ASPᵅ | ❌ **stale** | 5544 | all | #222 | sunnycove | |
 | | ASP | ❌ **stale** | 677 | | #245 | sunnycove | |
 | | LAMA | ❌ **stale** | 677 | | #245 | sunnycove | |
 | opt | LMcutᵅ | ❌ **stale** | 2334 | best | #181, #206 | sunnycove | #185, #203, #209, #239, #245 |
@@ -49,11 +49,11 @@ Latest code means main at #221. The PRs after #181 that change a result are #185
 
 | Track | Mode | Status | Jobs | Classes (all / best) | Code | Partition | Lacks |
 |---|---|---|---|---|---|---|---|
-| sat | LAMAᵅ | ❌ **stale** | 544 | best | #181 | sunnycove | #209, #245 |
-| | ASPᵅ | ❌ **stale** | 544 | best | #181 | sunnycove | #209, #245 |
+| sat | LAMAᵅ | ❌ **stale** | 1090 | all | #222 | sunnycove | |
+| | ASPᵅ | ❌ **stale** | 1090 | all | #222 | sunnycove | |
 | | ASP | ❌ **stale** | 331 | | #245 | sunnycove | |
 | | LAMA | ❌ **stale** | 331 | | #245 | sunnycove | |
-| opt | LMcutᵅ | ❌ **stale** | 588 | best | #181 | sunnycove | #185, #209, #245 |
-| | ASPᵅ | ❌ **stale** | 588 | best | #181 | sunnycove | #185, #209, #245 |
+| opt | LMcutᵅ | ❌ **stale** | 1216 | all | #222 | sunnycove | |
+| | ASPᵅ | ❌ **stale** | 1216 | all | #222 | sunnycove | |
 | | ASP | ❌ **stale** | 383 | | #245 | sunnycove | |
 | | LMcut | ❌ **stale** | 383 | | #245 | sunnycove | |
