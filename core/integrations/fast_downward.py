@@ -33,14 +33,15 @@ class Search:
 
 # Satisficing
 LAMA = Search(driver=("--alias", "lama-first"))
-# lama-first with orbit space search, which lib/structural-symmetries.patch adds to lazy search.
+# lama-first pruning states symmetric to one already seen (DKS), which lib/structural-symmetries.patch adds to lazy
+# search. Orbit space search would hand the landmark heuristic permuted states.
 LAMA_SYMMETRY_PRUNING = Search(
     options=(
         "--search",
         "let(hlm,landmark_sum(lm_factory=lm_reasonable_orders_hps(lm_rhw()),transform=adapt_costs(one),pref=false),"
         "let(hff,ff(transform=adapt_costs(one)),"
         "lazy_greedy([hff,hlm],preferred=[hff,hlm],cost_type=one,reopen_closed=false,"
-        "symmetries=structural_symmetries(search_symmetries=oss,time_bound=0))))",
+        "symmetries=structural_symmetries(search_symmetries=dks,time_bound=0))))",
     ),
     script=STRUCTURAL_SYMMETRIES_SCRIPT,
     unsolvable_exit_codes=(_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE, _SEARCH_UNSOLVED_INCOMPLETE),

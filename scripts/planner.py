@@ -72,7 +72,7 @@ def _argument_parser():
     modes.add_parser(
         "lama-symmetry-pruning",
         parents=[shared],
-        help="Solve the task with lama-first, pruning symmetric states by orbit space search",
+        help="Solve the task with lama-first, pruning states symmetric to one already seen",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
