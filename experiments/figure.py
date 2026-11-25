@@ -208,6 +208,8 @@ def _domain_runtime_plot(problems, pair, ticks):
 
     # The paper's footnote size for the numbers and a size above it for the labels.
     options = r"label style={font=\small}, tick label style={font=\footnotesize}"
+    # A light line at every power of ten, as in Horcik et al. (2022).
+    options += r", grid=major, grid style={black!30, thin}"
     if not ticks:
         options += ", yticklabels={}"
     return (
