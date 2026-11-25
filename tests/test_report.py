@@ -25,10 +25,10 @@ class ReportTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             results = Path(directory) / "results.csv"
             fields = "domain,problem,mode,class,status,wall_time_seconds,last_completed_phase"
-            rows = ["d,p01.pddl,abs-asp,0,timed out,1800,", "d,p01.pddl,abs-asp,1,missing,,"]
+            rows = ["d,p01.pddl,abs-asp,item-3-aaaaaa,timed out,1800,", "d,p01.pddl,abs-asp,item-2-bbbbbb,missing,,"]
             results.write_text("\n".join([fields, *rows]) + "\n")
 
-            self.assertEqual(best_classes(results), {("d", "p01.pddl", "abs-asp"): 0})
+            self.assertEqual(best_classes(results), {("d", "p01.pddl", "abs-asp"): "item-3-aaaaaa"})
 
     def test_the_report_writes_its_files_beside_the_results(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -36,10 +36,10 @@ class ReportTests(unittest.TestCase):
             with results.open("w", encoding="utf-8", newline="") as stream:
                 writer = csv.DictWriter(stream, fieldnames=FIELDS)
                 writer.writeheader()
-                for mode, rank, seconds in (("asp", "", "5"), ("abs-asp", "0", "90"), ("abs-asp", "1", "40")):
+                for mode, class_id, seconds in (("asp", "", "5"), ("abs-asp", "a", "90"), ("abs-asp", "b", "40")):
                     writer.writerow(
                         {field: "" for field in FIELDS}
-                        | {"domain": "example", "problem": "p01.pddl", "mode": mode, "class": rank}
+                        | {"domain": "example", "problem": "p01.pddl", "mode": mode, "class": class_id}
                         | {"status": "success", "wall_time_seconds": seconds, "switches_off": "0", "increments": "0"}
                     )
 
@@ -49,7 +49,7 @@ class ReportTests(unittest.TestCase):
             self.assertTrue((Path(directory) / "report.md").is_file())
             with (Path(directory) / "best_classes.csv").open(encoding="utf-8", newline="") as stream:
                 rows = list(csv.DictReader(stream))
-        self.assertEqual(rows, [{"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": "1"}])
+        self.assertEqual(rows, [{"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": "b"}])
 
     def test_the_report_survives_a_run_with_no_shared_solves(self):
         problems = [

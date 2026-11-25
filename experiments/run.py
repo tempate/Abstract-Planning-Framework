@@ -35,18 +35,17 @@ def main():
         args.problem,
         timeout=args.timeout,
         track=args.track,
-        rank=args.class_rank,
+        class_id=args.class_id or None,
     )
 
     print(f"{args.domain_name}/{args.problem.name}: {args.mode} {_human_status(result)}", flush=True)
 
 
-def class_rank(mode, rank):
-    """The class a result collapsed, as the CSV writes it: none for a concrete mode,
-    and the largest for an abstract one run before results recorded their class."""
-    if not mode.startswith(ABSTRACTION_PREFIX):
+def class_key(mode, class_id):
+    """The class a result collapsed, as the CSV writes it: none for a concrete mode or for the largest class."""
+    if not mode.startswith(ABSTRACTION_PREFIX) or class_id is None:
         return ""
-    return "0" if rank in (None, "") else str(rank)
+    return str(class_id)
 
 
 def _argument_parser():
@@ -65,23 +64,23 @@ def _argument_parser():
         help="Track the problem belongs to, which names the arguments its modes take",
     )
     parser.add_argument(
-        "--class-rank",
-        type=int,
-        default=0,
-        help="Candidate class an abstract mode collapses, counting from the largest (0); concrete modes ignore it",
+        "--class-id",
+        help="Class an abstract mode collapses, as classes.txt names it, or the largest if empty; concrete modes ignore it",
     )
     return parser
 
 
-def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK, rank=0):
+def _run_task(
+    mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK, class_id=None
+):
     abstract = mode.startswith(ABSTRACTION_PREFIX)
-    name = f"{mode}-{rank}" if abstract else mode
+    name = f"{mode}-{class_id or 'largest'}" if abstract else mode
     result_file = Path(results_dir) / domain_name / problem.stem / f"{name}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
 
     identity = {
         "mode": mode,
-        **({"class": rank} if abstract else {}),
+        **({"class": class_id} if abstract else {}),
         "track": track,
         "domain": domain_name,
         "problem": problem.name,
@@ -101,7 +100,7 @@ def _run_task(mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeo
 
     environment = os.environ.copy()
     environment["APF_BENCHMARK_RESULT_FILE"] = str(result_file)
-    command = _planner_command(domain, problem, mode, track, rank)
+    command = _planner_command(domain, problem, mode, track, class_id)
     result = _run_pipeline(command, timeout, environment)
 
     progress = _read_progress(result_file)
@@ -186,12 +185,13 @@ def _machine_status(return_code):
     return STATUS_BY_EXIT_CODE.get(return_code, "error")
 
 
-def _planner_command(domain, problem, mode, track, rank):
+def _planner_command(domain, problem, mode, track, class_id):
     command = [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
 
     if mode.startswith(ABSTRACTION_PREFIX):
         command.extend(TRACKS[track].abstract_arguments)
-        command.extend(["--class-rank", str(rank)])
+        if class_id is not None:
+            command.extend(["--class-id", class_id])
     if mode in OPTIMIZING_MODES:
         command.extend(TRACKS[track].optimizing_arguments)
 

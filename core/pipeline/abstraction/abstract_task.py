@@ -17,6 +17,7 @@ from core.integrations.unified_planning import (
     without_action_costs,
     write_problem,
 )
+from core.utilities.classes import class_id
 from core.utilities.metrics import PlanningMetrics
 from core.utilities.outcomes import NoResourcesError, NoSymmetriesError
 from core.utilities.config import RESOURCES, AbstractPlanningConfig
@@ -29,6 +30,10 @@ class CollapsedSet:
     name: str
     objects: tuple[str, ...]
     object_type: str
+
+    @property
+    def id(self):
+        return class_id(self.object_type, self.objects)
 
 
 @dataclass(frozen=True)
@@ -86,14 +91,14 @@ def build_abstract_task(config: AbstractPlanningConfig, metrics: PlanningMetrics
 
 
 def _choose_abstraction(problem, config, metrics):
-    """The class the config names, or else the candidate at the config's rank."""
+    """The objects the config names, or else the candidate class with the config's ID, the largest without one."""
     if config.objects_to_abstract is not None:
         with metrics.measure("abstraction"):
             return _create_abstraction(problem, config.objects_to_abstract)
 
     candidate_classes = _candidate_classes(config, metrics)
     with metrics.measure("abstraction"):
-        return _select_abstraction(problem, candidate_classes, config.class_rank)
+        return _select_abstraction(problem, candidate_classes, config.class_id)
 
 
 def _candidate_classes(config, metrics):
@@ -115,8 +120,21 @@ def _candidate_classes(config, metrics):
     return symmetry_classes
 
 
-def _select_abstraction(problem, candidate_classes, rank=0):
-    """Select the candidate class at this rank, largest first.
+def _select_abstraction(problem, candidate_classes, class_id=None):
+    """Select the candidate class with this ID, or the largest without one."""
+    abstractions = collapsible_classes(problem, candidate_classes)
+    if class_id is None:
+        return abstractions[0]
+
+    for abstraction in abstractions:
+        if abstraction.id == class_id:
+            return abstraction
+    found = ", ".join(abstraction.id for abstraction in abstractions)
+    raise AbstractionError(f"No class {class_id} among those this run can collapse: {found}")
+
+
+def collapsible_classes(problem, candidate_classes):
+    """Every candidate class the problem can collapse, largest first.
 
     Collapsing more objects is what lowers the abstract horizon, so size alone decides.
     """
@@ -137,11 +155,9 @@ def _select_abstraction(problem, candidate_classes, rank=0):
 
     if not abstractions:
         raise rejection
-    if rank >= len(abstractions):
-        raise AbstractionError(f"No class at rank {rank}: only {len(abstractions)} can be collapsed")
 
     abstractions.sort(key=lambda collapsed_set: -len(collapsed_set.objects))
-    return abstractions[rank]
+    return abstractions
 
 
 def _create_abstraction(problem, object_names):

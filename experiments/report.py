@@ -143,10 +143,10 @@ def _finished(problem, modes):
 
 
 def best_classes(results_file):
-    """The rank of the class each abstract mode did best with on each problem, as the report picks it."""
+    """The ID of the class each abstract mode did best with on each problem, as the report picks it."""
     with Path(results_file).open(encoding="utf-8", newline="") as stream:
         abstract_rows = [row for row in csv.DictReader(stream) if row["mode"].startswith(ABSTRACTION_PREFIX)]
-    return {key: int(row.get("class") or 0) for key, row in _best_rows(abstract_rows).items()}
+    return {key: row.get("class") or None for key, row in _best_rows(abstract_rows).items()}
 
 
 def _best_rows(rows):
@@ -160,12 +160,12 @@ def _best_rows(rows):
 
 
 def _write_best_classes(results_file, best_file):
-    """One row per problem and abstract mode, naming the class rank that did best."""
+    """One row per problem and abstract mode, naming the class that did best."""
     with Path(best_file).open("w", encoding="utf-8", newline="") as stream:
         writer = csv.writer(stream, lineterminator="\r\n")
         writer.writerow(("domain", "problem", "mode", "class"))
-        for (domain, problem, mode), rank in sorted(best_classes(results_file).items()):
-            writer.writerow((domain, problem, mode, rank))
+        for (domain, problem, mode), class_id in sorted(best_classes(results_file).items()):
+            writer.writerow((domain, problem, mode, class_id or ""))
 
 
 def _performance(row):

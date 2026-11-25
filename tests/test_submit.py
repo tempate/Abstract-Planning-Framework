@@ -98,8 +98,8 @@ class SubmitTests(unittest.TestCase):
         self.assertEqual(
             instances,
             [
-                f"abs-asp example {domain.resolve()} {problem.resolve()} 0",
-                f"asp example {domain.resolve()} {problem.resolve()} 0",
+                f"abs-asp example {domain.resolve()} {problem.resolve()} ",
+                f"asp example {domain.resolve()} {problem.resolve()} ",
             ],
         )
 
@@ -115,18 +115,18 @@ class SubmitTests(unittest.TestCase):
 
             runnable = {("example", "p01.pddl")}
             self.assertEqual(
-                list(_benchmark_tasks(root, ["example"], runnable)), [("abs-asp", "example", domain, problem, 0)]
+                list(_benchmark_tasks(root, ["example"], runnable)), [("abs-asp", "example", domain, problem, None)]
             )
             self.assertEqual(
                 list(_benchmark_tasks(root, ["example"], runnable, modes=("abs-asp", "asp", "lama"))),
                 [
-                    ("abs-asp", "example", domain, problem, 0),
+                    ("abs-asp", "example", domain, problem, None),
                     ("asp", "example", domain, problem, None),
                     ("lama", "example", domain, problem, None),
                 ],
             )
 
-    def test_an_abstract_mode_runs_once_per_class_from_the_first_rank_asked_for(self):
+    def test_an_abstract_mode_runs_once_per_listed_class(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             benchmark = root / "example"
@@ -139,12 +139,12 @@ class SubmitTests(unittest.TestCase):
                 ["example"],
                 None,
                 modes=("abs-asp", "asp"),
-                class_counts={("example", "p01.pddl"): 3},
-                from_rank=1,
+                class_ids={("example", "p01.pddl"): ["a", "b"]},
             )
 
             self.assertEqual(
-                [(mode, rank) for mode, _n, _d, _p, rank in tasks], [("abs-asp", 1), ("abs-asp", 2), ("asp", None)]
+                [(mode, class_id) for mode, _n, _d, _p, class_id in tasks],
+                [("abs-asp", "a"), ("abs-asp", "b"), ("asp", None)],
             )
 
     def test_an_abstract_mode_runs_only_the_class_another_mode_did_best_with(self):
@@ -160,12 +160,12 @@ class SubmitTests(unittest.TestCase):
                 root,
                 ["example"],
                 None,
-                class_counts={("example", "p01.pddl"): 3, ("example", "p02.pddl"): 3},
-                best={("example", "p01.pddl", "abs-lama"): 2, ("example", "p02.pddl", "abs-asp"): 1},
+                class_ids={("example", "p01.pddl"): ["a", "b", "c"], ("example", "p02.pddl"): ["a", "b", "c"]},
+                best={("example", "p01.pddl", "abs-lama"): "c", ("example", "p02.pddl", "abs-asp"): "b"},
                 best_of="abs-lama",
             )
 
-            self.assertEqual([(problem.name, rank) for _m, _n, _d, problem, rank in tasks], [("p01.pddl", 2)])
+            self.assertEqual([(problem.name, class_id) for _m, _n, _d, problem, class_id in tasks], [("p01.pddl", "c")])
 
     def test_concrete_modes_skip_the_problems_that_do_not_ground(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -193,13 +193,13 @@ class SubmitTests(unittest.TestCase):
             (benchmark / "domain.pddl").touch()
             (benchmark / "p01.pddl").touch()
             manifest = root / MANIFEST_NAME
-            earlier = [{"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": 1}]
+            earlier = [{"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": "b"}]
             manifest.write_text(json.dumps({"expected_results": earlier}))
 
-            tasks = _benchmark_tasks(root, ["example"], None, class_counts={("example", "p01.pddl"): 3})
-            ranks = [rank for _mode, _domain, _domain_file, _problem, rank in _not_submitted(tasks, [manifest])]
+            tasks = _benchmark_tasks(root, ["example"], None, class_ids={("example", "p01.pddl"): ["a", "b", "c"]})
+            ids = [class_id for _mode, _domain, _domain_file, _problem, class_id in _not_submitted(tasks, [manifest])]
 
-        self.assertEqual(ranks, [0, 2])
+        self.assertEqual(ids, ["a", "c"])
 
     def test_a_retry_resubmits_only_the_results_a_run_never_returned_with_their_classes(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -211,29 +211,35 @@ class SubmitTests(unittest.TestCase):
             run = root / "run"
             run.mkdir()
             expected = [
-                {"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": 1},
-                {"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": 2},
+                {"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": "b"},
+                {"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": "c"},
                 {"domain": "example", "problem": "p01.pddl", "mode": "asp", "class": None},
             ]
             (run / MANIFEST_NAME).write_text(json.dumps({"track": "sat/symmetries", "expected_results": expected}))
-            for mode, rank in (("abs-asp", 2), ("asp", None)):
-                result = {"domain": "example", "problem": "p01.pddl", "mode": mode, "class": rank, "status": "success"}
+            for mode, class_id in (("abs-asp", "c"), ("asp", None)):
+                result = {
+                    "domain": "example",
+                    "problem": "p01.pddl",
+                    "mode": mode,
+                    "class": class_id,
+                    "status": "success",
+                }
                 result |= {
                     "return_code": 0,
                     "timed_out": False,
                     "wall_time_seconds": 1.0,
                     "output": "Plan found: yes\n",
                 }
-                (run / f"{mode}-{rank}.json").write_text(json.dumps(result))
+                (run / f"{mode}-{class_id}.json").write_text(json.dumps(result))
 
             track, missing = _missing_results(run)
             tasks = _benchmark_tasks(
-                root, ["example"], None, modes=("abs-asp", "asp"), class_counts={("example", "p01.pddl"): 3}
+                root, ["example"], None, modes=("abs-asp", "asp"), class_ids={("example", "p01.pddl"): ["a", "b", "c"]}
             )
-            kept = [(mode, rank) for mode, _domain, _domain_file, _problem, rank in _only(tasks, missing)]
+            kept = [(mode, class_id) for mode, _domain, _domain_file, _problem, class_id in _only(tasks, missing)]
 
         self.assertEqual(track, "sat/symmetries")
-        self.assertEqual(kept, [("abs-asp", 1)])
+        self.assertEqual(kept, [("abs-asp", "b")])
 
     def test_an_abstract_mode_runs_only_its_best_class_where_one_is_known(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -248,14 +254,14 @@ class SubmitTests(unittest.TestCase):
                 writer = csv.DictWriter(stream, fieldnames=FIELDS)
                 writer.writeheader()
                 # p01 ran every class and the middle one solved fastest. p02 never ran.
-                for rank, status, seconds in (
-                    ("0", "timed out", "1800"),
-                    ("1", "success", "40"),
-                    ("2", "success", "90"),
+                for class_id, status, seconds in (
+                    ("a", "timed out", "1800"),
+                    ("b", "success", "40"),
+                    ("c", "success", "90"),
                 ):
                     writer.writerow(
                         {field: "" for field in FIELDS}
-                        | {"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": rank}
+                        | {"domain": "example", "problem": "p01.pddl", "mode": "abs-asp", "class": class_id}
                         | {"status": status, "wall_time_seconds": seconds}
                     )
 
@@ -263,13 +269,25 @@ class SubmitTests(unittest.TestCase):
                 root,
                 ["example"],
                 None,
-                class_counts={("example", "p01.pddl"): 3, ("example", "p02.pddl"): 2},
+                class_ids={("example", "p01.pddl"): ["a", "b", "c"], ("example", "p02.pddl"): ["a", "b"]},
+                best=experiments.report.best_classes(results),
+            )
+            # A best class a rescan dropped from the list says nothing, so every listed class runs.
+            rescanned = _benchmark_tasks(
+                root,
+                ["example"],
+                None,
+                class_ids={("example", "p01.pddl"): ["d", "e"]},
                 best=experiments.report.best_classes(results),
             )
 
             self.assertEqual(
-                [(problem.name, rank) for _m, _n, _d, problem, rank in tasks],
-                [("p01.pddl", 1), ("p02.pddl", 0), ("p02.pddl", 1)],
+                [(problem.name, class_id) for _m, _n, _d, problem, class_id in tasks],
+                [("p01.pddl", "b"), ("p02.pddl", "a"), ("p02.pddl", "b")],
+            )
+            self.assertEqual(
+                [(problem.name, class_id) for _m, _n, _d, problem, class_id in rescanned if problem.name == "p01.pddl"],
+                [("p01.pddl", "d"), ("p01.pddl", "e")],
             )
 
     def test_only_problems_with_an_abstraction_class_are_submitted(self):
@@ -309,7 +327,6 @@ class SubmitTests(unittest.TestCase):
     def test_flags_that_would_change_nothing_are_refused(self):
         combinations = (
             ["--best-class-of", "abs-asp", "--classes", "all"],
-            ["--from-rank", "2"],
             ["--retry-missing", "runs", "--modes", "asp"],
         )
         for flags in combinations:
