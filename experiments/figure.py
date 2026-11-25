@@ -39,10 +39,11 @@ CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anch
 # The paper's runtime plots and the gap between them, in inches.
 PAPER_PLOT_SIZE = 1.65
 PAPER_PLOT_GAP = 0.3
+# The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled.
+HTG_PLOT_SIZE = 1.25
 # The order of the HTG figure's plots, as in the tables.
 HTG_PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
-# The HTG figure's domain legend columns, and the domains' colors in the order of their names, from Tableau 10.
-LEGEND_COLUMNS = 5
+# The colors of the HTG figure's domains, in the order of their names, from Tableau 10.
 DOMAIN_COLORS = ("4E79A7", "F28E2B", "E15759", "76B7B2", "59A14F", "EDC948", "B07AA1", "FF9DA7", "9C755F", "BAB0AC")
 # HTG names a domain by the collection it comes from; the paper by the domain.
 HTG_DOMAINS = {
@@ -142,7 +143,9 @@ def paper_figures(revision):
     # The paper's plots are larger than its other plots, and main.tex scales each PDF to its column.
     size = f"\\setlength{{\\plotsize}}{{{PAPER_PLOT_SIZE}in}}\n"
     return {
-        "runtimes-htg": _minipage(r"\textwidth", size + _htg_runtime_figure(revision)),
+        "runtimes-htg": _minipage(
+            r"\textwidth", f"\\setlength{{\\plotsize}}{{{HTG_PLOT_SIZE}in}}\n" + _htg_runtime_figure(revision)
+        ),
         "runtimes-ipc": _minipage(r"\textwidth", size + _ipc_runtime_figure(revision)),
     }
 
@@ -156,6 +159,7 @@ def _htg_runtime_figure(revision):
         rf"\definecolor{{{colors[domain]}}}{{HTML}}{{{color}}}" + "\n" for domain, color in zip(domains, DOMAIN_COLORS)
     )
 
+    # Each row a cell of one table, its title over its plots, with room on the left for the y label.
     rows = []
     for kind, name in TRACK_NAMES.items():
         pairs = PAIRS[kind]
@@ -164,15 +168,24 @@ def _htg_runtime_figure(revision):
         pairs = sorted(pairs, key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
         # Only the left plot of a row numbers its y axis.
         plots = [_domain_runtime_plot(htg[kind], pair, colors, ticks=index == 0) for index, pair in enumerate(pairs)]
-        title = _in_row(rf"\small {name}")
-        rows.append(title + "\n\n\\vspace{0.4em}\n" + _in_row(_joined(plots, f"{PAPER_PLOT_GAP}in")))
+        rows.append(
+            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
+            + "\n\\hspace*{0.42in}"
+            + _joined(plots, f"{PAPER_PLOT_GAP}in")
+        )
+    plot_table = "\\begin{tabular}[c]{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
 
-    # The domains in a grid of LEGEND_COLUMNS columns, centred under the plots.
+    # The domains in one column to the right of the plots, where the page has room to spare.
     entries = [rf"\tikz[baseline=-0.5ex, color={colors[domain]}]\pgfuseplotmark{{x}};~{domain}" for domain in domains]
-    grid = [" & ".join(entries[start : start + LEGEND_COLUMNS]) for start in range(0, len(entries), LEGEND_COLUMNS)]
-    table = rf"{{\small\begin{{tabular}}{{{'l' * LEGEND_COLUMNS}}}" + " \\\\\n".join(grid) + r"\end{tabular}}"
-    legend = "\n\n\\vspace{0.8em}\n" + _in_row(table)
-    return color_definitions + "\n\n\\vspace{1.2em}\n".join(rows) + legend
+    legend = r"{\small\begin{tabular}[c]{@{}l@{}}" + " \\\\\n".join(entries) + r"\end{tabular}}"
+    return (
+        color_definitions
+        + "\\noindent\\makebox[\\linewidth][c]{%\n"
+        + plot_table
+        + "%\n\\hspace{1.5em}%\n"
+        + legend
+        + "}"
+    )
 
 
 def _domain_runtime_plot(problems, pair, colors, ticks):
@@ -190,10 +203,13 @@ def _domain_runtime_plot(problems, pair, colors, ticks):
             style = f"only marks, mark=x, mark size=1.4pt, color={colors[domain]}, draw opacity=0.7"
             lines.append(rf"\addplot[{style}] coordinates {{{points}}};")
 
-    ticks_option = "" if ticks else ", yticklabels={}"
+    # The paper's footnote size for the numbers and a size above it for the labels.
+    options = r"label style={font=\small}, tick label style={font=\footnotesize}"
+    if not ticks:
+        options += ", yticklabels={}"
     return (
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
-        + rf"\begin{{loglogaxis}}[bordered, xlabel={{{label}{{}} time (s)}}, ylabel={{{abstract_label}{{}} time (s)}}{ticks_option}]"
+        + rf"\begin{{loglogaxis}}[bordered, xlabel={{{label}{{}} time (s)}}, ylabel={{{abstract_label}{{}} time (s)}}, {options}]"
         + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
         + "\n".join(lines)
         + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
