@@ -4,6 +4,7 @@ import argparse
 import csv
 import io
 import json
+import re
 import shutil
 import subprocess
 import tempfile
@@ -36,13 +37,14 @@ POWERLIFTED_MARKS = SOLVER_MARKS[2:]
 ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
-# The paper's runtime plots and the gap between them, in inches.
-PAPER_PLOT_SIZE = 1.65
-PAPER_PLOT_GAP = 0.3
 # The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled.
 HTG_PLOT_SIZE = 1.25
-# Every HTG plot numbers and labels its own y axis, which sit in the gap before it, in inches.
-HTG_PLOT_GAP = 0.5
+# The IPC figure's plots, drawn at the size they print, as main.tex includes it unscaled.
+IPC_PLOT_SIZE = 1.15
+# Every plot colored by domain numbers and labels its own y axis, which sit in the gap before it, in inches.
+DOMAIN_PLOT_GAP = 0.5
+# The wider gap between the IPC figure's sources, in inches.
+IPC_SOURCE_GAP = 0.8
 # The order of the HTG figure's plots, as in the tables.
 HTG_PLANNER_ORDER = ("asp", "lama", "lmcut", "powerlifted")
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
@@ -58,6 +60,29 @@ DOMAIN_COLORS = {
     "rovers": "teal",
     "satellite": "violet",
     "tpp": "green!60!black",
+}
+# IPC domains that are one domain under several names, each by the name the IPC figure gives it.
+IPC_FAMILIES = {
+    "logistics00": "logistics",
+    "logistics98": "logistics",
+    "mprime": "mystery",
+    "pipesworld-notankage": "pipesworld",
+    "pipesworld-tankage": "pipesworld",
+}
+# The IPC figure colors the nine domains with the most problems, a domain the HTG figure shows in its color there,
+# and draws the rest in grey.
+OTHER_DOMAINS = "other"
+IPC_DOMAIN_COLORS = {
+    "barman": "violet",
+    "elevators": "black",
+    "freecell": "teal",
+    "logistics": "brown",
+    "mystery": "purple",
+    "openstacks": "blue",
+    "pipesworld": "orange",
+    "tpp": "green!60!black",
+    "transport": "cyan",
+    OTHER_DOMAINS: "black!35",
 }
 # HTG names a domain by the collection it comes from; the paper by the domain.
 HTG_DOMAINS = {
@@ -154,20 +179,20 @@ def _results_at(revision, kind, source):
 
 def paper_figures(revision):
     """The paper's figures at a revision, by the file name main.tex includes, each the body of a PDF."""
-    # The paper's plots are larger than its other plots, and main.tex scales each PDF to its column.
-    size = f"\\setlength{{\\plotsize}}{{{PAPER_PLOT_SIZE}in}}\n"
     return {
         "runtimes-htg": _minipage(
             r"\textwidth", f"\\setlength{{\\plotsize}}{{{HTG_PLOT_SIZE}in}}\n" + _htg_runtime_figure(revision)
         ),
-        "runtimes-ipc": _minipage(r"\textwidth", size + _ipc_runtime_figure(revision)),
+        "runtimes-ipc": _minipage(
+            r"\textwidth", f"\\setlength{{\\plotsize}}{{{IPC_PLOT_SIZE}in}}\n" + _ipc_runtime_figure(revision)
+        ),
     }
 
 
 def _htg_runtime_figure(revision):
     """The paper's HTG runtime figure, a row per track under its name, a plot per planner, and a domain legend."""
     htg = load_tracks(revision, "htg", [])
-    domains = sorted({_problem_domain(problem) for problems in htg.values() for problem in problems})
+    domains = sorted({_htg_problem_domain(problem) for problems in htg.values() for problem in problems})
 
     # Each row a cell of one table, its title over its plots, with room on the left for the y label.
     rows = []
@@ -176,33 +201,71 @@ def _htg_runtime_figure(revision):
         if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
             pairs += (POWERLIFTED,)
         pairs = sorted(pairs, key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
-        plots = [_domain_runtime_plot(htg[kind], pair) for pair in pairs]
+        plots = [_domain_runtime_plot(htg[kind], pair, _htg_problem_domain, DOMAIN_COLORS) for pair in pairs]
         rows.append(
-            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]" + "\n\\hspace*{0.42in}" + _joined(plots, f"{HTG_PLOT_GAP}in")
+            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
+            + "\n\\hspace*{0.42in}"
+            + _joined(plots, f"{DOMAIN_PLOT_GAP}in")
         )
     plot_table = "\\begin{tabular}[c]{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
 
     # The domains in one column to the right of the plots, where the page has room to spare.
-    entries = [
-        rf"\tikz[baseline=-0.5ex, color={DOMAIN_COLORS[domain]}]\pgfuseplotmark{{x}};~{domain}" for domain in domains
-    ]
+    entries = [_legend_entry(DOMAIN_COLORS[domain], domain) for domain in domains]
     legend = r"{\small\begin{tabular}[c]{@{}l@{}}" + " \\\\\n".join(entries) + r"\end{tabular}}"
     return "\\noindent\\makebox[\\linewidth][c]{%\n" + plot_table + "%\n\\hspace{1.5em}%\n" + legend + "}"
 
 
-def _domain_runtime_plot(problems, pair):
+def _ipc_runtime_figure(revision):
+    """The paper's IPC runtime figure, a row per track under its name, a pair of plots per source, and a domain legend."""
+    # The sources name their pairs of plots once, over the top row.
+    pair_width = rf"\dimexpr2\plotsize+{DOMAIN_PLOT_GAP}in\relax"
+    sources = [rf"\makebox[{pair_width}]{{\small {title}}}" for title in SOURCES.values()]
+    lines = [r"\hspace*{0.42in}" + f"\\hspace{{{IPC_SOURCE_GAP}in}}".join(sources) + r" \\[0.8em]"]
+
+    rows = []
+    for kind, name in TRACK_NAMES.items():
+        tracks = load_tracks(revision, kind, [])
+        pairs = sorted(PAIRS[kind], key=lambda pair: HTG_PLANNER_ORDER.index(pair[0]))
+        groups = []
+        for source in SOURCES:
+            plots = [
+                _domain_runtime_plot(tracks[source], pair, _ipc_problem_domain, IPC_DOMAIN_COLORS) for pair in pairs
+            ]
+            groups.append(_joined(plots, f"{DOMAIN_PLOT_GAP}in"))
+        rows.append(
+            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
+            + "\n\\hspace*{0.42in}"
+            + _joined(groups, f"{IPC_SOURCE_GAP}in")
+        )
+    plot_table = (
+        "\\begin{tabular}{@{}c@{}}\n" + "\n".join(lines) + "\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
+    )
+
+    # The domains under the plots in two lines of five, the grey of the other domains last.
+    entries = [_legend_entry(color, domain) for domain, color in IPC_DOMAIN_COLORS.items()]
+    half = (len(entries) + 1) // 2
+    grid = [" & ".join(entries[:half]), " & ".join(entries[half:])]
+    legend = rf"{{\small\begin{{tabular}}{{@{{}}{'l' * half}@{{}}}}" + " \\\\\n".join(grid) + r"\end{tabular}}"
+    return "\\noindent\\makebox[\\linewidth][c]{%\n" + plot_table + "}" + "\n\n\\vspace{0.8em}\n" + _in_row(legend)
+
+
+def _legend_entry(color, domain):
+    return rf"\mbox{{\tikz[baseline=-0.5ex, color={color}]\pgfuseplotmark{{x}};~{domain}}}"
+
+
+def _domain_runtime_plot(problems, pair, domain_of, colors):
     """One planner's runtime per problem against its abstraction's, a cross per problem in its domain's color."""
     solver, label, abstract_label = pair
     by_domain = defaultdict(list)
     for problem in problems:
-        by_domain[_problem_domain(problem)].append(problem)
+        by_domain[domain_of(problem)].append(problem)
 
     lines = []
     for domain, group in sorted(by_domain.items()):
         points = scatter(group, solver, f"abs-{solver}")
         # A domain neither mode solves anything in has no point to draw.
         if points:
-            style = f"only marks, mark=x, mark size=1.4pt, color={DOMAIN_COLORS[domain]}"
+            style = f"only marks, mark=x, mark size=1.4pt, color={colors[domain]}"
             lines.append(rf"\addplot[{style}] coordinates {{{points}}};")
 
     # The paper's footnote size for the numbers and a size above it for the labels.
@@ -218,32 +281,15 @@ def _domain_runtime_plot(problems, pair):
     )
 
 
-def _problem_domain(problem):
+def _htg_problem_domain(problem):
     return htg_domain(next(iter(problem.values()))["domain"])
 
 
-def _ipc_runtime_figure(revision):
-    """The paper's IPC runtime figure, a row per track and a column per abstraction source."""
-    # The left plot of a row labels its y axis and carries the row's legend, centred over both plots, and
-    # the right one names the track down its side. The top row alone names the sources.
-    between = 1 + PAPER_PLOT_GAP / 2 / PAPER_PLOT_SIZE
-    rows = []
-    for row, (kind, name) in enumerate(TRACK_NAMES.items()):
-        tracks = load_tracks(revision, kind, [])
-        plots = [
-            _runtime_plot(
-                tracks[source],
-                PAIRS[kind],
-                labelled=index == 0,
-                legend=index == 0,
-                title=title if row == 0 else "",
-                side_label=name if index == len(SOURCES) - 1 else "",
-                legend_x=between,
-            )
-            for index, (source, title) in enumerate(SOURCES.items())
-        ]
-        rows.append(_in_row(_joined(plots, f"{PAPER_PLOT_GAP}in")))
-    return "\n\n\\vspace{1.8em}\n".join(rows)
+def _ipc_problem_domain(problem):
+    """The domain the IPC figure colors a problem by, its name without track or year, or the other domains."""
+    name = re.sub(r"-(sat|opt)\d\d-strips$", "", next(iter(problem.values()))["domain"])
+    name = IPC_FAMILIES.get(name, name)
+    return name if name in IPC_DOMAIN_COLORS else OTHER_DOMAINS
 
 
 def _panel(title, kind, tracks):
@@ -320,7 +366,7 @@ def _runtime_plots(tracks, pairs):
     ]
 
 
-def _runtime_plot(problems, pairs, labelled, legend, title="", side_label="", marks=SOLVER_MARKS, legend_x=0.5):
+def _runtime_plot(problems, pairs, labelled, legend, title="", marks=SOLVER_MARKS):
     """Each solver's runtime per problem against its abstraction's, in the solver's own color and mark."""
     options = r"ylabel={X\textsuperscript{$\alpha$} time (s)}" if labelled else "yticklabels={}"
     if title:
@@ -332,8 +378,6 @@ def _runtime_plot(problems, pairs, labelled, legend, title="", side_label="", ma
             + CENTRED_LEGEND
             # Every solver in one row, which a third solver would otherwise wrap into the title.
             + f", legend columns={len(pairs)}"
-            # Where the legend centres, as a fraction of the plot's width.
-            + f", legend style={{at={{({legend_x:.3f},1.04)}}}}"
         )
 
     lines = []
@@ -350,21 +394,12 @@ def _runtime_plot(problems, pairs, labelled, legend, title="", side_label="", ma
         if legend:
             lines.append(rf"\addlegendentry{{{label}}}")
 
-    # Drawn after the axis, which would clip it, down the right side of the plot.
-    side_node = ""
-    if side_label:
-        side_node = (
-            rf"\node[rotate=-90, anchor=south, font=\small, xshift=6pt] at (current axis.east) {{{side_label}}};"
-        )
-
     return (
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
         + rf"\begin{{loglogaxis}}[bordered, xlabel={{X time (s)}}, {options}]"
         + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
         + "\n".join(lines)
-        + "\n\\end{loglogaxis}\n"
-        + side_node
-        + "\n\\end{tikzpicture}"
+        + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
     )
 
 
