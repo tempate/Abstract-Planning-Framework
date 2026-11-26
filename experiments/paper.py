@@ -92,7 +92,8 @@ def domain_counts(problems, kind, htg=False):
 
 
 def update_table(tex, section, counts):
-    """Write one section of the per-domain table, a block of columns per track, the better of each pair in bold."""
+    """Write one section of the per-domain table, a block of columns per track, the best of each
+    planner's group in bold."""
     start, end = _section(tex, DOMAIN_TABLE, section)
     lines = tex[start:end].split("\n")
 
@@ -132,8 +133,8 @@ def update_table(tex, section, counts):
 
 
 def update_summary(tex, table, sets):
-    """Write one summary table, a section per benchmark set with a row per track, the better of each planner and its
-    abstraction in bold."""
+    """Write one summary table, a section per benchmark set with a row per track, the best of each planner's
+    group in bold."""
     totals = [total for tracks in sets.values() for total in tracks.values()]
     # A planner that never ran on the table's benchmark sets, such as Powerlifted on IPC, has no columns.
     shown = [any(total[index] is not None for total in totals) for index in range(len(totals[0]))]
@@ -149,7 +150,8 @@ def update_summary(tex, table, sets):
 
 
 def update_htg_table(tex, counts):
-    """Write the HTG table, a row per domain and a total with a block of columns per track, the better of each pair in bold."""
+    """Write the HTG table, a row per domain and a total with a block of columns per track, the best of
+    each planner's group in bold."""
     domains = {name for track in counts.values() for name in track}
     for kind, track in counts.items():
         lacking = sorted(domains - set(track))
