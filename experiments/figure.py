@@ -60,6 +60,8 @@ HTG_PLOT_SIZE = 1.1
 IPC_PLOT_SIZE = 1.05
 # The gap between the plots colored by domain, which share the first plot's y axis, in inches.
 DOMAIN_PLOT_GAP = 0.2
+# The extra space between their rows, whose upper one has no x axis to make room for, in inches.
+DOMAIN_ROW_GAP = 0.0
 # The IPC figures' legends, in lines of this many domains to fit a column.
 IPC_LEGEND_COLUMNS = 3
 # The HTG figure's ten domains in two rows under its plots.
@@ -290,7 +292,7 @@ def _plot_rows(rows, domain_of, colors):
         ]
         # Room on the left for the y label, so the plots stay centred.
         lines.append("\\hspace*{0.42in}" + _joined(plots, f"{DOMAIN_PLOT_GAP}in"))
-    return "\\begin{tabular}[c]{@{}c@{}}\n" + f" \\\\[{DOMAIN_PLOT_GAP}in]\n".join(lines) + "\n\\end{tabular}"
+    return "\\begin{tabular}[c]{@{}c@{}}\n" + f" \\\\[{DOMAIN_ROW_GAP}in]\n".join(lines) + "\n\\end{tabular}"
 
 
 def _with_legend_below(plot_table, entries, columns):
