@@ -13,7 +13,7 @@ python -m pip install -e ".[dev]"
 python -m scripts.setup
 ```
 
-`scripts.setup` initializes the submodules and builds the six things pip does
+`scripts.setup` initializes the submodules and builds the seven things pip does
 not install: the pybliss extension, the Fast Downward and Powerlifted release builds, Silvan Sievers'
 structural symmetries fork of Fast Downward, numeric Fast Downward for resource detection, the
 pinned plasp binary, and cpddl. Numeric Fast Downward
