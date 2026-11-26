@@ -18,6 +18,9 @@
 [submodule "lib/powerlifted"]
 	path = lib/powerlifted
 	url = https://github.com/abcorrea/powerlifted.git
+[submodule "lib/cpddl"]
+	path = lib/cpddl
+	url = https://gitlab.com/danfis/cpddl.git
 [submodule "lib/structural-symmetries"]
 	path = lib/structural-symmetries
 	url = https://github.com/silvansievers/structural-symmetries-pruning.git

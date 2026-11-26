@@ -94,6 +94,12 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
+        "rnd-g",
+        parents=[shared, optimize],
+        help="Search the lifted task with cpddl, guided by h^FF, or LM-cut to optimize, on a homomorphic image of it",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
         "abs-asp",
         parents=[shared, abstract, optimize],
         help="Find an abstract plan with ASP, then refine it with ASP",

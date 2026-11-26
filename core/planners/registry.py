@@ -5,6 +5,7 @@ from functools import partial
 from core.integrations.fast_downward import LAMA, LAMA_SYMMETRY_PRUNING, LMCUT, LMCUT_SYMMETRY_PRUNING
 from core.planners.asp import Asp
 from core.planners.fd import FastDownward
+from core.planners.homomorphism import Homomorphism
 from core.planners.powerlifted import Powerlifted
 
 PLANNERS = {
@@ -14,4 +15,5 @@ PLANNERS = {
     "lmcut": partial(FastDownward, LMCUT),
     "powerlifted": Powerlifted,
     "lmcut-symmetry-pruning": partial(FastDownward, LMCUT_SYMMETRY_PRUNING),
+    "rnd-g": Homomorphism,
 }

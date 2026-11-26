@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-25 18:16 — experiments/ipc/opt/resources/results.csv
+2026-11-26 05:58 — experiments/ipc/opt/resources/results.csv
 
-363 problems compared over asp, abs-asp, abs-lmcut, lmcut, lmcut-symmetry-pruning; 20 dropped as unfinished
+363 problems compared over asp, abs-asp, abs-lmcut, lmcut, lmcut-symmetry-pruning, rnd-g; 20 dropped as unfinished
 
 ## Coverage
 
 ```
-Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut       LMcut+
------------------------------------------------------------------------------------------------
-Plans found                     122 (33.6%)  120 (33.1%)  132 (36.4%)  206 (56.7%)  176 (48.5%)
-Timeouts                        241 (66.4%)  243 (66.9%)  231 (63.6%)  155 (42.7%)  185 (51.0%)
-Out of memory                      0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
-Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     2 (0.6%)     2 (0.6%)
-Total problems                          363          363          363          363          363
+Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut       LMcut+        rnd-g
+------------------------------------------------------------------------------------------------------------
+Plans found                     122 (33.6%)  120 (33.1%)  132 (36.4%)  206 (56.7%)  176 (48.5%)  153 (42.1%)
+Timeouts                        241 (66.4%)  243 (66.9%)  231 (63.6%)  155 (42.7%)  185 (51.0%)  105 (28.9%)
+Out of memory                      0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)  104 (28.7%)
+Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     2 (0.6%)     2 (0.6%)     1 (0.3%)
+Total problems                          363          363          363          363          363          363
 ```
 
 ## Head to head, over the problems both solved
@@ -70,21 +70,21 @@ Total                                    79           92
 ## Plans found by domain
 
 ```
-Domain (problems)                  ASP      ASPᵅ    LMcutᵅ     LMcut    LMcut+
-------------------------------------------------------------------------------
-data-network-opt18-strips (20)        16        15        15        20        20
-elevators-opt08-strips (30)          9         8         9        26        20
-elevators-opt11-strips (20)          7         6         7        20        17
-freecell (73)                       10        10         9        27        15
-mprime (29)                         29        29        24        23        22
-mystery (26)                        17        17        17        16        16
-nomystery-opt11-strips (20)         10         8        12        18        15
-openstacks-opt08-strips (30)         2         2         2        10        10
-openstacks-opt11-strips (20)         0         0         0         5         5
-tpp (24)                             5         5         5         7         8
-transport-opt08-strips (30)          9        10        15        14        12
-transport-opt11-strips (20)          4         5         9        10         8
-transport-opt14-strips (20)          3         4         7         9         7
-visitall-opt11-strips (1)            1         1         1         1         1
-Total (363)                        122       120       132       206       176
+Domain (problems)                  ASP      ASPᵅ    LMcutᵅ     LMcut    LMcut+     rnd-g
+----------------------------------------------------------------------------------------
+data-network-opt18-strips (20)        16        15        15        20        20        14
+elevators-opt08-strips (30)          9         8         9        26        20        13
+elevators-opt11-strips (20)          7         6         7        20        17        11
+freecell (73)                       10        10         9        27        15        15
+mprime (29)                         29        29        24        23        22        18
+mystery (26)                        17        17        17        16        16        15
+nomystery-opt11-strips (20)         10         8        12        18        15        16
+openstacks-opt08-strips (30)         2         2         2        10        10         8
+openstacks-opt11-strips (20)         0         0         0         5         5         3
+tpp (24)                             5         5         5         7         8         6
+transport-opt08-strips (30)          9        10        15        14        12        14
+transport-opt11-strips (20)          4         5         9        10         8        11
+transport-opt14-strips (20)          3         4         7         9         7         8
+visitall-opt11-strips (1)            1         1         1         1         1         1
+Total (363)                        122       120       132       206       176       153
 ```
