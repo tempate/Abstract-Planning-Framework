@@ -1,6 +1,6 @@
 import unittest
 
-from experiments.figure import select
+from experiments.figure import _plot_rows, select
 
 
 def _row(mode, problem="p01.pddl", rank=""):
@@ -12,6 +12,24 @@ def _manifest(track, *entries):
         "track": track,
         "expected_results": [{"domain": "d", "mode": m, "problem": p, "class": c} for m, p, c in entries],
     }
+
+
+def _solved(*modes):
+    return {mode: {"status": "success", "wall_time_seconds": "1.0"} for mode in modes}
+
+
+class RuntimeFigureTests(unittest.TestCase):
+    def test_a_planner_one_track_lacks_gets_no_column_in_any_row(self):
+        tracks = {
+            "sat": [_solved("asp", "abs-asp", "lama", "abs-lama", "powerlifted", "abs-powerlifted")],
+            "opt": [_solved("asp", "abs-asp", "lmcut", "abs-lmcut")],
+        }
+
+        tex = _plot_rows(tracks, lambda problem: "d", {"d": "black"})
+
+        # The rows share their x axes, so both draw ASP and FD and neither draws Powerlifted.
+        self.assertEqual(tex.count(r"\begin{loglogaxis}"), 4)
+        self.assertNotIn("Powerlifted", tex)
 
 
 class FigureSelectionTests(unittest.TestCase):

@@ -4,6 +4,7 @@ import argparse
 import csv
 import io
 import json
+import math
 import re
 import shutil
 import subprocess
@@ -27,23 +28,19 @@ PAIRS = {
     "sat": (("lama", r"\LAMA", r"\LAMAa"), ("asp", r"\ASP", r"\ASPa")),
     "opt": (("lmcut", r"\LMcut", r"\LMcuta"), ("asp", r"\ASP", r"\ASPa")),
 }
-# Each track's planner with symmetry pruning, drawn against the abstraction of the same planner without it.
-SYMMETRY_PRUNING = {
-    "sat": ("lama-symmetry-pruning", r"\LAMAs", r"\LAMAa", "abs-lama"),
-    "opt": ("lmcut-symmetry-pruning", r"\LMcuts", r"\LMcuta", "abs-lmcut"),
-}
-# The homomorphism planner of Horcik et al. (2022), drawn against the abstraction of the track's Fast Downward planner.
-HOMOMORPHISM = {
-    "sat": ("rnd-g", r"\HM", r"\LAMAa", "abs-lama"),
-    "opt": ("rnd-g", r"\HM", r"\LMcuta", "abs-lmcut"),
-}
-# The paper's runtime figures share an x axis between the tracks, so they name Fast Downward's planners as the tables do.
-FD_LABELS = {
-    "lama": r"\textsc{FD}",
-    "lmcut": r"\textsc{FD}",
-    "lama-symmetry-pruning": r"\textsc{FD}$^+$",
-    "lmcut-symmetry-pruning": r"\textsc{FD}$^+$",
-}
+# The columns of the paper's runtime figures in the order of the tables, each a planner's x label and, on each track,
+# the planner and the abstraction drawn against it. The tracks share each column's label, so Fast Downward's planners
+# read FD and FD+ as in the tables, and the planners without an abstraction of their own face FD's.
+PAPER_COLUMNS = (
+    (r"\ASP", {"sat": ("asp", "abs-asp"), "opt": ("asp", "abs-asp")}),
+    (r"\HM", {"sat": ("rnd-g", "abs-lama"), "opt": ("rnd-g", "abs-lmcut")}),
+    (r"\textsc{FD}", {"sat": ("lama", "abs-lama"), "opt": ("lmcut", "abs-lmcut")}),
+    (
+        r"\textsc{FD}$^+$",
+        {"sat": ("lama-symmetry-pruning", "abs-lama"), "opt": ("lmcut-symmetry-pruning", "abs-lmcut")},
+    ),
+    (r"\textsc{Powerlifted}", {"sat": ("powerlifted", "abs-powerlifted"), "opt": ("powerlifted", "abs-powerlifted")}),
+)
 # Powerlifted, which only the hard-to-ground tracks run, against its abstraction.
 POWERLIFTED = ("powerlifted", r"\textsc{Powerlifted}", r"\textsc{Powerlifted}\textsuperscript{$\alpha$}")
 # The color and mark of each solver's points in a runtime plot, in the order of its track's pairs.
@@ -66,8 +63,6 @@ DOMAIN_ROW_GAP = 0.0
 IPC_LEGEND_LINES = 2
 # The HTG figure's ten domains in two rows under its plots.
 HTG_LEGEND_COLUMNS = 5
-# The order of every runtime figure's plots, as in the tables.
-PLANNER_ORDER = ("asp", "rnd-g", "lama", "lama-symmetry-pruning", "lmcut", "lmcut-symmetry-pruning", "powerlifted")
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
 # palettes at the size of a cross. A domain both papers show keeps its color there, and tpp takes a tenth color.
 DOMAIN_COLORS = {
@@ -232,13 +227,7 @@ def _htg_runtime_figure(revision):
     htg = load_tracks(revision, "htg", [])
     domains = sorted({_htg_problem_domain(problem) for problems in htg.values() for problem in problems})
 
-    rows = []
-    for kind, name in TRACK_NAMES.items():
-        pairs = PAIRS[kind] + _baselines(htg[kind], kind)
-        if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
-            pairs += (POWERLIFTED,)
-        rows.append((name, htg[kind], sorted(pairs, key=lambda pair: PLANNER_ORDER.index(pair[0]))))
-    plot_table = _plot_rows(rows, _htg_problem_domain, DOMAIN_COLORS)
+    plot_table = _plot_rows(htg, _htg_problem_domain, DOMAIN_COLORS)
 
     # The domains in rows under the plots.
     entries = [_legend_entry(DOMAIN_COLORS[domain], domain) for domain in domains]
@@ -257,38 +246,40 @@ def _ipc_runtime_figure(tracks, colors):
     def domain_of(problem):
         return _ipc_problem_domain(problem, colors)
 
-    rows = []
-    for kind, name in TRACK_NAMES.items():
-        pairs = sorted(PAIRS[kind] + _baselines(tracks[kind], kind), key=lambda pair: PLANNER_ORDER.index(pair[0]))
-        rows.append((name, tracks[kind], pairs))
-    plot_table = _plot_rows(rows, domain_of, colors)
+    plot_table = _plot_rows(tracks, domain_of, colors)
 
     # The domains this source has under the plots, the grey of the other domains last.
     present = {domain_of(problem) for problems in tracks.values() for problem in problems}
     entries = [_legend_entry(color, domain) for domain, color in colors.items() if domain in present]
-    return _with_legend_below(plot_table, entries, -(-len(entries) // IPC_LEGEND_LINES))
+    return _with_legend_below(plot_table, entries, math.ceil(len(entries) / IPC_LEGEND_LINES))
 
 
-def _plot_rows(rows, domain_of, colors):
-    """Rows of runtime plots that share their axes, each row a track's name, problems and pairs.
+def _plot_rows(tracks, domain_of, colors):
+    """A row of runtime plots per track, sharing their axes: a column per planner every track ran.
 
     Only the first plot of a row numbers its y axis and only the bottom row its
-    x axes, so every row has to draw the same planners in the same order. The
-    last plot of a row names its track on the right.
+    x axes, so a planner one track lacks has no column at all. The last plot of
+    a row names its track on the right.
     """
+    columns = [
+        (label, modes)
+        for label, modes in PAPER_COLUMNS
+        if all(tracks[kind] and modes[kind][0] in tracks[kind][0] for kind in TRACK_NAMES)
+    ]
     lines = []
-    for row, (name, problems, pairs) in enumerate(rows):
+    for row, (kind, name) in enumerate(TRACK_NAMES.items()):
         plots = [
             _domain_runtime_plot(
-                problems,
-                pair,
+                tracks[kind],
+                *modes[kind],
+                label,
                 domain_of,
                 colors,
                 left=index == 0,
-                bottom=row == len(rows) - 1,
-                track=name if index == len(pairs) - 1 else None,
+                bottom=row == len(TRACK_NAMES) - 1,
+                track=name if index == len(columns) - 1 else None,
             )
-            for index, pair in enumerate(pairs)
+            for index, (label, modes) in enumerate(columns)
         ]
         # Room on the left for the y label, so the plots stay centred.
         lines.append("\\hspace*{0.42in}" + _joined(plots, f"{DOMAIN_PLOT_GAP}in"))
@@ -306,13 +297,9 @@ def _legend_entry(color, domain):
     return rf"\mbox{{\tikz[baseline=-0.5ex, color={color}]\pgfuseplotmark{{x}};~{domain}}}"
 
 
-def _domain_runtime_plot(problems, pair, domain_of, colors, left, bottom, track):
-    """One planner's runtime per problem against an abstraction's, its own unless the pair names another, a cross per
-    problem in its domain's color. A plot on the left labels the y axis, one at the bottom the x axis, and one given
-    a track names it on its right."""
-    solver, label, _abstract_label, *versus = pair
-    label = FD_LABELS.get(solver, label)
-    abstraction = versus[0] if versus else f"abs-{solver}"
+def _domain_runtime_plot(problems, solver, abstraction, label, domain_of, colors, left, bottom, track):
+    """One planner's runtime per problem against an abstraction's, a cross per problem in its domain's color. A plot
+    on the left labels the y axis, one at the bottom the x axis, and one given a track names it on its right."""
     by_domain = defaultdict(list)
     for problem in problems:
         by_domain[domain_of(problem)].append(problem)
@@ -343,12 +330,6 @@ def _domain_runtime_plot(problems, pair, domain_of, colors, left, bottom, track)
         + "\n".join(lines)
         + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
     )
-
-
-def _baselines(problems, kind):
-    """The track's plots of its planner with symmetry pruning and of the homomorphism planner, those the results have."""
-    pairs = (SYMMETRY_PRUNING[kind], HOMOMORPHISM[kind])
-    return tuple(pair for pair in pairs if problems and pair[0] in problems[0])
 
 
 def _htg_problem_domain(problem):
