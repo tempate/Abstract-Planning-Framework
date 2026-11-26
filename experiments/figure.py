@@ -37,6 +37,13 @@ HOMOMORPHISM = {
     "sat": ("rnd-g", r"\HM", r"\LAMAa", "abs-lama"),
     "opt": ("rnd-g", r"\HM", r"\LMcuta", "abs-lmcut"),
 }
+# The paper's runtime figures share an x axis between the tracks, so they name Fast Downward's planners as the tables do.
+FD_LABELS = {
+    "lama": r"\textsc{FD}",
+    "lmcut": r"\textsc{FD}",
+    "lama-symmetry-pruning": r"\textsc{FD}$^+$",
+    "lmcut-symmetry-pruning": r"\textsc{FD}$^+$",
+}
 # Powerlifted, which only the hard-to-ground tracks run, against its abstraction.
 POWERLIFTED = ("powerlifted", r"\textsc{Powerlifted}", r"\textsc{Powerlifted}\textsuperscript{$\alpha$}")
 # The color and mark of each solver's points in a runtime plot, in the order of its track's pairs.
@@ -219,27 +226,17 @@ def paper_figures(revision):
 
 
 def _htg_runtime_figure(revision):
-    """The paper's HTG runtime figure, a row per track under its name, a plot per planner, and a domain legend."""
+    """The paper's HTG runtime figure, a row per track, a plot per planner, and a domain legend."""
     htg = load_tracks(revision, "htg", [])
     domains = sorted({_htg_problem_domain(problem) for problems in htg.values() for problem in problems})
 
-    # Each row a cell of one table, its title over its plots, with room on the left for the y label.
     rows = []
     for kind, name in TRACK_NAMES.items():
         pairs = PAIRS[kind] + _baselines(htg[kind], kind)
         if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
             pairs += (POWERLIFTED,)
-        pairs = sorted(pairs, key=lambda pair: PLANNER_ORDER.index(pair[0]))
-        plots = [
-            _domain_runtime_plot(htg[kind], pair, _htg_problem_domain, DOMAIN_COLORS, index == 0)
-            for index, pair in enumerate(pairs)
-        ]
-        rows.append(
-            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
-            + "\n\\hspace*{0.42in}"
-            + _joined(plots, f"{DOMAIN_PLOT_GAP}in")
-        )
-    plot_table = "\\begin{tabular}[c]{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
+        rows.append((name, htg[kind], sorted(pairs, key=lambda pair: PLANNER_ORDER.index(pair[0]))))
+    plot_table = _plot_rows(rows, _htg_problem_domain, DOMAIN_COLORS)
 
     # The domains in rows under the plots.
     entries = [_legend_entry(DOMAIN_COLORS[domain], domain) for domain in domains]
@@ -253,7 +250,7 @@ def _ipc_sources(revision):
 
 
 def _ipc_runtime_figure(tracks, colors):
-    """One IPC source's runtime figure, a row per track under its name, a plot per planner, and a domain legend."""
+    """One IPC source's runtime figure, a row per track, a plot per planner, and a domain legend."""
 
     def domain_of(problem):
         return _ipc_problem_domain(problem, colors)
@@ -261,20 +258,39 @@ def _ipc_runtime_figure(tracks, colors):
     rows = []
     for kind, name in TRACK_NAMES.items():
         pairs = sorted(PAIRS[kind] + _baselines(tracks[kind], kind), key=lambda pair: PLANNER_ORDER.index(pair[0]))
-        plots = [
-            _domain_runtime_plot(tracks[kind], pair, domain_of, colors, index == 0) for index, pair in enumerate(pairs)
-        ]
-        rows.append(
-            rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
-            + "\n\\hspace*{0.42in}"
-            + _joined(plots, f"{DOMAIN_PLOT_GAP}in")
-        )
-    plot_table = "\\begin{tabular}{@{}c@{}}\n" + " \\\\[1.2em]\n".join(rows) + "\n\\end{tabular}"
+        rows.append((name, tracks[kind], pairs))
+    plot_table = _plot_rows(rows, domain_of, colors)
 
     # The domains this source has under the plots, the grey of the other domains last.
     present = {domain_of(problem) for problems in tracks.values() for problem in problems}
     entries = [_legend_entry(color, domain) for domain, color in colors.items() if domain in present]
     return _with_legend_below(plot_table, entries, IPC_LEGEND_COLUMNS)
+
+
+def _plot_rows(rows, domain_of, colors):
+    """Rows of runtime plots that share their axes, each row a track's name, problems and pairs.
+
+    Only the first plot of a row numbers its y axis and only the bottom row its
+    x axes, so every row has to draw the same planners in the same order. The
+    last plot of a row names its track on the right.
+    """
+    lines = []
+    for row, (name, problems, pairs) in enumerate(rows):
+        plots = [
+            _domain_runtime_plot(
+                problems,
+                pair,
+                domain_of,
+                colors,
+                left=index == 0,
+                bottom=row == len(rows) - 1,
+                track=name if index == len(pairs) - 1 else None,
+            )
+            for index, pair in enumerate(pairs)
+        ]
+        # Room on the left for the y label, so the plots stay centred.
+        lines.append("\\hspace*{0.42in}" + _joined(plots, f"{DOMAIN_PLOT_GAP}in"))
+    return "\\begin{tabular}[c]{@{}c@{}}\n" + f" \\\\[{DOMAIN_PLOT_GAP}in]\n".join(lines) + "\n\\end{tabular}"
 
 
 def _with_legend_below(plot_table, entries, columns):
@@ -288,10 +304,12 @@ def _legend_entry(color, domain):
     return rf"\mbox{{\tikz[baseline=-0.5ex, color={color}]\pgfuseplotmark{{x}};~{domain}}}"
 
 
-def _domain_runtime_plot(problems, pair, domain_of, colors, labelled):
+def _domain_runtime_plot(problems, pair, domain_of, colors, left, bottom, track):
     """One planner's runtime per problem against an abstraction's, its own unless the pair names another, a cross per
-    problem in its domain's color. Only the labelled plot of a row numbers and names its y axis."""
+    problem in its domain's color. A plot on the left labels the y axis, one at the bottom the x axis, and one given
+    a track names it on its right."""
     solver, label, _abstract_label, *versus = pair
+    label = FD_LABELS.get(solver, label)
     abstraction = versus[0] if versus else f"abs-{solver}"
     by_domain = defaultdict(list)
     for problem in problems:
@@ -309,10 +327,16 @@ def _domain_runtime_plot(problems, pair, domain_of, colors, labelled):
     options = r"label style={font=\small}, tick label style={font=\footnotesize}"
     # A light line at every power of ten, as in Horcik et al. (2022).
     options += r", grid=major, grid style={black!30, thin}"
-    options += r", ylabel={X\textsuperscript{$\alpha$} time (s)}" if labelled else ", yticklabels={}"
+    options += r", ylabel={X\textsuperscript{$\alpha$} time (s)}" if left else ", yticklabels={}"
+    options += rf", xlabel={{{label}{{}} time (s)}}" if bottom else ", xticklabels={}"
+    if track is not None:
+        options += (
+            r", after end axis/.append code={\node[rotate=-90, anchor=south, inner sep=4pt, font=\small] "
+            rf"at (rel axis cs:1,0.5) {{{track}}};}}"
+        )
     return (
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
-        + rf"\begin{{loglogaxis}}[bordered, xlabel={{{label}{{}} time (s)}}, {options}]"
+        + rf"\begin{{loglogaxis}}[bordered, {options}]"
         + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
         + "\n".join(lines)
         + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
