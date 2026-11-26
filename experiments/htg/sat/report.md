@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-25 18:16 — experiments/htg/sat/results.csv
+2026-11-26 05:41 — experiments/htg/sat/results.csv
 
 443 problems compared over asp, abs-asp, abs-lama, lama, lama-symmetry-pruning, abs-powerlifted, powerlifted
 
@@ -9,10 +9,10 @@
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA        LAMA+ Powerliftedᵅ  Powerlifted
 -------------------------------------------------------------------------------------------------------------------------
-Plans found                      79 (17.8%)   99 (22.3%)  242 (54.6%)  219 (49.4%)  178 (40.2%)  288 (65.0%)  325 (73.4%)
+Plans found                      79 (17.8%)   99 (22.3%)  242 (54.6%)  219 (49.4%)  180 (40.6%)  288 (65.0%)  325 (73.4%)
 Timeouts                         89 (20.1%)  106 (23.9%)    28 (6.3%)    38 (8.6%)   77 (17.4%)    13 (2.9%)    41 (9.3%)
 Out of memory                   275 (62.1%)  238 (53.7%)  173 (39.1%)  186 (42.0%)  186 (42.0%)  142 (32.1%)   77 (17.4%)
-Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     2 (0.5%)     0 (0.0%)     0 (0.0%)
+Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
 Total problems                          443          443          443          443          443          443          443
 ```
 
@@ -98,12 +98,12 @@ logistics-large-simple (24)     goal-1         2         5         6         5  
                                 goal-3         0         1         6         5         1         6         6
                                 goal-4         0         4         6         5         1         6         6
 organic-synthesis-MIT (18)                     2         0         0         2         2         4        18
-organic-synthesis-alkene (18)                  15        15        16        15        13        15        18
+organic-synthesis-alkene (18)                  15        15        16        15        15        15        18
 organic-synthesis-original (20)                   1         0         0         1         1         0        16
 pipesworld-tankage-nosplit (47)                   6         6        14        15        16        46        45
 rovers-large-simple (35)        goal-2         1         1         1         1         1         5         7
                                 goal-4         3         2         3         3         3         7         9
                                 goal-6         3         2         3         3         3         3         9
                                 goal-8         1         1         3         3         3         3        10
-Total (443)                                   79        99       242       219       178       288       325
+Total (443)                                   79        99       242       219       180       288       325
 ```

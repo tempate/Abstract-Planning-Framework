@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-25 18:16 — experiments/ipc/sat/symmetries/results.csv
+2026-11-26 05:41 — experiments/ipc/sat/symmetries/results.csv
 
 557 problems compared over asp, abs-asp, abs-lama, lama, lama-symmetry-pruning; 120 dropped as unfinished
 
@@ -9,10 +9,10 @@
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA        LAMA+
 -----------------------------------------------------------------------------------------------
-Plans found                     128 (23.0%)  145 (26.0%)  358 (64.3%)  507 (91.0%)  497 (89.2%)
-Timeouts                        410 (73.6%)  396 (71.1%)  123 (22.1%)    35 (6.3%)    40 (7.2%)
-Out of memory                     19 (3.4%)    16 (2.9%)   75 (13.5%)    14 (2.5%)     7 (1.3%)
-Others                             0 (0.0%)     0 (0.0%)     1 (0.2%)     1 (0.2%)    13 (2.3%)
+Plans found                     128 (23.0%)  145 (26.0%)  358 (64.3%)  507 (91.0%)  521 (93.5%)
+Timeouts                        410 (73.6%)  396 (71.1%)  123 (22.1%)    35 (6.3%)    33 (5.9%)
+Out of memory                     19 (3.4%)    16 (2.9%)   75 (13.5%)    14 (2.5%)     1 (0.2%)
+Others                             0 (0.0%)     0 (0.0%)     1 (0.2%)     1 (0.2%)     2 (0.4%)
 Total problems                          557          557          557          557          557
 ```
 
@@ -73,36 +73,36 @@ Total                                   144          352
 Domain (problems)                  ASP      ASPᵅ     LAMAᵅ      LAMA     LAMA+
 ------------------------------------------------------------------------------
 agricola-sat18-strips (20)           0         0        10        12        11
-airport (19)                        14        14        19        19        12
+airport (19)                        14        14        19        19        19
 barman-sat11-strips (20)             0         0         0        20        20
 barman-sat14-strips (20)             0         0         0        20        20
 childsnack-sat14-strips (20)         0         1         8         6        19
-depot (9)                            2         3         6         8         8
+depot (9)                            2         3         6         8         9
 driverlog (13)                       7         8        13        13        13
 elevators-sat08-strips (15)          0         0         8        15        15
 elevators-sat11-strips (14)          0         0         0        14        14
 gripper (20)                         4         5         5        20        20
 hiking-sat14-strips (20)             2         7        15        20        20
 logistics00 (19)                     9         9        19        19        19
-logistics98 (31)                     4         6        28        31        28
-miconic (11)                         2         3        11        11        10
+logistics98 (31)                     4         6        28        31        31
+miconic (11)                         2         3        11        11        11
 mprime (21)                         21        21        21        21        21
 mystery (16)                        10        10        10        10        10
-nomystery-sat11-strips (14)          4         4        10         9         7
-openstacks-sat08-strips (29)         4         5        23        29        28
-openstacks-sat11-strips (15)         0         0         4        15        14
+nomystery-sat11-strips (14)          4         4        10         9         9
+openstacks-sat08-strips (29)         4         5        23        29        29
+openstacks-sat11-strips (15)         0         0         4        15        15
 openstacks-sat14-strips (12)         0         0         0        12        12
 pipesworld-notankage (34)           15        15        18        27        28
-pipesworld-tankage (47)             10        14        39        40        41
+pipesworld-tankage (47)             10        14        39        40        40
 quantum-layout-sat23-strips (7)         3         2         7         7         7
-satellite (34)                       6         5        28        34        30
+satellite (34)                       6         5        28        34        34
 sokoban-sat08-strips (7)             1         1         6         6         6
 sokoban-sat11-strips (5)             0         0         4         4         4
 tpp (29)                             5         7        14        29        29
 transport-sat08-strips (2)           1         1         1         2         2
 transport-sat11-strips (2)           0         0         0         2         2
-woodworking-sat08-strips (8)         0         0         7         8         5
-woodworking-sat11-strips (11)         0         0        11        11         9
+woodworking-sat08-strips (8)         0         0         7         8         8
+woodworking-sat11-strips (11)         0         0        11        11        11
 zenotravel (13)                      4         4        13        13        13
-Total (557)                        128       145       358       507       497
+Total (557)                        128       145       358       507       521
 ```
