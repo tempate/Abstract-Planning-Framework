@@ -85,7 +85,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "sat" / "symmetries",
             suite=sat.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lama", "asp", "lama"),
+            modes=("abs-asp", "abs-lama", "asp", "lama", "lama-symmetry-pruning"),
         ),
         # The same suite, restricted to the problems numeric-fast-downward finds a
         # resource for, and planned from that resource's objects.
@@ -94,7 +94,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "sat" / "resources",
             suite=sat.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lama", "asp", "lama"),
+            modes=("abs-asp", "abs-lama", "asp", "lama", "lama-symmetry-pruning"),
             abstract_arguments=("--abstraction-source", "resources"),
         ),
         # The hard-to-ground benchmarks, refined with gaps like sat/symmetries.
@@ -103,7 +103,15 @@ TRACKS = {
             directory=EXPERIMENTS / "htg" / "sat",
             suite=htg.SUITE,
             benchmarks_dir=BENCHMARKS / "htg-domains",
-            modes=("abs-asp", "abs-lama", "asp", "lama", "abs-powerlifted", "powerlifted"),
+            modes=(
+                "abs-asp",
+                "abs-lama",
+                "asp",
+                "lama",
+                "abs-powerlifted",
+                "powerlifted",
+                "lama-symmetry-pruning",
+            ),
         ),
         # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
         Track(

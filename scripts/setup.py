@@ -5,6 +5,7 @@ import hashlib
 import io
 import os
 import platform
+import re
 import subprocess
 import sys
 import tarfile
@@ -27,6 +28,8 @@ NUMERIC_DOWNWARD_PATCH = ROOT / "lib" / "numeric-fast-downward.patch"
 NUMERIC_DOWNWARD_BUILD = NUMERIC_DOWNWARD / "builds" / "release64"
 POWERLIFTED_SEARCH = ROOT / "lib" / "powerlifted" / "builds" / "release" / "search" / "search"
 STRUCTURAL_SYMMETRIES_BUILD = ROOT / "lib" / "structural-symmetries" / "builds" / "release"
+# Adds pruning of symmetric states (DKS) to lazy search, which lama-first uses.
+STRUCTURAL_SYMMETRIES_PATCH = ROOT / "lib" / "structural-symmetries.patch"
 # The fork dates from 2023. CMake 4 refuses its minimum version and GCC 14 its bundled
 # optional.hh, and older versions of both ignore these two settings.
 STRUCTURAL_SYMMETRIES_BUILD_ENV = {"CMAKE_POLICY_VERSION_MINIMUM": "3.5", "CXXFLAGS": "-Wno-template-body"}
@@ -108,12 +111,21 @@ def _build_powerlifted():
 
 def _build_structural_symmetries():
     print("== Fast Downward with structural symmetries")
-    if STRUCTURAL_SYMMETRIES_BUILD.is_dir():
+    source = ROOT / "lib" / "structural-symmetries"
+    # A build from before the patch lacks symmetry pruning in lazy search, so patching forces a rebuild.
+    reverse_check = ["git", "apply", "--reverse", "--check", str(STRUCTURAL_SYMMETRIES_PATCH)]
+    patched = subprocess.run(reverse_check, cwd=source, capture_output=True).returncode == 0
+    if patched and STRUCTURAL_SYMMETRIES_BUILD.is_dir():
         print(f"already built at {STRUCTURAL_SYMMETRIES_BUILD}")
         return
 
+    if not patched:
+        # An earlier version of the patch may be applied, so the files it touches start from the fork's own.
+        touched = re.findall(r"^diff --git a/(\S+)", STRUCTURAL_SYMMETRIES_PATCH.read_text(), re.MULTILINE)
+        _run(["git", "checkout", "--", *touched], cwd=source)
+        _run(["git", "apply", str(STRUCTURAL_SYMMETRIES_PATCH)], cwd=source)
     environment = {**os.environ, **STRUCTURAL_SYMMETRIES_BUILD_ENV}
-    _run([sys.executable, "build.py", "release"], cwd=ROOT / "lib" / "structural-symmetries", env=environment)
+    _run([sys.executable, "build.py", "release"], cwd=source, env=environment)
 
 
 def _install_plasp():

@@ -1,0 +1,135 @@
+diff --git a/src/search/search_engines/lazy_search.cc b/src/search/search_engines/lazy_search.cc
+index 147c3fe4b..98523c48a 100644
+--- a/src/search/search_engines/lazy_search.cc
++++ b/src/search/search_engines/lazy_search.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "../algorithms/ordered_set.h"
+ #include "../plugins/options.h"
++#include "../structural_symmetries/group.h"
++#include "../tasks/root_task.h"
+ #include "../task_utils/successor_generator.h"
+ #include "../task_utils/task_properties.h"
+ #include "../utils/logging.h"
+@@ -25,6 +27,7 @@ LazySearch::LazySearch(const plugins::Options &opts)
+       randomize_successors(opts.get<bool>("randomize_successors")),
+       preferred_successors_first(opts.get<bool>("preferred_successors_first")),
+       rng(utils::parse_rng_from_options(opts)),
++      group(prepare_symmetries(opts)),
+       current_state(state_registry.get_initial_state()),
+       current_predecessor_id(StateID::no_state),
+       current_operator_id(OperatorID::no_operator),
+@@ -37,6 +40,32 @@ LazySearch::LazySearch(const plugins::Options &opts)
+     */
+ }
+ 
++shared_ptr<Group> LazySearch::prepare_symmetries(const plugins::Options &opts) {
++    if (!opts.contains("symmetries"))
++        return nullptr;
++    shared_ptr<Group> symmetries = opts.get<shared_ptr<Group>>("symmetries");
++    if (!symmetries->is_initialized()) {
++        utils::g_log << "Initializing symmetries (lazy search)" << endl;
++        symmetries->compute_symmetries(TaskProxy(*tasks::g_root_task));
++    }
++    if (!symmetries->has_symmetries())
++        return nullptr;
++    /*
++      Duplicate pruning registers every state as generated and only drops one
++      symmetric to a state seen before, so path-dependent evaluators such as the
++      landmark heuristic see real transitions. Orbit space search would replace
++      each successor by its canonical representative and leave their per-state
++      information describing another state.
++
++      The registry pairs each state with its canonical representative from the
++      first state on, so it has to know the group before it registers the
++      initial state.
++    */
++    utils::g_log << "Setting group in registry for DKS search" << endl;
++    state_registry.set_group(symmetries);
++    return symmetries;
++}
++
+ void LazySearch::set_preferred_operator_evaluators(
+     vector<shared_ptr<Evaluator>> &evaluators) {
+     preferred_operator_evaluators = evaluators;
+@@ -189,7 +218,7 @@ SearchStatus LazySearch::step() {
+                 }
+             }
+             node.close();
+-            if (check_goal_and_set_plan(current_state))
++            if (check_goal_and_set_plan(current_state, group))
+                 return SOLVED;
+             if (search_progress.check_progress(current_eval_context)) {
+                 statistics.print_checkpoint_line(current_g);
+diff --git a/src/search/search_engines/lazy_search.h b/src/search/search_engines/lazy_search.h
+index bace0f734..65bd3df99 100644
+--- a/src/search/search_engines/lazy_search.h
++++ b/src/search/search_engines/lazy_search.h
+@@ -14,6 +14,8 @@
+ #include <memory>
+ #include <vector>
+ 
++class Group;
++
+ namespace lazy_search {
+ class LazySearch : public SearchEngine {
+ protected:
+@@ -28,6 +30,11 @@ protected:
+     std::vector<Evaluator *> path_dependent_evaluators;
+     std::vector<std::shared_ptr<Evaluator>> preferred_operator_evaluators;
+ 
++    // Duplicate pruning over symmetric states (DKS), or none without symmetries.
++    // Declared before current_state, which the registry may only create once it
++    // knows the group.
++    std::shared_ptr<Group> group;
++
+     State current_state;
+     StateID current_predecessor_id;
+     OperatorID current_operator_id;
+@@ -43,6 +50,8 @@ protected:
+ 
+     void reward_progress();
+ 
++    std::shared_ptr<Group> prepare_symmetries(const plugins::Options &opts);
++
+     std::vector<OperatorID> get_successor_operators(
+         const ordered_set::OrderedSet<OperatorID> &preferred_operators) const;
+ 
+diff --git a/src/search/search_engines/plugin_lazy_greedy.cc b/src/search/search_engines/plugin_lazy_greedy.cc
+index fe5cbd98e..d43004fca 100644
+--- a/src/search/search_engines/plugin_lazy_greedy.cc
++++ b/src/search/search_engines/plugin_lazy_greedy.cc
+@@ -2,6 +2,7 @@
+ #include "search_common.h"
+ 
+ #include "../plugins/plugin.h"
++#include "../structural_symmetries/group.h"
+ 
+ using namespace std;
+ 
+@@ -31,6 +32,10 @@ public:
+             "to preferred operator nodes",
+             DEFAULT_LAZY_BOOST);
+         SearchEngine::add_succ_order_options(*this);
++        add_option<shared_ptr<Group>>(
++            "symmetries",
++            "symmetries object to compute structural symmetries for duplicate pruning",
++            plugins::ArgumentInfo::NO_DEFAULT);
+         SearchEngine::add_options_to_feature(*this);
+ 
+         document_note(
+@@ -69,7 +74,13 @@ public:
+             true);
+     }
+ 
+-    virtual shared_ptr<lazy_search::LazySearch> create_component(const plugins::Options &options, const utils::Context &) const override {
++    virtual shared_ptr<lazy_search::LazySearch> create_component(const plugins::Options &options, const utils::Context &context) const override {
++        // Orbit space search would hand path-dependent evaluators, such as the
++        // landmark heuristic, a permuted state in place of the one generated.
++        if (options.contains("symmetries") &&
++            options.get<shared_ptr<Group>>("symmetries")->get_search_symmetries() != SearchSymmetries::DKS) {
++            context.error("Lazy search supports only duplicate pruning (search_symmetries=dks).");
++        }
+         plugins::Options options_copy(options);
+         options_copy.set("open", search_common::create_greedy_open_list_factory(options));
+         shared_ptr<lazy_search::LazySearch> engine = make_shared<lazy_search::LazySearch>(options_copy);

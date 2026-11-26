@@ -28,6 +28,7 @@ MODES = (
     "abs-asp",
     "abs-lama",
     "lama",
+    "lama-symmetry-pruning",
     "abs-lmcut",
     "lmcut",
     "abs-powerlifted",

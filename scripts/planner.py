@@ -70,6 +70,12 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
+        "lama-symmetry-pruning",
+        parents=[shared],
+        help="Solve the task with lama-first, pruning states symmetric to one already seen",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
         "lmcut",
         parents=[shared],
         help="Solve the task optimally with Fast Downward's A* and LM-cut",
