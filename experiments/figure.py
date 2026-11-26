@@ -32,6 +32,8 @@ SYMMETRY_PRUNING = {
     "sat": ("lama-symmetry-pruning", r"\LAMAs", r"\LAMAa", "abs-lama"),
     "opt": ("lmcut-symmetry-pruning", r"\LMcuts", r"\LMcuta", "abs-lmcut"),
 }
+# The homomorphism planner of Horcik et al. (2022), drawn against LAMA's abstraction on the satisficing tracks.
+HOMOMORPHISM = {"sat": ("rnd-g", r"\HM", r"\LAMAa", "abs-lama")}
 # Powerlifted, which only the hard-to-ground tracks run, against its abstraction.
 POWERLIFTED = ("powerlifted", r"\textsc{Powerlifted}", r"\textsc{Powerlifted}\textsuperscript{$\alpha$}")
 # The color and mark of each solver's points in a runtime plot, in the order of its track's pairs.
@@ -42,8 +44,8 @@ POWERLIFTED_MARKS = SOLVER_MARKS[2:]
 ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
-# The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled.
-HTG_PLOT_SIZE = 1.2
+# The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled, five to the text width.
+HTG_PLOT_SIZE = 0.88
 # The IPC figures' plots, drawn at the size they print, as main.tex includes them unscaled.
 IPC_PLOT_SIZE = 1.05
 # Every plot colored by domain numbers and labels its own y axis, which sit in the gap before it, in inches.
@@ -53,7 +55,7 @@ IPC_LEGEND_COLUMNS = 3
 # The HTG figure's ten domains in two rows under its plots.
 HTG_LEGEND_COLUMNS = 5
 # The order of every runtime figure's plots, as in the tables.
-PLANNER_ORDER = ("asp", "lama", "lama-symmetry-pruning", "lmcut", "lmcut-symmetry-pruning", "powerlifted")
+PLANNER_ORDER = ("asp", "rnd-g", "lama", "lama-symmetry-pruning", "lmcut", "lmcut-symmetry-pruning", "powerlifted")
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
 # palettes at the size of a cross. A domain both papers show keeps its color there, and tpp takes a tenth color.
 DOMAIN_COLORS = {
@@ -221,7 +223,7 @@ def _htg_runtime_figure(revision):
     # Each row a cell of one table, its title over its plots, with room on the left for the y label.
     rows = []
     for kind, name in TRACK_NAMES.items():
-        pairs = PAIRS[kind] + _symmetry_pruning(htg[kind], kind)
+        pairs = PAIRS[kind] + _baselines(htg[kind], kind)
         if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
             pairs += (POWERLIFTED,)
         pairs = sorted(pairs, key=lambda pair: PLANNER_ORDER.index(pair[0]))
@@ -252,9 +254,7 @@ def _ipc_runtime_figure(tracks, colors):
 
     rows = []
     for kind, name in TRACK_NAMES.items():
-        pairs = sorted(
-            PAIRS[kind] + _symmetry_pruning(tracks[kind], kind), key=lambda pair: PLANNER_ORDER.index(pair[0])
-        )
+        pairs = sorted(PAIRS[kind] + _baselines(tracks[kind], kind), key=lambda pair: PLANNER_ORDER.index(pair[0]))
         plots = [_domain_runtime_plot(tracks[kind], pair, domain_of, colors) for pair in pairs]
         rows.append(
             rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
@@ -310,9 +310,10 @@ def _domain_runtime_plot(problems, pair, domain_of, colors):
     )
 
 
-def _symmetry_pruning(problems, kind):
-    """The track's plot of its planner with symmetry pruning, when the results have it."""
-    return (SYMMETRY_PRUNING[kind],) if problems and SYMMETRY_PRUNING[kind][0] in problems[0] else ()
+def _baselines(problems, kind):
+    """The track's plots of its planner with symmetry pruning and of the homomorphism planner, those the results have."""
+    pairs = (SYMMETRY_PRUNING[kind], *([HOMOMORPHISM[kind]] if kind in HOMOMORPHISM else []))
+    return tuple(pair for pair in pairs if problems and pair[0] in problems[0])
 
 
 def _htg_problem_domain(problem):
