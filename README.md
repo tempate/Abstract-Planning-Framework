@@ -66,7 +66,11 @@ beside the problem.
 `lama-symmetry-pruning` adds symmetry pruning to `lama`, as a baseline without an
 abstraction. It prunes each state symmetric to one already seen (DKS), which
 `lib/structural-symmetries.patch` adds to lazy search and `scripts.setup` applies
-before it builds.
+before it builds. Its group is the permutations of the class `--class-id` names,
+the one the abstract modes would collapse, not every structural symmetry of the
+task. Where the translator's variables break that symmetry, or the task has no
+class, it searches without pruning. A benchmark run gives it the best class of
+`abs-lama`, and `lmcut-symmetry-pruning` that of `abs-lmcut`.
 
 `rnd-g` is the planner of [Horčík, Fišer and Torralba (AAAI 2022)](https://doi.org/10.1609/aaai.v36i9.21212)
 in cpddl, as an external baseline. It searches the lifted task, guided by a

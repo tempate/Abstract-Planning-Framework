@@ -34,40 +34,42 @@ class Search:
 # Satisficing
 LAMA = Search(driver=("--alias", "lama-first"))
 # lama-first pruning states symmetric to one already seen (DKS), which lib/structural-symmetries.patch adds to lazy
-# search. Orbit space search would hand the landmark heuristic permuted states.
+# search. Orbit space search would hand the landmark heuristic permuted states. The patch also lets the fork read
+# its generators from search_generators.txt in the directory it runs in, instead of computing them.
 LAMA_SYMMETRY_PRUNING = Search(
     options=(
         "--search",
         "let(hlm,landmark_sum(lm_factory=lm_reasonable_orders_hps(lm_rhw()),transform=adapt_costs(one),pref=false),"
         "let(hff,ff(transform=adapt_costs(one)),"
         "lazy_greedy([hff,hlm],preferred=[hff,hlm],cost_type=one,reopen_closed=false,"
-        "symmetries=structural_symmetries(search_symmetries=dks,time_bound=0))))",
+        "symmetries=structural_symmetries(search_symmetries=dks,read_search_generators=true))))",
     ),
     script=STRUCTURAL_SYMMETRIES_SCRIPT,
     unsolvable_exit_codes=(_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE, _SEARCH_UNSOLVED_INCOMPLETE),
 )
 # Optimal
 LMCUT = Search(options=("--search", "astar(eval_modify_costs(lmcut(),cost_type=one),cost_type=one)"))
-# The same, with orbit space search pruning every state symmetric to one already generated.
+# The same, with orbit space search pruning every state symmetric to one already generated, under the generators
+# in search_generators.txt.
 # The fork predates eval_modify_costs, so LM-cut adapts the costs itself.
 LMCUT_SYMMETRY_PRUNING = Search(
     options=(
         "--search",
         "astar(lmcut(transform=adapt_costs(one)),cost_type=one,"
-        "symmetries=structural_symmetries(search_symmetries=oss,time_bound=0))",
+        "symmetries=structural_symmetries(search_symmetries=oss,read_search_generators=true))",
     ),
     script=STRUCTURAL_SYMMETRIES_SCRIPT,
     unsolvable_exit_codes=(_TRANSLATE_UNSOLVABLE, _SEARCH_UNSOLVABLE, _SEARCH_UNSOLVED_INCOMPLETE),
 )
 
 
-def pddl_to_sas(base_dir, domain_path, problem_path, label):
-    """Translate a concrete or abstract PDDL task and return its SAS file."""
+def pddl_to_sas(base_dir, domain_path, problem_path, label, script=FAST_DOWNWARD_SCRIPT):
+    """Translate a concrete or abstract PDDL task with this Fast Downward and return its SAS file."""
     os.makedirs(base_dir, exist_ok=True)
     sas_path = os.path.join(base_dir, "output.sas")
     command = [
         sys.executable,
-        FAST_DOWNWARD_SCRIPT,
+        script,
         "--sas-file",
         sas_path,
         "--keep-sas-file",
@@ -132,8 +134,8 @@ def find_pddl_plan(base_dir, domain_path, problem_path, label, search):
     return _find_plan(command, label, plan_path, search.unsolvable_exit_codes)
 
 
-def find_sas_plan(base_dir, sas_path, label, search):
-    """Search an already translated task, returning its plan or None."""
+def find_sas_plan(base_dir, sas_path, label, search, cwd=None):
+    """Search an already translated task, from cwd if given, returning its plan or None."""
     plan_path = os.path.join(base_dir, f"{label}.plan")
     command = [
         sys.executable,
@@ -145,7 +147,7 @@ def find_sas_plan(base_dir, sas_path, label, search):
         *search.options,
     ]
 
-    return _find_plan(command, label, plan_path, search.unsolvable_exit_codes)
+    return _find_plan(command, label, plan_path, search.unsolvable_exit_codes, cwd)
 
 
 def actions_from_plan_file(plan):
@@ -159,8 +161,8 @@ def actions_from_plan_file(plan):
     return tuple(actions)
 
 
-def _find_plan(command, label, plan_path, unsolvable_exit_codes):
-    completed = subprocess.run(command, capture_output=True, text=True)
+def _find_plan(command, label, plan_path, unsolvable_exit_codes, cwd=None):
+    completed = subprocess.run(command, capture_output=True, text=True, cwd=cwd)
 
     if completed.returncode in unsolvable_exit_codes:
         return None

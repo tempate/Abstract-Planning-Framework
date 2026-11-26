@@ -133,3 +133,114 @@ index fe5cbd98e..d43004fca 100644
          plugins::Options options_copy(options);
          options_copy.set("open", search_common::create_greedy_open_list_factory(options));
          shared_ptr<lazy_search::LazySearch> engine = make_shared<lazy_search::LazySearch>(options_copy);
+diff --git a/src/search/structural_symmetries/group.cc b/src/search/structural_symmetries/group.cc
+index 03cc97a59..6c7cf1311 100644
+--- a/src/search/structural_symmetries/group.cc
++++ b/src/search/structural_symmetries/group.cc
+@@ -17,6 +17,7 @@
+ #include <iostream>
+ #include <numeric>
+ #include <queue>
++#include <sstream>
+ 
+ 
+ using namespace std;
+@@ -32,6 +33,7 @@ Group::Group(const plugins::Options &opts)
+       dump_permutations(opts.get<bool>("dump_permutations")),
+       write_search_generators(opts.get<bool>("write_search_generators")),
+       write_all_generators(opts.get<bool>("write_all_generators")),
++      read_search_generators(opts.get<bool>("read_search_generators")),
+       num_vars(0),
+       permutation_length(0),
+       graph_size(0),
+@@ -56,6 +58,11 @@ void Group::compute_symmetries(const TaskProxy &task_proxy) {
+         cerr << "Already computed symmetries" << endl;
+         exit_with(ExitCode::SEARCH_CRITICAL_ERROR);
+     }
++    if (read_search_generators) {
++        read_generators(task_proxy);
++        initialized = true;
++        return;
++    }
+     GraphCreator graph_creator;
+     bool success = graph_creator.compute_symmetries(
+         task_proxy,
+@@ -79,6 +86,47 @@ void Group::compute_symmetries(const TaskProxy &task_proxy) {
+     }
+ }
+ 
++// Reads the generators from search_generators.txt instead of computing them, one per line as
++// the images of the variables followed by those of the values, in the order the graph creator numbers them.
++void Group::read_generators(const TaskProxy &task_proxy) {
++    VariablesProxy vars = task_proxy.get_variables();
++    int length = vars.size();
++    for (VariableProxy var : vars) {
++        add_to_dom_sum_by_var(length);
++        length += var.get_domain_size();
++        for (int value = 0; value < var.get_domain_size(); ++value) {
++            add_to_var_by_val(var.get_id());
++        }
++    }
++    set_permutation_num_variables(vars.size());
++    set_permutation_length(length);
++    set_graph_size(length);
++
++    ifstream file("search_generators.txt");
++    if (!file) {
++        cerr << "Cannot open search_generators.txt" << endl;
++        exit_with(ExitCode::SEARCH_CRITICAL_ERROR);
++    }
++    string line;
++    while (getline(file, line)) {
++        istringstream images(line);
++        vector<unsigned int> generator;
++        unsigned int image;
++        while (images >> image) {
++            generator.push_back(image);
++        }
++        if (generator.empty()) {
++            continue;
++        }
++        if (static_cast<int>(generator.size()) != length) {
++            cerr << "A generator has " << generator.size() << " images instead of " << length << endl;
++            exit_with(ExitCode::SEARCH_CRITICAL_ERROR);
++        }
++        add_raw_generator(generator.data());
++    }
++    utils::g_log << "Read " << get_num_generators() << " generators" << endl;
++}
++
+ void Group::write_generators() const {
+     assert(write_search_generators || write_all_generators);
+ 
+@@ -394,6 +442,10 @@ public:
+             "Write all symmetry group generators to a file, including those that "
+             "do not affect variables, and stop afterwards.",
+             "false");
++        add_option<bool>(
++            "read_search_generators",
++            "Read the generators from search_generators.txt instead of computing them.",
++            "false");
+     }
+ };
+ 
+diff --git a/src/search/structural_symmetries/group.h b/src/search/structural_symmetries/group.h
+index fc446820f..3274b4530 100644
+--- a/src/search/structural_symmetries/group.h
++++ b/src/search/structural_symmetries/group.h
+@@ -34,6 +34,7 @@ class Group {
+     const bool dump_permutations;
+     const bool write_search_generators;
+     const bool write_all_generators;
++    const bool read_search_generators;
+ 
+     // Group properties
+     int num_vars;
+@@ -55,6 +56,7 @@ class Group {
+     RawPermutation compute_inverse_permutation(const RawPermutation &permutation) const;
+ 
+     void write_generators() const;
++    void read_generators(const TaskProxy &task_proxy);
+     void add_to_be_written_generator(const unsigned int *generator);
+ public:
+     explicit Group(const plugins::Options &opts);

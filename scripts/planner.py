@@ -3,7 +3,7 @@
 import argparse
 
 from core.pipeline.solve import solve
-from core.planners.registry import PLANNERS
+from core.planners.registry import CLASS_MODES, PLANNERS
 
 from .utils.arguments import (
     abstract_planning_config,
@@ -30,6 +30,8 @@ def _compute(args):
 
     if args.mode.startswith("abs-"):
         return solve(abstract_planning_config(args), on_update)
+    if args.mode in CLASS_MODES:
+        return PLANNERS[args.mode](abstract_planning_config(args)).solve(on_update)
     return PLANNERS[args.mode](planning_config(args)).solve(on_update)
 
 
@@ -71,8 +73,8 @@ def _argument_parser():
     )
     modes.add_parser(
         "lama-symmetry-pruning",
-        parents=[shared],
-        help="Solve the task with lama-first, pruning states symmetric to one already seen",
+        parents=[shared, abstract],
+        help="Solve the task with lama-first, pruning states symmetric to one already seen under the class's permutations",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
@@ -89,8 +91,9 @@ def _argument_parser():
     )
     modes.add_parser(
         "lmcut-symmetry-pruning",
-        parents=[shared],
-        help="Solve the task optimally with A* and LM-cut, pruning symmetric states by orbit space search",
+        parents=[shared, abstract],
+        help="Solve the task optimally with A* and LM-cut, pruning states symmetric under the class's permutations by "
+        "orbit space search",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(

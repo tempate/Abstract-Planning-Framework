@@ -90,6 +90,13 @@ def build_abstract_task(config: AbstractPlanningConfig, metrics: PlanningMetrics
     )
 
 
+def select_class(config, metrics):
+    """The class an abstract run with this config would collapse."""
+    with metrics.measure("problem_reading"):
+        problem = read_problem(config.domain_path, config.problem_path)
+    return _choose_abstraction(problem, config, metrics)
+
+
 def _choose_abstraction(problem, config, metrics):
     """The objects the config names, or else the candidate class with the config's ID, the largest without one."""
     if config.objects_to_abstract is not None:
