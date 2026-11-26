@@ -70,6 +70,12 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
+        "lama-symmetry-pruning",
+        parents=[shared],
+        help="Solve the task with lama-first, pruning states symmetric to one already seen",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
         "lmcut",
         parents=[shared],
         help="Solve the task optimally with Fast Downward's A* and LM-cut",
@@ -79,6 +85,12 @@ def _argument_parser():
         "powerlifted",
         parents=[shared, optimize],
         help="Solve the task without grounding it, with Powerlifted's alternating BFWS, or A* and h^max to optimize",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
+        "lmcut-symmetry-pruning",
+        parents=[shared],
+        help="Solve the task optimally with A* and LM-cut, pruning symmetric states by orbit space search",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(

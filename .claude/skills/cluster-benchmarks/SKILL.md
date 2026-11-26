@@ -86,6 +86,7 @@ and names what is missing, rather than queueing jobs that all die the same way:
 | `lib/powerlifted/builds/release/search/search` | submitting refuses, since setup lists it, though only the powerlifted modes run it |
 | `lib/numeric-fast-downward/builds/release64` | `numeric-fast-downward binary not found`, on every resources-track job |
 | `lib/downward-partial-grounding` | refinement grounds the whole task, which no row records |
+| `lib/structural-symmetries/builds/release` | every `lmcut-symmetry-pruning` and `lama-symmetry-pruning` job fails before its search; a build without the current `lib/structural-symmetries.patch` fails every `lama-symmetry-pruning` job with a usage error |
 
 Smoke-test a branch that changes the pipeline, which the checks above cannot
 judge. Run each mode it touches on a problem it solves fast and expect a valid plan.
@@ -124,8 +125,8 @@ python -m experiments.submit --track sat --abstraction-source symmetries
 
 | track | modes | baseline |
 |---|---|---|
-| `sat` | `asp`, `abs-asp`, `lama`, `abs-lama` | `lama`, Fast Downward's lama-first |
-| `opt` | `asp`, `abs-asp`, `lmcut`, `abs-lmcut` | `lmcut`, A* with LM-cut |
+| `sat` | `asp`, `abs-asp`, `lama`, `abs-lama`, `lama-symmetry-pruning` | `lama`, Fast Downward's lama-first, and `lama-symmetry-pruning`, the same pruning states symmetric to one already seen (DKS) |
+| `opt` | `asp`, `abs-asp`, `lmcut`, `abs-lmcut`, `lmcut-symmetry-pruning` | `lmcut`, A* with LM-cut, and `lmcut-symmetry-pruning`, the same with orbit space search |
 | `sat-htg`, `opt-htg` | the sat or opt modes, plus `powerlifted`, `abs-powerlifted` | as sat or opt; Powerlifted runs alternating BFWS, or A* with h^max on opt |
 
 `--abstraction-source resources` collapses resources instead of symmetric objects.

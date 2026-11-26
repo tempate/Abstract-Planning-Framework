@@ -86,7 +86,11 @@ class SubmitTests(unittest.TestCase):
             definition_dir.mkdir()
 
             config_file = _write_copperbench_config(
-                [("abs-asp", "example", domain, problem, 0), ("asp", "example", domain, problem, None)],
+                [
+                    ("abs-asp", "example", domain, problem, "object-4-f22dc1"),
+                    ("abs-lama", "example", domain, problem, None),
+                    ("asp", "example", domain, problem, None),
+                ],
                 definition_dir=definition_dir,
             )
             config = json.loads(config_file.read_text(encoding="utf-8"))
@@ -98,8 +102,9 @@ class SubmitTests(unittest.TestCase):
         self.assertEqual(
             instances,
             [
-                f"abs-asp example {domain.resolve()} {problem.resolve()} ",
-                f"asp example {domain.resolve()} {problem.resolve()} ",
+                f"abs-asp example {domain.resolve()} {problem.resolve()} object-4-f22dc1",
+                f"abs-lama example {domain.resolve()} {problem.resolve()} largest",
+                f"asp example {domain.resolve()} {problem.resolve()} largest",
             ],
         )
 

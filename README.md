@@ -13,9 +13,10 @@ python -m pip install -e ".[dev]"
 python -m scripts.setup
 ```
 
-`scripts.setup` initializes the submodules and builds the five things pip does
-not install: the pybliss extension, the Fast Downward and Powerlifted release builds, numeric Fast
-Downward for resource detection, the pinned plasp binary, and cpddl. Numeric Fast Downward
+`scripts.setup` initializes the submodules and builds the six things pip does
+not install: the pybliss extension, the Fast Downward and Powerlifted release builds, Silvan Sievers'
+structural symmetries fork of Fast Downward, numeric Fast Downward for resource detection, the
+pinned plasp binary, and cpddl. Numeric Fast Downward
 needs COIN's Clp and Osi, found through `DOWNWARD_COIN_ROOT`, or resource detection
 has no LP solver. Skipping it fails at planning time rather than at setup
 time.
@@ -62,6 +63,11 @@ resource detection with `--abstraction-source resources`. Pass
 error, not a fallback to concrete search. `--domain` defaults to the domain file
 beside the problem.
 
+`lama-symmetry-pruning` adds symmetry pruning to `lama`, as a baseline without an
+abstraction. It prunes each state symmetric to one already seen (DKS), which
+`lib/structural-symmetries.patch` adds to lazy search and `scripts.setup` applies
+before it builds.
+
 `rnd-g` is the planner of [Horčík, Fišer and Torralba (AAAI 2022)](https://doi.org/10.1609/aaai.v36i9.21212)
 in cpddl, as an external baseline. It searches the lifted task, guided by a
 heuristic on the grounded delete relaxation of a smaller task, which merges
@@ -93,7 +99,8 @@ python -m experiments.figure sat --base origin/main --out before-after.png
   class.
 - `--track opt` submits `experiments/ipc/opt/symmetries/`, the problems of the optimal
   suite with a symmetry class, refined without gaps so that every plan is optimal, with
-  `asp` and `lmcut` as the baselines, and `abs-lmcut` in place of `abs-lama`.
+  `asp` and `lmcut` as the baselines, and `abs-lmcut` in place of `abs-lama`. `lmcut-symmetry-pruning` adds
+  orbit space search to `lmcut`, as a baseline without an abstraction.
   `--abstraction-source resources` submits `experiments/ipc/opt/resources/` instead, whose list
   `python -m experiments.scan --track opt/resources` writes.
 - `--track sat-htg` submits `experiments/htg/sat/` over the hard-to-ground

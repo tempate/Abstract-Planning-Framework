@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-26 05:41 — experiments/htg/opt/results.csv
+2026-11-26 05:58 — experiments/htg/opt/results.csv
 
-329 problems compared over asp, abs-asp, abs-lmcut, lmcut, abs-powerlifted, powerlifted, rnd-g; 114 dropped as unfinished
+329 problems compared over asp, abs-asp, abs-lmcut, lmcut, abs-powerlifted, powerlifted, lmcut-symmetry-pruning, rnd-g; 114 dropped as unfinished
 
 ## Coverage
 
 ```
-Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut Powerliftedᵅ  Powerlifted        rnd-g
--------------------------------------------------------------------------------------------------------------------------
-Plans found                      62 (18.8%)   80 (24.3%)  116 (35.3%)   58 (17.6%)   86 (26.1%)   35 (10.6%)   66 (20.1%)
-Timeouts                        121 (36.8%)  139 (42.2%)  193 (58.7%)  199 (60.5%)  237 (72.0%)  292 (88.8%)  109 (33.1%)
-Out of memory                   146 (44.4%)  110 (33.4%)    20 (6.1%)   72 (21.9%)     6 (1.8%)     2 (0.6%)  154 (46.8%)
-Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
-Total problems                          329          329          329          329          329          329          329
+Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut Powerliftedᵅ  Powerlifted       LMcut+        rnd-g
+--------------------------------------------------------------------------------------------------------------------------------------
+Plans found                      62 (18.8%)   80 (24.3%)  116 (35.3%)   58 (17.6%)   86 (26.1%)   35 (10.6%)  121 (36.8%)   66 (20.1%)
+Timeouts                        121 (36.8%)  139 (42.2%)  193 (58.7%)  199 (60.5%)  237 (72.0%)  292 (88.8%)  136 (41.3%)  109 (33.1%)
+Out of memory                   146 (44.4%)  110 (33.4%)    20 (6.1%)   72 (21.9%)     6 (1.8%)     2 (0.6%)   72 (21.9%)  154 (46.8%)
+Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
+Total problems                          329          329          329          329          329          329          329          329
 ```
 
 ## Head to head, over the problems both solved
@@ -71,39 +71,39 @@ Total                                    70          106           82
 ## Plans found by domain
 
 ```
-Domain (problems)                 Size       ASP      ASPᵅ    LMcutᵅ     LMcutPowerliftedᵅPowerlifted     rnd-g
----------------------------------------------------------------------------------------------------------------
-blocksworld-large-simple (40)    goal-2         3         5        10         3        10         0         9
-                                goal-3         3         5        10         3        10         0         1
-                                goal-4         3         5        10         3        10         0         1
-                                goal-5         2         5        10         3        10         0         0
-childsnack-contents (44)    parsize1-cham3        12        12        12         5         8         2         2
-                            parsize1-cham5         0         0         7         0         0         0         0
-                            parsize1-cham7         0         0         0         0         0         0         0
-                            parsize2-cham3         6         5         5         2         2         0         2
-                            parsize2-cham5         0         0         0         0         0         0         0
-                            parsize2-cham7         0         0         0         0         0         0         0
-                            parsize3-cham3         3         2         2         1         0         0         0
-                            parsize3-cham5         0         0         0         0         0         0         0
-                            parsize3-cham7         0         0         0         0         0         0         0
-                            parsize4-cham3         0         0         0         0         0         0         0
-                            parsize4-cham5         0         0         0         0         0         0         0
-                            parsize4-cham7         0         0         0         0         0         0         0
-gnad-et-al-aaai19-large-instances (86)agricola-large         0         0         0         0         0         0         0
-                            depots-large         0         0         0         0         0         0         0
-                            satellite-large         0         0         0         0         0         0         0
-                             tpp-large         0         0         0         0         0         0         0
-logistics-large-simple (24)     goal-1         2         5         6         5         6         5         6
-                                goal-2         1         4         6         3         5         0         6
-                                goal-3         0         4         6         2         0         0         3
-                                goal-4         0         4         6         1         0         0         3
-organic-synthesis-MIT (2)                      2         0         0         2         1         2         2
-organic-synthesis-alkene (18)                  15        15        16        15        15        18        18
-organic-synthesis-original (3)                   0         0         0         1         0         1         0
-pipesworld-tankage-nosplit (17)                   6         6         7         6         8         6        11
-rovers-large-simple (10)        goal-2         1         1         1         1         1         1         1
-                                goal-4         3         2         2         2         0         0         1
-                                goal-6         0         0         0         0         0         0         0
-                                goal-8         0         0         0         0         0         0         0
-Total (329)                                   62        80       116        58        86        35        66
+Domain (problems)                 Size       ASP      ASPᵅ    LMcutᵅ     LMcutPowerliftedᵅPowerlifted    LMcut+     rnd-g
+-------------------------------------------------------------------------------------------------------------------------
+blocksworld-large-simple (40)    goal-2         3         5        10         3        10         0         3         9
+                                goal-3         3         5        10         3        10         0         3         1
+                                goal-4         3         5        10         3        10         0         3         1
+                                goal-5         2         5        10         3        10         0         3         0
+childsnack-contents (44)    parsize1-cham3        12        12        12         5         8         2        12         2
+                            parsize1-cham5         0         0         7         0         0         0        12         0
+                            parsize1-cham7         0         0         0         0         0         0         7         0
+                            parsize2-cham3         6         5         5         2         2         0        12         2
+                            parsize2-cham5         0         0         0         0         0         0         7         0
+                            parsize2-cham7         0         0         0         0         0         0         2         0
+                            parsize3-cham3         3         2         2         1         0         0        10         0
+                            parsize3-cham5         0         0         0         0         0         0         5         0
+                            parsize3-cham7         0         0         0         0         0         0         0         0
+                            parsize4-cham3         0         0         0         0         0         0         7         0
+                            parsize4-cham5         0         0         0         0         0         0         0         0
+                            parsize4-cham7         0         0         0         0         0         0         0         0
+gnad-et-al-aaai19-large-instances (86)agricola-large         0         0         0         0         0         0         0         0
+                            depots-large         0         0         0         0         0         0         0         0
+                            satellite-large         0         0         0         0         0         0         0         0
+                             tpp-large         0         0         0         0         0         0         0         0
+logistics-large-simple (24)     goal-1         2         5         6         5         6         5         1         6
+                                goal-2         1         4         6         3         5         0         1         6
+                                goal-3         0         4         6         2         0         0         1         3
+                                goal-4         0         4         6         1         0         0         1         3
+organic-synthesis-MIT (2)                      2         0         0         2         1         2         2         2
+organic-synthesis-alkene (18)                  15        15        16        15        15        18        15        18
+organic-synthesis-original (3)                   0         0         0         1         0         1         1         0
+pipesworld-tankage-nosplit (17)                   6         6         7         6         8         6        10        11
+rovers-large-simple (10)        goal-2         1         1         1         1         1         1         1         1
+                                goal-4         3         2         2         2         0         0         2         1
+                                goal-6         0         0         0         0         0         0         0         0
+                                goal-8         0         0         0         0         0         0         0         0
+Total (329)                                   62        80       116        58        86        35       121        66
 ```
