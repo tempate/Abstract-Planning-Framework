@@ -13,7 +13,7 @@ thoughtful & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
 """
 SUMMARY = r"""\begin{table}
 \begin{tabular}{lrrrrrrr}
- & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}$^+$ & \textsc{FD}\textsuperscript{$\alpha$} & \HM \\
+ & \# & \ASP & \ASPa & \HM & \textsc{FD} & \textsc{FD}$^+$ & \textsc{FD}\textsuperscript{$\alpha$} \\
 \multicolumn{8}{l}{\emph{Resources}} \\
 Satisficing & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
 Optimal & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
@@ -25,7 +25,7 @@ Optimal & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
 HTG = r"""\begin{table*}
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrrrrrrrrrr}
  & \multicolumn{8}{c}{Satisficing} & \multicolumn{8}{c}{Optimal} \\
-Domain & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \HM & \PL & \PLa & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \HM & \PL & \PLa \\
+Domain & \# & \ASP & \ASPa & \HM & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \PL & \PLa & \# & \ASP & \ASPa & \HM & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \PL & \PLa \\
 blocksworld & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
 rovers & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
 Total & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
@@ -39,8 +39,8 @@ class PaperTableTests(unittest.TestCase):
     def test_a_domain_row_groups_each_planner_with_its_pruning_and_abstraction_and_rnd_g_with_fd(self):
         counts = {
             "sat": {
-                "nomystery": [19, 4, 6, 12, 13, 10, 14, None, None],
-                "thoughtful": [20, 5, 5, 15, 15, 5, 5, None, None],
+                "nomystery": [19, 4, 6, 14, 12, 13, 10, None, None],
+                "thoughtful": [20, 5, 5, 5, 15, 15, 5, None, None],
             },
             "opt": {"nomystery": [19, 0, 0, 0, 0, 0, 0, None, None]},
         }
@@ -49,11 +49,11 @@ class PaperTableTests(unittest.TestCase):
         # Powerlifted, which IPC does not run, gets no column, the best of each group is bold, rnd-g competes with FD,
         # ties bold all of them, and a group that solves nothing bolds nothing.
         self.assertIn(
-            r"nomystery & 19 & 4 & \textbf{6} & 12 & 13 & 10 & \textbf{14} & 19 & 0 & 0 & 0 & 0 & 0 & 0 \\", tex
+            r"nomystery & 19 & 4 & \textbf{6} & \textbf{14} & 12 & 13 & 10 & 19 & 0 & 0 & 0 & 0 & 0 & 0 \\", tex
         )
         # A domain only one track has reads -- on the other.
         self.assertIn(
-            r"thoughtful & 20 & \textbf{5} & \textbf{5} & \textbf{15} & \textbf{15} & 5 & 5 & -- & -- & -- & -- & -- & -- & -- \\",
+            r"thoughtful & 20 & \textbf{5} & \textbf{5} & 5 & \textbf{15} & \textbf{15} & 5 & -- & -- & -- & -- & -- & -- & -- \\",
             tex,
         )
         self.assertEqual(changed, ["nomystery", "thoughtful"])
@@ -65,16 +65,16 @@ class PaperTableTests(unittest.TestCase):
                 update_table(TABLE, "IPC Resources", {"sat": sat, "opt": {}})
 
     def test_the_summary_gives_each_track_a_row_and_bolds_the_better_of_each_pair(self):
-        # Each track holds the problems, then ASP and its abstraction, FD, its pruning and its abstraction, rnd-g, and PL,
+        # Each track holds the problems, then ASP and its abstraction, rnd-g, FD, its pruning and its abstraction, and PL,
         # which IPC never runs.
         tracks = {
-            "sat": [330, 88, 92, 305, 302, 122, 146, None, None],
-            "opt": [363, 122, 120, 207, 176, 132, 153, None, None],
+            "sat": [330, 88, 92, 146, 305, 302, 122, None, None],
+            "opt": [363, 122, 120, 153, 207, 176, 132, None, None],
         }
         tex = update_summary(SUMMARY, "tab:ipc-summary", {"Resources": tracks})
 
-        self.assertIn(r"Satisficing & 330 & 88 & \textbf{92} & \textbf{305} & 302 & 122 & 146 \\", tex)
-        self.assertIn(r"Optimal & 363 & \textbf{122} & 120 & \textbf{207} & 176 & 132 & 153 \\", tex)
+        self.assertIn(r"Satisficing & 330 & 88 & \textbf{92} & 146 & \textbf{305} & 302 & 122 \\", tex)
+        self.assertIn(r"Optimal & 363 & \textbf{122} & 120 & 153 & \textbf{207} & 176 & 132 \\", tex)
 
     def test_a_track_the_summary_lacks_or_the_results_lack_stops_the_update(self):
         tracks = {"sat": [1] * 7 + [None] * 2, "opt": [1] * 7 + [None] * 2}
@@ -87,16 +87,16 @@ class PaperTableTests(unittest.TestCase):
 
     def test_the_htg_table_gives_each_domain_and_the_total_a_row_with_a_block_per_track(self):
         counts = {
-            "sat": {"blocksworld": [40, 11, 19, 12, 30, 40, 9, 20, 40], "rovers": [35, 8, 6, 10, 9, 10, 2, 35, 18]},
-            "opt": {"blocksworld": [40, 11, 20, 12, 30, 40, 7, 0, 40], "rovers": [10, 4, 3, 3, 5, 3, 4, 1, 1]},
+            "sat": {"blocksworld": [40, 11, 19, 9, 12, 30, 40, 20, 40], "rovers": [35, 8, 6, 2, 10, 9, 10, 35, 18]},
+            "opt": {"blocksworld": [40, 11, 20, 7, 12, 30, 40, 0, 40], "rovers": [10, 4, 3, 4, 3, 5, 3, 1, 1]},
         }
         tex = update_htg_table(HTG, counts)
 
         # Each planner groups with its pruning and its abstraction, and ties bold all of them.
-        sat = r"35 & \textbf{8} & 6 & \textbf{10} & 9 & \textbf{10} & 2 & \textbf{35} & 18"
-        opt = r"10 & \textbf{4} & 3 & 3 & \textbf{5} & 3 & 4 & \textbf{1} & \textbf{1}"
+        sat = r"35 & \textbf{8} & 6 & 2 & \textbf{10} & 9 & \textbf{10} & \textbf{35} & 18"
+        opt = r"10 & \textbf{4} & 3 & 4 & 3 & \textbf{5} & 3 & \textbf{1} & \textbf{1}"
         self.assertIn(rf"rovers & {sat} & {opt} \\", tex)
-        self.assertIn(r"Total & 75 & 19 & \textbf{25} & 22 & 39 & \textbf{50} & 11 & 55 & \textbf{58} & 50 &", tex)
+        self.assertIn(r"Total & 75 & 19 & \textbf{25} & 11 & 22 & 39 & \textbf{50} & 55 & \textbf{58} & 50 &", tex)
 
     def test_an_htg_domain_one_side_lacks_stops_the_update(self):
         row = [1, 0, 0, 0, 0, 0, 0, 0, 0]

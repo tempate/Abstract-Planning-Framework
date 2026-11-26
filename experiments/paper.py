@@ -9,17 +9,17 @@ from experiments.figure import DEFAULT_PAPER, SOURCES, TRACK_NAMES, htg_domain, 
 from experiments.report import solved
 from experiments.run import ABSTRACTION_PREFIX
 
-# The modes each track counts, each planner before its symmetry pruning and its abstraction, and rnd-g after Fast
+# The modes each track counts, each planner before its symmetry pruning and its abstraction, and rnd-g before Fast
 # Downward's. A set without a mode's results shows --.
 MODES = {
-    "sat": ("asp", "abs-asp", "lama", "lama-symmetry-pruning", "abs-lama", "rnd-g", "powerlifted", "abs-powerlifted"),
+    "sat": ("asp", "abs-asp", "rnd-g", "lama", "lama-symmetry-pruning", "abs-lama", "powerlifted", "abs-powerlifted"),
     "opt": (
         "asp",
         "abs-asp",
+        "rnd-g",
         "lmcut",
         "lmcut-symmetry-pruning",
         "abs-lmcut",
-        "rnd-g",
         "powerlifted",
         "abs-powerlifted",
     ),
@@ -30,8 +30,8 @@ FAST_DOWNWARD = "fd"
 DOMAIN_TABLE = "tab:ipc-domains"
 # The modes the per-domain table shows, in the order of MODES. Powerlifted does not run on IPC.
 DOMAIN_MODES = {
-    "sat": ("asp", "abs-asp", "lama", "lama-symmetry-pruning", "abs-lama", "rnd-g"),
-    "opt": ("asp", "abs-asp", "lmcut", "lmcut-symmetry-pruning", "abs-lmcut", "rnd-g"),
+    "sat": ("asp", "abs-asp", "rnd-g", "lama", "lama-symmetry-pruning", "abs-lama"),
+    "opt": ("asp", "abs-asp", "rnd-g", "lmcut", "lmcut-symmetry-pruning", "abs-lmcut"),
 }
 # Each summary table, by its label, with the benchmark set each of its sections shows, by the section's title.
 SUMMARY_TABLES = {"tab:ipc-summary": {"Symmetries": "IPC Symmetries", "Resources": "IPC Resources"}}
