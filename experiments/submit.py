@@ -15,6 +15,7 @@ from experiments.grounding import ungroundable
 from experiments.report import best_classes
 from experiments.run import (
     ABSTRACTION_PREFIX,
+    CLASS_OF,
     DEFAULT_TIMEOUT,
     LARGEST_CLASS,
     MANIFEST_NAME,
@@ -62,14 +63,13 @@ def main():
         track_name, missing = _missing_results(args.retry_missing)
         modes = sorted({mode for _domain, _problem, mode, _class in missing})
         domains = sorted({domain for domain, _problem, _mode, _class in missing})
-        best = None
     else:
         track_name, missing = _track_name(args, parser), None
         modes = args.modes or TRACKS[track_name].modes
         domains = args.domains
-        best = best_classes(TRACKS[track_name].results_file) if args.classes == "best" else None
 
     track = TRACKS[track_name]
+    best = best_classes(track.results_file)
     unknown = sorted(set(modes) - set(track.modes))
     if unknown:
         parser.error(f"{track_name} has no mode {', '.join(unknown)}; it runs {', '.join(track.modes)}")
@@ -83,7 +83,8 @@ def main():
             domains=domains,
             problems=args.problems,
             class_ids=track.class_ids(),
-            best=best,
+            best=best if args.classes == "best" and missing is None else None,
+            class_best=best,
             best_of=args.best_class_of,
             ungroundable=ungroundable(track_name) if args.groundable else None,
         )
@@ -361,6 +362,7 @@ def _benchmark_tasks(
     problems=None,
     class_ids=None,
     best=None,
+    class_best=None,
     best_of=None,
     ungroundable=None,
 ):
@@ -372,6 +374,8 @@ def _benchmark_tasks(
     known or the best is no longer listed.
     best_of looks the best class up under that mode instead of each mode's own,
     and skips the problem where that mode has none.
+    A concrete mode pruning with a class runs the one its abstract mode did
+    best with in class_best, or the largest where that has none.
     Concrete modes skip the problems listed as ungroundable.
     """
     if domains is not None:
@@ -394,7 +398,8 @@ def _benchmark_tasks(
             for mode in modes:
                 if not mode.startswith(ABSTRACTION_PREFIX):
                     if ungroundable is None or (domain_name, problem.name) not in ungroundable:
-                        yield mode, domain_name, domain, problem, None
+                        class_id = (class_best or {}).get((domain_name, problem.name, CLASS_OF.get(mode)))
+                        yield mode, domain_name, domain, problem, class_id
                     continue
 
                 listed = (class_ids or {}).get((domain_name, problem.name)) or [None]

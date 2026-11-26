@@ -37,6 +37,8 @@ MODES = (
     "rnd-g",
 )
 ABSTRACTION_PREFIX = "abs-"
+# The concrete modes that prune with the permutations of a class, each with the abstract mode whose best class it takes.
+CLASS_OF = {"lama-symmetry-pruning": "abs-lama", "lmcut-symmetry-pruning": "abs-lmcut"}
 OPTIMIZING_MODES = ("asp", "abs-asp", "abs-powerlifted", "powerlifted", "rnd-g")
 
 
@@ -55,9 +57,14 @@ def main():
     print(f"{args.domain_name}/{args.problem.name}: {args.mode} {_human_status(result)}", flush=True)
 
 
+def takes_class(mode):
+    """Whether a mode runs on one class: an abstract mode, or a concrete one pruning with it."""
+    return mode.startswith(ABSTRACTION_PREFIX) or mode in CLASS_OF
+
+
 def class_key(mode, class_id):
-    """The class a result collapsed, as the CSV writes it: none for a concrete mode or for the largest class."""
-    if not mode.startswith(ABSTRACTION_PREFIX) or class_id is None:
+    """The class a result ran on, as the CSV writes it: none for a mode without one or for the largest class."""
+    if not takes_class(mode) or class_id is None:
         return ""
     return str(class_id)
 
@@ -79,7 +86,7 @@ def _argument_parser():
     )
     parser.add_argument(
         "--class-id",
-        help="Class an abstract mode collapses, as classes.txt names it, or the largest if empty; concrete modes ignore it",
+        help="Class a mode runs on, as classes.txt names it, or the largest if empty; modes without a class ignore it",
     )
     return parser
 
@@ -87,14 +94,14 @@ def _argument_parser():
 def _run_task(
     mode, domain_name, domain, problem, results_dir=RESULTS_DIR, timeout=None, track=DEFAULT_TRACK, class_id=None
 ):
-    abstract = mode.startswith(ABSTRACTION_PREFIX)
-    name = f"{mode}-{class_id or LARGEST_CLASS}" if abstract else mode
+    with_class = takes_class(mode)
+    name = f"{mode}-{class_id or LARGEST_CLASS}" if with_class else mode
     result_file = Path(results_dir) / domain_name / problem.stem / f"{name}.json"
     result_file.parent.mkdir(parents=True, exist_ok=True)
 
     identity = {
         "mode": mode,
-        **({"class": class_id} if abstract else {}),
+        **({"class": class_id} if with_class else {}),
         "track": track,
         "domain": domain_name,
         "problem": problem.name,
@@ -202,7 +209,7 @@ def _machine_status(return_code):
 def _planner_command(domain, problem, mode, track, class_id):
     command = [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
 
-    if mode.startswith(ABSTRACTION_PREFIX):
+    if takes_class(mode):
         command.extend(TRACKS[track].abstract_arguments)
         if class_id is not None:
             command.extend(["--class-id", class_id])
