@@ -48,11 +48,11 @@ ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
 # The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled, five to the text width.
-HTG_PLOT_SIZE = 0.88
+HTG_PLOT_SIZE = 1.1
 # The IPC figures' plots, drawn at the size they print, as main.tex includes them unscaled.
 IPC_PLOT_SIZE = 1.05
-# Every plot colored by domain numbers and labels its own y axis, which sit in the gap before it, in inches.
-DOMAIN_PLOT_GAP = 0.5
+# The gap between the plots colored by domain, which share the first plot's y axis, in inches.
+DOMAIN_PLOT_GAP = 0.2
 # The IPC figures' legends, in lines of this many domains to fit a column.
 IPC_LEGEND_COLUMNS = 3
 # The HTG figure's ten domains in two rows under its plots.
@@ -230,7 +230,10 @@ def _htg_runtime_figure(revision):
         if htg[kind] and POWERLIFTED[0] in htg[kind][0]:
             pairs += (POWERLIFTED,)
         pairs = sorted(pairs, key=lambda pair: PLANNER_ORDER.index(pair[0]))
-        plots = [_domain_runtime_plot(htg[kind], pair, _htg_problem_domain, DOMAIN_COLORS) for pair in pairs]
+        plots = [
+            _domain_runtime_plot(htg[kind], pair, _htg_problem_domain, DOMAIN_COLORS, index == 0)
+            for index, pair in enumerate(pairs)
+        ]
         rows.append(
             rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
             + "\n\\hspace*{0.42in}"
@@ -258,7 +261,9 @@ def _ipc_runtime_figure(tracks, colors):
     rows = []
     for kind, name in TRACK_NAMES.items():
         pairs = sorted(PAIRS[kind] + _baselines(tracks[kind], kind), key=lambda pair: PLANNER_ORDER.index(pair[0]))
-        plots = [_domain_runtime_plot(tracks[kind], pair, domain_of, colors) for pair in pairs]
+        plots = [
+            _domain_runtime_plot(tracks[kind], pair, domain_of, colors, index == 0) for index, pair in enumerate(pairs)
+        ]
         rows.append(
             rf"\hspace*{{0.42in}}\small {name} \\[0.4em]"
             + "\n\\hspace*{0.42in}"
@@ -283,10 +288,10 @@ def _legend_entry(color, domain):
     return rf"\mbox{{\tikz[baseline=-0.5ex, color={color}]\pgfuseplotmark{{x}};~{domain}}}"
 
 
-def _domain_runtime_plot(problems, pair, domain_of, colors):
+def _domain_runtime_plot(problems, pair, domain_of, colors, labelled):
     """One planner's runtime per problem against an abstraction's, its own unless the pair names another, a cross per
-    problem in its domain's color."""
-    solver, label, abstract_label, *versus = pair
+    problem in its domain's color. Only the labelled plot of a row numbers and names its y axis."""
+    solver, label, _abstract_label, *versus = pair
     abstraction = versus[0] if versus else f"abs-{solver}"
     by_domain = defaultdict(list)
     for problem in problems:
@@ -304,9 +309,10 @@ def _domain_runtime_plot(problems, pair, domain_of, colors):
     options = r"label style={font=\small}, tick label style={font=\footnotesize}"
     # A light line at every power of ten, as in Horcik et al. (2022).
     options += r", grid=major, grid style={black!30, thin}"
+    options += r", ylabel={X\textsuperscript{$\alpha$} time (s)}" if labelled else ", yticklabels={}"
     return (
         "\\begin{tikzpicture}[trim axis left, trim axis right]\n"
-        + rf"\begin{{loglogaxis}}[bordered, xlabel={{{label}{{}} time (s)}}, ylabel={{{abstract_label}{{}} time (s)}}, {options}]"
+        + rf"\begin{{loglogaxis}}[bordered, xlabel={{{label}{{}} time (s)}}, {options}]"
         + "\n\\addplot[forget plot, black!40, no marks, domain=1:9000, samples=2] {x};\n"
         + "\n".join(lines)
         + "\n\\end{loglogaxis}\n\\end{tikzpicture}"
