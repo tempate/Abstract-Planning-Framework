@@ -32,8 +32,11 @@ SYMMETRY_PRUNING = {
     "sat": ("lama-symmetry-pruning", r"\LAMAs", r"\LAMAa", "abs-lama"),
     "opt": ("lmcut-symmetry-pruning", r"\LMcuts", r"\LMcuta", "abs-lmcut"),
 }
-# The homomorphism planner of Horcik et al. (2022), drawn against LAMA's abstraction on the satisficing tracks.
-HOMOMORPHISM = {"sat": ("rnd-g", r"\HM", r"\LAMAa", "abs-lama")}
+# The homomorphism planner of Horcik et al. (2022), drawn against the abstraction of the track's Fast Downward planner.
+HOMOMORPHISM = {
+    "sat": ("rnd-g", r"\HM", r"\LAMAa", "abs-lama"),
+    "opt": ("rnd-g", r"\HM", r"\LMcuta", "abs-lmcut"),
+}
 # Powerlifted, which only the hard-to-ground tracks run, against its abstraction.
 POWERLIFTED = ("powerlifted", r"\textsc{Powerlifted}", r"\textsc{Powerlifted}\textsuperscript{$\alpha$}")
 # The color and mark of each solver's points in a runtime plot, in the order of its track's pairs.
@@ -312,7 +315,7 @@ def _domain_runtime_plot(problems, pair, domain_of, colors):
 
 def _baselines(problems, kind):
     """The track's plots of its planner with symmetry pruning and of the homomorphism planner, those the results have."""
-    pairs = (SYMMETRY_PRUNING[kind], *([HOMOMORPHISM[kind]] if kind in HOMOMORPHISM else []))
+    pairs = (SYMMETRY_PRUNING[kind], HOMOMORPHISM[kind])
     return tuple(pair for pair in pairs if problems and pair[0] in problems[0])
 
 
