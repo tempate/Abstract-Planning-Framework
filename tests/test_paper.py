@@ -13,7 +13,7 @@ thoughtful & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
 """
 SUMMARY = r"""\begin{table}
 \begin{tabular}{lrrrrrrr}
- & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}$^+$ & \textsc{FD}\textsuperscript{$\alpha$} & \textsc{rnd-g} \\
+ & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}$^+$ & \textsc{FD}\textsuperscript{$\alpha$} & \HM \\
 \multicolumn{8}{l}{\emph{Resources}} \\
 Satisficing & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
 Optimal & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
@@ -25,7 +25,7 @@ Optimal & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
 HTG = r"""\begin{table*}
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrrrrrrrrrr}
  & \multicolumn{8}{c}{Satisficing} & \multicolumn{8}{c}{Optimal} \\
-Domain & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \textsc{rnd-g} & \PL & \PLa & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \textsc{rnd-g} & \PL & \PLa \\
+Domain & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \HM & \PL & \PLa & \# & \ASP & \ASPa & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \HM & \PL & \PLa \\
 blocksworld & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
 rovers & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
 Total & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
