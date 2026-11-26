@@ -62,8 +62,8 @@ IPC_PLOT_SIZE = 1.05
 DOMAIN_PLOT_GAP = 0.2
 # The extra space between their rows, whose upper one has no x axis to make room for, in inches.
 DOMAIN_ROW_GAP = 0.0
-# The IPC figures' legends, in lines of this many domains to fit a column.
-IPC_LEGEND_COLUMNS = 3
+# The IPC figures' legends, in this many lines under the plots.
+IPC_LEGEND_LINES = 2
 # The HTG figure's ten domains in two rows under its plots.
 HTG_LEGEND_COLUMNS = 5
 # The order of every runtime figure's plots, as in the tables.
@@ -266,7 +266,7 @@ def _ipc_runtime_figure(tracks, colors):
     # The domains this source has under the plots, the grey of the other domains last.
     present = {domain_of(problem) for problems in tracks.values() for problem in problems}
     entries = [_legend_entry(color, domain) for domain, color in colors.items() if domain in present]
-    return _with_legend_below(plot_table, entries, IPC_LEGEND_COLUMNS)
+    return _with_legend_below(plot_table, entries, -(-len(entries) // IPC_LEGEND_LINES))
 
 
 def _plot_rows(rows, domain_of, colors):
