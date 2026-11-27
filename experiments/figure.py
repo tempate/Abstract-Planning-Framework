@@ -81,7 +81,7 @@ DOMAIN_COLORS = {
     "tpp": "green!60!black",
 }
 # The IPC figure colors each problem by the source its track abstracts. Neither is orange, which means abstract.
-IPC_SOURCE_COLORS = {"symmetries": "blue", "resources": "red"}
+IPC_SOURCE_COLORS = {"symmetries": "teal", "resources": "purple"}
 # HTG names a domain by the collection it comes from; the paper by the domain.
 HTG_DOMAINS = {
     "blocksworld-large-simple": "blocksworld",
