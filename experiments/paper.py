@@ -161,8 +161,8 @@ def update_summary(tex, table, sets):
 
 
 def update_htg_table(tex, counts):
-    """Write the HTG table, a row per domain and a total with a block of columns per track, the best of
-    each planner's group in bold."""
+    """Write the HTG table, a row per domain and a total with the problem count and a block of columns per track,
+    the best of each planner's group in bold."""
     domains = {name for track in counts.values() for name in track}
     for kind, track in counts.items():
         lacking = sorted(domains - set(track))
@@ -172,10 +172,13 @@ def update_htg_table(tex, counts):
     tracks = {kind: {**track, "Total": _total(track)} for kind, track in counts.items()}
     rows = {}
     for name in [*sorted(domains), "Total"]:
-        rows[name] = []
+        # Both tracks run the same problems, so the table shows their count once.
+        problems = {track[name][0] for track in tracks.values()}
+        if len(problems) > 1:
+            raise SystemExit(f"The HTG tracks ran different problems in {name}")
+        rows[name] = [str(problems.pop())]
         for kind, track in tracks.items():
-            count, *solved = track[name]
-            rows[name] += [str(count), *_bold_groups(MODES[kind], solved)]
+            rows[name] += _bold_groups(MODES[kind], track[name][1:])
 
     start = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{HTG_TABLE}}}"))
     # The table runs the full text width as a tabular*.
