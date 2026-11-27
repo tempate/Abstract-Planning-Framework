@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-26 05:58 — experiments/ipc/sat/symmetries/results.csv
+2026-11-27 09:10 — experiments/ipc/sat/symmetries/results.csv
 
-557 problems compared over asp, abs-asp, abs-lama, lama, lama-symmetry-pruning, rnd-g; 120 dropped as unfinished
+599 problems compared over asp, abs-asp, abs-lama, lama, lama-symmetry-pruning, rnd-g; 78 dropped as unfinished
 
 ## Coverage
 
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA        LAMA+        rnd-g
 ------------------------------------------------------------------------------------------------------------
-Plans found                     128 (23.0%)  145 (26.0%)  358 (64.3%)  507 (91.0%)  521 (93.5%)  217 (39.0%)
-Timeouts                        410 (73.6%)  396 (71.1%)  123 (22.1%)    35 (6.3%)    33 (5.9%)  183 (32.9%)
-Out of memory                     19 (3.4%)    16 (2.9%)   75 (13.5%)    14 (2.5%)     1 (0.2%)  149 (26.8%)
-Others                             0 (0.0%)     0 (0.0%)     1 (0.2%)     1 (0.2%)     2 (0.4%)     8 (1.4%)
-Total problems                          557          557          557          557          557          557
+Plans found                     170 (28.4%)  187 (31.2%)  410 (68.4%)  549 (91.7%)  563 (94.0%)  257 (42.9%)
+Timeouts                        410 (68.4%)  396 (66.1%)  123 (20.5%)    35 (5.8%)    33 (5.5%)  184 (30.7%)
+Out of memory                     19 (3.2%)    16 (2.7%)   65 (10.9%)    14 (2.3%)     1 (0.2%)  150 (25.0%)
+Others                             0 (0.0%)     0 (0.0%)     1 (0.2%)     1 (0.2%)     2 (0.3%)     8 (1.3%)
+Total problems                          599          599          599          599          599          599
 ```
 
 ## Head to head, over the problems both solved
@@ -21,15 +21,15 @@ Total problems                          557          557          557          5
 ```
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
-Plans found by both                     125          125          355          355
-Faster                           87 (69.6%)   38 (30.4%)     9 (2.5%)  346 (97.5%)
-Found when the other did not              3           20            3          152
-Median runtime                       7.45 s       9.42 s      11.97 s       3.50 s
-Total runtime                   13,493.23 s  14,023.54 s  21,135.87 s   6,387.69 s
-Shorter plan                     53 (42.4%)   15 (12.0%)   68 (19.2%)  160 (45.1%)
-Same plan length                 57 (45.6%)   57 (45.6%)  127 (35.8%)  127 (35.8%)
-Median plan length                       16           19           56           49
-Total plan length                     2,621        3,270       27,943       25,439
+Plans found by both                     167          167          406          406
+Faster                          125 (74.9%)   42 (25.1%)    22 (5.4%)  384 (94.6%)
+Found when the other did not              3           20            4          143
+Median runtime                       5.32 s       5.52 s       6.13 s       2.54 s
+Total runtime                   14,454.74 s  14,827.69 s  16,187.64 s   7,559.91 s
+Shorter plan                     59 (35.3%)   22 (13.2%)   77 (19.0%)  133 (32.8%)
+Same plan length                 86 (51.5%)   86 (51.5%)  196 (48.3%)  196 (48.3%)
+Median plan length                       16           16           50         45.5
+Total plan length                     4,332        4,972       30,735       29,177
 ```
 
 ## Where the timeouts died
@@ -48,10 +48,10 @@ Total                                   396          123
 ```
 Solved by                              ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-Refined directly                  118 (81%)    337 (94%)
-Refined, some actions off          26 (18%)      15 (4%)
-Solved above the abstract plan       1 (1%)       6 (2%)
-Total                                   145          358
+Refined directly                  158 (84%)    391 (95%)
+Refined, some actions off          26 (14%)      13 (3%)
+Solved above the abstract plan       3 (2%)       6 (1%)
+Total                                   187          410
 ```
 
 ## Deletes relaxed by the refined plans
@@ -59,12 +59,12 @@ Total                                   145          358
 ```
 Deletes relaxed                        ASPᵅ        LAMAᵅ
 --------------------------------------------------------
-None                               15 (10%)     37 (11%)
-1 to 4                             73 (51%)    201 (57%)
-5 to 9                             25 (17%)     39 (11%)
-10 to 19                            10 (7%)     43 (12%)
-20 or more                         21 (15%)      32 (9%)
-Total                                   144          352
+None                               57 (31%)     77 (19%)
+1 to 4                             72 (39%)    221 (55%)
+5 to 9                             25 (14%)      35 (9%)
+10 to 19                            10 (5%)     44 (11%)
+20 or more                         20 (11%)      27 (7%)
+Total                                   184          404
 ```
 
 ## Plans found by domain
@@ -72,37 +72,39 @@ Total                                   144          352
 ```
 Domain (problems)                  ASP      ASPᵅ     LAMAᵅ      LAMA     LAMA+     rnd-g
 ----------------------------------------------------------------------------------------
-agricola-sat18-strips (20)           0         0        10        12        11         5
-airport (19)                        14        14        19        19        19        16
+agricola-sat18-strips (20)           0         0        12        12        11         5
+airport (21)                        16        16        21        21        21        17
 barman-sat11-strips (20)             0         0         0        20        20         0
 barman-sat14-strips (20)             0         0         0        20        20         0
 childsnack-sat14-strips (20)         0         1         8         6        19         0
 depot (9)                            2         3         6         8         9         4
-driverlog (13)                       7         8        13        13        13        10
+driverlog (14)                       8         9        14        14        14        11
 elevators-sat08-strips (15)          0         0         8        15        15         5
 elevators-sat11-strips (14)          0         0         0        14        14         0
 gripper (20)                         4         5         5        20        20        20
 hiking-sat14-strips (20)             2         7        15        20        20         2
 logistics00 (19)                     9         9        19        19        19        15
-logistics98 (31)                     4         6        28        31        31         2
+logistics98 (31)                     4         6        30        31        31         2
 miconic (11)                         2         3        11        11        11        11
+movie (30)                          30        30        30        30        30        30
 mprime (21)                         21        21        21        21        21        10
 mystery (16)                        10        10        10        10        10         5
 nomystery-sat11-strips (14)          4         4        10         9         9         6
 openstacks-sat08-strips (29)         4         5        23        29        29        29
 openstacks-sat11-strips (15)         0         0         4        15        15        14
 openstacks-sat14-strips (12)         0         0         0        12        12         8
-pipesworld-notankage (34)           15        15        18        27        28        10
-pipesworld-tankage (47)             10        14        39        40        40        15
+parcprinter-08-strips (3)            3         3         3         3         3         2
+pipesworld-notankage (36)           17        17        20        29        30        12
+pipesworld-tankage (47)             10        14        40        40        40        15
 quantum-layout-sat23-strips (7)         3         2         7         7         7         0
-satellite (34)                       6         5        28        34        34         6
-sokoban-sat08-strips (7)             1         1         6         6         6         2
-sokoban-sat11-strips (5)             0         0         4         4         4         0
+satellite (34)                       6         5        33        34        34         6
+sokoban-sat08-strips (10)            4         4         9         9         9         5
+sokoban-sat11-strips (6)             1         1         5         5         5         1
 tpp (29)                             5         7        14        29        29        11
 transport-sat08-strips (2)           1         1         1         2         2         1
 transport-sat11-strips (2)           0         0         0         2         2         0
 woodworking-sat08-strips (8)         0         0         7         8         8         2
 woodworking-sat11-strips (11)         0         0        11        11        11         0
 zenotravel (13)                      4         4        13        13        13         8
-Total (557)                        128       145       358       507       521       217
+Total (599)                        170       187       410       549       563       257
 ```
