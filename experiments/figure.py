@@ -57,11 +57,9 @@ POWERLIFTED_MARKS = SOLVER_MARKS[2:]
 ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
-# The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled, five and two y axes to
-# the text width.
-HTG_PLOT_SIZE = 1.0
-# The IPC figures' plots, drawn at the size they print, as main.tex includes them unscaled.
-IPC_PLOT_SIZE = 1.05
+# Every runtime figure's plots, drawn at the size they print, as main.tex includes the figures unscaled. The HTG
+# figure's five plots and two y axes fill the text width at this size.
+PLOT_SIZE = 1.0
 # The gap between the plots colored by domain, which share the first plot's y axis, in inches.
 DOMAIN_PLOT_GAP = 0.2
 # The wider gap before a plot with a y axis of its own, which makes room for its numbers and label.
@@ -218,12 +216,12 @@ def paper_figures(revision):
     """The paper's figures at a revision, by the file name main.tex includes, each the body of a PDF."""
     return {
         "runtimes-htg": _minipage(
-            r"\textwidth", f"\\setlength{{\\plotsize}}{{{HTG_PLOT_SIZE}in}}\n" + _htg_runtime_figure(revision)
+            r"\textwidth", f"\\setlength{{\\plotsize}}{{{PLOT_SIZE}in}}\n" + _htg_runtime_figure(revision)
         ),
         **{
             f"runtimes-ipc-{source}": _minipage(
                 r"\textwidth",
-                f"\\setlength{{\\plotsize}}{{{IPC_PLOT_SIZE}in}}\n"
+                f"\\setlength{{\\plotsize}}{{{PLOT_SIZE}in}}\n"
                 + _ipc_runtime_figure(problems, IPC_DOMAIN_COLORS[source]),
             )
             for source, problems in _ipc_sources(revision).items()
