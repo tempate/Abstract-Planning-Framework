@@ -11,3 +11,4 @@ lib/downward-partial-grounding/
 .claude/settings.local.json
 
 experiments/ipc/*/resources/problems.log
+/experiments/benchmarks/scaled/

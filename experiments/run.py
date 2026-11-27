@@ -35,6 +35,8 @@ MODES = (
     "powerlifted",
     "lmcut-symmetry-pruning",
     "rnd-g",
+    "abs-ms",
+    "ms",
 )
 ABSTRACTION_PREFIX = "abs-"
 OPTIMIZING_MODES = ("asp", "abs-asp", "abs-powerlifted", "powerlifted", "rnd-g")
@@ -200,7 +202,7 @@ def _machine_status(return_code):
 
 
 def _planner_command(domain, problem, mode, track, class_id):
-    command = [sys.executable, "-m", "scripts.planner", mode, "--problem", str(problem), "--domain", str(domain)]
+    command = [sys.executable, "-m", TRACKS[track].driver, mode, "--problem", str(problem), "--domain", str(domain)]
 
     if mode.startswith(ABSTRACTION_PREFIX):
         command.extend(TRACKS[track].abstract_arguments)

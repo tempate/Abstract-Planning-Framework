@@ -26,7 +26,7 @@ from pathlib import Path
 from core.utilities.classes import class_id
 from experiments import slurm
 from experiments.run import RESULTS_DIR
-from experiments.tracks import TRACKS, is_domain_file
+from experiments.tracks import TRACKS, has_other_status, is_domain_file
 from scripts.utils.arguments import find_domain
 
 WORKERS = 1
@@ -194,7 +194,7 @@ def _suite_problems(benchmarks_dir, suite):
     for domain_name in suite:
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
-            if not is_domain_file(problem.name):
+            if not is_domain_file(problem.name) and not has_other_status(problem.name):
                 yield domain_name, problem.name
 
 

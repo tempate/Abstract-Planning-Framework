@@ -109,6 +109,12 @@ python -m experiments.figure sat --base origin/main --out before-after.png
 - `--track opt-htg` submits `experiments/htg/opt/` over the same benchmarks,
   with `labyrinth/OPT` in place of `labyrinth/SAT`, and the opt track's modes.
   Both HTG tracks also run `powerlifted` and `abs-powerlifted`.
+- `--track unsat --classes largest` submits `experiments/ipc/unsat/symmetries/` over
+  unsolve-ipc-2016 through `scripts.unsolvability`, which reports a solvability verdict
+  instead of a plan. `ms` and `abs-ms` both search with MS-unsat, Torralba and Hoffmann's
+  merge-and-shrink entry to the Unsolvability IPC 2016, which `scripts.setup` installs.
+  Only the probNN problems run, the ones known to be unsolvable. `--track scaled` grows
+  the problems both prove; see `experiments/ipc/unsat/scaled/README.md`.
 - Results land in untracked `runs/`, rewritten after every completed phase, so an
   interrupted worker keeps its partial timings.
 - `collect` rewrites the `results.csv` of the track the run's manifest names,

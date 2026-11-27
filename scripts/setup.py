@@ -36,6 +36,17 @@ STRUCTURAL_SYMMETRIES_PATCH = ROOT / "lib" / "structural-symmetries.patch"
 STRUCTURAL_SYMMETRIES_BUILD_ENV = {"CMAKE_POLICY_VERSION_MINIMUM": "3.5", "CXXFLAGS": "-Wno-template-body"}
 CPDDL_DIR = ROOT / "lib" / "cpddl"
 CPDDL_BIN = CPDDL_DIR / "bin" / "pddl-tool"
+MS_UNSAT_URL = (
+    "https://github.com/AI-Planning/unsolve-ipc-2016/raw/"
+    "97214352c59130a2d7cfdae0e7d696df6e2ac203/planners/team4v1/source.tar.gz"
+)
+MS_UNSAT_ARCHIVE_SHA256 = "009566c94327e3959e6c0cfc2b3627377cee351d974932969973c73628bd1356"
+MS_UNSAT_ARCHIVE_ROOT = "MS-unsat/src/"
+# Only the translator's Python and the two statically linked binaries are
+# needed, so the sources the archive also ships are left out.
+MS_UNSAT_MEMBERS = ("translate/", "preprocess/preprocess", "search/downward-release")
+MS_UNSAT_DIR = ROOT / "lib" / "ms-unsat" / "src"
+MS_UNSAT_SEARCH = MS_UNSAT_DIR / "search" / "downward-release"
 
 # Each of these fails silently at run time rather than at setup time: a missing
 # pybliss kills every abstract run in symmetry discovery, a missing Fast
@@ -49,6 +60,7 @@ ARTIFACTS = {
     "numeric Fast Downward release64 build": NUMERIC_DOWNWARD_BUILD,
     "Powerlifted release build": POWERLIFTED_SEARCH,
     "cpddl binary": CPDDL_BIN,
+    "MS-unsat search": MS_UNSAT_SEARCH,
 }
 
 
@@ -61,6 +73,7 @@ def main():
     _build_structural_symmetries()
     _install_plasp()
     _build_cpddl()
+    _install_ms_unsat()
     _verify()
 
 
@@ -183,6 +196,33 @@ def _plasp_is_installed():
         return hashlib.sha256(PLASP_BIN.read_bytes()).hexdigest() == PLASP_BINARY_SHA256
     except FileNotFoundError:
         return False
+
+
+def _install_ms_unsat():
+    """Install MS-unsat from the pinned competition archive, checking its checksum."""
+    print("== MS-unsat")
+    if MS_UNSAT_SEARCH.exists():
+        print(f"already installed at {MS_UNSAT_DIR}")
+        return
+
+    with urllib.request.urlopen(MS_UNSAT_URL) as response:
+        archive = response.read()
+
+    digest = hashlib.sha256(archive).hexdigest()
+    if digest != MS_UNSAT_ARCHIVE_SHA256:
+        raise RuntimeError(f"MS-unsat archive checksum mismatch: expected {MS_UNSAT_ARCHIVE_SHA256}, received {digest}")
+
+    with tarfile.open(fileobj=io.BytesIO(archive), mode="r:gz") as bundle:
+        for member in bundle.getmembers():
+            relative = member.name.removeprefix(MS_UNSAT_ARCHIVE_ROOT)
+            if member.isfile() and relative.startswith(MS_UNSAT_MEMBERS) and not relative.endswith(".pyc"):
+                member.name = relative
+                bundle.extract(member, MS_UNSAT_DIR, filter="data")
+
+    # The translator predates Python 3.8, which removed time.clock.
+    invariant_finder = MS_UNSAT_DIR / "translate" / "invariant_finder.py"
+    invariant_finder.write_text(invariant_finder.read_text().replace("time.clock()", "time.process_time()"))
+    print(f"installed MS-unsat at {MS_UNSAT_DIR}")
 
 
 def _verify():

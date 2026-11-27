@@ -8,6 +8,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from core.utilities.outcomes import SOLVABLE, UNKNOWN
 from experiments.run import ABSTRACTION_PREFIX, MODES, PROJECT_ROOT
 from experiments.tracks import DEFAULT_TRACK, TRACKS
 
@@ -20,6 +21,7 @@ SOLVER_LABELS = {
     "powerlifted": "Powerlifted",
     "lmcut-symmetry-pruning": "LMcut+",
     "rnd-g": "rnd-g",
+    "ms": "M&S",
 }
 # Each abstraction is named after the solver of its abstract task, marked with an alpha.
 MODE_LABELS = {**SOLVER_LABELS, **{f"{ABSTRACTION_PREFIX}{mode}": f"{label}ᵅ" for mode, label in SOLVER_LABELS.items()}}
@@ -187,8 +189,9 @@ def _phase_position(phase):
 
 
 def solved(row):
-    """Whether a mode found a plan."""
-    return row["status"] == "success"
+    """Whether a mode did what its track asks: found a plan, or proved that none exists."""
+    # A verdict run that finds a plan, or an abstraction that leaves the verdict unknown, proves nothing.
+    return row["status"] == "success" and row.get("verdict") not in (SOLVABLE, UNKNOWN)
 
 
 def _coverage(problems, modes, labels):
