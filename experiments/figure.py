@@ -34,15 +34,15 @@ PAIRS = {
 OWN_ABSTRACTION = r"X\textsuperscript{$\alpha$}"
 PAPER_COLUMNS = (
     (r"\ASP", {"sat": ("asp", "abs-asp"), "opt": ("asp", "abs-asp")}, OWN_ABSTRACTION),
+    (
+        r"\textsc{Powerlifted}",
+        {"sat": ("powerlifted", "abs-powerlifted"), "opt": ("powerlifted", "abs-powerlifted")},
+        OWN_ABSTRACTION,
+    ),
     (r"\textsc{FD}", {"sat": ("lama", "abs-lama"), "opt": ("lmcut", "abs-lmcut")}, OWN_ABSTRACTION),
     (
         r"\textsc{FD}$^+$",
         {"sat": ("lama-symmetry-pruning", "abs-lama"), "opt": ("lmcut-symmetry-pruning", "abs-lmcut")},
-        OWN_ABSTRACTION,
-    ),
-    (
-        r"\textsc{Powerlifted}",
-        {"sat": ("powerlifted", "abs-powerlifted"), "opt": ("powerlifted", "abs-powerlifted")},
         OWN_ABSTRACTION,
     ),
     (r"\HM", {"sat": ("rnd-g", "abs-lama"), "opt": ("rnd-g", "abs-lmcut")}, r"\textsc{FD}\textsuperscript{$\alpha$}"),

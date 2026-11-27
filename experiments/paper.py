@@ -9,19 +9,20 @@ from experiments.figure import DEFAULT_PAPER, SOURCES, TRACK_NAMES, htg_domain, 
 from experiments.report import solved
 from experiments.run import ABSTRACTION_PREFIX
 
-# The modes each track counts, each planner before its symmetry pruning and its abstraction, and rnd-g before Fast
-# Downward's. A set without a mode's results shows --.
+# The modes each track counts, in the order of the paper's figures: each planner before its symmetry pruning and its
+# abstraction, Powerlifted before Fast Downward, and rnd-g, which faces Fast Downward's abstraction, right before it.
+# A set without a mode's results shows --.
 MODES = {
-    "sat": ("asp", "abs-asp", "rnd-g", "lama", "lama-symmetry-pruning", "abs-lama", "powerlifted", "abs-powerlifted"),
+    "sat": ("asp", "abs-asp", "powerlifted", "abs-powerlifted", "lama", "lama-symmetry-pruning", "rnd-g", "abs-lama"),
     "opt": (
         "asp",
         "abs-asp",
-        "rnd-g",
-        "lmcut",
-        "lmcut-symmetry-pruning",
-        "abs-lmcut",
         "powerlifted",
         "abs-powerlifted",
+        "lmcut",
+        "lmcut-symmetry-pruning",
+        "rnd-g",
+        "abs-lmcut",
     ),
 }
 # The group of the tables' FD columns, LAMA-first or LM-cut by track, which rnd-g joins.
@@ -30,8 +31,8 @@ FAST_DOWNWARD = "fd"
 DOMAIN_TABLE = "tab:ipc-domains"
 # The modes the per-domain table shows, in the order of MODES. Powerlifted does not run on IPC.
 DOMAIN_MODES = {
-    "sat": ("asp", "abs-asp", "rnd-g", "lama", "lama-symmetry-pruning", "abs-lama"),
-    "opt": ("asp", "abs-asp", "rnd-g", "lmcut", "lmcut-symmetry-pruning", "abs-lmcut"),
+    "sat": ("asp", "abs-asp", "lama", "lama-symmetry-pruning", "rnd-g", "abs-lama"),
+    "opt": ("asp", "abs-asp", "lmcut", "lmcut-symmetry-pruning", "rnd-g", "abs-lmcut"),
 }
 # Each summary table, by its label, with the benchmark set each of its sections shows, by the section's title.
 SUMMARY_TABLES = {"tab:ipc-summary": {"Symmetries": "IPC Symmetries", "Resources": "IPC Resources"}}
@@ -220,7 +221,7 @@ def _bold_groups(modes, solved_counts):
 def _planner(mode):
     """The group whose best count is bold, the planner a mode runs, which its pruning and abstraction share."""
     planner = mode.removeprefix(ABSTRACTION_PREFIX).removesuffix("-symmetry-pruning")
-    # rnd-g has no abstraction of its own, so it competes in the group of Fast Downward, which it sits beside.
+    # rnd-g has no abstraction of its own, so it competes in the group of Fast Downward, which it sits in.
     return FAST_DOWNWARD if planner in ("lama", "lmcut", "rnd-g") else planner
 
 
