@@ -1,19 +1,19 @@
 # Benchmark report
 
-2026-11-25 18:16 — experiments/htg/opt/results.csv
+2026-11-27 09:01 — experiments/htg/opt/results.csv
 
-329 problems compared over asp, abs-asp, abs-lmcut, lmcut, abs-powerlifted, powerlifted, lmcut-symmetry-pruning; 114 dropped as unfinished
+443 problems compared over asp, abs-asp, abs-lmcut, lmcut, abs-powerlifted, powerlifted, lmcut-symmetry-pruning
 
 ## Coverage
 
 ```
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut Powerliftedᵅ  Powerlifted       LMcut+
 -------------------------------------------------------------------------------------------------------------------------
-Plans found                      62 (18.8%)   80 (24.3%)  116 (35.3%)   58 (17.6%)   86 (26.1%)   35 (10.6%)  121 (36.8%)
-Timeouts                        121 (36.8%)  139 (42.2%)  193 (58.7%)  199 (60.5%)  237 (72.0%)  292 (88.8%)  136 (41.3%)
-Out of memory                   146 (44.4%)  110 (33.4%)    20 (6.1%)   72 (21.9%)     6 (1.8%)     2 (0.6%)   72 (21.9%)
+Plans found                      62 (14.0%)  117 (26.4%)  116 (26.2%)   55 (12.4%)   92 (20.8%)   61 (13.8%)  121 (27.3%)
+Timeouts                        121 (27.3%)  155 (35.0%)  195 (44.0%)  202 (45.6%)  322 (72.7%)  370 (83.5%)  136 (30.7%)
+Out of memory                   260 (58.7%)  171 (38.6%)  132 (29.8%)  186 (42.0%)    29 (6.5%)    12 (2.7%)  186 (42.0%)
 Others                             0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
-Total problems                          329          329          329          329          329          329          329
+Total problems                          443          443          443          443          443          443          443
 ```
 
 ## Head to head, over the problems both solved
@@ -21,15 +21,15 @@ Total problems                          329          329          329          3
 ```
 Metric                                  ASP         ASPᵅ       LMcutᵅ        LMcut Powerliftedᵅ  Powerlifted
 ------------------------------------------------------------------------------------------------------------
-Plans found by both                      57           57           55           55           30           30
-Faster                           31 (54.4%)   26 (45.6%)   39 (70.9%)   16 (29.1%)    9 (30.0%)   21 (70.0%)
-Found when the other did not              5           23           61            3           56            5
-Median runtime                      47.70 s      34.62 s      10.52 s      43.88 s      12.78 s       2.64 s
-Total runtime                    7,160.03 s   6,962.41 s   3,530.87 s  17,320.39 s   1,916.09 s   2,959.05 s
+Plans found by both                      59           59           52           52           36           36
+Faster                           16 (27.1%)   43 (72.9%)   31 (59.6%)   21 (40.4%)   10 (27.8%)   26 (72.2%)
+Found when the other did not              3           58           64            3           56           25
+Median runtime                      50.47 s      23.51 s       6.37 s      40.31 s      24.27 s       2.16 s
+Total runtime                    8,090.89 s   4,423.08 s   2,890.88 s  16,757.72 s   4,157.38 s   4,220.74 s
 Shorter plan                       0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)     0 (0.0%)
-Same plan length                57 (100.0%)  57 (100.0%)  55 (100.0%)  55 (100.0%)  30 (100.0%)  30 (100.0%)
-Median plan length                        8            8            8            8            2            2
-Total plan length                       451          451          397          397          137          137
+Same plan length                59 (100.0%)  59 (100.0%)  52 (100.0%)  52 (100.0%)  36 (100.0%)  36 (100.0%)
+Median plan length                        8            8            7            7            2            2
+Total plan length                       475          475          361          361          154          154
 ```
 
 ## Where the timeouts died
@@ -37,11 +37,12 @@ Total plan length                       451          451          397          3
 ```
 Killed during                          ASPᵅ       LMcutᵅ Powerliftedᵅ
 ---------------------------------------------------------------------
-Abstract search                    83 (60%)    136 (70%)   236 (100%)
-Guided concrete search               0 (0%)     38 (20%)       0 (0%)
-Unguided concrete search             0 (0%)     19 (10%)       1 (0%)
-Extended concrete search           56 (40%)       0 (0%)       0 (0%)
-Total                                   139          193          237
+Abstract search                    92 (59%)    134 (69%)   321 (100%)
+Translating the task                 2 (1%)       1 (1%)       0 (0%)
+Translating the task to ASP          0 (0%)       1 (1%)       0 (0%)
+Guided concrete search             49 (32%)     40 (21%)       0 (0%)
+Unguided concrete search            12 (8%)     19 (10%)       1 (0%)
+Total                                   155          195          322
 ```
 
 ## How the successes were solved
@@ -49,10 +50,10 @@ Total                                   139          193          237
 ```
 Solved by                              ASPᵅ       LMcutᵅ Powerliftedᵅ
 ---------------------------------------------------------------------
-Refined directly                   70 (88%)    106 (91%)     80 (93%)
-Refined, some actions off            0 (0%)       0 (0%)       2 (2%)
-Solved above the abstract plan     10 (12%)      10 (9%)       4 (5%)
-Total                                    80          116           86
+Refined directly                  114 (97%)    106 (91%)     86 (93%)
+Refined, some actions off            1 (1%)       0 (0%)       2 (2%)
+Solved above the abstract plan       2 (2%)      10 (9%)       4 (4%)
+Total                                   117          116           92
 ```
 
 ## Deletes relaxed by the refined plans
@@ -61,11 +62,11 @@ Total                                    80          116           86
 Deletes relaxed                        ASPᵅ       LMcutᵅ Powerliftedᵅ
 ---------------------------------------------------------------------
 None                                 1 (1%)       1 (1%)       2 (2%)
-1 to 4                             28 (40%)     42 (40%)     18 (22%)
+1 to 4                             47 (41%)     42 (40%)     18 (20%)
 5 to 9                               0 (0%)       0 (0%)       0 (0%)
-10 to 19                           26 (37%)     47 (44%)     46 (56%)
-20 or more                         15 (21%)     16 (15%)     16 (20%)
-Total                                    70          106           82
+10 to 19                           50 (43%)     47 (44%)     47 (53%)
+20 or more                         17 (15%)     16 (15%)     21 (24%)
+Total                                   115          106           88
 ```
 
 ## Plans found by domain
@@ -73,37 +74,37 @@ Total                                    70          106           82
 ```
 Domain (problems)                 Size       ASP      ASPᵅ    LMcutᵅ     LMcutPowerliftedᵅPowerlifted    LMcut+
 ---------------------------------------------------------------------------------------------------------------
-blocksworld-large-simple (40)    goal-2         3         5        10         3        10         0         3
-                                goal-3         3         5        10         3        10         0         3
-                                goal-4         3         5        10         3        10         0         3
-                                goal-5         2         5        10         3        10         0         3
-childsnack-contents (44)    parsize1-cham3        12        12        12         5         8         2        12
+blocksworld-large-simple (40)    goal-2         3        10        10         3        10         0         3
+                                goal-3         3        10        10         3        10         0         3
+                                goal-4         3        10        10         3        10         0         3
+                                goal-5         2        10        10         3        10         0         3
+childsnack-contents (44)    parsize1-cham3        12        12        12         4         8         2        12
                             parsize1-cham5         0         0         7         0         0         0        12
                             parsize1-cham7         0         0         0         0         0         0         7
-                            parsize2-cham3         6         5         5         2         2         0        12
+                            parsize2-cham3         6        11         5         2         2         0        12
                             parsize2-cham5         0         0         0         0         0         0         7
                             parsize2-cham7         0         0         0         0         0         0         2
-                            parsize3-cham3         3         2         2         1         0         0        10
+                            parsize3-cham3         3         7         2         0         0         0        10
                             parsize3-cham5         0         0         0         0         0         0         5
                             parsize3-cham7         0         0         0         0         0         0         0
-                            parsize4-cham3         0         0         0         0         0         0         7
+                            parsize4-cham3         0         1         0         0         0         0         7
                             parsize4-cham5         0         0         0         0         0         0         0
                             parsize4-cham7         0         0         0         0         0         0         0
-gnad-et-al-aaai19-large-instances (86)agricola-large         0         0         0         0         0         0         0
+gnad-et-al-aaai19-large-instances (97)agricola-large         0         0         0         0         0         0         0
                             depots-large         0         0         0         0         0         0         0
                             satellite-large         0         0         0         0         0         0         0
                              tpp-large         0         0         0         0         0         0         0
-logistics-large-simple (24)     goal-1         2         5         6         5         6         5         1
-                                goal-2         1         4         6         3         5         0         1
-                                goal-3         0         4         6         2         0         0         1
-                                goal-4         0         4         6         1         0         0         1
-organic-synthesis-MIT (2)                      2         0         0         2         1         2         2
-organic-synthesis-alkene (18)                  15        15        16        15        15        18        15
-organic-synthesis-original (3)                   0         0         0         1         0         1         1
-pipesworld-tankage-nosplit (17)                   6         6         7         6         8         6        10
-rovers-large-simple (10)        goal-2         1         1         1         1         1         1         1
+logistics-large-simple (24)     goal-1         2         6         6         5         6         5         1
+                                goal-2         1         5         6         3         5         0         1
+                                goal-3         0         5         6         1         0         0         1
+                                goal-4         0         5         6         1         0         0         1
+organic-synthesis-MIT (18)                     2         0         0         2         6        18         2
+organic-synthesis-alkene (18)                  15        16        16        15        15        18        15
+organic-synthesis-original (20)                   0         0         0         1         0         8         1
+pipesworld-tankage-nosplit (47)                   6         6         7         6         9         7        10
+rovers-large-simple (35)        goal-2         1         1         1         1         1         3         1
                                 goal-4         3         2         2         2         0         0         2
                                 goal-6         0         0         0         0         0         0         0
                                 goal-8         0         0         0         0         0         0         0
-Total (329)                                   62        80       116        58        86        35       121
+Total (443)                                   62       117       116        55        92        61       121
 ```
