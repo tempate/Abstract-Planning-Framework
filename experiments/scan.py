@@ -38,7 +38,7 @@ TASK_MEMORY = "9G"
 # A little past TIMEOUT, so that the scan records a timeout before Slurm kills the task.
 TASK_MINUTES = 12
 # One CPU generation, so that every problem gets the same time limit.
-PARTITION = "sunnycove"
+PARTITION = "broadwell"
 PROBLEMS_HEADER = """# Problems with a class to collapse.
 # Regenerate with:
 #   python -m experiments.scan --track {track}

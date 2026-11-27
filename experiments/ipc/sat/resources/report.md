@@ -1,6 +1,6 @@
 # Benchmark report
 
-2026-11-26 05:58 — experiments/ipc/sat/resources/results.csv
+2026-11-27 09:10 — experiments/ipc/sat/resources/results.csv
 
 330 problems compared over asp, abs-asp, abs-lama, lama, lama-symmetry-pruning, rnd-g; 1 dropped as unfinished
 
@@ -22,14 +22,14 @@ Total problems                          330          330          330          3
 Metric                                  ASP         ASPᵅ        LAMAᵅ         LAMA
 ----------------------------------------------------------------------------------
 Plans found by both                      85           85          122          122
-Faster                           53 (62.4%)   32 (37.6%)     3 (2.5%)  119 (97.5%)
+Faster                           56 (65.9%)   29 (34.1%)     1 (0.8%)  121 (99.2%)
 Found when the other did not              3            7            0          183
-Median runtime                       8.47 s      10.04 s      10.49 s       2.68 s
-Total runtime                    6,559.83 s   3,546.61 s   7,008.55 s     533.77 s
-Shorter plan                     31 (36.5%)   12 (14.1%)   17 (13.9%)   68 (55.7%)
-Same plan length                 42 (49.4%)   42 (49.4%)   37 (30.3%)   37 (30.3%)
-Median plan length                        8           11           20           18
-Total plan length                     1,238        1,490        5,719        4,910
+Median runtime                       8.03 s      10.35 s      10.24 s       2.29 s
+Total runtime                    5,636.18 s   3,532.91 s   6,604.58 s     554.86 s
+Shorter plan                     34 (40.0%)   10 (11.8%)   13 (10.7%)   74 (60.7%)
+Same plan length                 41 (48.2%)   41 (48.2%)   35 (28.7%)   35 (28.7%)
+Median plan length                        8           13           20           18
+Total plan length                     1,238        1,546        5,809        4,910
 ```
 
 ## Where the timeouts died
@@ -61,8 +61,8 @@ Total                                    92          122
 Deletes relaxed                        ASPᵅ        LAMAᵅ
 --------------------------------------------------------
 None                                 0 (0%)       0 (0%)
-1 to 4                             28 (33%)     36 (32%)
-5 to 9                             36 (42%)     38 (33%)
+1 to 4                             28 (33%)     37 (32%)
+5 to 9                             36 (42%)     37 (32%)
 10 to 19                             7 (8%)     12 (11%)
 20 or more                         14 (16%)     28 (25%)
 Total                                    85          114

@@ -53,8 +53,8 @@ ABOVE_LEGEND = "title style={yshift=11pt}"
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
 # The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled, five to the text width.
 HTG_PLOT_SIZE = 1.1
-# The IPC figures' plots, drawn at the size they print, as main.tex includes them unscaled.
-IPC_PLOT_SIZE = 1.05
+# The IPC figures' plots, the same size as HTG's.
+IPC_PLOT_SIZE = HTG_PLOT_SIZE
 # The gap between the plots colored by domain, which share the first plot's y axis, in inches.
 DOMAIN_PLOT_GAP = 0.2
 # The extra space between their rows, whose upper one has no x axis to make room for, in inches.
@@ -79,6 +79,7 @@ DOMAIN_COLORS = {
 }
 # IPC domains that are one domain under several names, each by the name the IPC figures give it.
 IPC_FAMILIES = {
+    "depot": "depots",
     "logistics00": "logistics",
     "logistics98": "logistics",
     "mprime": "mystery",
@@ -86,12 +87,16 @@ IPC_FAMILIES = {
     "pipesworld-tankage": "pipesworld",
 }
 # The Symmetries figure colors the seven IPC domains with the most problems, each with at least 58 to the others'
-# 40 or fewer, a domain the HTG figure shows in its color there, and draws the rest in grey.
+# 40 or fewer, and every domain the HTG figure shows, each in its HTG color, and draws the rest in grey.
+# A domain HTG lacks takes the color of an HTG domain the figure lacks, so the IPC figures use only HTG's colors.
 OTHER_DOMAINS = "other"
 SYMMETRIES_DOMAIN_COLORS = {
+    "agricola": "black",
     "barman": "cyan",
+    "childsnack": "purple",
+    "depots": "olive",
     "logistics": "brown",
-    "mystery": "red",
+    "mystery": "teal",
     "openstacks": "blue",
     "pipesworld": "orange",
     "satellite": "violet",
@@ -102,14 +107,14 @@ SYMMETRIES_DOMAIN_COLORS = {
 RESOURCES_DOMAIN_COLORS = {
     "data-network": "olive",
     "elevators": "black",
-    "freecell": "teal",
-    "mystery": "red",
+    "freecell": "purple",
+    "mystery": "teal",
     "nomystery": "orange",
     "openstacks": "blue",
     "thoughtful": "brown",
     "tpp": "green!60!black",
     "transport": "cyan",
-    "visitall": "magenta",
+    "visitall": "violet",
 }
 IPC_DOMAIN_COLORS = {"symmetries": SYMMETRIES_DOMAIN_COLORS, "resources": RESOURCES_DOMAIN_COLORS}
 # HTG names a domain by the collection it comes from; the paper by the domain.
@@ -305,7 +310,8 @@ def _domain_runtime_plot(problems, solver, abstraction, label, domain_of, colors
         by_domain[domain_of(problem)].append(problem)
 
     lines = []
-    for domain, group in sorted(by_domain.items()):
+    # The grey of the other domains goes first, under the colored ones.
+    for domain, group in sorted(by_domain.items(), key=lambda item: (item[0] != OTHER_DOMAINS, item[0])):
         points = scatter(group, solver, abstraction)
         # A domain neither mode solves anything in has no point to draw.
         if points:

@@ -96,7 +96,7 @@ log in the checkout so that removing the checkout removes it. `sbatch --wrap` ru
 `sh`, so call the env's Python directly:
 
 ```bash
-cd ~/apf/<branch> && sbatch --partition=sunnycove --time=0:15:00 --mem=8G \
+cd ~/apf/<branch> && sbatch --partition=broadwell --time=0:15:00 --mem=8G \
   --output=smoke-%j.log --wrap "~/miniconda3/envs/apf/bin/python -m scripts.planner abs-asp \
   --domain experiments/benchmarks/downward-benchmarks/gripper/domain.pddl \
   --problem experiments/benchmarks/downward-benchmarks/gripper/prob01.pddl"
@@ -139,9 +139,9 @@ results in `experiments/htg/<sat|opt>/`. Submit runs every mode of the track unl
 mode left out of a run shrinks every table. Leave a mode out only when its results
 from an earlier run still hold, such as the baselines under a refinement change.
 
-Runs go to `sunnycove` by default, one CPU generation, so timings compare across runs.
-Daniel picks the partition when a run goes elsewhere, and broadwell rows count as
-⚠️ in `runs.md`. Pass `--partition any` only to fill a queue whose timings you will not
+Runs go to `broadwell` by default, one CPU generation, so timings compare across runs.
+It has been the default since 2026-11-25, and `runs.md` counts every row that ran on
+sunnycove as stale. Pass `--partition any` only to fill a queue whose timings you will not
 publish. It spans two CPU generations and caps each job at one hour.
 
 An abstract mode runs, by default, the class it did best with in the track's

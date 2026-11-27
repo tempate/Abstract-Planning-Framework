@@ -32,7 +32,7 @@ DEFAULT_MEMORY_LIMIT = 8 * 1024
 # One CPU generation, so wall-clock times are comparable across a whole run. The
 # "any" partition is not: it spans broadwell and sunnycove, and caps a job at one
 # hour, which silently bounds the timeout.
-DEFAULT_PARTITION = "sunnycove"
+DEFAULT_PARTITION = "broadwell"
 DEFAULT_SOURCE = TRACKS[DEFAULT_TRACK].source
 
 
