@@ -25,10 +25,10 @@ Optimal & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
 HTG = r"""\begin{table*}
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrrrrrrrrrr}
  & \multicolumn{8}{c}{Satisficing} & \multicolumn{8}{c}{Optimal} \\
-Domain & \# & \ASP & \ASPa & \HM & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \PL & \PLa & \# & \ASP & \ASPa & \HM & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \PL & \PLa \\
-blocksworld & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-rovers & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
-Total & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+Domain & \# & \ASP & \ASPa & \HM & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \PL & \PLa & \ASP & \ASPa & \HM & \textsc{FD} & \textsc{FD}\textsuperscript{$\alpha$} & \PL & \PLa \\
+blocksworld & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+rovers & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+Total & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
 \end{tabular*}
 \label{tab:htg}
 \end{table*}
@@ -85,18 +85,18 @@ class PaperTableTests(unittest.TestCase):
             with self.subTest(results=sorted(results)), self.assertRaises(SystemExit):
                 update_summary(summary, "tab:ipc-summary", {"Resources": results})
 
-    def test_the_htg_table_gives_each_domain_and_the_total_a_row_with_a_block_per_track(self):
+    def test_the_htg_table_gives_each_domain_and_the_total_one_problem_count_and_a_block_per_track(self):
         counts = {
             "sat": {"blocksworld": [40, 11, 19, 9, 12, 30, 40, 20, 40], "rovers": [35, 8, 6, 2, 10, 9, 10, 35, 18]},
-            "opt": {"blocksworld": [40, 11, 20, 7, 12, 30, 40, 0, 40], "rovers": [10, 4, 3, 4, 3, 5, 3, 1, 1]},
+            "opt": {"blocksworld": [40, 11, 20, 7, 12, 30, 40, 0, 40], "rovers": [35, 4, 3, 4, 3, 5, 3, 1, 1]},
         }
         tex = update_htg_table(HTG, counts)
 
         # Each planner groups with its pruning and its abstraction, and ties bold all of them.
         sat = r"35 & \textbf{8} & 6 & 2 & \textbf{10} & 9 & \textbf{10} & \textbf{35} & 18"
-        opt = r"10 & \textbf{4} & 3 & 4 & 3 & \textbf{5} & 3 & \textbf{1} & \textbf{1}"
+        opt = r"\textbf{4} & 3 & 4 & 3 & \textbf{5} & 3 & \textbf{1} & \textbf{1}"
         self.assertIn(rf"rovers & {sat} & {opt} \\", tex)
-        self.assertIn(r"Total & 75 & 19 & \textbf{25} & 11 & 22 & 39 & \textbf{50} & 55 & \textbf{58} & 50 &", tex)
+        self.assertIn(r"Total & 75 & 19 & \textbf{25} & 11 & 22 & 39 & \textbf{50} & 55 & \textbf{58} & 15 &", tex)
 
     def test_an_htg_domain_one_side_lacks_stops_the_update(self):
         row = [1, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -105,6 +105,7 @@ class PaperTableTests(unittest.TestCase):
             "the paper": (HTG.replace("rovers &", "tpp &"), both),
             "the results": (HTG, {"sat": {"blocksworld": row}, "opt": {"blocksworld": row}}),
             "one track": (HTG, {"sat": both["sat"], "opt": {"blocksworld": row}}),
+            "the same problems": (HTG, {"sat": both["sat"], "opt": {"blocksworld": row, "rovers": [2, *row[1:]]}}),
         }
         for lacking, (paper, counts) in cases.items():
             with self.subTest(lacking=lacking), self.assertRaises(SystemExit):
