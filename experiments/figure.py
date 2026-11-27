@@ -53,8 +53,8 @@ ABOVE_LEGEND = "title style={yshift=11pt}"
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
 # The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled, five to the text width.
 HTG_PLOT_SIZE = 1.1
-# The IPC figures' plots, drawn at the size they print, as main.tex includes them unscaled.
-IPC_PLOT_SIZE = 1.05
+# The IPC figures' plots, the same size as HTG's.
+IPC_PLOT_SIZE = HTG_PLOT_SIZE
 # The gap between the plots colored by domain, which share the first plot's y axis, in inches.
 DOMAIN_PLOT_GAP = 0.2
 # The extra space between their rows, whose upper one has no x axis to make room for, in inches.
