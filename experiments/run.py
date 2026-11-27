@@ -29,11 +29,13 @@ MODES = (
     "abs-lama",
     "lama",
     "lama-symmetry-pruning",
+    "abs-lama-symmetry-pruning",
     "abs-lmcut",
     "lmcut",
     "abs-powerlifted",
     "powerlifted",
     "lmcut-symmetry-pruning",
+    "abs-lmcut-symmetry-pruning",
     "rnd-g",
 )
 ABSTRACTION_PREFIX = "abs-"

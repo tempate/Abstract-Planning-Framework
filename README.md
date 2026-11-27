@@ -56,15 +56,15 @@ python -m scripts.planner --help
 | `powerlifted` | Powerlifted, which never grounds the task: alternating BFWS with h^FF, or A* with h^max under `--optimize` | `abs-powerlifted` |
 
 An abstract mode collapses an object class, plans the abstract task with its
-planner, and refines that plan with ASP. `abs-lmcut` always refines optimally, and
+planner, and refines that plan with ASP. `abs-lmcut` and `abs-lmcut-symmetry-pruning` always refine optimally, and
 `abs-asp` does with `--optimize`. The class comes from PDDL Symmetries, or from
 resource detection with `--abstraction-source resources`. Pass
 `--objects-to-abstract NAME...` to choose one yourself. Finding no class is an
 error, not a fallback to concrete search. `--domain` defaults to the domain file
 beside the problem.
 
-`lama-symmetry-pruning` adds symmetry pruning to `lama`, as a baseline without an
-abstraction. It prunes each state symmetric to one already seen (DKS), which
+`lama-symmetry-pruning` adds symmetry pruning to `lama`, and `abs-lama-symmetry-pruning` plans
+its abstract task with it. It prunes each state symmetric to one already seen (DKS), which
 `lib/structural-symmetries.patch` adds to lazy search and `scripts.setup` applies
 before it builds.
 
@@ -100,7 +100,7 @@ python -m experiments.figure sat --base origin/main --out before-after.png
 - `--track opt` submits `experiments/ipc/opt/symmetries/`, the problems of the optimal
   suite with a symmetry class, refined without gaps so that every plan is optimal, with
   `asp` and `lmcut` as the baselines, and `abs-lmcut` in place of `abs-lama`. `lmcut-symmetry-pruning` adds
-  orbit space search to `lmcut`, as a baseline without an abstraction.
+  orbit space search to `lmcut`, and `abs-lmcut-symmetry-pruning` plans the abstract task with it.
   `--abstraction-source resources` submits `experiments/ipc/opt/resources/` instead, whose list
   `python -m experiments.scan --track opt/resources` writes.
 - `--track sat-htg` submits `experiments/htg/sat/` over the hard-to-ground
