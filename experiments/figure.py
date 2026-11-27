@@ -87,11 +87,12 @@ IPC_FAMILIES = {
 }
 # The Symmetries figure colors the seven IPC domains with the most problems, each with at least 58 to the others'
 # 40 or fewer, a domain the HTG figure shows in its color there, and draws the rest in grey.
+# A domain HTG lacks takes the color of an HTG domain the figure lacks, so the IPC figures use only HTG's colors.
 OTHER_DOMAINS = "other"
 SYMMETRIES_DOMAIN_COLORS = {
     "barman": "cyan",
     "logistics": "brown",
-    "mystery": "red",
+    "mystery": "teal",
     "openstacks": "blue",
     "pipesworld": "orange",
     "satellite": "violet",
@@ -102,14 +103,14 @@ SYMMETRIES_DOMAIN_COLORS = {
 RESOURCES_DOMAIN_COLORS = {
     "data-network": "olive",
     "elevators": "black",
-    "freecell": "teal",
-    "mystery": "red",
+    "freecell": "purple",
+    "mystery": "teal",
     "nomystery": "orange",
     "openstacks": "blue",
     "thoughtful": "brown",
     "tpp": "green!60!black",
     "transport": "cyan",
-    "visitall": "magenta",
+    "visitall": "violet",
 }
 IPC_DOMAIN_COLORS = {"symmetries": SYMMETRIES_DOMAIN_COLORS, "resources": RESOURCES_DOMAIN_COLORS}
 # HTG names a domain by the collection it comes from; the paper by the domain.
