@@ -58,7 +58,7 @@ CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anch
 # Every runtime figure's plots, drawn at the size they print, as main.tex includes the figures unscaled. The HTG
 # figure's five plots and two y axes fill the text width at this size.
 PLOT_SIZE = 1.0
-# The gap between the plots colored by domain, which share the first plot's y axis, in inches.
+# The gap between the runtime plots, which share the first plot's y axis, in inches.
 DOMAIN_PLOT_GAP = 0.2
 # The wider gap before a plot with a y axis of its own, which makes room for its numbers and label.
 DOMAIN_GROUP_GAP = 0.65
