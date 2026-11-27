@@ -27,3 +27,7 @@ NUMERIC_FAST_DOWNWARD_BIN = _project_path("lib", "numeric-fast-downward", "build
 
 # The lifted planner of Horčík, Fišer and Torralba (AAAI 2022), built by scripts.setup.
 CPDDL_BIN = _project_path("lib", "cpddl", "bin", "pddl-tool")
+
+MS_UNSAT_TRANSLATOR = _project_path("lib", "ms-unsat", "src", "translate", "translate.py")
+MS_UNSAT_PREPROCESSOR = _project_path("lib", "ms-unsat", "src", "preprocess", "preprocess")
+MS_UNSAT_SEARCH = _project_path("lib", "ms-unsat", "src", "search", "downward-release")

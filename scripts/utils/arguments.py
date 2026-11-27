@@ -87,6 +87,16 @@ def find_domain(problem):
         f"domain-{problem.name}",
     ]
 
+    if "prob" in problem.stem:
+        # unsolve-ipc-2016 names the pair after each other: probNN.pddl with
+        # domNN.pddl, and likewise satprobNN and unknownprobNN. Guarded, or a
+        # problem with no prob in its name would answer as its own domain.
+        candidates.append(f"{problem.stem.replace('prob', 'dom', 1)}{problem.suffix}")
+        # bag-barman and bag-transport ship no satdomNN, and their satprobNN is
+        # probNN with a single symbol changed, so it belongs to the same domNN.
+        # Last, or diagnosis and cave-diving would take domNN over their satdomNN.
+        candidates.append(f"dom{problem.stem.partition('prob')[2]}{problem.suffix}")
+
     for name in candidates:
         domain = problem.parent / name
         if domain.is_file():

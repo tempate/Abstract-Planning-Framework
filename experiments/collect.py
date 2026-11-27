@@ -21,6 +21,7 @@ FIELDS = (
     "wall_time_seconds",
     "last_completed_phase",
     *DURATION_FIELDS,
+    "verdict",
     *COUNTER_LABELS,
     "abstracted_object_count",
     "abstracted_object_type",
@@ -75,6 +76,11 @@ def _missing_values():
     return dict.fromkeys(FIELDS, "") | {"status": "missing"}
 
 
+def _value(output, label, convert=str):
+    match = re.search(rf"^{re.escape(label)}: (.+)$", output, re.MULTILINE)
+    return "" if match is None else convert(match.group(1))
+
+
 def _values(result):
     # The planner reports its metrics into the result file as it goes, so they hold
     # even for a run the timeout or the memory limit killed.
@@ -88,6 +94,7 @@ def _values(result):
         "wall_time_seconds": result["wall_time_seconds"],
         "last_completed_phase": progress.get("last_completed_phase", ""),
         **{f"{name}_seconds": durations.get(name, "") for name in DURATION_LABELS},
+        "verdict": _value(result["output"], "Verdict"),
         **{name: counters.get(name, "") for name in COUNTER_LABELS},
         **_abstraction_values(metrics.get("abstraction")),
         "error_message": _error_message(result),

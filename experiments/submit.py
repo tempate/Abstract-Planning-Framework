@@ -24,7 +24,7 @@ from experiments.run import (
     class_key,
 )
 from core.integrations.paths import PARTIAL_GROUNDING_TRANSLATOR
-from experiments.tracks import DEFAULT_TRACK, TRACKS, is_domain_file
+from experiments.tracks import DEFAULT_TRACK, TRACKS, has_other_status, is_domain_file
 from scripts.setup import ARTIFACTS, ROOT as SETUP_ROOT
 from scripts.utils.arguments import find_domain
 
@@ -82,7 +82,7 @@ def main():
             modes=modes,
             domains=domains,
             problems=args.problems,
-            class_ids=track.class_ids(),
+            class_ids=None if args.classes == "largest" else track.class_ids(),
             best=best,
             best_of=args.best_class_of,
             ungroundable=ungroundable(track_name) if args.groundable else None,
@@ -269,9 +269,9 @@ def _argument_parser():
     )
     parser.add_argument(
         "--classes",
-        choices=("all", "best"),
+        choices=("all", "best", "largest"),
         default="best",
-        help="Run abstract modes only on the class each did best with in the track's results, or on every class",
+        help="Run abstract modes only on the class each did best with in the track's results, on every class, or on the largest",
     )
     parser.add_argument(
         "--best-class-of",
@@ -287,7 +287,7 @@ def _argument_parser():
         "--track",
         choices=sorted({track.kind for track in TRACKS.values()}),
         default=TRACKS[DEFAULT_TRACK].kind,
-        help="What the run asks of each problem: a plan (sat) or an optimal plan (opt)",
+        help="What the run asks of each problem: a plan (sat), an optimal plan (opt), or a proof that none exists (unsat, scaled)",
     )
     parser.add_argument(
         "--abstraction-source",
@@ -383,7 +383,7 @@ def _benchmark_tasks(
     for domain_name in reversed(suite):
         directory = Path(benchmarks_dir) / domain_name
         for problem in sorted(directory.glob("*.pddl")):
-            if is_domain_file(problem.name):
+            if is_domain_file(problem.name) or has_other_status(problem.name):
                 continue
             if runnable is not None and (domain_name, problem.name) not in runnable:
                 continue

@@ -4,7 +4,8 @@ import os
 
 from core.integrations.fast_downward import pddl_to_sas
 from core.pipeline.abstraction.abstract_task import build_abstract_task, report_abstraction, write_abstract_problem
-from core.utilities.outcomes import UnsolvableTaskError
+from core.integrations.ms_unsat import has_plan
+from core.utilities.outcomes import UNKNOWN, UNSOLVABLE, UnsolvableTaskError
 from core.planners.powerlifted import Powerlifted
 from core.planners.registry import PLANNERS
 from core.utilities.config import AbstractPlanningConfig
@@ -65,3 +66,23 @@ def _plan_abstract(planner, abstract_dir, domain_path, problem_path, metrics):
         abstract_sas = pddl_to_sas(abstract_dir, domain_path, problem_path, "abstract")
 
     return planner.plan_sas(abstract_sas, abstract_metrics)
+
+
+def check_solvability(config: AbstractPlanningConfig, on_update=None):
+    """Search the abstraction with MS-unsat, which can only prove the concrete task unsolvable.
+
+    The abstraction over-approximates: no abstract plan means no concrete plan,
+    but an abstract plan may exist only because of the relaxation.
+    """
+    with planning_run("abstract", on_update) as run:
+        try:
+            _, domain_path, problem_path, _ = _abstract(config, run.base_dir, run.metrics)
+
+            with run.metrics.measure("abstract_fd_search"):
+                found = has_plan(run.base_dir, domain_path, problem_path, "abstract")
+        except UnsolvableTaskError:
+            # Symmetry discovery reads the concrete task, so proving it
+            # unsolvable there is the verdict, not a failure to reach one.
+            found = False
+
+    return run.verdict_result(config, UNKNOWN if found else UNSOLVABLE)
