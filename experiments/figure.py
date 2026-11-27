@@ -79,6 +79,7 @@ DOMAIN_COLORS = {
 }
 # IPC domains that are one domain under several names, each by the name the IPC figures give it.
 IPC_FAMILIES = {
+    "depot": "depots",
     "logistics00": "logistics",
     "logistics98": "logistics",
     "mprime": "mystery",
@@ -86,11 +87,14 @@ IPC_FAMILIES = {
     "pipesworld-tankage": "pipesworld",
 }
 # The Symmetries figure colors the seven IPC domains with the most problems, each with at least 58 to the others'
-# 40 or fewer, a domain the HTG figure shows in its color there, and draws the rest in grey.
+# 40 or fewer, and every domain the HTG figure shows, each in its HTG color, and draws the rest in grey.
 # A domain HTG lacks takes the color of an HTG domain the figure lacks, so the IPC figures use only HTG's colors.
 OTHER_DOMAINS = "other"
 SYMMETRIES_DOMAIN_COLORS = {
+    "agricola": "black",
     "barman": "cyan",
+    "childsnack": "purple",
+    "depots": "olive",
     "logistics": "brown",
     "mystery": "teal",
     "openstacks": "blue",
@@ -306,7 +310,8 @@ def _domain_runtime_plot(problems, solver, abstraction, label, domain_of, colors
         by_domain[domain_of(problem)].append(problem)
 
     lines = []
-    for domain, group in sorted(by_domain.items()):
+    # The grey of the other domains goes first, under the colored ones.
+    for domain, group in sorted(by_domain.items(), key=lambda item: (item[0] != OTHER_DOMAINS, item[0])):
         points = scatter(group, solver, abstraction)
         # A domain neither mode solves anything in has no point to draw.
         if points:
