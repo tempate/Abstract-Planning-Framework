@@ -4,8 +4,6 @@ import argparse
 import csv
 import io
 import json
-import math
-import re
 import shutil
 import subprocess
 import tempfile
@@ -66,8 +64,6 @@ DOMAIN_PLOT_GAP = 0.2
 DOMAIN_GROUP_GAP = 0.65
 # The extra space between their rows, whose upper one has no x axis to make room for, in inches.
 DOMAIN_ROW_GAP = 0.0
-# The IPC figures' legends, in this many lines under the plots.
-IPC_LEGEND_LINES = 2
 # The HTG figure's ten domains in two rows under its plots.
 HTG_LEGEND_COLUMNS = 5
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
@@ -84,41 +80,8 @@ DOMAIN_COLORS = {
     "satellite": "violet",
     "tpp": "green!60!black",
 }
-# IPC domains that are one domain under several names, each by the name the IPC figures give it.
-IPC_FAMILIES = {
-    "logistics00": "logistics",
-    "logistics98": "logistics",
-    "mprime": "mystery",
-    "pipesworld-notankage": "pipesworld",
-    "pipesworld-tankage": "pipesworld",
-}
-# The Symmetries figure colors the seven IPC domains with the most problems, each with at least 58 to the others'
-# 40 or fewer, a domain the HTG figure shows in its color there, and draws the rest in grey.
-OTHER_DOMAINS = "other"
-SYMMETRIES_DOMAIN_COLORS = {
-    "barman": "cyan",
-    "logistics": "brown",
-    "mystery": "red",
-    "openstacks": "blue",
-    "pipesworld": "orange",
-    "satellite": "violet",
-    "tpp": "green!60!black",
-    OTHER_DOMAINS: "black!35",
-}
-# Resources has ten domains, so its figure colors them all, a domain the Symmetries figure colors in the same color.
-RESOURCES_DOMAIN_COLORS = {
-    "data-network": "olive",
-    "elevators": "black",
-    "freecell": "teal",
-    "mystery": "red",
-    "nomystery": "orange",
-    "openstacks": "blue",
-    "thoughtful": "brown",
-    "tpp": "green!60!black",
-    "transport": "cyan",
-    "visitall": "magenta",
-}
-IPC_DOMAIN_COLORS = {"symmetries": SYMMETRIES_DOMAIN_COLORS, "resources": RESOURCES_DOMAIN_COLORS}
+# The IPC figure colors each problem by the source its track abstracts. Neither is orange, which means abstract.
+IPC_SOURCE_COLORS = {"symmetries": "blue", "resources": "red"}
 # HTG names a domain by the collection it comes from; the paper by the domain.
 HTG_DOMAINS = {
     "blocksworld-large-simple": "blocksworld",
@@ -218,14 +181,10 @@ def paper_figures(revision):
         "runtimes-htg": _minipage(
             r"\textwidth", f"\\setlength{{\\plotsize}}{{{PLOT_SIZE}in}}\n" + _htg_runtime_figure(revision)
         ),
-        **{
-            f"runtimes-ipc-{source}": _minipage(
-                r"\textwidth",
-                f"\\setlength{{\\plotsize}}{{{PLOT_SIZE}in}}\n"
-                + _ipc_runtime_figure(problems, IPC_DOMAIN_COLORS[source]),
-            )
-            for source, problems in _ipc_sources(revision).items()
-        },
+        "runtimes-ipc": _minipage(
+            r"\textwidth",
+            f"\\setlength{{\\plotsize}}{{{PLOT_SIZE}in}}\n" + _ipc_runtime_figure(_ipc_sources(revision)),
+        ),
     }
 
 
@@ -247,18 +206,23 @@ def _ipc_sources(revision):
     return {source: {kind: tracks[kind][source] for kind in TRACK_NAMES} for source in SOURCES}
 
 
-def _ipc_runtime_figure(tracks, colors):
-    """One IPC source's runtime figure, a row per track, a plot per planner, and a domain legend."""
+def _ipc_runtime_figure(sources):
+    """The IPC runtime figure, a row per track, a plot per planner, each problem colored by its source."""
+    source_of = {}
+    for source, tracks in sources.items():
+        for problems in tracks.values():
+            for problem in problems:
+                source_of[id(problem)] = SOURCES[source]
 
-    def domain_of(problem):
-        return _ipc_problem_domain(problem, colors)
+    def source_name(problem):
+        return source_of[id(problem)]
 
-    plot_table = _plot_rows(tracks, domain_of, colors)
+    tracks = {kind: [problem for by_kind in sources.values() for problem in by_kind[kind]] for kind in TRACK_NAMES}
+    colors = {SOURCES[source]: color for source, color in IPC_SOURCE_COLORS.items()}
+    plot_table = _plot_rows(tracks, source_name, colors)
 
-    # The domains this source has under the plots, the grey of the other domains last.
-    present = {domain_of(problem) for problems in tracks.values() for problem in problems}
-    entries = [_legend_entry(color, domain) for domain, color in colors.items() if domain in present]
-    return _with_legend_below(plot_table, entries, math.ceil(len(entries) / IPC_LEGEND_LINES))
+    entries = [_legend_entry(color, name) for name, color in colors.items()]
+    return _with_legend_below(plot_table, entries, len(entries))
 
 
 def _plot_rows(tracks, domain_of, colors):
@@ -344,13 +308,6 @@ def _domain_runtime_plot(problems, solver, abstraction, label, domain_of, colors
 
 def _htg_problem_domain(problem):
     return htg_domain(next(iter(problem.values()))["domain"])
-
-
-def _ipc_problem_domain(problem, colors):
-    """The domain the IPC figures color a problem by, its name without track or year, or the other domains."""
-    name = re.sub(r"-(sat|opt)\d\d-strips$", "", next(iter(problem.values()))["domain"])
-    name = IPC_FAMILIES.get(name, name)
-    return name if name in colors else OTHER_DOMAINS
 
 
 def _panel(title, kind, tracks):
