@@ -7,16 +7,32 @@ from pathlib import Path
 
 from experiments.figure import DEFAULT_PAPER, SOURCES, TRACK_NAMES, htg_domain, load_tracks, paper_figures, render_pdf
 from experiments.report import solved
+from experiments.run import ABSTRACTION_PREFIX
 
-# The modes each track counts, each planner before its abstraction. A set without a mode's results shows --.
+# The modes each track counts, each planner before its symmetry pruning and its abstraction, and rnd-g before Fast
+# Downward's. A set without a mode's results shows --.
 MODES = {
-    "sat": ("asp", "abs-asp", "lama", "abs-lama", "powerlifted", "abs-powerlifted"),
-    "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut", "powerlifted", "abs-powerlifted"),
+    "sat": ("asp", "abs-asp", "rnd-g", "lama", "lama-symmetry-pruning", "abs-lama", "powerlifted", "abs-powerlifted"),
+    "opt": (
+        "asp",
+        "abs-asp",
+        "rnd-g",
+        "lmcut",
+        "lmcut-symmetry-pruning",
+        "abs-lmcut",
+        "powerlifted",
+        "abs-powerlifted",
+    ),
 }
+# The group of the tables' FD columns, LAMA-first or LM-cut by track, which rnd-g joins.
+FAST_DOWNWARD = "fd"
 # The IPC per-domain table, a section of rows per benchmark set and a block of columns per track.
 DOMAIN_TABLE = "tab:ipc-domains"
-# The modes the per-domain table shows, each planner before its abstraction. Powerlifted does not run on IPC.
-DOMAIN_MODES = {"sat": ("asp", "abs-asp", "lama", "abs-lama"), "opt": ("asp", "abs-asp", "lmcut", "abs-lmcut")}
+# The modes the per-domain table shows, in the order of MODES. Powerlifted does not run on IPC.
+DOMAIN_MODES = {
+    "sat": ("asp", "abs-asp", "rnd-g", "lama", "lama-symmetry-pruning", "abs-lama"),
+    "opt": ("asp", "abs-asp", "rnd-g", "lmcut", "lmcut-symmetry-pruning", "abs-lmcut"),
+}
 # Each summary table, by its label, with the benchmark set each of its sections shows, by the section's title.
 SUMMARY_TABLES = {"tab:ipc-summary": {"Symmetries": "IPC Symmetries", "Resources": "IPC Resources"}}
 # The HTG table, a row per domain and a total, and a block of columns per track.
@@ -87,7 +103,8 @@ def domain_counts(problems, kind, htg=False):
 
 
 def update_table(tex, section, counts):
-    """Write one section of the per-domain table, a block of columns per track, the better of each pair in bold."""
+    """Write one section of the per-domain table, a block of columns per track, the best of each
+    planner's group in bold."""
     start, end = _section(tex, DOMAIN_TABLE, section)
     lines = tex[start:end].split("\n")
 
@@ -112,7 +129,7 @@ def update_table(tex, section, counts):
                 continue
             count, *solved = track[name]
             shown = [solved[MODES[kind].index(mode)] for mode in DOMAIN_MODES[kind]]
-            row += [str(count), *_bold_pairs(shown)]
+            row += [str(count), *_bold_groups(DOMAIN_MODES[kind], shown)]
         if row != cells[1:]:
             changed.append(name)
 
@@ -127,8 +144,8 @@ def update_table(tex, section, counts):
 
 
 def update_summary(tex, table, sets):
-    """Write one summary table, a section per benchmark set with a row per track, the better of each planner and its
-    abstraction in bold."""
+    """Write one summary table, a section per benchmark set with a row per track, the best of each planner's
+    group in bold."""
     totals = [total for tracks in sets.values() for total in tracks.values()]
     # A planner that never ran on the table's benchmark sets, such as Powerlifted on IPC, has no columns.
     shown = [any(total[index] is not None for total in totals) for index in range(len(totals[0]))]
@@ -136,7 +153,7 @@ def update_summary(tex, table, sets):
     for title, tracks in sets.items():
         rows = {}
         for kind, (count, *solved) in tracks.items():
-            cells = [str(count), *_bold_pairs(solved)]
+            cells = [str(count), *_bold_groups(MODES[kind], solved)]
             rows[TRACK_NAMES[kind]] = [cell for cell, show in zip(cells, shown) if show]
         start, end = _section(tex, table, title)
         tex = tex[:start] + _write_rows(tex[start:end], f"{table} {title}", rows) + tex[end:]
@@ -144,20 +161,21 @@ def update_summary(tex, table, sets):
 
 
 def update_htg_table(tex, counts):
-    """Write the HTG table, a row per domain and a total with a block of columns per track, the better of each pair in bold."""
+    """Write the HTG table, a row per domain and a total with a block of columns per track, the best of
+    each planner's group in bold."""
     domains = {name for track in counts.values() for name in track}
     for kind, track in counts.items():
         lacking = sorted(domains - set(track))
         if lacking:
             raise SystemExit(f"No {TRACK_NAMES[kind]} HTG results for {', '.join(lacking)}")
 
-    tracks = [{**track, "Total": _total(track)} for track in counts.values()]
+    tracks = {kind: {**track, "Total": _total(track)} for kind, track in counts.items()}
     rows = {}
     for name in [*sorted(domains), "Total"]:
         rows[name] = []
-        for track in tracks:
+        for kind, track in tracks.items():
             count, *solved = track[name]
-            rows[name] += [str(count), *_bold_pairs(solved)]
+            rows[name] += [str(count), *_bold_groups(MODES[kind], solved)]
 
     start = tex.rindex(r"\begin{table", 0, tex.index(rf"\label{{{HTG_TABLE}}}"))
     # The table runs the full text width as a tabular*.
@@ -188,12 +206,19 @@ def _total(counts):
     return [None if None in column else sum(column) for column in zip(*counts.values())]
 
 
-def _bold_pairs(solved_counts):
-    """The solved counts, which alternate a planner with its abstraction, the better of each pair in bold."""
-    cells = []
-    for pair in range(0, len(solved_counts), 2):
-        cells += _bold_best(solved_counts[pair : pair + 2])
-    return cells
+def _bold_groups(modes, solved_counts):
+    """The solved counts of these modes, the best of each planner's group in bold."""
+    groups = defaultdict(list)
+    for mode, solved in zip(modes, solved_counts):
+        groups[_planner(mode)].append(solved)
+    return [cell for group in groups.values() for cell in _bold_best(group)]
+
+
+def _planner(mode):
+    """The group whose best count is bold, the planner a mode runs, which its pruning and abstraction share."""
+    planner = mode.removeprefix(ABSTRACTION_PREFIX).removesuffix("-symmetry-pruning")
+    # rnd-g has no abstraction of its own, so it competes in the group of Fast Downward, which it sits beside.
+    return FAST_DOWNWARD if planner in ("lama", "lmcut", "rnd-g") else planner
 
 
 def _section(tex, label, section):

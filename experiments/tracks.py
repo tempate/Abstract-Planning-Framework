@@ -85,7 +85,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "sat" / "symmetries",
             suite=sat.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lama", "asp", "lama"),
+            modes=("abs-asp", "abs-lama", "asp", "lama", "lama-symmetry-pruning", "rnd-g"),
         ),
         # The same suite, restricted to the problems numeric-fast-downward finds a
         # resource for, and planned from that resource's objects.
@@ -94,7 +94,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "sat" / "resources",
             suite=sat.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lama", "asp", "lama"),
+            modes=("abs-asp", "abs-lama", "asp", "lama", "lama-symmetry-pruning", "rnd-g"),
             abstract_arguments=("--abstraction-source", "resources"),
         ),
         # The hard-to-ground benchmarks, refined with gaps like sat/symmetries.
@@ -103,7 +103,16 @@ TRACKS = {
             directory=EXPERIMENTS / "htg" / "sat",
             suite=htg.SUITE,
             benchmarks_dir=BENCHMARKS / "htg-domains",
-            modes=("abs-asp", "abs-lama", "asp", "lama", "abs-powerlifted", "powerlifted"),
+            modes=(
+                "abs-asp",
+                "abs-lama",
+                "asp",
+                "lama",
+                "abs-powerlifted",
+                "powerlifted",
+                "lama-symmetry-pruning",
+                "rnd-g",
+            ),
         ),
         # The hard-to-ground benchmarks, refined without gaps like opt/symmetries.
         Track(
@@ -119,6 +128,7 @@ TRACKS = {
                 "abs-powerlifted",
                 "powerlifted",
                 "lmcut-symmetry-pruning",
+                "rnd-g",
             ),
             optimizing_arguments=("--optimize",),
         ),
@@ -129,7 +139,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "opt" / "symmetries",
             suite=opt.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "lmcut-symmetry-pruning"),
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "lmcut-symmetry-pruning", "rnd-g"),
             optimizing_arguments=("--optimize",),
         ),
         Track(
@@ -137,7 +147,7 @@ TRACKS = {
             directory=EXPERIMENTS / "ipc" / "opt" / "resources",
             suite=opt.SUITE,
             benchmarks_dir=BENCHMARKS / "downward-benchmarks",
-            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "lmcut-symmetry-pruning"),
+            modes=("abs-asp", "abs-lmcut", "asp", "lmcut", "lmcut-symmetry-pruning", "rnd-g"),
             abstract_arguments=("--abstraction-source", "resources"),
             optimizing_arguments=("--optimize",),
         ),

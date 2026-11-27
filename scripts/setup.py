@@ -5,6 +5,8 @@ import hashlib
 import io
 import os
 import platform
+import re
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -27,9 +29,13 @@ NUMERIC_DOWNWARD_PATCH = ROOT / "lib" / "numeric-fast-downward.patch"
 NUMERIC_DOWNWARD_BUILD = NUMERIC_DOWNWARD / "builds" / "release64"
 POWERLIFTED_SEARCH = ROOT / "lib" / "powerlifted" / "builds" / "release" / "search" / "search"
 STRUCTURAL_SYMMETRIES_BUILD = ROOT / "lib" / "structural-symmetries" / "builds" / "release"
+# Adds pruning of symmetric states (DKS) to lazy search, which lama-first uses.
+STRUCTURAL_SYMMETRIES_PATCH = ROOT / "lib" / "structural-symmetries.patch"
 # The fork dates from 2023. CMake 4 refuses its minimum version and GCC 14 its bundled
 # optional.hh, and older versions of both ignore these two settings.
 STRUCTURAL_SYMMETRIES_BUILD_ENV = {"CMAKE_POLICY_VERSION_MINIMUM": "3.5", "CXXFLAGS": "-Wno-template-body"}
+CPDDL_DIR = ROOT / "lib" / "cpddl"
+CPDDL_BIN = CPDDL_DIR / "bin" / "pddl-tool"
 
 # Each of these fails silently at run time rather than at setup time: a missing
 # pybliss kills every abstract run in symmetry discovery, a missing Fast
@@ -42,6 +48,7 @@ ARTIFACTS = {
     "plasp binary": PLASP_BIN,
     "numeric Fast Downward release64 build": NUMERIC_DOWNWARD_BUILD,
     "Powerlifted release build": POWERLIFTED_SEARCH,
+    "cpddl binary": CPDDL_BIN,
 }
 
 
@@ -53,6 +60,7 @@ def main():
     _build_powerlifted()
     _build_structural_symmetries()
     _install_plasp()
+    _build_cpddl()
     _verify()
 
 
@@ -108,12 +116,32 @@ def _build_powerlifted():
 
 def _build_structural_symmetries():
     print("== Fast Downward with structural symmetries")
-    if STRUCTURAL_SYMMETRIES_BUILD.is_dir():
+    source = ROOT / "lib" / "structural-symmetries"
+    # A build from before the patch lacks symmetry pruning in lazy search, so patching forces a rebuild.
+    reverse_check = ["git", "apply", "--reverse", "--check", str(STRUCTURAL_SYMMETRIES_PATCH)]
+    patched = subprocess.run(reverse_check, cwd=source, capture_output=True).returncode == 0
+    if patched and STRUCTURAL_SYMMETRIES_BUILD.is_dir():
         print(f"already built at {STRUCTURAL_SYMMETRIES_BUILD}")
         return
 
+    if not patched:
+        # An earlier version of the patch may be applied, so the files it touches start from the fork's own.
+        touched = re.findall(r"^diff --git a/(\S+)", STRUCTURAL_SYMMETRIES_PATCH.read_text(), re.MULTILINE)
+        _run(["git", "checkout", "--", *touched], cwd=source)
+        _run(["git", "apply", str(STRUCTURAL_SYMMETRIES_PATCH)], cwd=source)
     environment = {**os.environ, **STRUCTURAL_SYMMETRIES_BUILD_ENV}
-    _run([sys.executable, "build.py", "release"], cwd=ROOT / "lib" / "structural-symmetries", env=environment)
+    _run([sys.executable, "build.py", "release"], cwd=source, env=environment)
+
+
+def _build_cpddl():
+    print("== cpddl")
+    if CPDDL_BIN.exists():
+        print(f"already built at {CPDDL_BIN}")
+        return
+
+    # The template's defaults build without the optional LP solvers, which rnd-g does not need.
+    shutil.copyfile(CPDDL_DIR / "Makefile.config.tpl", CPDDL_DIR / "Makefile.config")
+    _run(["make", "bin"], cwd=CPDDL_DIR)
 
 
 def _install_plasp():

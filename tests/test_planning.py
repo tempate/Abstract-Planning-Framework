@@ -6,14 +6,16 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from core.pipeline.abstraction.abstract_task import build_abstract_task
+from core.integrations import cpddl
 from core.integrations.fast_downward import LAMA
 from core.integrations.unified_planning import read_problem
-from core.utilities.outcomes import UnsolvableTaskError
+from core.utilities.outcomes import OutOfMemoryError, UnsolvableTaskError
 from core.pipeline.abstraction.abstract_task import write_abstract_problem
 from core.utilities.metrics import PlanningMetrics
 from core.planners import fd
 from core.planners.asp import Asp
 from core.pipeline.solve import solve
+from core.planners.homomorphism import Homomorphism
 from core.planners.powerlifted import Powerlifted
 from core.utilities.config import AbstractPlanningConfig, PlanningConfig
 from core.utilities.plan import one_action_per_step
@@ -61,6 +63,41 @@ class BaselinePlanningOrchestrationTests(unittest.TestCase):
             [(action.name, action.args) for action in result["plan"]],
             [("pick", ("ball1", "rooma", "left")), ("move", ("rooma", "roomb"))],
         )
+
+    def test_a_cpddl_plan_reads_as_the_actions_it_lists(self):
+        def search(command, **_kwargs):
+            # The plan file comes before the domain and the problem.
+            Path(command[-3]).write_text(";; Cost: 2\n(pick ball1 rooma left)\n(move rooma roomb)\n")
+            return subprocess.CompletedProcess(command, 0, "", "")
+
+        with patch("core.integrations.cpddl.subprocess.run", side_effect=search):
+            result = Homomorphism(PlanningConfig("domain.pddl", "problem.pddl")).solve()
+
+        self.assertEqual(
+            [(action.name, action.args) for action in result["plan"]],
+            [("pick", ("ball1", "rooma", "left")), ("move", ("rooma", "roomb"))],
+        )
+
+    def test_cpddl_ending_without_a_plan_file_leaves_the_task_unsolved(self):
+        # cpddl exits 0 on an unsolvable task and writes no plan.
+        finished = lambda command, **_kwargs: subprocess.CompletedProcess(command, 0, "", "")
+        with patch("core.integrations.cpddl.subprocess.run", side_effect=finished):
+            result = Homomorphism(PlanningConfig("domain.pddl", "problem.pddl")).solve()
+
+        self.assertFalse(result["success"])
+        self.assertIsNone(result["plan"])
+
+    def test_cpddl_running_out_of_memory_is_not_a_crash(self):
+        # cpddl exits 255 on every error, so only its message tells memory apart.
+        panicked = lambda command, **_kwargs: subprocess.CompletedProcess(
+            command, 255, "Allocation of memory failed", ""
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            with (
+                patch("core.integrations.cpddl.subprocess.run", side_effect=panicked),
+                self.assertRaises(OutOfMemoryError),
+            ):
+                cpddl.find_plan(directory, "domain.pddl", "problem.pddl", cpddl.GBFS_FF)
 
     @patch("core.planners.fd.find_pddl_plan")
     def test_an_unsolvable_task_is_not_a_plan(self, find_pddl_plan):

@@ -28,14 +28,16 @@ MODES = (
     "abs-asp",
     "abs-lama",
     "lama",
+    "lama-symmetry-pruning",
     "abs-lmcut",
     "lmcut",
     "abs-powerlifted",
     "powerlifted",
     "lmcut-symmetry-pruning",
+    "rnd-g",
 )
 ABSTRACTION_PREFIX = "abs-"
-OPTIMIZING_MODES = ("asp", "abs-asp", "abs-powerlifted", "powerlifted")
+OPTIMIZING_MODES = ("asp", "abs-asp", "abs-powerlifted", "powerlifted", "rnd-g")
 
 
 def main():

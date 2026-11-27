@@ -13,10 +13,10 @@ python -m pip install -e ".[dev]"
 python -m scripts.setup
 ```
 
-`scripts.setup` initializes the submodules and builds the five things pip does
+`scripts.setup` initializes the submodules and builds the seven things pip does
 not install: the pybliss extension, the Fast Downward and Powerlifted release builds, Silvan Sievers'
-structural symmetries fork of Fast Downward, numeric Fast Downward for resource detection, and the
-pinned plasp binary. Numeric Fast Downward
+structural symmetries fork of Fast Downward, numeric Fast Downward for resource detection, the
+pinned plasp binary, and cpddl. Numeric Fast Downward
 needs COIN's Clp and Osi, found through `DOWNWARD_COIN_ROOT`, or resource detection
 has no LP solver. Skipping it fails at planning time rather than at setup
 time.
@@ -62,6 +62,19 @@ resource detection with `--abstraction-source resources`. Pass
 `--objects-to-abstract NAME...` to choose one yourself. Finding no class is an
 error, not a fallback to concrete search. `--domain` defaults to the domain file
 beside the problem.
+
+`lama-symmetry-pruning` adds symmetry pruning to `lama`, as a baseline without an
+abstraction. It prunes each state symmetric to one already seen (DKS), which
+`lib/structural-symmetries.patch` adds to lazy search and `scripts.setup` applies
+before it builds.
+
+`rnd-g` is the planner of [Horčík, Fišer and Torralba (AAAI 2022)](https://doi.org/10.1609/aaai.v36i9.21212)
+in cpddl, as an external baseline. It searches the lifted task, guided by a
+heuristic on the grounded delete relaxation of a smaller task, which merges
+random objects of the same type but never goal objects. It runs their best
+configurations: GBFS with h^FF at 75% of the objects removed, or under
+`--optimize` A* with LM-cut at 95%, on unit costs like the other optimal planners.
+Every track runs it.
 
 
 ## Benchmark suite

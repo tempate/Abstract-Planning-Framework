@@ -70,6 +70,12 @@ def _argument_parser():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
+        "lama-symmetry-pruning",
+        parents=[shared],
+        help="Solve the task with lama-first, pruning states symmetric to one already seen",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
         "lmcut",
         parents=[shared],
         help="Solve the task optimally with Fast Downward's A* and LM-cut",
@@ -85,6 +91,12 @@ def _argument_parser():
         "lmcut-symmetry-pruning",
         parents=[shared],
         help="Solve the task optimally with A* and LM-cut, pruning symmetric states by orbit space search",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    modes.add_parser(
+        "rnd-g",
+        parents=[shared, optimize],
+        help="Search the lifted task with cpddl, guided by h^FF, or LM-cut to optimize, on a homomorphic image of it",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     modes.add_parser(
