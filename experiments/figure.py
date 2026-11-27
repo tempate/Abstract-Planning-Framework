@@ -4,8 +4,6 @@ import argparse
 import csv
 import io
 import json
-import math
-import re
 import shutil
 import subprocess
 import tempfile
@@ -28,18 +26,24 @@ PAIRS = {
     "sat": (("lama", r"\LAMA", r"\LAMAa"), ("asp", r"\ASP", r"\ASPa")),
     "opt": (("lmcut", r"\LMcut", r"\LMcuta"), ("asp", r"\ASP", r"\ASPa")),
 }
-# The columns of the paper's runtime figures in the order of the tables, each a planner's x label and, on each track,
-# the planner and the abstraction drawn against it. The tracks share each column's label, so Fast Downward's planners
-# read FD and FD+ as in the tables, and the planners without an abstraction of their own face FD's.
+# The columns of the paper's runtime figures, each a planner's x label, on each track the planner and the abstraction
+# drawn against it, and the y label. The tracks share each column's label, so Fast Downward's planners read FD and FD+
+# as in the tables. Each planner faces its own abstraction, except Hom, which has none and faces FD's on its own y axis.
+OWN_ABSTRACTION = r"X\textsuperscript{$\alpha$}"
 PAPER_COLUMNS = (
-    (r"\ASP", {"sat": ("asp", "abs-asp"), "opt": ("asp", "abs-asp")}),
-    (r"\HM", {"sat": ("rnd-g", "abs-lama"), "opt": ("rnd-g", "abs-lmcut")}),
-    (r"\textsc{FD}", {"sat": ("lama", "abs-lama"), "opt": ("lmcut", "abs-lmcut")}),
+    (r"\ASP", {"sat": ("asp", "abs-asp"), "opt": ("asp", "abs-asp")}, OWN_ABSTRACTION),
+    (
+        r"\textsc{Powerlifted}",
+        {"sat": ("powerlifted", "abs-powerlifted"), "opt": ("powerlifted", "abs-powerlifted")},
+        OWN_ABSTRACTION,
+    ),
+    (r"\textsc{FD}", {"sat": ("lama", "abs-lama"), "opt": ("lmcut", "abs-lmcut")}, OWN_ABSTRACTION),
     (
         r"\textsc{FD}$^+$",
         {"sat": ("lama-symmetry-pruning", "abs-lama"), "opt": ("lmcut-symmetry-pruning", "abs-lmcut")},
+        OWN_ABSTRACTION,
     ),
-    (r"\textsc{Powerlifted}", {"sat": ("powerlifted", "abs-powerlifted"), "opt": ("powerlifted", "abs-powerlifted")}),
+    (r"\HM", {"sat": ("rnd-g", "abs-lama"), "opt": ("rnd-g", "abs-lmcut")}, r"\textsc{FD}\textsuperscript{$\alpha$}"),
 )
 # Powerlifted, which only the hard-to-ground tracks run, against its abstraction.
 POWERLIFTED = ("powerlifted", r"\textsc{Powerlifted}", r"\textsc{Powerlifted}\textsuperscript{$\alpha$}")
@@ -51,16 +55,15 @@ POWERLIFTED_MARKS = SOLVER_MARKS[2:]
 ABOVE_LEGEND = "title style={yshift=11pt}"
 # A plot that carries its own legend, centred above it in rows of two.
 CENTRED_LEGEND = "legend columns=2, legend style={overlay, at={(0.5,1.04)}, anchor=south}"
-# The HTG figure's plots are drawn at the size they print, as main.tex includes it unscaled, five to the text width.
-HTG_PLOT_SIZE = 1.1
-# The IPC figures' plots, drawn at the size they print, as main.tex includes them unscaled.
-IPC_PLOT_SIZE = 1.05
-# The gap between the plots colored by domain, which share the first plot's y axis, in inches.
+# Every runtime figure's plots, drawn at the size they print, as main.tex includes the figures unscaled. The HTG
+# figure's five plots and two y axes fill the text width at this size.
+PLOT_SIZE = 1.0
+# The gap between the runtime plots, which share the first plot's y axis, in inches.
 DOMAIN_PLOT_GAP = 0.2
+# The wider gap before a plot with a y axis of its own, which makes room for its numbers and label.
+DOMAIN_GROUP_GAP = 0.65
 # The extra space between their rows, whose upper one has no x axis to make room for, in inches.
 DOMAIN_ROW_GAP = 0.0
-# The IPC figures' legends, in this many lines under the plots.
-IPC_LEGEND_LINES = 2
 # The HTG figure's ten domains in two rows under its plots.
 HTG_LEGEND_COLUMNS = 5
 # Each HTG domain's color, the xcolor names in the figures of Horcik et al. (AAAI 2022), which read better than lighter
@@ -77,41 +80,8 @@ DOMAIN_COLORS = {
     "satellite": "violet",
     "tpp": "green!60!black",
 }
-# IPC domains that are one domain under several names, each by the name the IPC figures give it.
-IPC_FAMILIES = {
-    "logistics00": "logistics",
-    "logistics98": "logistics",
-    "mprime": "mystery",
-    "pipesworld-notankage": "pipesworld",
-    "pipesworld-tankage": "pipesworld",
-}
-# The Symmetries figure colors the seven IPC domains with the most problems, each with at least 58 to the others'
-# 40 or fewer, a domain the HTG figure shows in its color there, and draws the rest in grey.
-OTHER_DOMAINS = "other"
-SYMMETRIES_DOMAIN_COLORS = {
-    "barman": "cyan",
-    "logistics": "brown",
-    "mystery": "red",
-    "openstacks": "blue",
-    "pipesworld": "orange",
-    "satellite": "violet",
-    "tpp": "green!60!black",
-    OTHER_DOMAINS: "black!35",
-}
-# Resources has ten domains, so its figure colors them all, a domain the Symmetries figure colors in the same color.
-RESOURCES_DOMAIN_COLORS = {
-    "data-network": "olive",
-    "elevators": "black",
-    "freecell": "teal",
-    "mystery": "red",
-    "nomystery": "orange",
-    "openstacks": "blue",
-    "thoughtful": "brown",
-    "tpp": "green!60!black",
-    "transport": "cyan",
-    "visitall": "magenta",
-}
-IPC_DOMAIN_COLORS = {"symmetries": SYMMETRIES_DOMAIN_COLORS, "resources": RESOURCES_DOMAIN_COLORS}
+# The IPC figure colors each problem by the source its track abstracts. Neither is orange, which means abstract.
+IPC_SOURCE_COLORS = {"symmetries": "teal", "resources": "purple"}
 # HTG names a domain by the collection it comes from; the paper by the domain.
 HTG_DOMAINS = {
     "blocksworld-large-simple": "blocksworld",
@@ -209,16 +179,12 @@ def paper_figures(revision):
     """The paper's figures at a revision, by the file name main.tex includes, each the body of a PDF."""
     return {
         "runtimes-htg": _minipage(
-            r"\textwidth", f"\\setlength{{\\plotsize}}{{{HTG_PLOT_SIZE}in}}\n" + _htg_runtime_figure(revision)
+            r"\textwidth", f"\\setlength{{\\plotsize}}{{{PLOT_SIZE}in}}\n" + _htg_runtime_figure(revision)
         ),
-        **{
-            f"runtimes-ipc-{source}": _minipage(
-                r"\textwidth",
-                f"\\setlength{{\\plotsize}}{{{IPC_PLOT_SIZE}in}}\n"
-                + _ipc_runtime_figure(problems, IPC_DOMAIN_COLORS[source]),
-            )
-            for source, problems in _ipc_sources(revision).items()
-        },
+        "runtimes-ipc": _minipage(
+            r"\textwidth",
+            f"\\setlength{{\\plotsize}}{{{PLOT_SIZE}in}}\n" + _ipc_runtime_figure(_ipc_sources(revision)),
+        ),
     }
 
 
@@ -240,49 +206,57 @@ def _ipc_sources(revision):
     return {source: {kind: tracks[kind][source] for kind in TRACK_NAMES} for source in SOURCES}
 
 
-def _ipc_runtime_figure(tracks, colors):
-    """One IPC source's runtime figure, a row per track, a plot per planner, and a domain legend."""
+def _ipc_runtime_figure(sources):
+    """The IPC runtime figure, a row per track, a plot per planner, each problem colored by its source."""
+    source_of = {}
+    for source, tracks in sources.items():
+        for problems in tracks.values():
+            for problem in problems:
+                source_of[id(problem)] = SOURCES[source]
 
-    def domain_of(problem):
-        return _ipc_problem_domain(problem, colors)
+    def source_name(problem):
+        return source_of[id(problem)]
 
-    plot_table = _plot_rows(tracks, domain_of, colors)
+    tracks = {kind: [problem for by_kind in sources.values() for problem in by_kind[kind]] for kind in TRACK_NAMES}
+    colors = {SOURCES[source]: color for source, color in IPC_SOURCE_COLORS.items()}
+    plot_table = _plot_rows(tracks, source_name, colors)
 
-    # The domains this source has under the plots, the grey of the other domains last.
-    present = {domain_of(problem) for problems in tracks.values() for problem in problems}
-    entries = [_legend_entry(color, domain) for domain, color in colors.items() if domain in present]
-    return _with_legend_below(plot_table, entries, math.ceil(len(entries) / IPC_LEGEND_LINES))
+    entries = [_legend_entry(color, name) for name, color in colors.items()]
+    return _with_legend_below(plot_table, entries, len(entries))
 
 
 def _plot_rows(tracks, domain_of, colors):
-    """A row of runtime plots per track, sharing their axes: a column per planner every track ran.
+    """A row of runtime plots per track: a column per planner every track ran.
 
-    Only the first plot of a row numbers its y axis and only the bottom row its
-    x axes, so a planner one track lacks has no column at all. The last plot of
-    a row names its track on the right.
+    Columns with the same y label share it, so only the first of them numbers
+    its y axis, and only the bottom row numbers the x axes. A planner one track
+    lacks has no column at all. The last plot of a row names its track on the
+    right.
     """
     columns = [
-        (label, modes)
-        for label, modes in PAPER_COLUMNS
+        (label, modes, ylabel)
+        for label, modes, ylabel in PAPER_COLUMNS
         if all(tracks[kind] and modes[kind][0] in tracks[kind][0] for kind in TRACK_NAMES)
     ]
     lines = []
     for row, (kind, name) in enumerate(TRACK_NAMES.items()):
-        plots = [
-            _domain_runtime_plot(
+        line = ""
+        for index, (label, modes, ylabel) in enumerate(columns):
+            opens_group = index == 0 or ylabel != columns[index - 1][2]
+            if index > 0:
+                line += f"%\n\\hspace{{{DOMAIN_GROUP_GAP if opens_group else DOMAIN_PLOT_GAP}in}}%\n"
+            line += _domain_runtime_plot(
                 tracks[kind],
                 *modes[kind],
                 label,
                 domain_of,
                 colors,
-                left=index == 0,
+                ylabel=ylabel if opens_group else None,
                 bottom=row == len(TRACK_NAMES) - 1,
                 track=name if index == len(columns) - 1 else None,
             )
-            for index, (label, modes) in enumerate(columns)
-        ]
         # Room on the left for the y label, so the plots stay centred.
-        lines.append("\\hspace*{0.42in}" + _joined(plots, f"{DOMAIN_PLOT_GAP}in"))
+        lines.append("\\hspace*{0.42in}" + line)
     return "\\begin{tabular}[c]{@{}c@{}}\n" + f" \\\\[{DOMAIN_ROW_GAP}in]\n".join(lines) + "\n\\end{tabular}"
 
 
@@ -297,9 +271,10 @@ def _legend_entry(color, domain):
     return rf"\mbox{{\tikz[baseline=-0.5ex, color={color}]\pgfuseplotmark{{x}};~{domain}}}"
 
 
-def _domain_runtime_plot(problems, solver, abstraction, label, domain_of, colors, left, bottom, track):
-    """One planner's runtime per problem against an abstraction's, a cross per problem in its domain's color. A plot
-    on the left labels the y axis, one at the bottom the x axis, and one given a track names it on its right."""
+def _domain_runtime_plot(problems, solver, abstraction, label, domain_of, colors, ylabel, bottom, track):
+    """One planner's runtime per problem against an abstraction's, a cross per problem in the color of its domain or
+    source. A plot given a y label numbers its y axis, one at the bottom the x axis, and one given a track names it on
+    its right."""
     by_domain = defaultdict(list)
     for problem in problems:
         by_domain[domain_of(problem)].append(problem)
@@ -316,7 +291,7 @@ def _domain_runtime_plot(problems, solver, abstraction, label, domain_of, colors
     options = r"label style={font=\small}, tick label style={font=\footnotesize}"
     # A light line at every power of ten, as in Horcik et al. (2022).
     options += r", grid=major, grid style={black!30, thin}"
-    options += r", ylabel={X\textsuperscript{$\alpha$} time (s)}" if left else ", yticklabels={}"
+    options += rf", ylabel={{{ylabel} time (s)}}" if ylabel else ", yticklabels={}"
     options += rf", xlabel={{{label}{{}} time (s)}}" if bottom else ", xticklabels={}"
     if track is not None:
         options += (
@@ -334,13 +309,6 @@ def _domain_runtime_plot(problems, solver, abstraction, label, domain_of, colors
 
 def _htg_problem_domain(problem):
     return htg_domain(next(iter(problem.values()))["domain"])
-
-
-def _ipc_problem_domain(problem, colors):
-    """The domain the IPC figures color a problem by, its name without track or year, or the other domains."""
-    name = re.sub(r"-(sat|opt)\d\d-strips$", "", next(iter(problem.values()))["domain"])
-    name = IPC_FAMILIES.get(name, name)
-    return name if name in colors else OTHER_DOMAINS
 
 
 def _panel(title, kind, tracks):
