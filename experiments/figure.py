@@ -272,8 +272,9 @@ def _legend_entry(color, domain):
 
 
 def _domain_runtime_plot(problems, solver, abstraction, label, domain_of, colors, ylabel, bottom, track):
-    """One planner's runtime per problem against an abstraction's, a cross per problem in its domain's color. A plot
-    given a y label numbers its y axis, one at the bottom the x axis, and one given a track names it on its right."""
+    """One planner's runtime per problem against an abstraction's, a cross per problem in the color of its domain or
+    source. A plot given a y label numbers its y axis, one at the bottom the x axis, and one given a track names it on
+    its right."""
     by_domain = defaultdict(list)
     for problem in problems:
         by_domain[domain_of(problem)].append(problem)
